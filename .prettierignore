@@ -1,0 +1,8 @@
+node_modules
+.expo
+dist
+android
+ios
+pnpm-lock.yaml
+pnpm-workspace.yaml
+src/lib/supabase/database.types.ts

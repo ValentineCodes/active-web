@@ -1,0 +1,52 @@
+{
+  "expo": {
+    "name": "Active",
+    "slug": "active",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "scheme": "active",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.active.app",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "package": "com.active.app",
+      "edgeToEdgeEnabled": true,
+      "adaptiveIcon": {
+        "backgroundColor": "#0B0F14"
+      }
+    },
+    "plugins": [
+      "expo-router",
+      "expo-status-bar",
+      "expo-secure-store",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Active uses your location only when you submit a request or go Active, so we can match you with nearby people. Your exact location stays hidden until you accept someone."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Active needs access to your photos so you can set a profile picture."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#10B981"
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    }
+  }
+}
