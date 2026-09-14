@@ -20,9 +20,15 @@
       "edgeToEdgeEnabled": true,
       "adaptiveIcon": {
         "backgroundColor": "#0B0F14"
-      }
+      },
+      "permissions": [
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "plugins": [
+      "expo-dev-client",
       "expo-router",
       "expo-status-bar",
       "expo-secure-store",
@@ -48,6 +54,13 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "owner": "dewdrip",
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "1ba8914c-e98a-4923-bf59-cdef3e5fb357"
+      }
     }
   }
 }
