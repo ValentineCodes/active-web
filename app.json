@@ -15,6 +15,7 @@
       }
     },
     "android": {
+      "usesCleartextTraffic": true,
       "package": "com.active.app",
       "edgeToEdgeEnabled": true,
       "adaptiveIcon": {

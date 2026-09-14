@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
 
 import type { Position } from '@/lib/location';
 import { queryKeys } from '@/lib/query/keys';
@@ -103,43 +103,130 @@ export function useRequestResponses(requestId: string) {
   });
 }
 
+type LiveRequestChannel = ReturnType<typeof supabase.channel>;
+
+const liveRequestChannels = new Map<string, { refCount: number; channel: LiveRequestChannel }>();
+const liveRequestTeardowns = new Map<string, Promise<void>>();
+const liveRequestAcquires = new Map<string, Promise<void>>();
+
+function invalidateLiveRequestQueries(
+  queryClient: QueryClient,
+  requestId: string,
+  source: 'responses' | 'request',
+) {
+  if (source === 'responses') {
+    queryClient.invalidateQueries({ queryKey: queryKeys.requestResponses(requestId) });
+    queryClient.invalidateQueries({ queryKey: queryKeys.myRequest(requestId) });
+    queryClient.invalidateQueries({ queryKey: queryKeys.myRequests });
+    return;
+  }
+
+  queryClient.invalidateQueries({ queryKey: queryKeys.myRequest(requestId) });
+  queryClient.invalidateQueries({ queryKey: queryKeys.engagement(requestId) });
+}
+
+function createLiveRequestChannel(requestId: string, queryClient: QueryClient) {
+  return supabase
+    .channel(`request:${requestId}`)
+    .on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'request_responses',
+        filter: `request_id=eq.${requestId}`,
+      },
+      () => invalidateLiveRequestQueries(queryClient, requestId, 'responses'),
+    )
+    .on(
+      'postgres_changes',
+      { event: 'UPDATE', schema: 'public', table: 'requests', filter: `id=eq.${requestId}` },
+      () => invalidateLiveRequestQueries(queryClient, requestId, 'request'),
+    )
+    .subscribe();
+}
+
+async function acquireLiveRequestChannel(requestId: string, queryClient: QueryClient) {
+  const pendingTeardown = liveRequestTeardowns.get(requestId);
+  if (pendingTeardown) {
+    await pendingTeardown;
+  }
+
+  const existing = liveRequestChannels.get(requestId);
+  if (existing) {
+    existing.refCount += 1;
+    return;
+  }
+
+  const pendingAcquire = liveRequestAcquires.get(requestId);
+  if (pendingAcquire) {
+    await pendingAcquire;
+    const shared = liveRequestChannels.get(requestId);
+    if (shared) {
+      shared.refCount += 1;
+    }
+    return;
+  }
+
+  const acquire = (async () => {
+    const channel = createLiveRequestChannel(requestId, queryClient);
+    liveRequestChannels.set(requestId, { refCount: 1, channel });
+  })();
+
+  liveRequestAcquires.set(requestId, acquire);
+  try {
+    await acquire;
+  } finally {
+    liveRequestAcquires.delete(requestId);
+  }
+}
+
+async function releaseLiveRequestChannel(requestId: string) {
+  const entry = liveRequestChannels.get(requestId);
+  if (!entry) {
+    return;
+  }
+
+  entry.refCount -= 1;
+  if (entry.refCount > 0) {
+    return;
+  }
+
+  liveRequestChannels.delete(requestId);
+  const teardown = supabase.removeChannel(entry.channel).then(() => undefined);
+  liveRequestTeardowns.set(requestId, teardown);
+  try {
+    await teardown;
+  } finally {
+    if (liveRequestTeardowns.get(requestId) === teardown) {
+      liveRequestTeardowns.delete(requestId);
+    }
+  }
+}
+
 /**
  * Keeps an open request live. The requester can read both tables under RLS, so
  * Realtime delivers new responses and status changes as they happen instead of the
  * screen polling while someone waits for help.
+ *
+ * Multiple screens may call this for the same request; Supabase reuses channel
+ * topics, so we ref-count a single subscription per request id.
  */
 export function useLiveRequest(requestId: string) {
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    const channel = supabase
-      .channel(`request:${requestId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'request_responses',
-          filter: `request_id=eq.${requestId}`,
-        },
-        () => {
-          queryClient.invalidateQueries({ queryKey: queryKeys.requestResponses(requestId) });
-          queryClient.invalidateQueries({ queryKey: queryKeys.myRequest(requestId) });
-          queryClient.invalidateQueries({ queryKey: queryKeys.myRequests });
-        },
-      )
-      .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'requests', filter: `id=eq.${requestId}` },
-        () => {
-          queryClient.invalidateQueries({ queryKey: queryKeys.myRequest(requestId) });
-          queryClient.invalidateQueries({ queryKey: queryKeys.engagement(requestId) });
-        },
-      )
-      .subscribe();
+    let cancelled = false;
+
+    void acquireLiveRequestChannel(requestId, queryClient).then(() => {
+      if (cancelled) {
+        void releaseLiveRequestChannel(requestId);
+      }
+    });
 
     return () => {
-      supabase.removeChannel(channel);
+      cancelled = true;
+      void releaseLiveRequestChannel(requestId);
     };
   }, [requestId, queryClient]);
 }
