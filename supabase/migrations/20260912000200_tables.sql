@@ -33,6 +33,7 @@ create table public.requests (
   description text not null check (char_length(btrim(description)) between 10 and 1000),
   -- Null means "as soon as possible".
   scheduled_for timestamptz,
+  -- TO-DO: offers must be greater than 0
   offered_amount numeric(12, 2) check (offered_amount >= 0),
   currency text not null default 'NGN' check (char_length(currency) = 3),
   -- Exact coordinates. Readable only by the requester and, after acceptance, the
