@@ -137,7 +137,7 @@ export default function PhoneScreen() {
             className="mt-8 pb-2"
             style={{
               borderBottomWidth: phoneFocused ? 2 : 1,
-              borderBottomColor: phoneFocused ? colors.ink : colors.hairline,
+              borderBottomColor: phoneFocused ? colors.brand : colors.hairline,
             }}
           >
             <TextInput

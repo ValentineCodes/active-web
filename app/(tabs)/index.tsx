@@ -3,10 +3,15 @@ import { Link, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { formatDistanceToNowStrict } from 'date-fns';
 
+import { Avatar } from '@/components/ui/Avatar';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
+import { RequestCard } from '@/components/ui/RequestCard';
 import { Screen } from '@/components/ui/Screen';
+import { SectionHeader } from '@/components/ui/SectionHeader';
 import { ErrorState } from '@/components/ui/StateView';
+import { ServiceTag } from '@/components/ui/ServiceTag';
 import { useAvailability, useGoOffline } from '@/features/availability/api';
 import { useCategoryIndex } from '@/features/categories/api';
 import { useProfile } from '@/features/profile/api';
@@ -66,11 +71,29 @@ export default function HomeScreen() {
           />
         }
       >
-        <View className="gap-1">
-          <Text className="text-base text-muted">
-            {firstName ? `Hello, ${firstName}` : 'Hello'}
-          </Text>
-          <Text className="text-3xl font-bold text-ink">What do you need?</Text>
+        <View className="flex-row items-center justify-between">
+          <View className="gap-1">
+            <Text className="text-base text-muted">
+              {firstName ? `Hi, ${firstName}` : 'Welcome'}
+            </Text>
+            <Text className="text-3xl font-bold text-ink">
+              {isActive ? "You're Active" : 'Need something?'}
+            </Text>
+            {!isActive ? (
+              <Text className="text-lg text-muted">Someone nearby can help.</Text>
+            ) : null}
+          </View>
+          <Pressable
+            onPress={() => router.push('/profile')}
+            accessibilityRole="button"
+            accessibilityLabel="Open your profile"
+          >
+            <Avatar
+              path={profile.data?.avatar_path}
+              name={profile.data?.display_name ?? null}
+              showActiveDot={isActive}
+            />
+          </Pressable>
         </View>
 
         {engagementAsRequester || engagementAsProvider ? (
@@ -78,42 +101,48 @@ export default function HomeScreen() {
             href={`/engagement/${engagementAsRequester?.request_id ?? engagementAsProvider?.request_id}`}
             asChild
           >
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Open your connected job"
-              className="gap-2 rounded-3xl border border-active bg-active-soft p-5 active:opacity-80"
-            >
-              <Badge label="Connected" tone="active" />
-              <Text className="text-lg font-semibold text-ink">
-                {engagementAsRequester ? 'Someone is on your request' : 'You have a job to deliver'}
-              </Text>
-              <Text className="text-base text-muted">
-                Exact location and contact details are open. Tap to see them.
-              </Text>
+            <Pressable accessibilityRole="button" accessibilityLabel="Open your connected job">
+              <Card tone="active">
+                <Badge label="Connected" tone="active" />
+                <Text className="text-lg font-semibold text-ink">
+                  {engagementAsRequester
+                    ? 'Someone is on your request'
+                    : 'You have a job to deliver'}
+                </Text>
+                <Text className="text-base text-muted">
+                  Exact location and contact details are open. Tap to see them.
+                </Text>
+              </Card>
             </Pressable>
           </Link>
         ) : null}
 
         {isActive && availability.data?.expires_at ? (
-          <View className="gap-3 rounded-3xl border border-active bg-active-soft p-5">
+          <Card tone="active">
             <View className="flex-row items-center justify-between">
-              <Badge label="You're Active" tone="active" />
+              <Badge label="Available now" tone="active" />
               <Text className="text-sm text-muted">
                 {formatDistanceToNowStrict(new Date(availability.data.expires_at))} left
               </Text>
             </View>
 
-            <Text className="text-base text-ink">
-              Offering{' '}
-              {availability.data.category_slugs
-                .map((slug) => categories.data?.get(slug)?.label ?? slug)
-                .join(', ')}{' '}
-              within {(availability.data.service_radius_m ?? 0) / 1000} km.
+            <View className="flex-row flex-wrap gap-2">
+              {availability.data.category_slugs.map((slug) => (
+                <ServiceTag
+                  key={slug}
+                  label={categories.data?.get(slug)?.label ?? slug}
+                  icon={categories.data?.get(slug)?.icon}
+                />
+              ))}
+            </View>
+
+            <Text className="text-sm text-muted">
+              Service radius {(availability.data.service_radius_m ?? 0) / 1000} km
             </Text>
 
             <View className="flex-row gap-3">
               <Button
-                label="See requests"
+                label="See nearby requests"
                 variant="secondary"
                 className="flex-1"
                 onPress={() => router.push('/activity')}
@@ -126,7 +155,7 @@ export default function HomeScreen() {
                 onPress={() => goOffline.mutate()}
               />
             </View>
-          </View>
+          </Card>
         ) : null}
 
         <View className="gap-3">
@@ -134,13 +163,17 @@ export default function HomeScreen() {
             onPress={() => router.push('/request/new')}
             accessibilityRole="button"
             accessibilityLabel="Make a request"
-            className="gap-2 rounded-3xl bg-ink p-6 active:opacity-80"
+            className="gap-3 rounded-3xl bg-brand p-6 active:opacity-90"
           >
-            <Ionicons name="add-circle" size={28} color={colors.canvas} />
-            <Text className="text-2xl font-bold text-canvas">Make a request</Text>
-            <Text className="text-base text-hairline">
-              Say what you need. People nearby who can help will answer.
-            </Text>
+            <View className="h-11 w-11 items-center justify-center rounded-full bg-white/15">
+              <Ionicons name="add" size={26} color={colors.canvas} />
+            </View>
+            <View className="gap-1">
+              <Text className="text-2xl font-bold text-canvas">Make a request</Text>
+              <Text className="text-base text-canvas/80">
+                Say what you need. People nearby who can help will answer.
+              </Text>
+            </View>
           </Pressable>
 
           {isActive || isBusy ? null : (
@@ -148,54 +181,43 @@ export default function HomeScreen() {
               onPress={() => router.push('/go-active')}
               accessibilityRole="button"
               accessibilityLabel="Go Active and offer your services"
-              className="gap-2 rounded-3xl bg-active p-6 active:opacity-80"
+              className="gap-3 rounded-3xl bg-active-soft p-6 active:opacity-80"
             >
-              <Ionicons name="flash" size={28} color={colors.canvas} />
-              <Text className="text-2xl font-bold text-canvas">Go Active</Text>
-              <Text className="text-base text-active-soft">
-                Choose what you can do and how far you&apos;ll travel. Start receiving requests.
-              </Text>
+              <View className="h-11 w-11 items-center justify-center rounded-full bg-canvas">
+                <Ionicons name="flash" size={24} color={colors.active} />
+              </View>
+              <View className="gap-1">
+                <Text className="text-2xl font-bold text-ink">Go Active</Text>
+                <Text className="text-base text-muted">Let people nearby know you can help.</Text>
+              </View>
             </Pressable>
           )}
         </View>
 
         {openRequests.length > 0 ? (
           <View className="gap-3">
-            <Text className="text-lg font-semibold text-ink">Your open requests</Text>
+            <SectionHeader
+              title="Your open requests"
+              actionLabel={openRequests.length > 3 ? 'See all' : undefined}
+              onAction={() => router.push('/requests')}
+            />
 
             {openRequests.slice(0, 3).map((request) => {
               const badge = requestStatusBadge(request.status, request.pending_response_count);
+              const category = categories.data?.get(request.category_slug);
 
               return (
-                <Link key={request.request_id} href={`/request/${request.request_id}`} asChild>
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={`${categories.data?.get(request.category_slug)?.label ?? request.category_slug} request, ${badge.label}`}
-                    className="gap-2 rounded-2xl border border-hairline p-4 active:opacity-80"
-                  >
-                    <View className="flex-row items-center justify-between gap-3">
-                      <Text className="flex-1 text-base font-semibold text-ink">
-                        {categories.data?.get(request.category_slug)?.label ??
-                          request.category_slug}
-                      </Text>
-                      <Badge label={badge.label} tone={badge.tone} />
-                    </View>
-                    <Text className="text-sm text-muted" numberOfLines={1}>
-                      {request.description}
-                    </Text>
-                    <Text className="text-sm text-muted">{formatWhen(request.scheduled_for)}</Text>
-                  </Pressable>
-                </Link>
+                <RequestCard
+                  key={request.request_id}
+                  icon={category?.icon}
+                  title={category?.label ?? request.category_slug}
+                  description={request.description}
+                  badge={badge}
+                  meta={[formatWhen(request.scheduled_for)]}
+                  onPress={() => router.push(`/request/${request.request_id}`)}
+                />
               );
             })}
-
-            {openRequests.length > 3 ? (
-              <Button
-                label={`See all ${openRequests.length} requests`}
-                variant="ghost"
-                onPress={() => router.push('/requests')}
-              />
-            ) : null}
           </View>
         ) : null}
       </ScrollView>

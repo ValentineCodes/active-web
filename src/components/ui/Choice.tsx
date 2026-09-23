@@ -7,7 +7,8 @@ import { colors } from '@/theme';
 /**
  * A selectable row used wherever the product asks "which one?" — service category,
  * radius, availability duration. Works for single and multi select; the caller owns the
- * selection state.
+ * selection state. Flat and filled rather than bordered, so a long list of these never
+ * reads as a form full of boxes.
  */
 export function Choice({
   title,
@@ -31,15 +32,15 @@ export function Choice({
       accessibilityLabel={subtitle ? `${title}. ${subtitle}` : title}
       onPress={onPress}
       className={cn(
-        'flex-row items-center gap-3 rounded-2xl border p-4 active:opacity-80',
-        selected ? 'border-brand bg-brand-soft' : 'border-hairline bg-canvas',
+        'flex-row items-center gap-3 rounded-2xl p-4 active:opacity-80',
+        selected ? 'bg-brand-soft' : 'bg-surface',
       )}
     >
       {icon ? (
         <View
           className={cn(
-            'h-10 w-10 items-center justify-center rounded-xl',
-            selected ? 'bg-canvas' : 'bg-surface',
+            'h-11 w-11 items-center justify-center rounded-xl',
+            selected ? 'bg-canvas' : 'bg-canvas',
           )}
         >
           <Ionicons name={icon} size={20} color={selected ? colors.brand : colors.muted} />

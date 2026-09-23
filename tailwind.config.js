@@ -5,19 +5,31 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        ink: '#0B0F14',
+        // Text & surfaces
+        ink: '#111812',
+        subtle: '#8A948C',
+        muted: '#5C665E',
         canvas: '#FFFFFF',
-        surface: '#F6F7F9',
-        hairline: '#E4E7EB',
-        muted: '#6B7280',
-        brand: '#2563EB',
-        'brand-soft': '#EFF4FF',
-        active: '#10B981',
-        'active-soft': '#ECFDF5',
+        surface: '#F3F5F2',
+        elevated: '#FFFFFF',
+        hairline: '#E6EAE4',
+
+        // Brand — the one green used for every primary action.
+        brand: '#166A3D',
+        'brand-strong': '#0E4C2A',
+        'brand-soft': '#E7F4EA',
+
+        // Live/availability state.
+        active: '#1FA35A',
+        'active-soft': '#E8F8EC',
+
+        // Status
         danger: '#DC2626',
-        'danger-soft': '#FEF2F2',
+        'danger-soft': '#FDEDEC',
         warning: '#B45309',
-        'warning-soft': '#FFFBEB',
+        'warning-soft': '#FDF3E3',
+        info: '#2563EB',
+        'info-soft': '#EAF1FE',
       },
     },
   },

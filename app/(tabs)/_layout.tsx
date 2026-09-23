@@ -1,9 +1,28 @@
+import type { ColorValue } from 'react-native';
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 import { useNotificationBridge } from '@/lib/notifications';
 import { useMyRequests } from '@/features/requests/requester-api';
-import { colors } from '@/theme';
+import { colors, shadow } from '@/theme';
+
+function TabIcon({
+  color,
+  size,
+  focused,
+  focusedName,
+  outlineName,
+}: {
+  color: ColorValue;
+  size: number;
+  focused: boolean;
+  focusedName: keyof typeof Ionicons.glyphMap;
+  outlineName: keyof typeof Ionicons.glyphMap;
+}) {
+  return (
+    <Ionicons name={focused ? focusedName : outlineName} size={size} color={color as string} />
+  );
+}
 
 export default function TabsLayout() {
   const { data: requests } = useMyRequests();
@@ -21,16 +40,26 @@ export default function TabsLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: colors.ink,
-        tabBarInactiveTintColor: colors.muted,
-        tabBarStyle: { borderTopColor: colors.hairline, backgroundColor: colors.canvas },
+        tabBarActiveTintColor: colors.brand,
+        tabBarInactiveTintColor: colors.subtle,
+        tabBarBadgeStyle: { backgroundColor: colors.brand, color: colors.canvas },
+        tabBarLabelStyle: { fontSize: 12, fontWeight: '600' },
+        tabBarStyle: {
+          borderTopWidth: 0,
+          backgroundColor: colors.canvas,
+          height: 84,
+          paddingTop: 10,
+          ...shadow.raised,
+        },
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
           title: 'Home',
-          tabBarIcon: ({ color, size }) => <Ionicons name="home" size={size} color={color} />,
+          tabBarIcon: (props) => (
+            <TabIcon {...props} focusedName="home" outlineName="home-outline" />
+          ),
         }}
       />
       <Tabs.Screen
@@ -38,8 +67,8 @@ export default function TabsLayout() {
         options={{
           title: 'Requests',
           tabBarBadge: waitingResponses > 0 ? waitingResponses : undefined,
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="document-text" size={size} color={color} />
+          tabBarIcon: (props) => (
+            <TabIcon {...props} focusedName="document-text" outlineName="document-text-outline" />
           ),
         }}
       />
@@ -47,14 +76,18 @@ export default function TabsLayout() {
         name="activity"
         options={{
           title: 'Activity',
-          tabBarIcon: ({ color, size }) => <Ionicons name="pulse" size={size} color={color} />,
+          tabBarIcon: (props) => (
+            <TabIcon {...props} focusedName="pulse" outlineName="pulse-outline" />
+          ),
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
           title: 'Profile',
-          tabBarIcon: ({ color, size }) => <Ionicons name="person" size={size} color={color} />,
+          tabBarIcon: (props) => (
+            <TabIcon {...props} focusedName="person" outlineName="person-outline" />
+          ),
         }}
       />
     </Tabs>

@@ -7,12 +7,19 @@ import { colors } from '@/theme';
 
 type Variant = 'primary' | 'active' | 'secondary' | 'ghost' | 'danger';
 
+/**
+ * Every button in the app is one of these five. `primary` and `active` are both solid
+ * green — the same visual weight — so a screen never has to choose between two
+ * differently-branded "main" actions; `active` exists only to tag the specific moment an
+ * action turns availability or a connection on. `secondary` is a quiet, fillable action
+ * that never competes with the primary one on the same screen.
+ */
 const containers: Record<Variant, string> = {
-  primary: 'bg-ink',
+  primary: 'bg-brand',
   active: 'bg-active',
-  secondary: 'bg-surface border border-hairline',
+  secondary: 'bg-surface',
   ghost: 'bg-transparent',
-  danger: 'bg-danger-soft border border-danger',
+  danger: 'bg-danger-soft',
 };
 
 const labelClasses: Record<Variant, string> = {
@@ -65,8 +72,8 @@ export function Button({
         onPress();
       }}
       className={cn(
-        'items-center justify-center rounded-2xl active:opacity-80',
-        size === 'lg' ? 'px-6 py-5' : 'px-5 py-4',
+        'items-center justify-center rounded-full active:opacity-80',
+        size === 'lg' ? 'px-6 py-4' : 'px-5 py-3.5',
         containers[variant],
         inert && 'opacity-40',
         className,
@@ -77,7 +84,7 @@ export function Button({
       ) : (
         <View className="flex-row items-center gap-2">
           {icon ? (
-            <Ionicons name={icon} size={size === 'lg' ? 22 : 18} color={foregrounds[variant]} />
+            <Ionicons name={icon} size={size === 'lg' ? 20 : 18} color={foregrounds[variant]} />
           ) : null}
           <Text
             className={cn(

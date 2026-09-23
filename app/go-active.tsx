@@ -1,20 +1,19 @@
 import { useState } from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { ScrollView, Text, View } from 'react-native';
 import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 
 import { LocationStep } from '@/components/LocationStep';
 import { Button } from '@/components/ui/Button';
 import { Choice } from '@/components/ui/Choice';
+import { Header } from '@/components/ui/Header';
+import { RadiusSelector } from '@/components/ui/RadiusSelector';
 import { Screen } from '@/components/ui/Screen';
 import { ErrorState, InlineError, LoadingState } from '@/components/ui/StateView';
 import { ACTIVE_DURATIONS, SERVICE_RADII_M } from '@/config';
 import { useAvailability, useGoActive } from '@/features/availability/api';
 import { useCategories } from '@/features/categories/api';
-import { formatRadius } from '@/lib/format';
 import type { Position } from '@/lib/location';
 import { syncPushToken } from '@/lib/notifications';
-import { colors } from '@/theme';
 
 /**
  * Going Active is temporary and self-describing: you pick what you can do right now, how
@@ -40,6 +39,7 @@ export default function GoActiveScreen() {
   if (categories.isPending || availability.isPending) {
     return (
       <Screen edges={['top', 'bottom']}>
+        <Header title="Go Active" onClose={() => router.back()} />
         <LoadingState />
       </Screen>
     );
@@ -48,6 +48,7 @@ export default function GoActiveScreen() {
   if (categories.isError) {
     return (
       <Screen edges={['top', 'bottom']}>
+        <Header title="Go Active" onClose={() => router.back()} />
         <ErrorState error={categories.error} onRetry={() => categories.refetch()} />
       </Screen>
     );
@@ -55,26 +56,16 @@ export default function GoActiveScreen() {
 
   return (
     <Screen edges={['top', 'bottom']}>
-      <View className="flex-row items-center justify-between border-b border-hairline px-5 py-4">
-        <Text className="text-xl font-bold text-ink">Go Active</Text>
-        <Pressable
-          onPress={() => router.back()}
-          accessibilityRole="button"
-          accessibilityLabel="Close"
-          hitSlop={8}
-        >
-          <Ionicons name="close" size={26} color={colors.muted} />
-        </Pressable>
-      </View>
+      <Header title="Go Active" onClose={() => router.back()} />
 
-      <ScrollView contentContainerClassName="gap-8 p-5 pb-12">
+      <ScrollView contentContainerClassName="gap-8 p-5 pb-12" keyboardShouldPersistTaps="handled">
         <Text className="text-base text-muted">
           Pick what you can help with right now. You&apos;ll start seeing requests nearby that
           match, and you choose which ones to answer.
         </Text>
 
         <View className="gap-3">
-          <Text className="text-lg font-semibold text-ink">What can you do?</Text>
+          <Text className="text-lg font-bold text-ink">What can you help with?</Text>
           {categories.data.map((category) => (
             <Choice
               key={category.slug}
@@ -89,19 +80,16 @@ export default function GoActiveScreen() {
         </View>
 
         <View className="gap-3">
-          <Text className="text-lg font-semibold text-ink">How far will you travel?</Text>
-          {SERVICE_RADII_M.map((radius) => (
-            <Choice
-              key={radius}
-              title={formatRadius(radius)}
-              selected={serviceRadiusM === radius}
-              onPress={() => setServiceRadiusM(radius)}
-            />
-          ))}
+          <Text className="text-lg font-bold text-ink">How far will you travel?</Text>
+          <RadiusSelector
+            options={SERVICE_RADII_M}
+            value={serviceRadiusM}
+            onChange={setServiceRadiusM}
+          />
         </View>
 
         <View className="gap-3">
-          <Text className="text-lg font-semibold text-ink">For how long?</Text>
+          <Text className="text-lg font-bold text-ink">For how long?</Text>
           <Text className="text-base text-muted">
             You go offline automatically when this runs out, so you never stay available by
             accident.
@@ -117,7 +105,7 @@ export default function GoActiveScreen() {
         </View>
 
         <View className="gap-3">
-          <Text className="text-lg font-semibold text-ink">Where are you?</Text>
+          <Text className="text-lg font-bold text-ink">Where are you?</Text>
           <LocationStep purpose="active" position={position} onPositionChange={setPosition} />
         </View>
 

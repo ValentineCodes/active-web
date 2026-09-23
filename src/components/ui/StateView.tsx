@@ -9,7 +9,7 @@ import { colors } from '@/theme';
 export function LoadingState({ label }: { label?: string }) {
   return (
     <View className="flex-1 items-center justify-center gap-3 p-8" accessibilityRole="progressbar">
-      <ActivityIndicator color={colors.muted} />
+      <ActivityIndicator color={colors.brand} />
       {label ? <Text className="text-base text-muted">{label}</Text> : null}
     </View>
   );
@@ -29,18 +29,13 @@ export function EmptyState({
 }) {
   return (
     <View className="flex-1 items-center justify-center gap-3 p-8">
-      <View className="h-16 w-16 items-center justify-center rounded-full bg-surface">
-        <Ionicons name={icon} size={28} color={colors.muted} />
+      <View className="h-16 w-16 items-center justify-center rounded-full bg-brand-soft">
+        <Ionicons name={icon} size={28} color={colors.brand} />
       </View>
       <Text className="text-center text-lg font-semibold text-ink">{title}</Text>
       <Text className="max-w-xs text-center text-base text-muted">{message}</Text>
       {action ? (
-        <Button
-          label={action.label}
-          onPress={action.onPress}
-          variant="secondary"
-          className="mt-2"
-        />
+        <Button label={action.label} onPress={action.onPress} variant="primary" className="mt-2" />
       ) : null}
     </View>
   );

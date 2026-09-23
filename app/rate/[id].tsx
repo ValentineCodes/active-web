@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { ScrollView, Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 import { Avatar } from '@/components/ui/Avatar';
 import { Button } from '@/components/ui/Button';
+import { Header } from '@/components/ui/Header';
 import { Screen } from '@/components/ui/Screen';
 import { ErrorState, InlineError, LoadingState } from '@/components/ui/StateView';
 import { StarPicker } from '@/components/ui/Stars';
@@ -50,27 +51,25 @@ export default function RateScreen() {
 
   return (
     <Screen edges={['top', 'bottom']}>
-      <View className="flex-row items-center justify-end px-5 py-4">
-        <Pressable
-          onPress={() => router.back()}
-          accessibilityRole="button"
-          accessibilityLabel="Close"
-          hitSlop={8}
-        >
-          <Ionicons name="close" size={26} color={colors.muted} />
-        </Pressable>
-      </View>
+      <Header title="" onClose={() => router.back()} />
 
       <ScrollView contentContainerClassName="flex-grow justify-between gap-8 p-5 pb-12">
         <View className="items-center gap-4">
+          <View className="h-16 w-16 items-center justify-center rounded-full bg-brand-soft">
+            <Ionicons name="checkmark" size={32} color={colors.brand} />
+          </View>
+          <Text className="text-center text-2xl font-bold text-ink">Service completed!</Text>
+          <Text className="text-center text-base text-muted">
+            Thanks for using Active. How was your experience?
+          </Text>
+
           <Avatar
             path={data.counterparty_avatar_path}
             name={data.counterparty_display_name}
             size="lg"
           />
-          <Text className="text-center text-2xl font-bold text-ink">How did {firstName} do?</Text>
-          <Text className="text-center text-base text-muted">
-            Your rating is what helps the next person decide.
+          <Text className="text-center text-lg font-semibold text-ink">
+            How did {firstName} do?
           </Text>
         </View>
 

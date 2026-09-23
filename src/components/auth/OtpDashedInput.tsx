@@ -46,7 +46,7 @@ function DashedSlot(props: SlotProps) {
       {char !== null ? <Text className="text-3xl font-medium text-ink">{char}</Text> : null}
       {hasFakeCaret ? <FakeCaret /> : null}
       <View
-        className={cn('absolute bottom-0 w-full', isActive ? 'h-0.5 bg-ink' : 'h-px bg-hairline')}
+        className={cn('absolute bottom-0 w-full', isActive ? 'h-0.5 bg-brand' : 'h-px bg-hairline')}
       />
     </Pressable>
   );
@@ -75,7 +75,7 @@ function FakeCaret() {
             width: 3,
             height: 28,
             borderRadius: 2,
-            backgroundColor: colors.ink,
+            backgroundColor: colors.brand,
           },
           animatedStyle,
         ]}

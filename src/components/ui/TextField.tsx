@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Text, TextInput, View, type TextInputProps } from 'react-native';
 
 import { cn } from '@/lib/cn';
@@ -11,7 +12,17 @@ type Props = TextInputProps & {
   counterMax?: number;
 };
 
-export function TextField({ label, hint, error, counterMax, className, ...inputProps }: Props) {
+export function TextField({
+  label,
+  hint,
+  error,
+  counterMax,
+  className,
+  onFocus,
+  onBlur,
+  ...inputProps
+}: Props) {
+  const [isFocused, setIsFocused] = useState(false);
   const length = typeof inputProps.value === 'string' ? inputProps.value.length : 0;
 
   return (
@@ -20,10 +31,22 @@ export function TextField({ label, hint, error, counterMax, className, ...inputP
 
       <TextInput
         accessibilityLabel={label}
-        placeholderTextColor={colors.muted}
+        placeholderTextColor={colors.subtle}
+        onFocus={(event) => {
+          setIsFocused(true);
+          onFocus?.(event);
+        }}
+        onBlur={(event) => {
+          setIsFocused(false);
+          onBlur?.(event);
+        }}
         className={cn(
-          'rounded-2xl border px-4 py-4 text-base text-ink',
-          error ? 'border-danger bg-danger-soft' : 'border-hairline bg-surface',
+          'rounded-2xl border-2 px-4 py-4 text-base text-ink',
+          error
+            ? 'border-danger bg-danger-soft'
+            : isFocused
+              ? 'border-brand bg-canvas'
+              : 'border-transparent bg-surface',
           className,
         )}
         {...inputProps}

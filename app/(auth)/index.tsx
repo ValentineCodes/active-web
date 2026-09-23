@@ -20,8 +20,8 @@ export default function WelcomeScreen() {
     <Screen edges={['top', 'bottom']}>
       <View className="flex-1 justify-between px-8 pb-10 pt-12">
         <View className="mt-20 items-center">
-          <View className="mb-10 h-28 w-28 items-center justify-center rounded-full bg-active-soft">
-            <Ionicons name="radio-outline" size={52} color={colors.active} />
+          <View className="mb-10 h-28 w-28 items-center justify-center rounded-full bg-brand-soft">
+            <Ionicons name="radio-outline" size={52} color={colors.brand} />
           </View>
           <Text className="text-center text-3xl font-bold text-ink">Welcome to Active</Text>
           <Text className="mt-4 text-center text-base leading-6 text-muted">

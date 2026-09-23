@@ -6,6 +6,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { QueryClientProvider, useQuery } from '@tanstack/react-query';
+import { Ionicons } from '@expo/vector-icons';
 
 import { SessionProvider, useSession } from '@/features/auth/session';
 import { profileQueryOptions } from '@/features/profile/api';
@@ -15,8 +16,11 @@ import { colors } from '@/theme';
 function BootScreen() {
   return (
     <View className="flex-1 items-center justify-center gap-4 bg-canvas">
-      <Text className="text-3xl font-bold text-ink">Active</Text>
-      <ActivityIndicator color={colors.muted} />
+      <View className="h-16 w-16 items-center justify-center rounded-full bg-brand-soft">
+        <Ionicons name="radio-outline" size={30} color={colors.brand} />
+      </View>
+      <Text className="text-2xl font-bold text-ink">Active</Text>
+      <ActivityIndicator color={colors.brand} />
     </View>
   );
 }

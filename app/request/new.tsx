@@ -1,22 +1,24 @@
 import { useState } from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { ScrollView, Text, View } from 'react-native';
 import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import { addHours, format, set, startOfTomorrow } from 'date-fns';
 
 import { LocationStep } from '@/components/LocationStep';
 import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
 import { Choice } from '@/components/ui/Choice';
+import { Header } from '@/components/ui/Header';
+import { RadiusSelector } from '@/components/ui/RadiusSelector';
 import { Screen } from '@/components/ui/Screen';
 import { ErrorState, InlineError, LoadingState } from '@/components/ui/StateView';
 import { TextField } from '@/components/ui/TextField';
 import { DESCRIPTION_LIMITS, MARKET, SEARCH_RADII_M } from '@/config';
 import { useCategories } from '@/features/categories/api';
 import { useCreateRequest } from '@/features/requests/requester-api';
-import { formatRadius } from '@/lib/format';
+import { cn } from '@/lib/cn';
+import { formatMoney, formatRadius } from '@/lib/format';
 import type { Position } from '@/lib/location';
 import { syncPushToken } from '@/lib/notifications';
-import { colors } from '@/theme';
 
 /**
  * "When" is deliberately a short list of concrete times rather than a calendar. Real
@@ -38,10 +40,19 @@ function whenOptions() {
   ] as const;
 }
 
+const STEP_TITLES = ['What do you need?', 'When?', 'What are you offering?', 'Where?', 'Review'];
+
+/**
+ * A short wizard rather than one long form: each step asks one question, so making a
+ * request never feels like filling out a listing. Nothing here changes what gets
+ * submitted — it is the same fields as a single form, just revealed a step at a time,
+ * with location deliberately the second-to-last thing asked for.
+ */
 export default function NewRequestScreen() {
   const categories = useCategories();
   const create = useCreateRequest();
 
+  const [step, setStep] = useState(0);
   const [categorySlug, setCategorySlug] = useState<string | null>(null);
   const [description, setDescription] = useState('');
   const [whenKey, setWhenKey] = useState<string>('asap');
@@ -59,12 +70,13 @@ export default function NewRequestScreen() {
       ? 'Enter a number, or leave this empty.'
       : null;
 
-  const canSubmit =
-    Boolean(categorySlug) &&
-    trimmedDescription.length >= DESCRIPTION_LIMITS.min &&
-    Boolean(position) &&
-    areaLabel.trim().length >= 2 &&
-    !amountError;
+  const stepValid = [
+    Boolean(categorySlug) && trimmedDescription.length >= DESCRIPTION_LIMITS.min,
+    true,
+    !amountError,
+    Boolean(position) && areaLabel.trim().length >= 2,
+    true,
+  ];
 
   if (categories.isPending) {
     return (
@@ -82,138 +94,179 @@ export default function NewRequestScreen() {
     );
   }
 
+  const category = categories.data.find((item) => item.slug === categorySlug);
+  const selectedWhen = when.find((option) => option.key === whenKey);
+  const isFirstStep = step === 0;
+  const isLastStep = step === STEP_TITLES.length - 1;
+
+  const goNext = () => setStep((current) => Math.min(current + 1, STEP_TITLES.length - 1));
+  const goBack = () => setStep((current) => Math.max(current - 1, 0));
+
+  const submit = () => {
+    create.mutate(
+      {
+        categorySlug: categorySlug as string,
+        description: trimmedDescription,
+        position: position as Position,
+        locationLabel: areaLabel.trim(),
+        searchRadiusM,
+        scheduledFor: selectedWhen?.at ?? null,
+        offeredAmount: parsedAmount,
+      },
+      {
+        onSuccess: (requestId) => {
+          // Now that someone is waiting on an answer, being told about it is worth a
+          // permission prompt.
+          syncPushToken({ prompt: true });
+          router.replace(`/request/${requestId}`);
+        },
+      },
+    );
+  };
+
   return (
     <Screen edges={['top', 'bottom']}>
-      <View className="flex-row items-center justify-between border-b border-hairline px-5 py-4">
-        <Text className="text-xl font-bold text-ink">Make a request</Text>
-        <Pressable
-          onPress={() => router.back()}
-          accessibilityRole="button"
-          accessibilityLabel="Close"
-          hitSlop={8}
-        >
-          <Ionicons name="close" size={26} color={colors.muted} />
-        </Pressable>
+      <Header title="Make a request" onBack={isFirstStep ? () => router.back() : goBack} />
+
+      <View className="flex-row gap-1.5 px-5 pb-2">
+        {STEP_TITLES.map((title, index) => (
+          <View
+            key={title}
+            className={cn('h-1.5 flex-1 rounded-full', index <= step ? 'bg-brand' : 'bg-surface')}
+          />
+        ))}
       </View>
 
-      <ScrollView contentContainerClassName="gap-8 p-5 pb-12" keyboardShouldPersistTaps="handled">
-        <View className="gap-3">
-          <Text className="text-lg font-semibold text-ink">What do you need?</Text>
-          {categories.data.map((category) => (
-            <Choice
-              key={category.slug}
-              title={category.label}
-              subtitle={category.tagline}
-              icon={category.icon}
-              selected={categorySlug === category.slug}
-              onPress={() => setCategorySlug(category.slug)}
+      <ScrollView contentContainerClassName="gap-6 p-5 pb-12" keyboardShouldPersistTaps="handled">
+        {step === 0 ? (
+          <View className="gap-6">
+            <Text className="text-2xl font-bold text-ink">What do you need?</Text>
+            <View className="gap-3">
+              {categories.data.map((item) => (
+                <Choice
+                  key={item.slug}
+                  title={item.label}
+                  subtitle={item.tagline}
+                  icon={item.icon}
+                  selected={categorySlug === item.slug}
+                  onPress={() => setCategorySlug(item.slug)}
+                />
+              ))}
+            </View>
+            <TextField
+              label="Describe it"
+              value={description}
+              onChangeText={setDescription}
+              placeholder="e.g. My generator won't start. It's a 5kVA Elepaq, ran fine yesterday."
+              multiline
+              numberOfLines={5}
+              maxLength={DESCRIPTION_LIMITS.max}
+              counterMax={DESCRIPTION_LIMITS.max}
+              hint={
+                trimmedDescription.length < DESCRIPTION_LIMITS.min
+                  ? `At least ${DESCRIPTION_LIMITS.min} characters, so people know what they're taking on.`
+                  : undefined
+              }
             />
-          ))}
-        </View>
+          </View>
+        ) : null}
 
-        <View className="gap-3">
-          <Text className="text-lg font-semibold text-ink">Describe it</Text>
-          <TextField
-            label="Details"
-            value={description}
-            onChangeText={setDescription}
-            placeholder="e.g. My generator won't start. It's a 5kVA Elepaq, ran fine yesterday."
-            multiline
-            numberOfLines={5}
-            maxLength={DESCRIPTION_LIMITS.max}
-            counterMax={DESCRIPTION_LIMITS.max}
-            hint={
-              trimmedDescription.length < DESCRIPTION_LIMITS.min
-                ? `At least ${DESCRIPTION_LIMITS.min} characters, so people know what they're taking on.`
-                : undefined
-            }
-          />
-        </View>
+        {step === 1 ? (
+          <View className="gap-3">
+            <Text className="text-2xl font-bold text-ink">When do you need this?</Text>
+            {when.map((option) => (
+              <Choice
+                key={option.key}
+                title={option.label}
+                selected={whenKey === option.key}
+                onPress={() => setWhenKey(option.key)}
+              />
+            ))}
+          </View>
+        ) : null}
 
-        <View className="gap-3">
-          <Text className="text-lg font-semibold text-ink">When?</Text>
-          {when.map((option) => (
-            <Choice
-              key={option.key}
-              title={option.label}
-              selected={whenKey === option.key}
-              onPress={() => setWhenKey(option.key)}
+        {step === 2 ? (
+          <View className="gap-3">
+            <Text className="text-2xl font-bold text-ink">What are you offering?</Text>
+            <Text className="text-base text-muted">
+              Optional — leave it empty to let people quote you instead.
+            </Text>
+            <TextField
+              label={`Amount in ${MARKET.currency}`}
+              value={amount}
+              onChangeText={setAmount}
+              keyboardType="numeric"
+              placeholder="e.g. 5000"
+              error={amountError}
             />
-          ))}
-        </View>
+          </View>
+        ) : null}
 
-        <View className="gap-3">
-          <Text className="text-lg font-semibold text-ink">What are you offering?</Text>
-          <TextField
-            label={`Amount in ${MARKET.currency} (optional)`}
-            value={amount}
-            onChangeText={setAmount}
-            keyboardType="numeric"
-            placeholder="e.g. 5000"
-            error={amountError}
-            hint="Leave it empty to let people quote you instead."
-          />
-        </View>
+        {step === 3 ? (
+          <View className="gap-8">
+            <View className="gap-3">
+              <Text className="text-2xl font-bold text-ink">Where should this happen?</Text>
+              <LocationStep
+                purpose="request"
+                position={position}
+                onPositionChange={setPosition}
+                areaLabel={areaLabel}
+                onAreaLabelChange={setAreaLabel}
+              />
+            </View>
 
-        <View className="gap-3">
-          <Text className="text-lg font-semibold text-ink">Where?</Text>
-          <LocationStep
-            purpose="request"
-            position={position}
-            onPositionChange={setPosition}
-            areaLabel={areaLabel}
-            onAreaLabelChange={setAreaLabel}
-          />
-        </View>
+            <View className="gap-3">
+              <Text className="text-lg font-bold text-ink">How far should we look?</Text>
+              <Text className="text-base text-muted">
+                This decides who is offered your request. You can widen it later if nobody answers.
+              </Text>
+              <RadiusSelector
+                options={SEARCH_RADII_M}
+                value={searchRadiusM}
+                onChange={setSearchRadiusM}
+              />
+            </View>
+          </View>
+        ) : null}
 
-        <View className="gap-3">
-          <Text className="text-lg font-semibold text-ink">How far should we look?</Text>
-          <Text className="text-base text-muted">
-            This decides who is offered your request. It is not shared with anyone, and you can
-            widen it later if nobody answers.
-          </Text>
-          {SEARCH_RADII_M.map((radius) => (
-            <Choice
-              key={radius}
-              title={formatRadius(radius)}
-              selected={searchRadiusM === radius}
-              onPress={() => setSearchRadiusM(radius)}
-            />
-          ))}
-        </View>
+        {step === 4 ? (
+          <View className="gap-4">
+            <Text className="text-2xl font-bold text-ink">Review your request</Text>
 
-        {create.isError ? <InlineError error={create.error} /> : null}
+            <Card>
+              <View className="flex-row items-center justify-between">
+                <Text className="text-lg font-bold text-ink">
+                  {category?.label ?? categorySlug}
+                </Text>
+                <Text className="text-sm text-muted">{selectedWhen?.label}</Text>
+              </View>
+              <Text className="text-base text-muted">{trimmedDescription}</Text>
+              <View className="gap-1 border-t border-hairline pt-3">
+                <Text className="text-sm text-muted">
+                  Offer:{' '}
+                  {parsedAmount !== null
+                    ? formatMoney(parsedAmount, MARKET.currency)
+                    : 'Open to quotes'}
+                </Text>
+                <Text className="text-sm text-muted">Location: {areaLabel}</Text>
+                <Text className="text-sm text-muted">
+                  Search radius: {formatRadius(searchRadiusM)}
+                </Text>
+              </View>
+            </Card>
 
-        <Button
-          label="Submit request"
-          size="lg"
-          disabled={!canSubmit}
-          loading={create.isPending}
-          onPress={() => {
-            const selected = when.find((option) => option.key === whenKey);
-
-            create.mutate(
-              {
-                categorySlug: categorySlug as string,
-                description: trimmedDescription,
-                position: position as Position,
-                locationLabel: areaLabel.trim(),
-                searchRadiusM,
-                scheduledFor: selected?.at ?? null,
-                offeredAmount: parsedAmount,
-              },
-              {
-                onSuccess: (requestId) => {
-                  // Now that someone is waiting on an answer, being told about it is
-                  // worth a permission prompt.
-                  syncPushToken({ prompt: true });
-                  router.replace(`/request/${requestId}`);
-                },
-              },
-            );
-          }}
-        />
+            {create.isError ? <InlineError error={create.error} /> : null}
+          </View>
+        ) : null}
       </ScrollView>
+
+      <View className="gap-3 border-t border-hairline p-5">
+        {isLastStep ? (
+          <Button label="Send request" size="lg" loading={create.isPending} onPress={submit} />
+        ) : (
+          <Button label="Next" size="lg" disabled={!stepValid[step]} onPress={goNext} />
+        )}
+      </View>
     </Screen>
   );
 }

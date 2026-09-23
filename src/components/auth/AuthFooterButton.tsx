@@ -34,8 +34,8 @@ export function AuthFooterButton({
         onPress();
       }}
       className={cn(
-        'flex-row items-center justify-center rounded-2xl py-5 active:opacity-90',
-        inert ? 'bg-hairline' : 'bg-ink',
+        'flex-row items-center justify-center rounded-full py-5 active:opacity-90',
+        inert ? 'bg-surface' : 'bg-brand',
       )}
     >
       {loading ? (

@@ -1,14 +1,16 @@
 import { useCallback, useState } from 'react';
-import { FlatList, Pressable, RefreshControl, Text, View } from 'react-native';
+import { FlatList, RefreshControl, Text, View } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
 import { formatDistanceToNowStrict } from 'date-fns';
 
-import { Avatar } from '@/components/ui/Avatar';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
+import { PersonRow } from '@/components/ui/PersonRow';
+import { RequestCard } from '@/components/ui/RequestCard';
 import { Screen } from '@/components/ui/Screen';
+import { Segmented } from '@/components/ui/Segmented';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/StateView';
-import { StarRating } from '@/components/ui/Stars';
 import {
   useAvailability,
   useGoOffline,
@@ -17,10 +19,19 @@ import {
 import { useCategoryIndex } from '@/features/categories/api';
 import { useMyResponses, useNearbyRequests } from '@/features/requests/provider-api';
 import { requestStatusBadge, responseStatusBadge } from '@/features/requests/status';
-import { cn } from '@/lib/cn';
 import { formatDistance, formatMoney, formatWhen } from '@/lib/format';
 import { readPositionIfPermitted } from '@/lib/location';
 
+const TABS = [
+  { key: 'nearby', label: 'Nearby' },
+  { key: 'responses', label: 'Your responses' },
+] as const;
+
+/**
+ * The provider side of the app — "I Can Help" in the product's own terms. Requests you
+ * post live on the Requests tab instead, since asking for help and offering it are two
+ * different rhythms that happen to be the same person.
+ */
 export default function ActivityScreen() {
   const [tab, setTab] = useState<'nearby' | 'responses'>('nearby');
 
@@ -52,9 +63,9 @@ export default function ActivityScreen() {
         <Text className="text-3xl font-bold text-ink">Activity</Text>
 
         {isActive && availability.data?.expires_at ? (
-          <View className="flex-row items-center gap-3 rounded-2xl border border-active bg-active-soft p-4">
+          <Card tone="active" className="flex-row items-center gap-3">
             <View className="flex-1 gap-1">
-              <Badge label="Active" tone="active" />
+              <Badge label="Available now" tone="active" />
               <Text className="text-sm text-muted">
                 {formatDistanceToNowStrict(new Date(availability.data.expires_at))} left ·{' '}
                 {(availability.data.service_radius_m ?? 0) / 1000} km
@@ -66,37 +77,10 @@ export default function ActivityScreen() {
               loading={goOffline.isPending}
               onPress={() => goOffline.mutate()}
             />
-          </View>
+          </Card>
         ) : null}
 
-        <View className="flex-row rounded-2xl bg-surface p-1">
-          {(
-            [
-              { key: 'nearby', label: 'Nearby' },
-              { key: 'responses', label: 'Your responses' },
-            ] as const
-          ).map((option) => (
-            <Pressable
-              key={option.key}
-              onPress={() => setTab(option.key)}
-              accessibilityRole="tab"
-              accessibilityState={{ selected: tab === option.key }}
-              className={cn(
-                'flex-1 items-center rounded-xl py-2',
-                tab === option.key && 'bg-canvas',
-              )}
-            >
-              <Text
-                className={cn(
-                  'text-base font-semibold',
-                  tab === option.key ? 'text-ink' : 'text-muted',
-                )}
-              >
-                {option.label}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
+        <Segmented options={TABS} value={tab} onChange={setTab} />
       </View>
 
       {tab === 'nearby' ? (
@@ -131,56 +115,40 @@ export default function ActivityScreen() {
               />
             }
             renderItem={({ item }) => (
-              <View className="gap-3 rounded-2xl border border-hairline p-4">
-                <View className="flex-row items-start justify-between gap-3">
-                  <Text className="flex-1 text-lg font-semibold text-ink">
-                    {categories.data?.get(item.category_slug)?.label ?? item.category_slug}
-                  </Text>
-                  {item.offered_amount !== null ? (
-                    <Text className="text-base font-semibold text-ink">
-                      {formatMoney(item.offered_amount, item.currency)}
-                    </Text>
-                  ) : (
-                    <Badge label="Open to offers" tone="neutral" />
-                  )}
-                </View>
-
-                <Text className="text-base text-muted">{item.description}</Text>
-
-                <View className="flex-row flex-wrap gap-x-4">
-                  <Text className="text-sm text-muted">{formatDistance(item.distance_m)}</Text>
-                  <Text className="text-sm text-muted">{item.location_label}</Text>
-                  <Text className="text-sm text-muted">{formatWhen(item.scheduled_for)}</Text>
-                </View>
-
-                <View className="flex-row items-center gap-3 border-t border-hairline pt-3">
-                  <Avatar
-                    path={item.requester_avatar_path}
-                    name={item.requester_display_name}
-                    size="sm"
-                  />
-                  <View className="flex-1">
-                    <Text className="text-base font-medium text-ink">
-                      {item.requester_display_name}
-                    </Text>
-                    <StarRating
-                      average={item.requester_rating_average}
-                      count={item.requester_rating_count}
+              <RequestCard
+                icon={categories.data?.get(item.category_slug)?.icon}
+                title={categories.data?.get(item.category_slug)?.label ?? item.category_slug}
+                description={item.description}
+                amount={
+                  item.offered_amount !== null
+                    ? formatMoney(item.offered_amount, item.currency)
+                    : 'Open to offers'
+                }
+                meta={[
+                  formatDistance(item.distance_m),
+                  item.location_label,
+                  formatWhen(item.scheduled_for),
+                  item.response_count > 0
+                    ? `${item.response_count} ${item.response_count === 1 ? 'person has' : 'people have'} responded`
+                    : '',
+                ].filter(Boolean)}
+                onPress={() => router.push(`/respond/${item.request_id}`)}
+                footer={
+                  <View className="flex-row items-center gap-3 border-t border-hairline pt-3">
+                    <PersonRow
+                      size="sm"
+                      avatarPath={item.requester_avatar_path}
+                      name={item.requester_display_name}
+                      ratingAverage={item.requester_rating_average}
+                      ratingCount={item.requester_rating_count}
+                    />
+                    <Button
+                      label="Respond"
+                      onPress={() => router.push(`/respond/${item.request_id}`)}
                     />
                   </View>
-                  <Button
-                    label="Respond"
-                    onPress={() => router.push(`/respond/${item.request_id}`)}
-                  />
-                </View>
-
-                {item.response_count > 0 ? (
-                  <Text className="text-sm text-muted">
-                    {item.response_count} {item.response_count === 1 ? 'person has' : 'people have'}{' '}
-                    already responded
-                  </Text>
-                ) : null}
-              </View>
+                }
+              />
             )}
           />
         )
@@ -215,42 +183,28 @@ export default function ActivityScreen() {
               : responseStatusBadge(item.response_status);
 
             return (
-              <Pressable
+              <RequestCard
+                icon={categories.data?.get(item.category_slug)?.icon}
+                title={categories.data?.get(item.category_slug)?.label ?? item.category_slug}
+                description={item.description}
+                badge={badge}
+                meta={[
+                  item.requester_display_name ?? '',
+                  formatDistance(item.distance_m),
+                  item.quoted_amount !== null
+                    ? `You quoted ${formatMoney(item.quoted_amount, item.currency)}`
+                    : '',
+                ].filter(Boolean)}
                 disabled={!isConnected}
                 onPress={() => router.push(`/engagement/${item.request_id}`)}
-                accessibilityRole={isConnected ? 'button' : undefined}
-                className={cn(
-                  'gap-2 rounded-2xl border border-hairline p-4',
-                  isConnected && 'border-active bg-active-soft active:opacity-80',
-                )}
-              >
-                <View className="flex-row items-start justify-between gap-3">
-                  <Text className="flex-1 text-lg font-semibold text-ink">
-                    {categories.data?.get(item.category_slug)?.label ?? item.category_slug}
-                  </Text>
-                  <Badge label={badge.label} tone={badge.tone} />
-                </View>
-
-                <Text className="text-base text-muted" numberOfLines={2}>
-                  {item.description}
-                </Text>
-
-                <View className="flex-row flex-wrap gap-x-4">
-                  <Text className="text-sm text-muted">{item.requester_display_name}</Text>
-                  <Text className="text-sm text-muted">{formatDistance(item.distance_m)}</Text>
-                  {item.quoted_amount !== null ? (
-                    <Text className="text-sm font-medium text-ink">
-                      You quoted {formatMoney(item.quoted_amount, item.currency)}
+                footer={
+                  isConnected ? (
+                    <Text className="text-sm font-semibold text-active">
+                      Tap to see the exact location and contact details
                     </Text>
-                  ) : null}
-                </View>
-
-                {isConnected ? (
-                  <Text className="text-sm font-medium text-active">
-                    Tap to see the exact location and contact details
-                  </Text>
-                ) : null}
-              </Pressable>
+                  ) : undefined
+                }
+              />
             );
           }}
         />

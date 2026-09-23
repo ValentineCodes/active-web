@@ -1,19 +1,29 @@
 import { useState } from 'react';
-import { FlatList, Pressable, RefreshControl, Text, View } from 'react-native';
-import { Link, router } from 'expo-router';
+import { FlatList, Text, RefreshControl, View } from 'react-native';
+import { router } from 'expo-router';
 
-import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
+import { RequestCard } from '@/components/ui/RequestCard';
 import { Screen } from '@/components/ui/Screen';
+import { Segmented } from '@/components/ui/Segmented';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/StateView';
 import { useCategoryIndex } from '@/features/categories/api';
 import { useMyRequests } from '@/features/requests/requester-api';
 import { requestStatusBadge } from '@/features/requests/status';
-import { cn } from '@/lib/cn';
 import { formatMoney, formatWhen } from '@/lib/format';
 
 const OPEN_STATUSES = ['draft', 'searching', 'accepted', 'in_progress'];
 
+const TABS = [
+  { key: 'open', label: 'Active' },
+  { key: 'past', label: 'History' },
+] as const;
+
+/**
+ * The requests you've made — "I Need Help" in the product's own terms. Answering
+ * requests you found nearby lives on the Activity tab instead, since that side of the
+ * app has its own inbox and refresh rhythm.
+ */
 export default function RequestsScreen() {
   const [tab, setTab] = useState<'open' | 'past'>('open');
   const requests = useMyRequests();
@@ -29,28 +39,12 @@ export default function RequestsScreen() {
   return (
     <Screen>
       <View className="gap-4 p-5 pb-2">
-        <Text className="text-3xl font-bold text-ink">Your requests</Text>
-
-        <View className="flex-row rounded-2xl bg-surface p-1">
-          {(['open', 'past'] as const).map((option) => (
-            <Pressable
-              key={option}
-              onPress={() => setTab(option)}
-              accessibilityRole="tab"
-              accessibilityState={{ selected: tab === option }}
-              className={cn('flex-1 items-center rounded-xl py-2', tab === option && 'bg-canvas')}
-            >
-              <Text
-                className={cn(
-                  'text-base font-semibold capitalize',
-                  tab === option ? 'text-ink' : 'text-muted',
-                )}
-              >
-                {option}
-              </Text>
-            </Pressable>
-          ))}
+        <View className="gap-1">
+          <Text className="text-3xl font-bold text-ink">Your requests</Text>
+          <Text className="text-base text-muted">Things you&apos;ve asked for help with.</Text>
         </View>
+
+        <Segmented options={TABS} value={tab} onChange={setTab} />
       </View>
 
       {requests.isPending ? <LoadingState /> : null}
@@ -90,43 +84,28 @@ export default function RequestsScreen() {
             const category = categories.data?.get(item.category_slug);
 
             return (
-              <Link href={`/request/${item.request_id}`} asChild>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={`${category?.label ?? item.category_slug} request, ${badge.label}`}
-                  className="gap-2 rounded-2xl border border-hairline p-4 active:opacity-80"
-                >
-                  <View className="flex-row items-start justify-between gap-3">
-                    <Text className="flex-1 text-lg font-semibold text-ink">
-                      {category?.label ?? item.category_slug}
-                    </Text>
-                    <Badge label={badge.label} tone={badge.tone} />
-                  </View>
-
-                  <Text className="text-base text-muted" numberOfLines={2}>
-                    {item.description}
-                  </Text>
-
-                  <View className="flex-row flex-wrap gap-x-4">
-                    <Text className="text-sm text-muted">{formatWhen(item.scheduled_for)}</Text>
-                    <Text className="text-sm text-muted">{item.location_label}</Text>
-                    {item.offered_amount !== null ? (
-                      <Text className="text-sm font-medium text-ink">
-                        {formatMoney(item.offered_amount, item.currency)}
-                      </Text>
-                    ) : null}
-                  </View>
-
-                  {item.status === 'completed' && !item.is_rated ? (
+              <RequestCard
+                icon={category?.icon}
+                title={category?.label ?? item.category_slug}
+                description={item.description}
+                badge={badge}
+                meta={[formatWhen(item.scheduled_for), item.location_label]}
+                amount={
+                  item.offered_amount !== null
+                    ? formatMoney(item.offered_amount, item.currency)
+                    : null
+                }
+                onPress={() => router.push(`/request/${item.request_id}`)}
+                footer={
+                  item.status === 'completed' && !item.is_rated ? (
                     <Button
                       label="Rate your provider"
                       variant="secondary"
                       onPress={() => router.push(`/rate/${item.request_id}`)}
-                      className="mt-1"
                     />
-                  ) : null}
-                </Pressable>
-              </Link>
+                  ) : undefined
+                }
+              />
             );
           }}
         />
