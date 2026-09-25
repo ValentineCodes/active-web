@@ -46,6 +46,9 @@ type Engagement = Nullable<
   | 'payment_status'
   | 'handshake_id'
   | 'handshake_at'
+  | 'service_problem_kind'
+  | 'service_problem_respond_by'
+  | 'service_problem_reported_by_me'
 >;
 
 const REQUEST_COLUMNS =
@@ -386,12 +389,33 @@ export function useCompleteRequest(requestId: string) {
   });
 }
 
+export type ServiceProblemKind = Database['public']['Enums']['service_problem_kind'];
+
 export function useReportServiceProblem(requestId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async () => {
+    mutationFn: async (kind: ServiceProblemKind) => {
       const { error } = await supabase.rpc('report_service_problem', {
+        p_request_id: requestId,
+        p_kind: kind,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.myRequest(requestId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.myRequests });
+      queryClient.invalidateQueries({ queryKey: queryKeys.engagement(requestId) });
+    },
+  });
+}
+
+export function useContestServiceProblem(requestId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.rpc('contest_service_problem', {
         p_request_id: requestId,
       });
       if (error) throw error;

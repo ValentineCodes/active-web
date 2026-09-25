@@ -676,6 +676,70 @@ export type Database = {
         }
         Relationships: []
       }
+      service_problems: {
+        Row: {
+          created_at: string
+          id: string
+          kind: Database["public"]["Enums"]["service_problem_kind"]
+          payment_before: Database["public"]["Enums"]["payment_status"]
+          reported_by: string
+          request_id: string
+          resolution: string | null
+          resolved_at: string | null
+          respond_by: string | null
+          status: string
+          status_before: Database["public"]["Enums"]["request_status"]
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          kind: Database["public"]["Enums"]["service_problem_kind"]
+          payment_before: Database["public"]["Enums"]["payment_status"]
+          reported_by: string
+          request_id: string
+          resolution?: string | null
+          resolved_at?: string | null
+          respond_by?: string | null
+          status: string
+          status_before: Database["public"]["Enums"]["request_status"]
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          kind?: Database["public"]["Enums"]["service_problem_kind"]
+          payment_before?: Database["public"]["Enums"]["payment_status"]
+          reported_by?: string
+          request_id?: string
+          resolution?: string | null
+          resolved_at?: string | null
+          respond_by?: string | null
+          status?: string
+          status_before?: Database["public"]["Enums"]["request_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_problems_reported_by_fkey"
+            columns: ["reported_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_problems_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "my_requests"
+            referencedColumns: ["request_id"]
+          },
+          {
+            foreignKeyName: "service_problems_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       my_availability: {
@@ -916,6 +980,10 @@ export type Database = {
         Args: { p_storage_path: string }
         Returns: undefined
       }
+      contest_service_problem: {
+        Args: { p_request_id: string }
+        Returns: undefined
+      }
       count_available_responses: {
         Args: { p_request_id: string }
         Returns: number
@@ -942,6 +1010,24 @@ export type Database = {
       expand_request_radius: { Args: { p_request_id: string }; Returns: number }
       expire_due_requests: { Args: { p_limit?: number }; Returns: number }
       expire_request: { Args: { p_request_id: string }; Returns: boolean }
+      finalize_client_no_show_resolution: {
+        Args: {
+          p_actor_id: string
+          p_payment_idempotency_key: string
+          p_request_id: string
+          p_status_event_key: string
+        }
+        Returns: boolean
+      }
+      finalize_provider_no_show_resolution: {
+        Args: {
+          p_actor_id: string
+          p_payment_idempotency_key: string
+          p_request_id: string
+          p_status_event_key: string
+        }
+        Returns: boolean
+      }
       finalize_request_cancellation: {
         Args: {
           p_actor_id: string
@@ -989,6 +1075,9 @@ export type Database = {
           request_longitude: number
           request_status: Database["public"]["Enums"]["request_status"]
           scheduled_for: string
+          service_problem_kind: Database["public"]["Enums"]["service_problem_kind"]
+          service_problem_reported_by_me: boolean
+          service_problem_respond_by: string
           started_at: string
           viewer_is_requester: boolean
         }[]
@@ -1114,6 +1203,22 @@ export type Database = {
           scheduled_for: string
         }[]
       }
+      provider_location_recently_updated: {
+        Args: { p_provider_id: string; p_request_id: string }
+        Returns: boolean
+      }
+      provider_location_updated_since_report: {
+        Args: {
+          p_provider_id: string
+          p_reported_at: string
+          p_request_id: string
+        }
+        Returns: boolean
+      }
+      provider_recently_active_on_request: {
+        Args: { p_provider_id: string; p_request_id: string }
+        Returns: boolean
+      }
       radius_ladder_m: { Args: never; Returns: number[] }
       rate_request: {
         Args: { p_comment?: string; p_request_id: string; p_stars: number }
@@ -1150,8 +1255,19 @@ export type Database = {
       }
       release_provider: { Args: { p_provider_id: string }; Returns: undefined }
       report_service_problem: {
-        Args: { p_request_id: string }
+        Args: {
+          p_kind?: Database["public"]["Enums"]["service_problem_kind"]
+          p_request_id: string
+        }
         Returns: undefined
+      }
+      resolve_due_service_problems: {
+        Args: { p_limit?: number }
+        Returns: number
+      }
+      resolve_service_problem: {
+        Args: { p_problem_id: string }
+        Returns: boolean
       }
       respond_to_request: {
         Args: {
@@ -1173,6 +1289,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      service_problem_response_interval: { Args: never; Returns: string }
       start_request: { Args: { p_request_id: string }; Returns: undefined }
       withdraw_response: { Args: { p_response_id: string }; Returns: undefined }
     }
@@ -1204,6 +1321,11 @@ export type Database = {
         | "declined"
         | "withdrawn"
         | "expired"
+      service_problem_kind:
+        | "completion_issue"
+        | "provider_no_show"
+        | "client_no_show"
+        | "provider_unreachable"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1360,6 +1482,12 @@ export const Constants = {
         "declined",
         "withdrawn",
         "expired",
+      ],
+      service_problem_kind: [
+        "completion_issue",
+        "provider_no_show",
+        "client_no_show",
+        "provider_unreachable",
       ],
     },
   },

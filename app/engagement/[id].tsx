@@ -14,15 +14,19 @@ import { EmptyState, ErrorState, InlineError, LoadingState } from '@/components/
 import { useCategoryIndex } from '@/features/categories/api';
 import {
   useCancelService,
+  useContestServiceProblem as useProviderContestServiceProblem,
+  useReportClientNoShow,
   useStartRequest,
   useMarkServiceComplete,
 } from '@/features/requests/provider-api';
 import {
   useCancelRequest,
   useCompleteRequest,
+  useContestServiceProblem,
   useEngagement,
   useLiveRequest,
   useReportServiceProblem,
+  type ServiceProblemKind,
 } from '@/features/requests/requester-api';
 import { formatDistance, formatMoney, formatWhen } from '@/lib/format';
 import { colors } from '@/theme';
@@ -87,6 +91,9 @@ export default function EngagementScreen() {
   const markServiceComplete = useMarkServiceComplete(id);
   const completeRequest = useCompleteRequest(id);
   const reportProblem = useReportServiceProblem(id);
+  const contestProblem = useContestServiceProblem(id);
+  const reportClientNoShow = useReportClientNoShow(id);
+  const providerContestProblem = useProviderContestServiceProblem(id);
   const cancelRequest = useCancelRequest(id);
   const cancelService = useCancelService(id);
   const [profileOpen, setProfileOpen] = useState(false);
@@ -140,19 +147,90 @@ export default function EngagementScreen() {
 
   const providerFirstName = data.counterparty_display_name?.split(' ')[0] ?? 'Your provider';
 
-  const confirmReportProblem = () =>
-    Alert.alert(
+  const reportProblemKind = (kind: ServiceProblemKind, title: string, message: string) =>
+    Alert.alert(title, message, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Report',
+        style: 'destructive',
+        onPress: () => reportProblem.mutate(kind),
+      },
+    ]);
+
+  const confirmReportCompletionProblem = () =>
+    reportProblemKind(
+      'completion_issue',
       'Report a problem?',
       'This flags the job for review and pauses payment release. Only do this if the service was not delivered as agreed.',
+    );
+
+  const openRequesterProblemMenu = () =>
+    Alert.alert('Report a problem', 'What went wrong?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: "Provider didn't show up",
+        onPress: () =>
+          reportProblemKind(
+            'provider_no_show',
+            'Report provider no-show?',
+            `${providerFirstName} will have 24 hours to respond. Your payment stays locked until this is resolved.`,
+          ),
+      },
+      {
+        text: "Can't reach provider",
+        onPress: () =>
+          reportProblemKind(
+            'provider_unreachable',
+            "Can't reach your provider?",
+            `We'll notify ${providerFirstName} to get in touch. If they don't respond within 24 hours, you may receive a full refund.`,
+          ),
+      },
+    ]);
+
+  const confirmReportClientNoShow = () =>
+    Alert.alert(
+      'Report client no-show?',
+      'The client will have 24 hours to respond. If they do not, you may receive payment for this job.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
-          text: 'Report problem',
+          text: 'Report no-show',
           style: 'destructive',
-          onPress: () => reportProblem.mutate(),
+          onPress: () => reportClientNoShow.mutate(),
         },
       ],
     );
+
+  const confirmContestProblem = () =>
+    Alert.alert(
+      'Dispute this report?',
+      'Tell us you were available and want to continue the job. This pauses any automatic outcome until support reviews it.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'I was there',
+          onPress: () => {
+            const contest = data.viewer_is_requester ? contestProblem : providerContestProblem;
+            contest.mutate();
+          },
+        },
+      ],
+    );
+
+  const problemKindLabel = (kind: string | null) => {
+    switch (kind) {
+      case 'provider_no_show':
+        return 'Provider no-show reported';
+      case 'provider_unreachable':
+        return 'Provider unreachable';
+      case 'client_no_show':
+        return 'Client no-show reported';
+      case 'completion_issue':
+        return 'Completion disputed';
+      default:
+        return 'Problem reported';
+    }
+  };
 
   const confirmCancelRequest = () =>
     Alert.alert(
@@ -191,6 +269,14 @@ export default function EngagementScreen() {
   const canCancelAsRequester =
     data.request_status === 'accepted' || data.request_status === 'in_progress';
   const canCancelAsProvider = canCancelAsRequester || data.request_status === 'completion_pending';
+  const canReportActiveProblem =
+    data.request_status === 'accepted' || data.request_status === 'in_progress';
+  const openProblem = data.request_status === 'disputed' && data.service_problem_kind;
+  const canContestProblem =
+    openProblem &&
+    !data.service_problem_reported_by_me &&
+    data.service_problem_respond_by !== null &&
+    new Date(data.service_problem_respond_by) > new Date();
 
   return (
     <Screen>
@@ -335,11 +421,18 @@ export default function EngagementScreen() {
         {!data.viewer_is_requester && ['accepted', 'in_progress'].includes(data.request_status) ? (
           <View className="gap-3">
             {markServiceComplete.isError ? <InlineError error={markServiceComplete.error} /> : null}
+            {reportClientNoShow.isError ? <InlineError error={reportClientNoShow.error} /> : null}
             <Button
               label="I've completed the service"
               size="lg"
               loading={markServiceComplete.isPending}
               onPress={() => markServiceComplete.mutate()}
+            />
+            <Button
+              label="Client didn't show up"
+              variant="danger"
+              loading={reportClientNoShow.isPending}
+              onPress={confirmReportClientNoShow}
             />
           </View>
         ) : null}
@@ -385,16 +478,76 @@ export default function EngagementScreen() {
               label="Report a problem"
               variant="danger"
               loading={reportProblem.isPending}
-              onPress={confirmReportProblem}
+              onPress={confirmReportCompletionProblem}
+            />
+          </View>
+        ) : null}
+
+        {data.viewer_is_requester && canReportActiveProblem ? (
+          <View className="gap-3">
+            {reportProblem.isError ? <InlineError error={reportProblem.error} /> : null}
+            <Button
+              label="Report a problem"
+              variant="danger"
+              loading={reportProblem.isPending}
+              onPress={openRequesterProblemMenu}
             />
           </View>
         ) : null}
 
         {data.request_status === 'disputed' ? (
           <Card tone="danger">
-            <Text className="text-base font-semibold text-ink">This job is under review</Text>
+            <Text className="text-base font-semibold text-ink">
+              {problemKindLabel(data.service_problem_kind)}
+            </Text>
+            {data.service_problem_kind === 'completion_issue' ? (
+              <Text className="text-sm text-muted">
+                A problem was reported. Support will follow up using the details on this request.
+              </Text>
+            ) : data.service_problem_reported_by_me ? (
+              <Text className="text-sm text-muted">
+                We notified the other party. Your payment stays locked while they have time to
+                respond.
+                {data.service_problem_respond_by ? (
+                  <>
+                    {' '}
+                    If they do not respond by {formatWhen(data.service_problem_respond_by)}, the app
+                    will resolve this automatically.
+                  </>
+                ) : null}
+              </Text>
+            ) : (
+              <Text className="text-sm text-muted">
+                Respond if this is wrong.
+                {data.service_problem_respond_by ? (
+                  <>
+                    {' '}
+                    You have until {formatWhen(data.service_problem_respond_by)} before an automatic
+                    outcome.
+                  </>
+                ) : null}
+              </Text>
+            )}
+            {contestProblem.isError || providerContestProblem.isError ? (
+              <InlineError error={contestProblem.error ?? providerContestProblem.error} />
+            ) : null}
+            {canContestProblem ? (
+              <Button
+                label="I was there / I'm available"
+                variant="secondary"
+                loading={contestProblem.isPending || providerContestProblem.isPending}
+                onPress={confirmContestProblem}
+              />
+            ) : null}
+          </Card>
+        ) : null}
+
+        {data.request_status === 'no_show' ? (
+          <Card tone="danger">
+            <Text className="text-base font-semibold text-ink">No-show recorded</Text>
             <Text className="text-sm text-muted">
-              A problem was reported. Support will follow up using the details on this request.
+              This job closed after a no-show report. Payment followed the outcome recorded on the
+              server.
             </Text>
           </Card>
         ) : null}

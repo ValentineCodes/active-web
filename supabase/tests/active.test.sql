@@ -1111,6 +1111,255 @@ select is(
   'auto-complete releases payment at most once'
 );
 
+-- Service problems and no-show ------------------------------------------------------
+
+select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
+select create_request(
+  'repair',
+  'Provider no-show fixture.',
+  6.5000,
+  3.3800,
+  'Yaba, Lagos',
+  5000,
+  null,
+  6000
+) as pns_req \gset
+
+select pg_temp.act_as('33333333-3333-3333-3333-333333333333') as _ \gset
+select lives_ok(
+  $$select go_active(6.5400::double precision, 3.3800::double precision, 10000, array['repair']::text[], 480)$$,
+  'far provider goes active for no-show fixture'
+);
+
+select respond_to_request(
+  :'pns_req',
+  'On my way.',
+  6000,
+  25,
+  6.5400,
+  3.3800
+) as pns_resp \gset
+
+select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
+select lives_ok(
+  format('select accept_response(%L)', :'pns_resp'),
+  'handshake for provider no-show fixture'
+);
+
+select lives_ok(
+  format('select report_service_problem(%L, %L::public.service_problem_kind)', :'pns_req', 'provider_no_show'),
+  'the requester can report provider no-show'
+);
+
+select is(
+  (select status::text from public.requests where id = cast(:'pns_req' as uuid)),
+  'disputed',
+  'provider no-show moves the request to disputed'
+);
+
+select is(
+  (select payment_status::text from public.requests where id = cast(:'pns_req' as uuid)),
+  'disputed',
+  'provider no-show locks payment in disputed'
+);
+
+select pg_temp.act_as_owner() as _ \gset
+select is(
+  (select status::text from public.provider_availability where user_id = '33333333-3333-3333-3333-333333333333'),
+  'busy',
+  'provider no-show keeps the provider committed until resolution'
+);
+
+select pg_temp.act_as('33333333-3333-3333-3333-333333333333') as _ \gset
+select lives_ok(
+  format('select contest_service_problem(%L)', :'pns_req'),
+  'the provider can contest a no-show report'
+);
+
+select is(
+  (select status::text from public.requests where id = cast(:'pns_req' as uuid)),
+  'accepted',
+  'contesting restores the pre-dispute service status'
+);
+
+select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
+select lives_ok(
+  format('select cancel_request(%L)', :'pns_req'),
+  'the requester can cancel after contesting a no-show report'
+);
+
+select create_request(
+  'repair',
+  'Provider no-show auto-resolve fixture.',
+  6.5000,
+  3.3800,
+  'Yaba, Lagos',
+  5000,
+  null,
+  6500
+) as pns_auto_req \gset
+
+select pg_temp.act_as('33333333-3333-3333-3333-333333333333') as _ \gset
+select respond_to_request(
+  :'pns_auto_req',
+  'On my way again.',
+  6500,
+  25,
+  6.5400,
+  3.3800
+) as pns_auto_resp \gset
+
+select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
+select lives_ok(
+  format('select accept_response(%L)', :'pns_auto_resp'),
+  'handshake for provider no-show auto-resolve fixture'
+);
+
+select lives_ok(
+  format('select report_service_problem(%L, %L::public.service_problem_kind)', :'pns_auto_req', 'provider_no_show'),
+  'the requester can report provider no-show for auto-resolve'
+);
+
+select pg_temp.act_as_owner() as _ \gset
+update public.service_problems
+set respond_by = now() - interval '1 minute'
+where request_id = cast(:'pns_auto_req' as uuid)
+  and status = 'open';
+
+select ok(
+  public.resolve_service_problem(
+    (select id from public.service_problems where request_id = cast(:'pns_auto_req' as uuid) and status = 'open' limit 1)
+  ),
+  'auto-resolve refunds the client after the response window'
+);
+
+select is(
+  (select status::text from public.requests where id = cast(:'pns_auto_req' as uuid)),
+  'no_show',
+  'auto-resolve records a no-show outcome'
+);
+
+select is(
+  (select payment_status::text from public.requests where id = cast(:'pns_auto_req' as uuid)),
+  'refunded',
+  'auto-resolve refunds the client in full'
+);
+
+select pg_temp.act_as_owner() as _ \gset
+select is(
+  (select status::text from public.provider_availability where user_id = '33333333-3333-3333-3333-333333333333'),
+  'available',
+  'auto-resolve releases the provider commitment'
+);
+
+select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
+select create_request(
+  'repair',
+  'Client no-show fixture.',
+  6.5000,
+  3.3800,
+  'Yaba, Lagos',
+  5000,
+  null,
+  7000
+) as cns_req \gset
+
+select pg_temp.act_as('22222222-2222-2222-2222-222222222222') as _ \gset
+select lives_ok(
+  $$select go_active(6.5000::double precision, 3.3800::double precision, 10000, array['repair']::text[], 480)$$,
+  'near provider goes active for client no-show fixture'
+);
+
+select respond_to_request(
+  :'cns_req',
+  'Here now.',
+  7000,
+  15,
+  6.5000,
+  3.3800
+) as cns_resp \gset
+
+select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
+select lives_ok(
+  format('select accept_response(%L)', :'cns_resp'),
+  'handshake for client no-show fixture'
+);
+
+select pg_temp.act_as('22222222-2222-2222-2222-222222222222') as _ \gset
+select lives_ok(
+  format('select report_service_problem(%L, %L::public.service_problem_kind)', :'cns_req', 'client_no_show'),
+  'the provider can report client no-show'
+);
+
+select pg_temp.act_as_owner() as _ \gset
+update public.service_problems
+set respond_by = now() - interval '1 minute'
+where request_id = cast(:'cns_req' as uuid)
+  and status = 'open';
+
+select ok(
+  public.resolve_service_problem(
+    (select id from public.service_problems where request_id = cast(:'cns_req' as uuid) and status = 'open' limit 1)
+  ),
+  'auto-resolve pays the provider after client no-show'
+);
+
+select is(
+  (select payment_status::text from public.requests where id = cast(:'cns_req' as uuid)),
+  'released',
+  'client no-show releases payment to the provider'
+);
+
+select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
+select create_request(
+  'repair',
+  'Unreachable provider fixture.',
+  6.5000,
+  3.3800,
+  'Yaba, Lagos',
+  5000
+) as unr_req \gset
+
+select pg_temp.act_as('22222222-2222-2222-2222-222222222222') as _ \gset
+select lives_ok(
+  $$select go_active(6.5000::double precision, 3.3800::double precision, 10000, array['repair']::text[], 480)$$,
+  'provider goes active for unreachable fixture'
+);
+
+select respond_to_request(
+  :'unr_req',
+  'Heading over.',
+  null,
+  20,
+  6.5000,
+  3.3800
+) as unr_resp \gset
+
+select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
+select lives_ok(
+  format('select accept_response(%L)', :'unr_resp'),
+  'handshake for unreachable fixture'
+);
+
+select pg_temp.act_as_owner() as _ \gset
+update public.provider_availability
+set updated_at = now()
+where user_id = '22222222-2222-2222-2222-222222222222';
+
+select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
+select throws_ok(
+  format('select report_service_problem(%L, %L::public.service_problem_kind)', :'unr_req', 'provider_unreachable'),
+  '55000',
+  'your provider''s location was updated recently; try calling or messaging before reporting them unreachable',
+  'recent provider location blocks unreachable reports'
+);
+
+select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
+select lives_ok(
+  format('select cancel_request(%L)', :'unr_req'),
+  'the requester can cancel after an unreachable report is blocked'
+);
+
 select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
 select lives_ok(
   format('select rate_request(%L, 5::smallint, %L)', :'request_id', 'Fixed it in twenty minutes.'),

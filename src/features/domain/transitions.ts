@@ -24,6 +24,7 @@ export const REQUEST_STATUS_TRANSITIONS: Partial<Record<RequestStatus, RequestSt
   in_progress: ['completion_pending', 'cancelled', 'disputed', 'no_show'],
   /** Requester cancel is blocked; provider `cancel_service` may still cancel server-side. */
   completion_pending: ['completed', 'disputed'],
+  disputed: ['accepted', 'in_progress', 'no_show'],
 };
 
 export const PAYMENT_STATUS_LABELS: Record<PaymentStatus, string> = {

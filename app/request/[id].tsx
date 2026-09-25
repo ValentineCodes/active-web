@@ -67,7 +67,13 @@ export default function RequestDetailScreen() {
   const pending = responses.data?.filter((response) => response.status === 'pending') ?? [];
   const isExpiredRequest = isExpiredRequestView(data.status, data.expires_at);
   const isSearching = data.status === 'searching' && !isExpiredRequest;
-  const isConnected = ['accepted', 'in_progress', 'completion_pending'].includes(data.status);
+  const isConnected = [
+    'accepted',
+    'in_progress',
+    'completion_pending',
+    'disputed',
+    'no_show',
+  ].includes(data.status);
   const reuseLabel = canReuseRequest(data.status, data.expires_at)
     ? reuseRequestButtonLabelForRequest(data.status, data.expires_at)
     : null;
