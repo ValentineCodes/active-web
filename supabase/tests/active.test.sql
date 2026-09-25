@@ -811,6 +811,11 @@ select is(
   'the request waits for requester confirmation'
 );
 
+select ok(
+  (select completion_confirm_by > now() from get_engagement(:'request_id')),
+  'the confirmation deadline is set when completion is pending'
+);
+
 select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
 select lives_ok(
   format('select complete_request(%L)', :'request_id'),
@@ -828,6 +833,95 @@ select is(
   'start, mark complete, and confirm leave a status event trail'
 );
 
+-- Auto-complete after the confirmation window ---------------------------------------
+
+select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
+select create_request(
+  'repair',
+  'Auto-complete when the requester is silent.',
+  6.5000,
+  3.3800,
+  'Yaba, Lagos',
+  5000,
+  null,
+  5000
+) as silent_request_id \gset
+
+select pg_temp.act_as('22222222-2222-2222-2222-222222222222') as _ \gset
+select respond_to_request(
+  :'silent_request_id',
+  'On my way.',
+  5000,
+  30,
+  6.5000,
+  3.3800
+) as silent_response_id \gset
+
+select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
+select lives_ok(
+  format('select accept_response(%L)', :'silent_response_id'),
+  'handshake for auto-complete fixture'
+);
+
+select pg_temp.act_as('22222222-2222-2222-2222-222222222222') as _ \gset
+select lives_ok(
+  format('select mark_service_complete(%L)', :'silent_request_id'),
+  'provider marks complete before auto-complete'
+);
+
+select pg_temp.act_as_owner() as _ \gset
+update public.requests
+set completion_confirm_by = now() + interval '1 hour'
+where id = :'silent_request_id'::uuid;
+
+select ok(
+  not public.auto_complete_request(:'silent_request_id'::uuid),
+  'auto-complete does nothing before the deadline'
+);
+
+update public.requests
+set completion_confirm_by = now() - interval '1 minute'
+where id = :'silent_request_id'::uuid;
+
+select ok(
+  public.auto_complete_request(:'silent_request_id'::uuid),
+  'auto-complete finishes the job after the deadline'
+);
+
+select ok(
+  not public.auto_complete_request(:'silent_request_id'::uuid),
+  'auto-complete is idempotent'
+);
+
+select is(
+  (select status::text from public.requests where id = :'silent_request_id'::uuid),
+  'completed',
+  'auto-complete moves completion_pending to completed'
+);
+
+select is(
+  (
+    select count(*)::integer
+    from public.request_status_events
+    where request_id = :'silent_request_id'::uuid
+      and idempotency_key = 'auto_complete:' || :'silent_request_id'
+  ),
+  1,
+  'auto-complete records a distinct status event'
+);
+
+select is(
+  (
+    select count(*)::integer
+    from public.payment_transitions
+    where request_id = :'silent_request_id'::uuid
+      and idempotency_key = 'complete:' || :'silent_request_id'
+  ),
+  1,
+  'auto-complete releases payment at most once'
+);
+
+select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
 select lives_ok(
   format('select rate_request(%L, 5::smallint, %L)', :'request_id', 'Fixed it in twenty minutes.'),
   'the requester rates the provider'

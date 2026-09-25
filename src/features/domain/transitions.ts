@@ -22,6 +22,7 @@ export const REQUEST_STATUS_TRANSITIONS: Partial<Record<RequestStatus, RequestSt
   searching: ['accepted', 'cancelled', 'expired'],
   accepted: ['in_progress', 'completion_pending', 'cancelled', 'disputed', 'no_show'],
   in_progress: ['completion_pending', 'disputed', 'no_show'],
+  /** `completed` may also be reached by server auto-complete after the confirmation window. */
   completion_pending: ['completed', 'disputed'],
 };
 

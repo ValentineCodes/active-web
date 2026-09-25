@@ -38,3 +38,6 @@ export const PROFILE_CATALOGUE_PHOTO_LIMIT = 6;
 export const PROFILE_CATALOGUE_VIDEO_LIMIT = 1;
 
 export const REQUEST_MAX_LIFETIME_HOURS = 24;
+
+/** Must stay aligned with public.completion_confirmation_interval(). */
+export const REQUEST_COMPLETION_CONFIRMATION_HOURS = 72;

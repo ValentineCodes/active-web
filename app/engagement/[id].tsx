@@ -316,6 +316,12 @@ export default function EngagementScreen() {
               <Text className="text-sm text-muted">
                 Confirm only if the work was done as agreed.
               </Text>
+              {data.completion_confirm_by ? (
+                <Text className="text-sm text-muted">
+                  If you don&apos;t respond by {formatWhen(data.completion_confirm_by)}, this job
+                  will complete automatically.
+                </Text>
+              ) : null}
             </Card>
             {completeRequest.isError ? <InlineError error={completeRequest.error} /> : null}
             {reportProblem.isError ? <InlineError error={reportProblem.error} /> : null}

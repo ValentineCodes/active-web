@@ -530,6 +530,7 @@ export type Database = {
           category_data: Json
           category_slug: string
           completed_at: string | null
+          completion_confirm_by: string | null
           created_at: string
           currency: string
           description: string
@@ -556,6 +557,7 @@ export type Database = {
           category_data?: Json
           category_slug: string
           completed_at?: string | null
+          completion_confirm_by?: string | null
           created_at?: string
           currency?: string
           description: string
@@ -582,6 +584,7 @@ export type Database = {
           category_data?: Json
           category_slug?: string
           completed_at?: string | null
+          completion_confirm_by?: string | null
           created_at?: string
           currency?: string
           description?: string
@@ -860,6 +863,14 @@ export type Database = {
         Returns: unknown
       }
       assert_onboarded: { Args: never; Returns: string }
+      auto_complete_due_requests: {
+        Args: { p_limit?: number }
+        Returns: number
+      }
+      auto_complete_request: {
+        Args: { p_request_id: string }
+        Returns: boolean
+      }
       browse_nearby_requests: {
         Args: {
           p_category_slug?: string
@@ -899,6 +910,7 @@ export type Database = {
         Returns: string
       }
       complete_request: { Args: { p_request_id: string }; Returns: undefined }
+      completion_confirmation_interval: { Args: never; Returns: string }
       confirm_avatar_capture: {
         Args: { p_storage_path: string }
         Returns: undefined
@@ -929,6 +941,14 @@ export type Database = {
       expand_request_radius: { Args: { p_request_id: string }; Returns: number }
       expire_due_requests: { Args: { p_limit?: number }; Returns: number }
       expire_request: { Args: { p_request_id: string }; Returns: boolean }
+      finalize_request_completion: {
+        Args: {
+          p_actor_id: string
+          p_request_id: string
+          p_status_event_key: string
+        }
+        Returns: boolean
+      }
       get_engagement: {
         Args: { p_request_id: string }
         Returns: {
@@ -936,6 +956,7 @@ export type Database = {
           category_data: Json
           category_slug: string
           completed_at: string
+          completion_confirm_by: string
           counterparty_avatar_path: string
           counterparty_display_name: string
           counterparty_id: string

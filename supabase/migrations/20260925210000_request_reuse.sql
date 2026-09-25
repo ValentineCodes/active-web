@@ -136,7 +136,3 @@ revoke execute on function public.create_request(
 grant execute on function public.create_request(
   text, text, double precision, double precision, text, integer, timestamptz, numeric, jsonb, uuid
 ) to authenticated;
-
-revoke execute on function public.create_request(
-  text, text, double precision, double precision, text, integer, timestamptz, numeric, jsonb
-) from public, anon, authenticated;
