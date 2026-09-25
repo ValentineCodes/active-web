@@ -45,7 +45,7 @@ export const PAYMENT_TRANSITIONS: Partial<Record<PaymentStatus, PaymentStatus[]>
   pending: ['released', 'refunded', 'disputed'],
   released: ['disputed'],
   refunded: ['disputed'],
-  disputed: ['released', 'refunded'],
+  disputed: ['released', 'refunded', 'pending', 'locked'],
 };
 
 export function canTransitionRequest(from: RequestStatus, to: RequestStatus): boolean {

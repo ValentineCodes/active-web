@@ -1355,6 +1355,105 @@ select throws_ok(
 );
 
 select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
+select create_request(
+  'repair',
+  'Admin dispute fixture.',
+  6.5000,
+  3.3800,
+  'Yaba, Lagos',
+  5000,
+  null,
+  7500
+) as admin_dispute_req \gset
+
+select pg_temp.act_as('33333333-3333-3333-3333-333333333333') as _ \gset
+select lives_ok(
+  $$select go_active(6.5400::double precision, 3.3800::double precision, 10000, array['repair']::text[], 480)$$,
+  'far provider goes active for admin dispute fixture'
+);
+
+select respond_to_request(
+  :'admin_dispute_req',
+  'On site.',
+  7500,
+  15,
+  6.5400,
+  3.3800
+) as admin_dispute_resp \gset
+
+select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
+select lives_ok(
+  format('select accept_response(%L)', :'admin_dispute_resp'),
+  'handshake for admin dispute fixture'
+);
+
+select pg_temp.act_as('33333333-3333-3333-3333-333333333333') as _ \gset
+select lives_ok(
+  format('select mark_service_complete(%L)', :'admin_dispute_req'),
+  'provider marks service complete for admin dispute fixture'
+);
+
+select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
+select lives_ok(
+  format(
+    $$select report_service_problem(%L, 'completion_issue'::public.service_problem_kind, %L, '{}'::text[])$$,
+    :'admin_dispute_req',
+    'The repair was only half done and left a mess.'
+  ),
+  'the requester can open an admin-reviewed dispute with a description'
+);
+
+select throws_ok(
+  format('select complete_request(%L)', :'admin_dispute_req'),
+  '55000',
+  null,
+  'confirm completion is blocked while disputed'
+);
+
+select is(
+  (select payment_status::text from public.requests where id = cast(:'admin_dispute_req' as uuid)),
+  'disputed',
+  'disputed jobs keep payment locked'
+);
+
+select pg_temp.act_as_owner() as _ \gset
+select lives_ok(
+  format(
+    $$select admin_resolve_service_problem(
+      (select id from public.service_problems where request_id = cast(%L as uuid) and status = 'open' limit 1),
+      'refund_requester',
+      'Provider did not finish the agreed work.',
+      'admin-refund-test'
+    )$$,
+    :'admin_dispute_req'
+  ),
+  'admin can refund the requester after reviewing a dispute'
+);
+
+select is(
+  (select status::text from public.requests where id = cast(:'admin_dispute_req' as uuid)),
+  'cancelled',
+  'admin refund closes the request as cancelled'
+);
+
+select is(
+  (select payment_status::text from public.requests where id = cast(:'admin_dispute_req' as uuid)),
+  'refunded',
+  'admin refund releases funds back to the requester'
+);
+
+select ok(
+  exists (
+    select 1
+    from public.dispute_admin_resolutions
+    where request_id = cast(:'admin_dispute_req' as uuid)
+      and outcome = 'refund_requester'
+      and idempotency_key = 'admin-refund-test'
+  ),
+  'admin resolution is recorded for audit'
+);
+
+select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
 select lives_ok(
   format('select cancel_request(%L)', :'unr_req'),
   'the requester can cancel after an unreachable report is blocked'

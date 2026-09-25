@@ -49,6 +49,7 @@ type Engagement = Nullable<
   | 'service_problem_kind'
   | 'service_problem_respond_by'
   | 'service_problem_reported_by_me'
+  | 'service_problem_description'
 >;
 
 const REQUEST_COLUMNS =
@@ -391,14 +392,22 @@ export function useCompleteRequest(requestId: string) {
 
 export type ServiceProblemKind = Database['public']['Enums']['service_problem_kind'];
 
+export type ReportServiceProblemInput = {
+  kind: ServiceProblemKind;
+  description?: string;
+  evidencePaths?: string[];
+};
+
 export function useReportServiceProblem(requestId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (kind: ServiceProblemKind) => {
+    mutationFn: async (input: ReportServiceProblemInput) => {
       const { error } = await supabase.rpc('report_service_problem', {
         p_request_id: requestId,
-        p_kind: kind,
+        p_kind: input.kind,
+        p_description: input.description ?? '',
+        p_evidence_paths: input.evidencePaths ?? [],
       });
       if (error) throw error;
     },

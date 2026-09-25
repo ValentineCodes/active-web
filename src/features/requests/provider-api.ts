@@ -6,6 +6,7 @@ import { useUserId } from '@/features/auth/session';
 import type { Position } from '@/lib/location';
 import { queryKeys } from '@/lib/query/keys';
 import { supabase } from '@/lib/supabase/client';
+import type { ReportServiceProblemInput } from '@/features/requests/requester-api';
 import type { Database, Json } from '@/lib/supabase/database.types';
 import type { Nullable, RpcRow } from '@/lib/supabase/types';
 
@@ -314,10 +315,14 @@ export function useReportClientNoShow(requestId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async () => {
+    mutationFn: async (
+      input?: Pick<ReportServiceProblemInput, 'description' | 'evidencePaths'>,
+    ) => {
       const { error } = await supabase.rpc('report_service_problem', {
         p_request_id: requestId,
         p_kind: 'client_no_show',
+        p_description: input?.description ?? '',
+        p_evidence_paths: input?.evidencePaths ?? [],
       });
       if (error) throw error;
     },

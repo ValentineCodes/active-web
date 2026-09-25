@@ -4,6 +4,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 import { ProviderProfileModal } from '@/components/ProviderProfileModal';
+import { ReportProblemModal, type ReportProblemPayload } from '@/components/ReportProblemModal';
 import { RequestCategoryDataSection } from '@/components/RequestCategoryDataSection';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -74,6 +75,21 @@ function statusStepIndex(status: string): number {
   return 0;
 }
 
+function disputeKindRequiresDescription(kind: ServiceProblemKind): boolean {
+  return (
+    kind === 'completion_issue' ||
+    kind === 'service_not_completed' ||
+    kind === 'service_differs_from_request' ||
+    kind === 'other'
+  );
+}
+
+type ReportModalState = {
+  kind: ServiceProblemKind;
+  title: string;
+  subtitle: string;
+};
+
 /**
  * The connected screen. This is the only place exact coordinates and phone numbers are
  * shown, and it is reachable only after the requester accepted a provider — the server
@@ -97,6 +113,7 @@ export default function EngagementScreen() {
   const cancelRequest = useCancelRequest(id);
   const cancelService = useCancelService(id);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [reportModal, setReportModal] = useState<ReportModalState | null>(null);
 
   useLiveRequest(id);
 
@@ -147,22 +164,26 @@ export default function EngagementScreen() {
 
   const providerFirstName = data.counterparty_display_name?.split(' ')[0] ?? 'Your provider';
 
-  const reportProblemKind = (kind: ServiceProblemKind, title: string, message: string) =>
-    Alert.alert(title, message, [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Report',
-        style: 'destructive',
-        onPress: () => reportProblem.mutate(kind),
-      },
-    ]);
+  const submitReport = (payload: ReportProblemPayload) => {
+    const onSuccess = () => setReportModal(null);
+    const input = {
+      kind: payload.kind,
+      description: payload.description,
+      evidencePaths: payload.evidencePaths,
+    };
 
-  const confirmReportCompletionProblem = () =>
-    reportProblemKind(
-      'completion_issue',
-      'Report a problem?',
-      'This flags the job for review and pauses payment release. Only do this if the service was not delivered as agreed.',
-    );
+    if (payload.kind === 'client_no_show') {
+      reportClientNoShow.mutate(
+        { description: payload.description, evidencePaths: payload.evidencePaths },
+        { onSuccess },
+      );
+      return;
+    }
+
+    reportProblem.mutate(input, { onSuccess });
+  };
+
+  const openReportModal = (state: ReportModalState) => setReportModal(state);
 
   const openRequesterProblemMenu = () =>
     Alert.alert('Report a problem', 'What went wrong?', [
@@ -170,36 +191,98 @@ export default function EngagementScreen() {
       {
         text: "Provider didn't show up",
         onPress: () =>
-          reportProblemKind(
-            'provider_no_show',
-            'Report provider no-show?',
-            `${providerFirstName} will have 24 hours to respond. Your payment stays locked until this is resolved.`,
-          ),
+          openReportModal({
+            kind: 'provider_no_show',
+            title: 'Report provider no-show',
+            subtitle: `${providerFirstName} will have 24 hours to respond. Your payment stays locked until this is resolved.`,
+          }),
       },
       {
         text: "Can't reach provider",
         onPress: () =>
-          reportProblemKind(
-            'provider_unreachable',
-            "Can't reach your provider?",
-            `We'll notify ${providerFirstName} to get in touch. If they don't respond within 24 hours, you may receive a full refund.`,
-          ),
+          openReportModal({
+            kind: 'provider_unreachable',
+            title: "Can't reach your provider?",
+            subtitle: `We'll notify ${providerFirstName}. If they don't respond within 24 hours, you may receive a full refund.`,
+          }),
+      },
+      {
+        text: 'Service not completed',
+        onPress: () =>
+          openReportModal({
+            kind: 'service_not_completed',
+            title: 'Service not completed',
+            subtitle: 'Payment stays locked while support reviews your report.',
+          }),
+      },
+      {
+        text: 'Work differed from request',
+        onPress: () =>
+          openReportModal({
+            kind: 'service_differs_from_request',
+            title: 'Work differed from the request',
+            subtitle: 'Explain how the service differed from what you asked for.',
+          }),
+      },
+      {
+        text: 'Other problem',
+        onPress: () =>
+          openReportModal({
+            kind: 'other',
+            title: 'Report another problem',
+            subtitle: 'Tell us what went wrong. Payment stays locked until support resolves this.',
+          }),
+      },
+    ]);
+
+  const openProviderProblemMenu = () =>
+    Alert.alert('Report a problem', 'What went wrong?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Client no-show',
+        onPress: () =>
+          openReportModal({
+            kind: 'client_no_show',
+            title: 'Report client no-show',
+            subtitle: 'The client will have 24 hours to respond before an automatic outcome.',
+          }),
+      },
+      {
+        text: 'Service not completed',
+        onPress: () =>
+          openReportModal({
+            kind: 'service_not_completed',
+            title: 'Service not completed',
+            subtitle: 'Payment stays locked while support reviews your report.',
+          }),
+      },
+      {
+        text: 'Work differed from request',
+        onPress: () =>
+          openReportModal({
+            kind: 'service_differs_from_request',
+            title: 'Work differed from the request',
+            subtitle: 'Explain how the job differed from what was agreed.',
+          }),
+      },
+      {
+        text: 'Other problem',
+        onPress: () =>
+          openReportModal({
+            kind: 'other',
+            title: 'Report another problem',
+            subtitle: 'Tell us what went wrong. Payment stays locked until support resolves this.',
+          }),
       },
     ]);
 
   const confirmReportClientNoShow = () =>
-    Alert.alert(
-      'Report client no-show?',
-      'The client will have 24 hours to respond. If they do not, you may receive payment for this job.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Report no-show',
-          style: 'destructive',
-          onPress: () => reportClientNoShow.mutate(),
-        },
-      ],
-    );
+    openReportModal({
+      kind: 'client_no_show',
+      title: 'Report client no-show',
+      subtitle:
+        'The client will have 24 hours to respond. If they do not, you may receive payment for this job.',
+    });
 
   const confirmContestProblem = () =>
     Alert.alert(
@@ -227,6 +310,12 @@ export default function EngagementScreen() {
         return 'Client no-show reported';
       case 'completion_issue':
         return 'Completion disputed';
+      case 'service_not_completed':
+        return 'Service not completed';
+      case 'service_differs_from_request':
+        return 'Work differed from request';
+      case 'other':
+        return 'Problem reported';
       default:
         return 'Problem reported';
     }
@@ -271,6 +360,9 @@ export default function EngagementScreen() {
   const canCancelAsProvider = canCancelAsRequester || data.request_status === 'completion_pending';
   const canReportActiveProblem =
     data.request_status === 'accepted' || data.request_status === 'in_progress';
+  const canReportProviderProblem =
+    !data.viewer_is_requester &&
+    (canReportActiveProblem || data.request_status === 'completion_pending');
   const openProblem = data.request_status === 'disputed' && data.service_problem_kind;
   const canContestProblem =
     openProblem &&
@@ -478,7 +570,14 @@ export default function EngagementScreen() {
               label="Report a problem"
               variant="danger"
               loading={reportProblem.isPending}
-              onPress={confirmReportCompletionProblem}
+              onPress={() =>
+                openReportModal({
+                  kind: 'completion_issue',
+                  title: 'Report a problem',
+                  subtitle:
+                    'This flags the job for review and pauses payment release. Only do this if the service was not delivered as agreed.',
+                })
+              }
             />
           </View>
         ) : null}
@@ -495,14 +594,33 @@ export default function EngagementScreen() {
           </View>
         ) : null}
 
+        {canReportProviderProblem ? (
+          <View className="gap-3">
+            {reportClientNoShow.isError ? <InlineError error={reportClientNoShow.error} /> : null}
+            {reportProblem.isError ? <InlineError error={reportProblem.error} /> : null}
+            <Button
+              label="Report a problem"
+              variant="danger"
+              loading={reportClientNoShow.isPending || reportProblem.isPending}
+              onPress={openProviderProblemMenu}
+            />
+          </View>
+        ) : null}
+
         {data.request_status === 'disputed' ? (
           <Card tone="danger">
             <Text className="text-base font-semibold text-ink">
               {problemKindLabel(data.service_problem_kind)}
             </Text>
-            {data.service_problem_kind === 'completion_issue' ? (
+            {data.service_problem_kind === 'completion_issue' ||
+            data.service_problem_kind === 'service_not_completed' ||
+            data.service_problem_kind === 'service_differs_from_request' ||
+            data.service_problem_kind === 'other' ? (
               <Text className="text-sm text-muted">
-                A problem was reported. Support will follow up using the details on this request.
+                Support will review this report. Payment stays locked until the dispute is resolved.
+                {data.service_problem_description ? (
+                  <> You reported: “{data.service_problem_description}”</>
+                ) : null}
               </Text>
             ) : data.service_problem_reported_by_me ? (
               <Text className="text-sm text-muted">
@@ -603,6 +721,18 @@ export default function EngagementScreen() {
           ratingCount={data.counterparty_rating_count}
         />
       ) : null}
+
+      <ReportProblemModal
+        key={reportModal?.kind ?? 'closed'}
+        visible={reportModal !== null}
+        kind={reportModal?.kind ?? null}
+        title={reportModal?.title ?? ''}
+        subtitle={reportModal?.subtitle ?? ''}
+        requiresDescription={reportModal ? disputeKindRequiresDescription(reportModal.kind) : false}
+        loading={reportProblem.isPending || reportClientNoShow.isPending}
+        onClose={() => setReportModal(null)}
+        onSubmit={submitReport}
+      />
     </Screen>
   );
 }

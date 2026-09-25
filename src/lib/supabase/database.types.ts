@@ -9,6 +9,64 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      dispute_admin_resolutions: {
+        Row: {
+          admin_note: string
+          created_at: string
+          id: string
+          idempotency_key: string
+          outcome: string
+          payment_status_after: Database["public"]["Enums"]["payment_status"]
+          request_id: string
+          request_status_after: Database["public"]["Enums"]["request_status"]
+          service_problem_id: string
+        }
+        Insert: {
+          admin_note: string
+          created_at?: string
+          id?: string
+          idempotency_key: string
+          outcome: string
+          payment_status_after: Database["public"]["Enums"]["payment_status"]
+          request_id: string
+          request_status_after: Database["public"]["Enums"]["request_status"]
+          service_problem_id: string
+        }
+        Update: {
+          admin_note?: string
+          created_at?: string
+          id?: string
+          idempotency_key?: string
+          outcome?: string
+          payment_status_after?: Database["public"]["Enums"]["payment_status"]
+          request_id?: string
+          request_status_after?: Database["public"]["Enums"]["request_status"]
+          service_problem_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dispute_admin_resolutions_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "my_requests"
+            referencedColumns: ["request_id"]
+          },
+          {
+            foreignKeyName: "dispute_admin_resolutions_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dispute_admin_resolutions_service_problem_id_fkey"
+            columns: ["service_problem_id"]
+            isOneToOne: false
+            referencedRelation: "service_problems"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       handshakes: {
         Row: {
           created_at: string
@@ -679,6 +737,8 @@ export type Database = {
       service_problems: {
         Row: {
           created_at: string
+          description: string
+          evidence_paths: string[]
           id: string
           kind: Database["public"]["Enums"]["service_problem_kind"]
           payment_before: Database["public"]["Enums"]["payment_status"]
@@ -692,6 +752,8 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          description?: string
+          evidence_paths?: string[]
           id?: string
           kind: Database["public"]["Enums"]["service_problem_kind"]
           payment_before: Database["public"]["Enums"]["payment_status"]
@@ -705,6 +767,8 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          description?: string
+          evidence_paths?: string[]
           id?: string
           kind?: Database["public"]["Enums"]["service_problem_kind"]
           payment_before?: Database["public"]["Enums"]["payment_status"]
@@ -913,6 +977,15 @@ export type Database = {
     }
     Functions: {
       accept_response: { Args: { p_response_id: string }; Returns: string }
+      admin_resolve_service_problem: {
+        Args: {
+          p_admin_note: string
+          p_idempotency_key: string
+          p_outcome: string
+          p_problem_id: string
+        }
+        Returns: undefined
+      }
       apply_payment_transition: {
         Args: {
           p_idempotency_key: string
@@ -921,10 +994,15 @@ export type Database = {
         }
         Returns: Database["public"]["Enums"]["payment_status"]
       }
+      assert_admin_caller: { Args: never; Returns: undefined }
       assert_authenticated: { Args: never; Returns: string }
       assert_coordinates: {
         Args: { p_latitude: number; p_longitude: number }
         Returns: unknown
+      }
+      assert_dispute_evidence_paths: {
+        Args: { p_paths: string[]; p_reporter_id: string }
+        Returns: undefined
       }
       assert_onboarded: { Args: never; Returns: string }
       auto_complete_due_requests: {
@@ -1075,6 +1153,7 @@ export type Database = {
           request_longitude: number
           request_status: Database["public"]["Enums"]["request_status"]
           scheduled_for: string
+          service_problem_description: string
           service_problem_kind: Database["public"]["Enums"]["service_problem_kind"]
           service_problem_reported_by_me: boolean
           service_problem_respond_by: string
@@ -1215,10 +1294,6 @@ export type Database = {
         }
         Returns: boolean
       }
-      provider_recently_active_on_request: {
-        Args: { p_provider_id: string; p_request_id: string }
-        Returns: boolean
-      }
       radius_ladder_m: { Args: never; Returns: number[] }
       rate_request: {
         Args: { p_comment?: string; p_request_id: string; p_stars: number }
@@ -1256,6 +1331,8 @@ export type Database = {
       release_provider: { Args: { p_provider_id: string }; Returns: undefined }
       report_service_problem: {
         Args: {
+          p_description?: string
+          p_evidence_paths?: string[]
           p_kind?: Database["public"]["Enums"]["service_problem_kind"]
           p_request_id: string
         }
@@ -1288,6 +1365,10 @@ export type Database = {
           p_user_ids: string[]
         }
         Returns: undefined
+      }
+      service_problem_requires_description: {
+        Args: { p_kind: Database["public"]["Enums"]["service_problem_kind"] }
+        Returns: boolean
       }
       service_problem_response_interval: { Args: never; Returns: string }
       start_request: { Args: { p_request_id: string }; Returns: undefined }
@@ -1326,6 +1407,9 @@ export type Database = {
         | "provider_no_show"
         | "client_no_show"
         | "provider_unreachable"
+        | "service_not_completed"
+        | "service_differs_from_request"
+        | "other"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1488,6 +1572,9 @@ export const Constants = {
         "provider_no_show",
         "client_no_show",
         "provider_unreachable",
+        "service_not_completed",
+        "service_differs_from_request",
+        "other",
       ],
     },
   },
