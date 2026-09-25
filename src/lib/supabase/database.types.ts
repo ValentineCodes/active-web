@@ -905,6 +905,7 @@ export type Database = {
       }
       bucket_distance_m: { Args: { p_distance_m: number }; Returns: number }
       cancel_request: { Args: { p_request_id: string }; Returns: undefined }
+      cancel_service: { Args: { p_request_id: string }; Returns: undefined }
       clone_request_from_prior: {
         Args: { p_idempotency_key: string; p_source_request_id: string }
         Returns: string
@@ -941,6 +942,15 @@ export type Database = {
       expand_request_radius: { Args: { p_request_id: string }; Returns: number }
       expire_due_requests: { Args: { p_limit?: number }; Returns: number }
       expire_request: { Args: { p_request_id: string }; Returns: boolean }
+      finalize_request_cancellation: {
+        Args: {
+          p_actor_id: string
+          p_payment_idempotency_key: string
+          p_request_id: string
+          p_status_event_key: string
+        }
+        Returns: boolean
+      }
       finalize_request_completion: {
         Args: {
           p_actor_id: string

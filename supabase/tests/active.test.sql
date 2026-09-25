@@ -770,6 +770,189 @@ select is(
   'a request leaves public discovery once someone is accepted'
 );
 
+-- Cancellation ----------------------------------------------------------------------
+
+select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
+select lives_ok(
+  format('select cancel_request(%L)', :'cleaning_request_id'),
+  'clear a searching request before cancellation fixtures'
+);
+
+select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
+select create_request(
+  'repair',
+  'Funded job the requester will cancel after handshake.',
+  6.5000,
+  3.3800,
+  'Yaba, Lagos',
+  5000,
+  null,
+  8000
+) as fc_req \gset
+
+select pg_temp.act_as('33333333-3333-3333-3333-333333333333') as _ \gset
+select respond_to_request(
+  :'fc_req',
+  'I can take this funded job.',
+  8000,
+  20,
+  6.5400,
+  3.3800
+) as fc_resp \gset
+
+select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
+select lives_ok(
+  format('select accept_response(%L)', :'fc_resp'),
+  'handshake for funded cancellation fixture'
+);
+
+select is(
+  (select payment_status::text from public.requests where id = cast(:'fc_req' as uuid)),
+  'pending',
+  'handshake moves locked funds to pending before cancellation'
+);
+
+select lives_ok(
+  format('select cancel_request(%L)', :'fc_req'),
+  'the requester can cancel after handshake'
+);
+
+select lives_ok(
+  format('select cancel_request(%L)', :'fc_req'),
+  'requester cancellation is idempotent'
+);
+
+select is(
+  (select status::text from public.requests where id = cast(:'fc_req' as uuid)),
+  'cancelled',
+  'cancellation closes the request'
+);
+
+select is(
+  (select payment_status::text from public.requests where id = cast(:'fc_req' as uuid)),
+  'refunded',
+  'cancellation refunds the client in full'
+);
+
+select is(
+  (
+    select count(*)::integer
+    from public.request_status_events
+    where request_id = cast(:'fc_req' as uuid)
+      and idempotency_key = 'cancel_request:' || :'fc_req'
+  ),
+  1,
+  'requester cancellation records one status event'
+);
+
+select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
+select create_request(
+  'repair',
+  'Job the provider will cancel after handshake.',
+  6.5000,
+  3.3800,
+  'Yaba, Lagos',
+  5000,
+  null,
+  6000
+) as pc_req \gset
+
+select is(
+  (select description from public.requests where id = cast(:'pc_req' as uuid)),
+  'Job the provider will cancel after handshake.',
+  'provider cancellation fixture request exists'
+);
+
+select pg_temp.act_as('33333333-3333-3333-3333-333333333333') as _ \gset
+select respond_to_request(
+  :'pc_req',
+  'Taking this one.',
+  6000,
+  25,
+  6.5400,
+  3.3800
+) as pc_resp \gset
+
+select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
+select lives_ok(
+  format('select accept_response(%L)', :'pc_resp'),
+  'handshake for provider cancellation fixture'
+);
+
+select pg_temp.act_as('33333333-3333-3333-3333-333333333333') as _ \gset
+select lives_ok(
+  format('select cancel_service(%L)', :'pc_req'),
+  'the provider can cancel an active service'
+);
+
+select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
+select is(
+  (select status::text from public.requests where id = cast(:'pc_req' as uuid)),
+  'cancelled',
+  'provider cancellation closes the request'
+);
+
+select is(
+  (select payment_status::text from public.requests where id = cast(:'pc_req' as uuid)),
+  'refunded',
+  'provider cancellation refunds the client in full'
+);
+
+select pg_temp.act_as('33333333-3333-3333-3333-333333333333') as _ \gset
+select is(
+  (select status::text from public.provider_availability where user_id = '33333333-3333-3333-3333-333333333333'),
+  'available',
+  'provider cancellation returns the provider to the pool'
+);
+
+select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
+select is(
+  (
+    select count(*)::integer
+    from public.request_status_events
+    where request_id = cast(:'pc_req' as uuid)
+      and idempotency_key = 'cancel_service:' || :'pc_req'
+  ),
+  1,
+  'provider cancellation records one status event'
+);
+
+select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
+select create_request(
+  'repair',
+  'Response the provider will withdraw before handshake.',
+  6.5000,
+  3.3800,
+  'Yaba, Lagos',
+  5000
+) as wd_req \gset
+
+select pg_temp.act_as('33333333-3333-3333-3333-333333333333') as _ \gset
+select respond_to_request(
+  :'wd_req',
+  'Never mind, I will withdraw.',
+  null,
+  null,
+  6.5400,
+  3.3800
+) as wd_resp \gset
+
+select lives_ok(
+  format('select withdraw_response(%L)', :'wd_resp'),
+  'the provider can withdraw a pending response before handshake'
+);
+
+select lives_ok(
+  format('select withdraw_response(%L)', :'wd_resp'),
+  'withdrawing a response is idempotent'
+);
+
+select is(
+  (select status::text from public.request_responses where id = cast(:'wd_resp' as uuid)),
+  'withdrawn',
+  'withdrawal inactivates the response without cancelling the request'
+);
+
 -- Completion and rating -------------------------------------------------------------
 
 select pg_temp.act_as('22222222-2222-2222-2222-222222222222') as _ \gset
@@ -817,6 +1000,13 @@ select ok(
 );
 
 select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
+select throws_ok(
+  format('select cancel_request(%L)', :'request_id'),
+  '55000',
+  'you cannot cancel while completion is being confirmed',
+  'the requester cannot cancel while waiting to confirm completion'
+);
+
 select lives_ok(
   format('select complete_request(%L)', :'request_id'),
   'the requester confirms completion'

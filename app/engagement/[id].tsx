@@ -12,8 +12,13 @@ import { PersonRow } from '@/components/ui/PersonRow';
 import { Screen } from '@/components/ui/Screen';
 import { EmptyState, ErrorState, InlineError, LoadingState } from '@/components/ui/StateView';
 import { useCategoryIndex } from '@/features/categories/api';
-import { useStartRequest, useMarkServiceComplete } from '@/features/requests/provider-api';
 import {
+  useCancelService,
+  useStartRequest,
+  useMarkServiceComplete,
+} from '@/features/requests/provider-api';
+import {
+  useCancelRequest,
   useCompleteRequest,
   useEngagement,
   useLiveRequest,
@@ -82,6 +87,8 @@ export default function EngagementScreen() {
   const markServiceComplete = useMarkServiceComplete(id);
   const completeRequest = useCompleteRequest(id);
   const reportProblem = useReportServiceProblem(id);
+  const cancelRequest = useCancelRequest(id);
+  const cancelService = useCancelService(id);
   const [profileOpen, setProfileOpen] = useState(false);
 
   useLiveRequest(id);
@@ -146,6 +153,44 @@ export default function EngagementScreen() {
         },
       ],
     );
+
+  const confirmCancelRequest = () =>
+    Alert.alert(
+      'Cancel this job?',
+      'You will receive a full refund for any payment held in the app. This cannot be undone.',
+      [
+        { text: 'Keep it', style: 'cancel' },
+        {
+          text: 'Cancel job',
+          style: 'destructive',
+          onPress: () =>
+            cancelRequest.mutate(undefined, {
+              onSuccess: () => router.replace(`/request/${id}`),
+            }),
+        },
+      ],
+    );
+
+  const confirmCancelService = () =>
+    Alert.alert(
+      'Cancel this job?',
+      'The requester will be refunded in full and the job will close. You will be available for other requests.',
+      [
+        { text: 'Keep it', style: 'cancel' },
+        {
+          text: 'Cancel job',
+          style: 'destructive',
+          onPress: () =>
+            cancelService.mutate(undefined, {
+              onSuccess: () => router.back(),
+            }),
+        },
+      ],
+    );
+
+  const canCancelAsRequester =
+    data.request_status === 'accepted' || data.request_status === 'in_progress';
+  const canCancelAsProvider = canCancelAsRequester || data.request_status === 'completion_pending';
 
   return (
     <Screen>
@@ -366,6 +411,30 @@ export default function EngagementScreen() {
                 ? `You rated this ${data.rating_stars} out of 5.`
                 : `You were rated ${data.rating_stars} out of 5.`}
             </Text>
+          </View>
+        ) : null}
+
+        {canCancelAsRequester && data.viewer_is_requester ? (
+          <View className="gap-3">
+            {cancelRequest.isError ? <InlineError error={cancelRequest.error} /> : null}
+            <Button
+              label="Cancel this job"
+              variant="danger"
+              loading={cancelRequest.isPending}
+              onPress={confirmCancelRequest}
+            />
+          </View>
+        ) : null}
+
+        {canCancelAsProvider && !data.viewer_is_requester ? (
+          <View className="gap-3">
+            {cancelService.isError ? <InlineError error={cancelService.error} /> : null}
+            <Button
+              label="Cancel this job"
+              variant="danger"
+              loading={cancelService.isPending}
+              onPress={confirmCancelService}
+            />
           </View>
         ) : null}
       </ScrollView>

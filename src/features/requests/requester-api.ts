@@ -322,6 +322,9 @@ export function useCancelRequest(requestId: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.myRequest(requestId) });
       queryClient.invalidateQueries({ queryKey: queryKeys.myRequests });
+      queryClient.invalidateQueries({ queryKey: queryKeys.engagement(requestId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.myResponses });
+      queryClient.invalidateQueries({ queryKey: queryKeys.nearbyRequests });
     },
   });
 }

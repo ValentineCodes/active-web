@@ -21,8 +21,8 @@ export const REQUEST_STATUS_LABELS: Record<RequestStatus, string> = {
 export const REQUEST_STATUS_TRANSITIONS: Partial<Record<RequestStatus, RequestStatus[]>> = {
   searching: ['accepted', 'cancelled', 'expired'],
   accepted: ['in_progress', 'completion_pending', 'cancelled', 'disputed', 'no_show'],
-  in_progress: ['completion_pending', 'disputed', 'no_show'],
-  /** `completed` may also be reached by server auto-complete after the confirmation window. */
+  in_progress: ['completion_pending', 'cancelled', 'disputed', 'no_show'],
+  /** Requester cancel is blocked; provider `cancel_service` may still cancel server-side. */
   completion_pending: ['completed', 'disputed'],
 };
 

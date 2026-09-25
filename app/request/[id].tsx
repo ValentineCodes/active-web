@@ -264,7 +264,7 @@ export default function RequestDetailScreen() {
           </View>
         ) : null}
 
-        {isSearching || data.status === 'accepted' ? (
+        {isSearching ? (
           <View className="gap-3">
             {cancelRequest.isError ? <InlineError error={cancelRequest.error} /> : null}
             <Button
