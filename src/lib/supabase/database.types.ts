@@ -266,6 +266,13 @@ export type Database = {
             foreignKeyName: "provider_availability_committed_request_id_fkey"
             columns: ["committed_request_id"]
             isOneToOne: false
+            referencedRelation: "my_requests"
+            referencedColumns: ["request_id"]
+          },
+          {
+            foreignKeyName: "provider_availability_committed_request_id_fkey"
+            columns: ["committed_request_id"]
+            isOneToOne: false
             referencedRelation: "requests"
             referencedColumns: ["id"]
           },
@@ -649,6 +656,20 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "provider_availability_committed_request_id_fkey"
+            columns: ["committed_request_id"]
+            isOneToOne: false
+            referencedRelation: "my_requests"
+            referencedColumns: ["request_id"]
+          },
+          {
+            foreignKeyName: "provider_availability_committed_request_id_fkey"
+            columns: ["committed_request_id"]
+            isOneToOne: false
+            referencedRelation: "requests"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "provider_availability_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: true
@@ -830,6 +851,10 @@ export type Database = {
         Args: { p_storage_path: string }
         Returns: undefined
       }
+      count_available_responses: {
+        Args: { p_request_id: string }
+        Returns: number
+      }
       create_request: {
         Args: {
           p_category_data?: Json
@@ -892,6 +917,7 @@ export type Database = {
         }
         Returns: {
           category_slugs: string[] | null
+          committed_request_id: string | null
           expires_at: string | null
           service_radius_m: number | null
           status: Database["public"]["Enums"]["availability_status"] | null
@@ -910,6 +936,7 @@ export type Database = {
         Args: never
         Returns: {
           category_slugs: string[] | null
+          committed_request_id: string | null
           expires_at: string | null
           service_radius_m: number | null
           status: Database["public"]["Enums"]["availability_status"] | null
@@ -933,8 +960,10 @@ export type Database = {
           display_name: string
           distance_m: number
           eta_minutes: number
+          expires_at: string
           jobs_completed: number
           message: string
+          phone_verified: boolean
           provider_id: string
           quoted_amount: number
           rating_average: number
@@ -958,13 +987,16 @@ export type Database = {
       my_responses: {
         Args: never
         Returns: {
+          category_data: Json
           category_slug: string
           created_at: string
           currency: string
           decline_reason: string
           description: string
           distance_m: number
+          eta_minutes: number
           location_label: string
+          message: string
           offered_amount: number
           quoted_amount: number
           request_id: string
@@ -993,7 +1025,6 @@ export type Database = {
           requester_display_name: string
           requester_rating_average: number
           requester_rating_count: number
-          response_count: number
           scheduled_for: string
         }[]
       }
@@ -1006,6 +1037,7 @@ export type Database = {
         Args: { p_latitude: number; p_longitude: number }
         Returns: {
           category_slugs: string[] | null
+          committed_request_id: string | null
           expires_at: string | null
           service_radius_m: number | null
           status: Database["public"]["Enums"]["availability_status"] | null

@@ -17,7 +17,11 @@ import {
   useRefreshActivePosition,
 } from '@/features/availability/api';
 import { useCategoryIndex } from '@/features/categories/api';
-import { useMyResponses, useNearbyRequests } from '@/features/requests/provider-api';
+import {
+  useMyResponses,
+  useNearbyRequests,
+  useWithdrawResponse,
+} from '@/features/requests/provider-api';
 import { requestStatusBadge, responseStatusBadge } from '@/features/requests/status';
 import { formatDistance, formatMoney, formatWhen } from '@/lib/format';
 import { readPositionIfPermitted } from '@/lib/location';
@@ -45,6 +49,7 @@ export default function ActivityScreen() {
   const sharesLocation = isActive || isBusy;
   const nearby = useNearbyRequests({ enabled: isActive });
   const responses = useMyResponses();
+  const withdrawResponse = useWithdrawResponse();
 
   // Keep a live position while available or while a client has selected this provider.
   // Going offline stops the refresh. Permission was granted when they went Active.
@@ -146,10 +151,7 @@ export default function ActivityScreen() {
                   formatDistance(item.distance_m),
                   item.location_label,
                   formatWhen(item.scheduled_for),
-                  item.response_count > 0
-                    ? `${item.response_count} ${item.response_count === 1 ? 'person has' : 'people have'} responded`
-                    : '',
-                ].filter(Boolean)}
+                ]}
                 onPress={() => router.push(`/respond/${item.request_id}`)}
                 footer={
                   <View className="flex-row items-center gap-3 border-t border-hairline pt-3">
@@ -198,6 +200,8 @@ export default function ActivityScreen() {
             const isConnected =
               item.response_status === 'accepted' &&
               ['accepted', 'in_progress', 'completed'].includes(item.request_status);
+            const canEdit =
+              item.response_status === 'pending' && item.request_status === 'searching';
             const badge = isConnected
               ? requestStatusBadge(item.request_status, 0)
               : responseStatusBadge(item.response_status);
@@ -215,13 +219,24 @@ export default function ActivityScreen() {
                     ? `You quoted ${formatMoney(item.quoted_amount, item.currency)}`
                     : '',
                 ].filter(Boolean)}
-                disabled={!isConnected}
-                onPress={() => router.push(`/engagement/${item.request_id}`)}
+                disabled={!isConnected && !canEdit}
+                onPress={() =>
+                  isConnected
+                    ? router.push(`/engagement/${item.request_id}`)
+                    : router.push(`/respond/${item.request_id}`)
+                }
                 footer={
                   isConnected ? (
                     <Text className="text-sm font-semibold text-active">
                       Tap to see the exact location and contact details
                     </Text>
+                  ) : item.response_status === 'pending' && item.request_status === 'searching' ? (
+                    <Button
+                      label="Withdraw response"
+                      variant="secondary"
+                      loading={withdrawResponse.isPending}
+                      onPress={() => withdrawResponse.mutate(item.response_id)}
+                    />
                   ) : item.response_status === 'declined' && item.decline_reason ? (
                     <Text className="text-sm text-muted">{item.decline_reason}</Text>
                   ) : undefined

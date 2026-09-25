@@ -522,11 +522,31 @@ select is(
 
 select pg_temp.act_as('22222222-2222-2222-2222-222222222222') as _ \gset
 
-select throws_ok(
-  format('select respond_to_request(%L)', :'request_id'),
-  '23505',
-  null,
-  'responding twice to the same request is refused'
+select lives_ok(
+  format(
+    $$select respond_to_request(%L, %L, %L, %L, %L, %L)$$,
+    :'request_id',
+    'Updated note.',
+    7500,
+    45,
+    6.5000,
+    3.3800
+  ),
+  'responding twice updates the same pending response idempotently'
+);
+
+select is(
+  (select message from public.request_responses where id = :'response_id'),
+  'Updated note.',
+  'a repeat response overwrites the message instead of creating a duplicate row'
+);
+
+select ok(
+  not (pg_get_function_result((
+    select oid from pg_proc
+    where proname = 'nearby_requests' and pronamespace = 'public'::regnamespace
+  )) ~* 'response_count'),
+  'the provider inbox never exposes how many people responded'
 );
 
 select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset

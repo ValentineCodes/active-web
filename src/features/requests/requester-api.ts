@@ -25,6 +25,7 @@ type RequestResponse = Nullable<
   | 'message'
   | 'quoted_amount'
   | 'eta_minutes'
+  | 'expires_at'
 >;
 
 type Engagement = Nullable<

@@ -157,11 +157,15 @@ export default function RequestDetailScreen() {
                 : 'Looking for someone'}
             </Text>
 
+            {responses.isPending && !responses.data ? (
+              <LoadingState label="Loading responses" />
+            ) : null}
+
             {responses.isError ? (
               <ErrorState error={responses.error} onRetry={() => responses.refetch()} />
             ) : null}
 
-            {pending.length === 0 ? (
+            {responses.isSuccess && pending.length === 0 ? (
               <Card>
                 <Text className="text-base text-muted">
                   Your request is with everyone Active nearby who offers{' '}
@@ -194,12 +198,14 @@ export default function RequestDetailScreen() {
                 ratingAverage={response.rating_average}
                 ratingCount={response.rating_count}
                 jobsCompleted={response.jobs_completed}
+                phoneVerified={response.phone_verified}
                 distanceM={response.distance_m}
                 message={response.message}
                 quotedAmount={response.quoted_amount}
                 etaMinutes={response.eta_minutes}
                 currency={data.currency}
                 createdAt={response.created_at}
+                expiresAt={response.expires_at}
                 acceptLoading={acceptResponse.isPending}
                 declineLoading={declineResponse.isPending}
                 onDecline={(reason) =>

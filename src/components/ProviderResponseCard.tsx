@@ -3,6 +3,7 @@ import { Text, View } from 'react-native';
 
 import { CatalogueStrip } from '@/components/CatalogueStrip';
 import { ProviderProfileModal } from '@/components/ProviderProfileModal';
+import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { PersonRow } from '@/components/ui/PersonRow';
@@ -22,12 +23,14 @@ export function ProviderResponseCard({
   ratingAverage,
   ratingCount,
   jobsCompleted,
+  phoneVerified,
   distanceM,
   message,
   quotedAmount,
   etaMinutes,
   currency,
   createdAt,
+  expiresAt,
   onAccept,
   onDecline,
   acceptLoading,
@@ -40,12 +43,14 @@ export function ProviderResponseCard({
   ratingAverage: number | null;
   ratingCount: number | null;
   jobsCompleted: number;
+  phoneVerified: boolean;
   distanceM: number;
   message: string | null;
   quotedAmount: number | null;
   etaMinutes: number | null;
   currency: string;
   createdAt: string;
+  expiresAt: string | null;
   onAccept: () => void;
   onDecline: (reason: string | null) => void;
   acceptLoading: boolean;
@@ -70,6 +75,8 @@ export function ProviderResponseCard({
 
       {bio ? <Text className="text-sm text-muted">{bio}</Text> : null}
 
+      {phoneVerified ? <Badge label="Phone verified" tone="info" dot={false} /> : null}
+
       <CatalogueStrip userId={providerId} />
 
       {message ? (
@@ -88,6 +95,9 @@ export function ProviderResponseCard({
           <Text className="text-sm text-muted">Can be there in {etaMinutes} min</Text>
         ) : null}
         <Text className="text-sm text-subtle">{formatAgo(createdAt)}</Text>
+        {expiresAt ? (
+          <Text className="text-sm text-subtle">Valid while the request is open</Text>
+        ) : null}
       </View>
 
       {declining ? (

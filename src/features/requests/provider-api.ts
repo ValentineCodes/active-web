@@ -79,32 +79,82 @@ type MyResponse = Nullable<
   | 'requester_display_name'
   | 'requester_avatar_path'
   | 'decline_reason'
+  | 'message'
+  | 'eta_minutes'
 >;
+
+function fromMyResponse(row: MyResponse): RespondableRequest {
+  return {
+    request_id: row.request_id,
+    category_slug: row.category_slug,
+    description: row.description,
+    category_data: row.category_data,
+    scheduled_for: row.scheduled_for,
+    offered_amount: row.offered_amount,
+    currency: row.currency,
+    location_label: row.location_label,
+    distance_m: row.distance_m,
+    requester_display_name: row.requester_display_name,
+    requester_avatar_path: row.requester_avatar_path,
+    requester_rating_average: null,
+    requester_rating_count: null,
+  };
+}
+
+export type ExistingProviderResponse = {
+  responseId: string;
+  message: string | null;
+  quotedAmount: number | null;
+  etaMinutes: number | null;
+};
 
 /** One respond-screen row: provider inbox when eligible, otherwise the public browse RPC. */
 export function useRequestForResponse(requestId: string, position: Position | null) {
   const nearby = useNearbyRequests({ enabled: true });
+  const mine = useMyResponses();
   const inbox = nearby.data?.find((item) => item.request_id === requestId);
-  const browseEnabled = nearby.isSuccess && !inbox;
+  const existingResponse = mine.data?.find(
+    (row) =>
+      row.request_id === requestId &&
+      row.response_status === 'pending' &&
+      row.request_status === 'searching',
+  );
+  const browseEnabled = nearby.isSuccess && !inbox && !existingResponse;
   const browse = useBrowseRequest(requestId, position, { enabled: browseEnabled });
 
   const request: RespondableRequest | null = inbox
     ? fromInboxRequest(inbox)
-    : browse.data
-      ? fromPublicRequest(browse.data)
-      : null;
+    : existingResponse
+      ? fromMyResponse(existingResponse)
+      : browse.data
+        ? fromPublicRequest(browse.data)
+        : null;
+
+  const existing: ExistingProviderResponse | null = existingResponse
+    ? {
+        responseId: existingResponse.response_id,
+        message: existingResponse.message,
+        quotedAmount: existingResponse.quoted_amount,
+        etaMinutes: existingResponse.eta_minutes,
+      }
+    : null;
 
   return {
     request,
-    hasRequesterProfile: Boolean(inbox),
-    needsLocation: nearby.isSuccess && !inbox && position === null,
+    existingResponse: existing,
+    hasRequesterProfile: Boolean(inbox || existingResponse),
+    needsLocation: nearby.isSuccess && !inbox && !existingResponse && position === null,
     isFetchingMatch: nearby.isFetching,
-    isPending: nearby.isPending || (browseEnabled && position !== null && browse.isPending),
-    isError: nearby.isError || browse.isError,
-    error: nearby.error ?? browse.error,
+    isPending:
+      nearby.isPending ||
+      mine.isPending ||
+      (browseEnabled && position !== null && browse.isPending),
+    isError: nearby.isError || browse.isError || mine.isError,
+    error: nearby.error ?? browse.error ?? mine.error,
     refetch: () => {
       void nearby.refetch();
       void browse.refetch();
+      void mine.refetch();
     },
   };
 }

@@ -40,6 +40,7 @@ export default function RespondScreen() {
 
   const {
     request,
+    existingResponse,
     hasRequesterProfile,
     needsLocation,
     isFetchingMatch,
@@ -52,6 +53,15 @@ export default function RespondScreen() {
   const [message, setMessage] = useState('');
   const [quote, setQuote] = useState('');
   const [eta, setEta] = useState('');
+  const seededResponseId = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!existingResponse || seededResponseId.current === existingResponse.responseId) return;
+    seededResponseId.current = existingResponse.responseId;
+    setMessage(existingResponse.message ?? '');
+    setQuote(existingResponse.quotedAmount !== null ? String(existingResponse.quotedAmount) : '');
+    setEta(existingResponse.etaMinutes !== null ? String(existingResponse.etaMinutes) : '');
+  }, [existingResponse]);
 
   const isActive = availability.data?.status === 'available';
   const isBusy = availability.data?.status === 'busy';
@@ -225,8 +235,7 @@ export default function RespondScreen() {
             </Text>
             <Button label="Go Active" onPress={() => router.push('/go-active')} />
           </Card>
-        ) : !hasRequesterProfile &&
-          (refreshPosition.isPending || isFetchingMatch || syncedPosition.current === null) ? (
+        ) : !hasRequesterProfile && (refreshPosition.isPending || isFetchingMatch) ? (
           <LoadingState label="Checking this request against what you offer" />
         ) : !hasRequesterProfile ? (
           <Card>
@@ -283,7 +292,7 @@ export default function RespondScreen() {
 
         {hasRequesterProfile ? (
           <Button
-            label="Send response"
+            label={existingResponse ? 'Update response' : 'Send response'}
             size="lg"
             disabled={Boolean(quoteError || etaError)}
             loading={respond.isPending}
