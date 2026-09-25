@@ -135,13 +135,15 @@ export default function ActivityScreen() {
                 onPress={() => router.push(`/respond/${item.request_id}`)}
                 footer={
                   <View className="flex-row items-center gap-3 border-t border-hairline pt-3">
-                    <PersonRow
-                      size="sm"
-                      avatarPath={item.requester_avatar_path}
-                      name={item.requester_display_name}
-                      ratingAverage={item.requester_rating_average}
-                      ratingCount={item.requester_rating_count}
-                    />
+                    <View className="min-w-0 flex-1">
+                      <PersonRow
+                        size="sm"
+                        avatarPath={item.requester_avatar_path}
+                        name={item.requester_display_name}
+                        ratingAverage={item.requester_rating_average}
+                        ratingCount={item.requester_rating_count}
+                      />
+                    </View>
                     <Button
                       label="Respond"
                       onPress={() => router.push(`/respond/${item.request_id}`)}

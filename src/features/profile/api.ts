@@ -5,8 +5,9 @@ import { useUserId } from '@/features/auth/session';
 import { queryKeys } from '@/lib/query/keys';
 import { supabase } from '@/lib/supabase/client';
 
-const AVATAR_BUCKET = 'avatars';
-const SIGNED_URL_TTL_SECONDS = 60 * 60;
+import { AVATAR_BUCKET, readUriBytes, uploadPrivateObject } from './storage';
+
+export { useAvatarUrl } from './avatar-url';
 
 /**
  * Shared so the onboarding gate in the root layout and the screens that render a profile
@@ -19,7 +20,7 @@ export function profileQueryOptions(userId: string) {
       const { data, error } = await supabase
         .from('profiles')
         .select(
-          'id, display_name, avatar_path, phone, bio, rating_average, rating_count, jobs_completed, requests_completed',
+          'id, display_name, avatar_path, avatar_captured_in_app, phone, bio, rating_average, rating_count, jobs_completed, requests_completed',
         )
         .eq('id', userId)
         .single();
@@ -32,6 +33,18 @@ export function profileQueryOptions(userId: string) {
 
 export function useProfile() {
   return useQuery(profileQueryOptions(useUserId()));
+}
+
+export function hasProviderPhotoReady(
+  profile:
+    | {
+        avatar_path: string | null;
+        avatar_captured_in_app: boolean;
+      }
+    | null
+    | undefined,
+) {
+  return Boolean(profile?.avatar_path && profile.avatar_captured_in_app);
 }
 
 export function useSaveProfile() {
@@ -48,59 +61,39 @@ export function useSaveProfile() {
 }
 
 /**
- * Avatars sit in a private bucket, so display needs a signed URL. Cached just short of
- * its own lifetime so a scrolling list does not re-sign the same object.
- */
-export function useAvatarUrl(path: string | null | undefined) {
-  return useQuery({
-    queryKey: queryKeys.avatarUrl(path ?? ''),
-    enabled: Boolean(path),
-    staleTime: (SIGNED_URL_TTL_SECONDS - 300) * 1000,
-    gcTime: SIGNED_URL_TTL_SECONDS * 1000,
-    queryFn: async () => {
-      const { data, error } = await supabase.storage
-        .from(AVATAR_BUCKET)
-        .createSignedUrl(path as string, SIGNED_URL_TTL_SECONDS);
-
-      if (error) throw error;
-      return data.signedUrl;
-    },
-  });
-}
-
-/**
- * Picks an image and replaces the caller's avatar. Storage policies key write access off
- * the `<user_id>/` prefix, so the path is not a client-side convention.
+ * Provider identity photos must be captured in-app (camera only). Storage policies key write
+ * access off the `<user_id>/` prefix, and confirm_avatar_capture marks the capture as valid
+ * for going Active.
  *
  * Resolves to `false` when the picker is dismissed, which is not a failure.
  */
-export function useUploadAvatar() {
+export function useCaptureProfilePhoto() {
   const userId = useUserId();
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async () => {
-      const result = await ImagePicker.launchImageLibraryAsync({
+    mutationFn: async ({ onProgress }: { onProgress?: (fraction: number) => void } = {}) => {
+      const permission = await ImagePicker.requestCameraPermissionsAsync();
+      if (!permission.granted) {
+        throw new Error('Camera access is needed for your provider profile photo.');
+      }
+
+      const result = await ImagePicker.launchCameraAsync({
         mediaTypes: ['images'],
         allowsEditing: true,
         aspect: [1, 1],
         quality: 0.7,
-        base64: true,
       });
 
       if (result.canceled) return false;
 
       const [asset] = result.assets;
-      if (!asset?.base64) throw new Error('The selected image could not be read.');
+      if (!asset?.uri) throw new Error('The photo could not be read.');
 
-      const bytes = Uint8Array.from(atob(asset.base64), (character) => character.charCodeAt(0));
+      const bytes = await readUriBytes(asset.uri);
+
       const path = `${userId}/avatar.jpg`;
-
-      const { error: uploadError } = await supabase.storage
-        .from(AVATAR_BUCKET)
-        .upload(path, bytes, { contentType: 'image/jpeg', upsert: true });
-
-      if (uploadError) throw uploadError;
+      await uploadPrivateObject(AVATAR_BUCKET, path, bytes, 'image/jpeg', onProgress);
 
       const { error } = await supabase.rpc('confirm_avatar_capture', { p_storage_path: path });
       if (error) throw error;
@@ -113,3 +106,6 @@ export function useUploadAvatar() {
     },
   });
 }
+
+/** @deprecated Use useCaptureProfilePhoto — gallery uploads cannot satisfy Active requirements. */
+export const useUploadAvatar = useCaptureProfilePhoto;

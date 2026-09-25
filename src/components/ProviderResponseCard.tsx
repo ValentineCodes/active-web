@@ -1,5 +1,8 @@
+import { useState } from 'react';
 import { Text, View } from 'react-native';
 
+import { CatalogueStrip } from '@/components/CatalogueStrip';
+import { ProviderProfileModal } from '@/components/ProviderProfileModal';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { PersonRow } from '@/components/ui/PersonRow';
@@ -11,6 +14,7 @@ import { formatAgo, formatDistance, formatMoney } from '@/lib/format';
  * where they are.
  */
 export function ProviderResponseCard({
+  providerId,
   displayName,
   avatarPath,
   bio,
@@ -28,6 +32,7 @@ export function ProviderResponseCard({
   acceptLoading,
   declineLoading,
 }: {
+  providerId: string;
   displayName: string | null;
   avatarPath: string | null;
   bio: string | null;
@@ -45,6 +50,9 @@ export function ProviderResponseCard({
   acceptLoading: boolean;
   declineLoading: boolean;
 }) {
+  const [profileOpen, setProfileOpen] = useState(false);
+  const distanceLabel = formatDistance(distanceM);
+
   return (
     <Card>
       <PersonRow
@@ -52,10 +60,13 @@ export function ProviderResponseCard({
         name={displayName}
         ratingAverage={ratingAverage}
         ratingCount={ratingCount}
-        meta={`${jobsCompleted} ${jobsCompleted === 1 ? 'job' : 'jobs'} delivered · ${formatDistance(distanceM)}`}
+        meta={`${jobsCompleted} ${jobsCompleted === 1 ? 'job' : 'jobs'} delivered · ${distanceLabel}`}
+        onPress={() => setProfileOpen(true)}
       />
 
       {bio ? <Text className="text-sm text-muted">{bio}</Text> : null}
+
+      <CatalogueStrip userId={providerId} />
 
       {message ? (
         <View className="rounded-2xl bg-surface p-3">
@@ -91,6 +102,19 @@ export function ProviderResponseCard({
           onPress={onAccept}
         />
       </View>
+
+      <ProviderProfileModal
+        visible={profileOpen}
+        onClose={() => setProfileOpen(false)}
+        providerId={providerId}
+        displayName={displayName}
+        avatarPath={avatarPath}
+        bio={bio}
+        ratingAverage={ratingAverage}
+        ratingCount={ratingCount}
+        jobsCompleted={jobsCompleted}
+        distanceLabel={distanceLabel}
+      />
     </Card>
   );
 }

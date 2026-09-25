@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
 import { Avatar } from '@/components/ui/Avatar';
 import { StarRating } from '@/components/ui/Stars';
@@ -17,6 +17,7 @@ export function PersonRow({
   meta,
   size = 'md',
   trailing,
+  onPress,
 }: {
   avatarPath: string | null | undefined;
   name: string | null;
@@ -25,12 +26,15 @@ export function PersonRow({
   meta?: string;
   size?: 'sm' | 'md';
   trailing?: ReactNode;
+  onPress?: () => void;
 }) {
-  return (
-    <View className="flex-row items-center gap-3">
+  const row = (
+    <View className="w-full min-w-0 flex-row items-center gap-3">
       <Avatar path={avatarPath} name={name} size={size} />
-      <View className="flex-1 gap-0.5">
-        <Text className="text-base font-semibold text-ink">{name}</Text>
+      <View className="min-w-0 flex-1 gap-0.5">
+        <Text className="text-base font-semibold text-ink" numberOfLines={1}>
+          {name}
+        </Text>
         {ratingAverage !== undefined ? (
           <StarRating average={ratingAverage ?? null} count={ratingCount ?? 0} />
         ) : null}
@@ -38,5 +42,17 @@ export function PersonRow({
       </View>
       {trailing}
     </View>
+  );
+
+  if (!onPress) return row;
+
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={name ? `View ${name}'s profile` : 'View profile'}
+    >
+      {row}
+    </Pressable>
   );
 }

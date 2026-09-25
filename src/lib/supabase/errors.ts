@@ -51,5 +51,10 @@ export function toUserMessage(error: unknown): string {
     }
   }
 
+  // Picker and file checks throw ordinary Errors whose text is already meant for the user.
+  if (error instanceof Error && error.message.length > 0 && error.message.length < 240) {
+    return error.message;
+  }
+
   return FALLBACK_MESSAGE;
 }

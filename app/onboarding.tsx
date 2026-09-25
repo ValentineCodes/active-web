@@ -41,7 +41,7 @@ export default function OnboardingScreen() {
           <View className="items-center gap-3">
             <Avatar path={profile?.avatar_path} name={trimmedName || null} size="lg" />
             <Pressable
-              onPress={() => uploadAvatar.mutate()}
+              onPress={() => uploadAvatar.mutate({})}
               disabled={uploadAvatar.isPending}
               accessibilityRole="button"
               accessibilityLabel="Add a profile photo"

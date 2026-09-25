@@ -1,7 +1,9 @@
+import { useState } from 'react';
 import { Linking, Platform, RefreshControl, ScrollView, Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
+import { ProviderProfileModal } from '@/components/ProviderProfileModal';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Header } from '@/components/ui/Header';
@@ -74,6 +76,7 @@ export default function EngagementScreen() {
   const categories = useCategoryIndex();
   const startRequest = useStartRequest(id);
   const completeRequest = useCompleteRequest(id);
+  const [profileOpen, setProfileOpen] = useState(false);
 
   useLiveRequest(id);
 
@@ -145,6 +148,7 @@ export default function EngagementScreen() {
             name={data.counterparty_display_name}
             ratingAverage={data.counterparty_rating_average}
             ratingCount={data.counterparty_rating_count}
+            onPress={data.viewer_is_requester ? () => setProfileOpen(true) : undefined}
           />
 
           {data.counterparty_phone ? (
@@ -293,6 +297,18 @@ export default function EngagementScreen() {
           </View>
         ) : null}
       </ScrollView>
+
+      {data.viewer_is_requester ? (
+        <ProviderProfileModal
+          visible={profileOpen}
+          onClose={() => setProfileOpen(false)}
+          providerId={data.counterparty_id}
+          displayName={data.counterparty_display_name}
+          avatarPath={data.counterparty_avatar_path}
+          ratingAverage={data.counterparty_rating_average}
+          ratingCount={data.counterparty_rating_count}
+        />
+      ) : null}
     </Screen>
   );
 }

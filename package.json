@@ -5,7 +5,7 @@
   "main": "expo-router/entry",
   "packageManager": "pnpm@11.24.0",
   "scripts": {
-    "start": "expo start",
+    "start": "expo start --clear",
     "android": "expo run:android",
     "ios": "expo run:ios",
     "build:android:dev": "npx eas-cli@latest build --platform android --profile development",
@@ -26,6 +26,7 @@
     "format:write": "prettier --write .",
     "db:start": "supabase start",
     "db:reset": "supabase db reset",
+    "db:migrate": "supabase migration up --local",
     "db:types": "supabase gen types typescript --local --schema public > src/lib/supabase/database.types.ts",
     "db:test": "supabase test db",
     "validate": "pnpm typecheck && pnpm lint && pnpm format"
@@ -50,6 +51,7 @@
     "expo-router": "~57.0.21",
     "expo-secure-store": "~57.0.4",
     "expo-status-bar": "~57.0.1",
+    "expo-video": "~57.0.5",
     "input-otp-native": "^0.6.0",
     "nativewind": "^4.2.6",
     "react": "19.2.3",

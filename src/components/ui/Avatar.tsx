@@ -4,9 +4,9 @@ import { Image } from 'expo-image';
 import { useAvatarUrl } from '@/features/profile/api';
 import { cn } from '@/lib/cn';
 
-const SIZES = { sm: 'h-10 w-10', md: 'h-14 w-14', lg: 'h-24 w-24' } as const;
+const SIZES = { sm: 40, md: 56, lg: 96 } as const;
 const TEXT_SIZES = { sm: 'text-base', md: 'text-xl', lg: 'text-3xl' } as const;
-const DOT_SIZES = { sm: 'h-2.5 w-2.5', md: 'h-3.5 w-3.5', lg: 'h-5 w-5' } as const;
+const DOT_SIZES = { sm: 10, md: 14, lg: 20 } as const;
 
 function initials(name: string | null): string {
   if (!name) return '?';
@@ -30,20 +30,19 @@ export function Avatar({
   showActiveDot?: boolean;
 }) {
   const { data: url } = useAvatarUrl(path);
+  const dimension = SIZES[size];
 
   return (
     <View className="relative">
       <View
-        className={cn(
-          'items-center justify-center overflow-hidden rounded-full bg-surface',
-          SIZES[size],
-        )}
+        className="items-center justify-center overflow-hidden rounded-full bg-surface"
+        style={{ width: dimension, height: dimension }}
         accessibilityLabel={name ? `${name}'s profile picture` : 'Profile picture'}
       >
         {url ? (
           <Image
             source={{ uri: url }}
-            style={{ width: '100%', height: '100%' }}
+            style={{ width: dimension, height: dimension, borderRadius: dimension / 2 }}
             contentFit="cover"
           />
         ) : (
@@ -53,10 +52,8 @@ export function Avatar({
 
       {showActiveDot ? (
         <View
-          className={cn(
-            'absolute bottom-0 right-0 rounded-full border-2 border-canvas bg-active',
-            DOT_SIZES[size],
-          )}
+          className="absolute bottom-0 right-0 rounded-full border-2 border-canvas bg-active"
+          style={{ width: DOT_SIZES[size], height: DOT_SIZES[size] }}
         />
       ) : null}
     </View>

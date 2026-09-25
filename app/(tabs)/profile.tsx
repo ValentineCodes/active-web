@@ -13,7 +13,13 @@ import { TextField } from '@/components/ui/TextField';
 import { useAvailability } from '@/features/availability/api';
 import { signOut } from '@/features/auth/api';
 import { useCategoryIndex } from '@/features/categories/api';
-import { useProfile, useSaveProfile, useUploadAvatar } from '@/features/profile/api';
+import { ServiceCatalogue } from '@/components/ServiceCatalogue';
+import {
+  hasProviderPhotoReady,
+  useCaptureProfilePhoto,
+  useProfile,
+  useSaveProfile,
+} from '@/features/profile/api';
 import { ServiceTag } from '@/components/ui/ServiceTag';
 import { colors } from '@/theme';
 
@@ -22,7 +28,7 @@ export default function ProfileScreen() {
   const availability = useAvailability();
   const categories = useCategoryIndex();
   const save = useSaveProfile();
-  const uploadAvatar = useUploadAvatar();
+  const capturePhoto = useCaptureProfilePhoto();
   const leave = useMutation({ mutationFn: signOut });
 
   const [draft, setDraft] = useState<{ name: string; bio: string } | null>(null);
@@ -51,10 +57,10 @@ export default function ProfileScreen() {
       <ScrollView contentContainerClassName="gap-6 p-5 pb-12">
         <View className="items-center gap-3">
           <Pressable
-            onPress={() => uploadAvatar.mutate()}
-            disabled={uploadAvatar.isPending}
+            onPress={() => capturePhoto.mutate({})}
+            disabled={capturePhoto.isPending}
             accessibilityRole="button"
-            accessibilityLabel="Change your profile photo"
+            accessibilityLabel="Take your provider profile photo"
           >
             <Avatar
               path={data.avatar_path}
@@ -64,16 +70,25 @@ export default function ProfileScreen() {
             />
           </Pressable>
           <Pressable
-            onPress={() => uploadAvatar.mutate()}
-            disabled={uploadAvatar.isPending}
+            onPress={() => capturePhoto.mutate({})}
+            disabled={capturePhoto.isPending}
             accessibilityRole="button"
-            accessibilityLabel="Change your profile photo"
+            accessibilityLabel="Take your provider profile photo"
             hitSlop={8}
           >
             <Text className="text-base font-medium text-brand">
-              {uploadAvatar.isPending ? 'Uploading…' : 'Change photo'}
+              {capturePhoto.isPending
+                ? 'Uploading…'
+                : hasProviderPhotoReady(data)
+                  ? 'Retake photo'
+                  : 'Take provider photo'}
             </Text>
           </Pressable>
+          <Text className="max-w-xs text-center text-sm text-muted">
+            Provider photos are captured in-app with your camera so requesters know who they are
+            choosing.
+          </Text>
+          {capturePhoto.isError ? <InlineError error={capturePhoto.error} /> : null}
 
           {draft ? null : (
             <>
@@ -145,6 +160,8 @@ export default function ProfileScreen() {
             <Text className="text-sm text-muted">Requests completed</Text>
           </Card>
         </View>
+
+        <ServiceCatalogue />
 
         {isActive && availability.data ? (
           <Card tone="active">

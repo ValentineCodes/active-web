@@ -182,6 +182,7 @@ export default function RequestDetailScreen() {
             {pending.map((response) => (
               <ProviderResponseCard
                 key={response.response_id}
+                providerId={response.provider_id}
                 displayName={response.display_name}
                 avatarPath={response.avatar_path}
                 bio={response.bio}

@@ -71,6 +71,22 @@ select pg_temp.make_user('33333333-3333-3333-3333-333333333333', 'Far Repairer',
 select pg_temp.make_user('44444444-4444-4444-4444-444444444444', 'Short Range Repairer', '+2348000000104') as _ \gset
 select pg_temp.make_user('55555555-5555-5555-5555-555555555555', 'Cleaner Only', '+2348000000105') as _ \gset
 select pg_temp.make_user('66666666-6666-6666-6666-666666666666', 'Never Active', '+2348000000106') as _ \gset
+
+select pg_temp.act_as('66666666-6666-6666-6666-666666666666') as _ \gset
+select pg_temp.act_as_owner() as _ \gset
+update public.profiles
+set avatar_path = null, avatar_captured_in_app = false
+where id = '66666666-6666-6666-6666-666666666666';
+
+select pg_temp.act_as('66666666-6666-6666-6666-666666666666') as _ \gset
+select throws_ok(
+  $$select go_active(6.5000, 3.3800, 10000, array['repair'], 240)$$,
+  '55000',
+  'capture a profile photo in the app before going Active',
+  'going Active without an in-app profile photo is rejected'
+);
+
+select pg_temp.act_as_owner() as _ \gset
 select pg_temp.make_user('77777777-7777-7777-7777-777777777777', 'Lapsed Repairer', '+2348000000107') as _ \gset
 
 -- Each provider going Active exercises one of the five eligibility rules.
