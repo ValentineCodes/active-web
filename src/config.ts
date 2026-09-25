@@ -37,3 +37,16 @@ export const REQUEST_REQUIRES_FUNDING = true;
 
 /** Active's service fee as a fraction of the provider amount (10% → 0.1). */
 export const SERVICE_FEE_RATE = 0.1;
+
+/** Wallet presentation. Balances and ledger writes remain server-authoritative. */
+export const WALLET = {
+  /** Amount chips for temporary manual top-up / withdraw until a wallet service is integrated. */
+  adjustAmounts: [5000, 10_000, 25_000, 50_000] as const,
+  /** Max ledger rows loaded on the wallet screen. */
+  activityLimit: 50,
+  buckets: {
+    available: 'Available',
+    locked: 'Locked',
+    pending: 'Pending',
+  },
+} as const;

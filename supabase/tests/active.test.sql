@@ -66,6 +66,17 @@ end;
 $$;
 
 select pg_temp.make_user('11111111-1111-1111-1111-111111111111', 'Amaka Requester', '+2348000000101') as _ \gset
+
+select pg_temp.act_as_owner() as _ \gset
+select lives_ok(
+  $$select public.wallet_record_deposit(
+    '11111111-1111-1111-1111-111111111111'::uuid,
+    5000000,
+    'test-seed-requester-wallet',
+    'test'
+  )$$,
+  'fund the requester wallet for escrow tests'
+);
 select pg_temp.make_user('22222222-2222-2222-2222-222222222222', 'Near Repairer', '+2348000000102') as _ \gset
 select pg_temp.make_user('33333333-3333-3333-3333-333333333333', 'Far Repairer', '+2348000000103') as _ \gset
 select pg_temp.make_user('44444444-4444-4444-4444-444444444444', 'Short Range Repairer', '+2348000000104') as _ \gset
@@ -378,6 +389,62 @@ select is(
      and idempotency_key = 'expire:' || :'funded_expired_request_id'),
   'refunded',
   'expiration records a payment transition for the refund'
+);
+
+select is(
+  (select total from public.request_escrow where request_id = :'funded_expired_request_id'::uuid),
+  8250::numeric,
+  'escrow total includes the 10% service fee on a 7500 offer'
+);
+
+select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
+select create_request(
+  'repair',
+  'Funded request to assert wallet buckets after lock.',
+  6.5000,
+  3.3800,
+  'Yaba, Lagos',
+  5000,
+  null,
+  5000
+) as wallet_lock_request_id \gset
+
+select is(
+  (select available from public.wallet_accounts
+   where user_id = '11111111-1111-1111-1111-111111111111'::uuid),
+  4994500::numeric,
+  'funding moves the charge from available into locked'
+);
+
+select is(
+  (select locked from public.wallet_accounts
+   where user_id = '11111111-1111-1111-1111-111111111111'::uuid),
+  5500::numeric,
+  'locked holds the full escrow total while searching'
+);
+
+select pg_temp.act_as_owner() as _ \gset
+update public.requests
+set expires_at = now() - interval '1 minute'
+where id = :'wallet_lock_request_id'::uuid;
+
+select ok(
+  public.expire_request(:'wallet_lock_request_id'::uuid),
+  'expiration refunds a searching funded request wallet escrow'
+);
+
+select is(
+  (select available from public.wallet_accounts
+   where user_id = '11111111-1111-1111-1111-111111111111'::uuid),
+  5000000::numeric,
+  'expiration refunds escrow back to the requester available balance'
+);
+
+select is(
+  (select locked from public.wallet_accounts
+   where user_id = '11111111-1111-1111-1111-111111111111'::uuid),
+  0::numeric,
+  'locked returns to zero after a full refund'
 );
 
 select pg_temp.act_as('66666666-6666-6666-6666-666666666666') as _ \gset

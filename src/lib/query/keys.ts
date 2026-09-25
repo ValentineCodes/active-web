@@ -18,4 +18,6 @@ export const queryKeys = {
   catalogueMediaUrl: (path: string) => ['catalogue-media-url', path] as const,
   requestMediaUrl: (path: string) => ['request-media-url', path] as const,
   notificationInbox: ['notification-inbox'] as const,
+  wallet: ['wallet'] as const,
+  walletActivity: ['wallet-activity'] as const,
 };

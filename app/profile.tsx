@@ -167,6 +167,8 @@ export default function ProfileScreen() {
           />
         )}
 
+        <Button label="Wallet" variant="secondary" onPress={() => router.push('/wallet')} />
+
         <View className="flex-row gap-3">
           <Card className="flex-1 items-start gap-1">
             <Text className="text-2xl font-bold text-ink">{data.jobs_completed}</Text>

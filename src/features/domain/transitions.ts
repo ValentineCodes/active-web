@@ -37,7 +37,14 @@ export const PAYMENT_STATUS_LABELS: Record<PaymentStatus, string> = {
   disputed: 'Disputed',
 };
 
-/** Idempotent transitions recorded in public.payment_transitions. */
+/**
+ * Idempotent transitions recorded in public.payment_transitions.
+ * Wallet buckets (public.wallet_accounts) move in sync via sync_wallet_payment_transition:
+ *   fund (create)     available → locked
+ *   handshake         locked → pending
+ *   release           pending → provider available + platform fee
+ *   refund            locked|pending → requester available
+ */
 export const PAYMENT_TRANSITIONS: Partial<Record<PaymentStatus, PaymentStatus[]>> = {
   not_required: ['not_required'],
   available: ['locked', 'not_required'],

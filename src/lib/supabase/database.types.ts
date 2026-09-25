@@ -208,6 +208,27 @@ export type Database = {
           },
         ]
       }
+      platform_wallet: {
+        Row: {
+          available: number
+          currency: string
+          id: number
+          updated_at: string
+        }
+        Insert: {
+          available?: number
+          currency?: string
+          id?: number
+          updated_at?: string
+        }
+        Update: {
+          available?: number
+          currency?: string
+          id?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profile_catalogue_media: {
         Row: {
           created_at: string
@@ -457,6 +478,61 @@ export type Database = {
             columns: ["request_id"]
             isOneToOne: true
             referencedRelation: "requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      request_escrow: {
+        Row: {
+          created_at: string
+          currency: string
+          escrow_bucket: string
+          provider_amount: number
+          request_id: string
+          requester_id: string
+          service_fee: number
+          total: number
+        }
+        Insert: {
+          created_at?: string
+          currency?: string
+          escrow_bucket?: string
+          provider_amount: number
+          request_id: string
+          requester_id: string
+          service_fee: number
+          total: number
+        }
+        Update: {
+          created_at?: string
+          currency?: string
+          escrow_bucket?: string
+          provider_amount?: number
+          request_id?: string
+          requester_id?: string
+          service_fee?: number
+          total?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "request_escrow_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: true
+            referencedRelation: "my_requests"
+            referencedColumns: ["request_id"]
+          },
+          {
+            foreignKeyName: "request_escrow_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: true
+            referencedRelation: "requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "request_escrow_requester_id_fkey"
+            columns: ["requester_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -804,6 +880,105 @@ export type Database = {
           },
         ]
       }
+      wallet_accounts: {
+        Row: {
+          available: number
+          currency: string
+          locked: number
+          pending: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          available?: number
+          currency?: string
+          locked?: number
+          pending?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          available?: number
+          currency?: string
+          locked?: number
+          pending?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wallet_accounts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      wallet_ledger: {
+        Row: {
+          available_delta: number
+          created_at: string
+          external_reference: string | null
+          id: string
+          idempotency_key: string
+          kind: string
+          locked_delta: number
+          pending_delta: number
+          platform_available_delta: number
+          request_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          available_delta?: number
+          created_at?: string
+          external_reference?: string | null
+          id?: string
+          idempotency_key: string
+          kind: string
+          locked_delta?: number
+          pending_delta?: number
+          platform_available_delta?: number
+          request_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          available_delta?: number
+          created_at?: string
+          external_reference?: string | null
+          id?: string
+          idempotency_key?: string
+          kind?: string
+          locked_delta?: number
+          pending_delta?: number
+          platform_available_delta?: number
+          request_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wallet_ledger_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "my_requests"
+            referencedColumns: ["request_id"]
+          },
+          {
+            foreignKeyName: "wallet_ledger_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wallet_ledger_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       my_availability: {
@@ -974,6 +1149,86 @@ export type Database = {
           },
         ]
       }
+      my_wallet: {
+        Row: {
+          available: number | null
+          currency: string | null
+          locked: number | null
+          pending: number | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          available?: number | null
+          currency?: string | null
+          locked?: number | null
+          pending?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          available?: number | null
+          currency?: string | null
+          locked?: number | null
+          pending?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wallet_accounts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      my_wallet_activity: {
+        Row: {
+          available_delta: number | null
+          created_at: string | null
+          id: string | null
+          kind: string | null
+          locked_delta: number | null
+          pending_delta: number | null
+          request_id: string | null
+        }
+        Insert: {
+          available_delta?: number | null
+          created_at?: string | null
+          id?: string | null
+          kind?: string | null
+          locked_delta?: number | null
+          pending_delta?: number | null
+          request_id?: string | null
+        }
+        Update: {
+          available_delta?: number | null
+          created_at?: string | null
+          id?: string | null
+          kind?: string | null
+          locked_delta?: number | null
+          pending_delta?: number | null
+          request_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wallet_ledger_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "my_requests"
+            referencedColumns: ["request_id"]
+          },
+          {
+            foreignKeyName: "wallet_ledger_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       accept_response: { Args: { p_response_id: string }; Returns: string }
@@ -1054,6 +1309,14 @@ export type Database = {
       }
       complete_request: { Args: { p_request_id: string }; Returns: undefined }
       completion_confirmation_interval: { Args: never; Returns: string }
+      compute_request_charge: {
+        Args: { p_provider_amount: number }
+        Returns: {
+          provider_amount: number
+          service_fee: number
+          total: number
+        }[]
+      }
       confirm_avatar_capture: {
         Args: { p_storage_path: string }
         Returns: undefined
@@ -1085,6 +1348,7 @@ export type Database = {
         Args: { p_reason?: string; p_response_id: string }
         Returns: undefined
       }
+      ensure_wallet_account: { Args: { p_user_id: string }; Returns: undefined }
       expand_request_radius: { Args: { p_request_id: string }; Returns: number }
       expire_due_requests: { Args: { p_limit?: number }; Returns: number }
       expire_request: { Args: { p_request_id: string }; Returns: boolean }
@@ -1226,6 +1490,10 @@ export type Database = {
           status: Database["public"]["Enums"]["response_status"]
         }[]
       }
+      lock_request_escrow: {
+        Args: { p_idempotency_key: string; p_request_id: string }
+        Returns: undefined
+      }
       mark_service_complete: {
         Args: { p_request_id: string }
         Returns: undefined
@@ -1281,6 +1549,20 @@ export type Database = {
           requester_rating_count: number
           scheduled_for: string
         }[]
+      }
+      post_wallet_ledger: {
+        Args: {
+          p_available_delta: number
+          p_external_reference?: string
+          p_idempotency_key: string
+          p_kind: string
+          p_locked_delta: number
+          p_pending_delta: number
+          p_platform_available_delta?: number
+          p_request_id: string
+          p_user_id: string
+        }
+        Returns: undefined
       }
       provider_location_recently_updated: {
         Args: { p_provider_id: string; p_request_id: string }
@@ -1372,6 +1654,32 @@ export type Database = {
       }
       service_problem_response_interval: { Args: never; Returns: string }
       start_request: { Args: { p_request_id: string }; Returns: undefined }
+      sync_wallet_payment_transition: {
+        Args: {
+          p_from: Database["public"]["Enums"]["payment_status"]
+          p_idempotency_key: string
+          p_request_id: string
+          p_to: Database["public"]["Enums"]["payment_status"]
+        }
+        Returns: undefined
+      }
+      wallet_record_deposit: {
+        Args: {
+          p_amount: number
+          p_external_reference?: string
+          p_idempotency_key: string
+          p_user_id: string
+        }
+        Returns: undefined
+      }
+      wallet_top_up: {
+        Args: { p_amount: number; p_idempotency_key: string }
+        Returns: undefined
+      }
+      wallet_withdraw: {
+        Args: { p_amount: number; p_idempotency_key: string }
+        Returns: undefined
+      }
       withdraw_response: { Args: { p_response_id: string }; Returns: undefined }
     }
     Enums: {

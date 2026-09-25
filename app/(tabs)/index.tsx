@@ -18,9 +18,10 @@ import { useAvailability, useGoOffline } from '@/features/availability/api';
 import { useCategoryIndex } from '@/features/categories/api';
 import { useProfile } from '@/features/profile/api';
 import { useMyResponses } from '@/features/requests/provider-api';
+import { useMyWallet } from '@/features/wallet/api';
 import { useMyRequests } from '@/features/requests/requester-api';
 import { requestStatusBadge } from '@/features/requests/status';
-import { formatWhen } from '@/lib/format';
+import { formatMoney, formatWhen } from '@/lib/format';
 import { queryKeys } from '@/lib/query/keys';
 import { colors } from '@/theme';
 
@@ -29,6 +30,7 @@ export default function HomeScreen() {
   const availability = useAvailability();
   const requests = useMyRequests();
   const responses = useMyResponses();
+  const wallet = useMyWallet();
   const categories = useCategoryIndex();
   const goOffline = useGoOffline();
   const queryClient = useQueryClient();
@@ -71,6 +73,7 @@ export default function HomeScreen() {
               requests.refetch();
               responses.refetch();
               availability.refetch();
+              wallet.refetch();
               queryClient.invalidateQueries({ queryKey: queryKeys.browseNearbyAll });
             }}
           />
@@ -100,6 +103,27 @@ export default function HomeScreen() {
             Ask for help, or become available to help. Both are temporary.
           </Text>
         </View>
+
+        <Pressable
+          onPress={() => router.push('/wallet')}
+          accessibilityRole="button"
+          accessibilityLabel="Open wallet"
+        >
+          <Card className="flex-row items-center justify-between gap-3">
+            <View className="flex-row items-center gap-3">
+              <View className="h-11 w-11 items-center justify-center rounded-full bg-brand-soft">
+                <Ionicons name="wallet-outline" size={22} color={colors.brand} />
+              </View>
+              <View className="gap-0.5">
+                <Text className="text-sm font-semibold text-muted">Wallet</Text>
+                <Text className="text-lg font-bold text-ink">
+                  {wallet.data ? formatMoney(wallet.data.available, wallet.data.currency) : '—'}
+                </Text>
+              </View>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={colors.subtle} />
+          </Card>
+        </Pressable>
 
         {engagementAsRequester || engagementAsProvider ? (
           <Link

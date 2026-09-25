@@ -7,7 +7,8 @@ export type RequestFundingSummary = {
   currency: string;
 };
 
-/** What the requester pays and how it splits before the request is submitted. */
+/** What the requester pays and how it splits before the request is submitted.
+ *  Server-side public.compute_request_charge uses the same fee rule at escrow lock. */
 export function summarizeRequestFunding(offeredAmount: number): RequestFundingSummary {
   const providerAmount = offeredAmount;
   const serviceFee = Math.round(offeredAmount * SERVICE_FEE_RATE);
