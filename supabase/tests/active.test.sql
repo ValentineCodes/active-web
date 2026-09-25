@@ -312,6 +312,75 @@ select is(
   'an expired request cannot be opened from discovery'
 );
 
+select pg_temp.act_as_owner() as _ \gset
+select is(
+  public.expire_request(:'expired_request_id'::uuid),
+  true,
+  'expire_request persists a due searching request as expired'
+);
+
+select is(
+  public.expire_request(:'expired_request_id'::uuid),
+  false,
+  'expire_request is idempotent once the request is already expired'
+);
+
+select is(
+  (select status::text from public.requests where id = :'expired_request_id'::uuid),
+  'expired',
+  'expiration writes the expired status on the request row'
+);
+
+select is(
+  (select count(*) from public.requests where id = :'expired_request_id'::uuid),
+  1::bigint,
+  'expiration keeps the request in history instead of deleting it'
+);
+
+select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
+select is(
+  (select status::text from my_requests where request_id = :'expired_request_id'::uuid),
+  'expired',
+  'the requester still sees an expired request in their list'
+);
+
+select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
+select create_request(
+  'repair',
+  'Funded request that should refund when the search window ends.',
+  6.5000,
+  3.3800,
+  'Yaba, Lagos',
+  5000,
+  null,
+  7500
+) as funded_expired_request_id \gset
+
+select pg_temp.act_as_owner() as _ \gset
+update public.requests
+set expires_at = now() - interval '1 minute'
+where id = :'funded_expired_request_id'::uuid;
+
+select ok(
+  public.expire_request(:'funded_expired_request_id'::uuid),
+  'expiration refunds locked funds on a funded request'
+);
+
+select is(
+  (select payment_status::text from public.requests where id = :'funded_expired_request_id'::uuid),
+  'refunded',
+  'expiration moves locked payment status to refunded'
+);
+
+select is(
+  (select to_status::text from public.payment_transitions
+   where request_id = :'funded_expired_request_id'::uuid
+     and idempotency_key = 'expire:' || :'funded_expired_request_id'),
+  'refunded',
+  'expiration records a payment transition for the refund'
+);
+
+select pg_temp.act_as('66666666-6666-6666-6666-666666666666') as _ \gset
 select is(
   (select count(*) from browse_nearby_requests(6.5000::double precision, 3.3800::double precision) where request_id = :'cancelled_request_id'),
   0::bigint,
@@ -870,6 +939,49 @@ select is(
   (select count(*) from nearby_requests() where request_id = :'second_request_id'),
   0::bigint,
   'a declined request stays out of the Active inbox'
+);
+
+select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
+select create_request(
+  'repair',
+  'Handshake should win even after the search window timestamp passes.',
+  6.5000,
+  3.3800,
+  'Yaba, Lagos',
+  10000
+) as boundary_request_id \gset
+
+select pg_temp.act_as('33333333-3333-3333-3333-333333333333') as _ \gset
+select respond_to_request(
+  :'boundary_request_id',
+  'Still here at the deadline.',
+  7000,
+  30,
+  6.5600,
+  3.3800
+) as boundary_response_id \gset
+
+select pg_temp.act_as_owner() as _ \gset
+update public.requests
+set expires_at = now() - interval '1 minute'
+where id = :'boundary_request_id'::uuid;
+
+select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
+select lives_ok(
+  format('select accept_response(%L)', :'boundary_response_id'),
+  'a handshake still succeeds after expires_at when no expiration job has run yet'
+);
+
+select pg_temp.act_as_owner() as _ \gset
+select ok(
+  not public.expire_request(:'boundary_request_id'::uuid),
+  'expiration does not override a request that already has a handshake'
+);
+
+select is(
+  (select status::text from public.requests where id = :'boundary_request_id'::uuid),
+  'accepted',
+  'the handshake keeps the request out of the expired state'
 );
 
 select * from finish();
