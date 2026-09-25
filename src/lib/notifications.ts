@@ -65,6 +65,7 @@ export function useNotificationBridge() {
   useEffect(() => {
     const refreshInbox = () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.notificationInbox });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.notificationUnreadCount });
     };
 
     syncPushToken({ prompt: false });

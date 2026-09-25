@@ -171,6 +171,7 @@ export type Database = {
           body: string
           created_at: string
           id: string
+          read_at: string | null
           title: string
           url: string | null
           user_id: string
@@ -179,6 +180,7 @@ export type Database = {
           body: string
           created_at?: string
           id?: string
+          read_at?: string | null
           title: string
           url?: string | null
           user_id: string
@@ -187,6 +189,7 @@ export type Database = {
           body?: string
           created_at?: string
           id?: string
+          read_at?: string | null
           title?: string
           url?: string | null
           user_id?: string
@@ -1539,6 +1542,7 @@ export type Database = {
         Args: { p_idempotency_key: string; p_request_id: string }
         Returns: undefined
       }
+      mark_notification_inbox_read: { Args: never; Returns: undefined }
       mark_service_complete: {
         Args: { p_request_id: string }
         Returns: undefined

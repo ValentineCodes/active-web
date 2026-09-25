@@ -11,12 +11,13 @@ export type InboxNotification = {
   body: string;
   url: string | null;
   receivedAt: string;
+  readAt: string | null;
 };
 
 async function fetchInbox(): Promise<InboxNotification[]> {
   const { data, error } = await supabase
     .from('notification_inbox')
-    .select('id, title, body, url, created_at')
+    .select('id, title, body, url, created_at, read_at')
     .order('created_at', { ascending: false })
     .limit(INBOX_LIMIT);
 
@@ -28,7 +29,23 @@ async function fetchInbox(): Promise<InboxNotification[]> {
     body: row.body,
     url: row.url,
     receivedAt: row.created_at,
+    readAt: row.read_at,
   }));
+}
+
+async function fetchUnreadCount(): Promise<number> {
+  const { count, error } = await supabase
+    .from('notification_inbox')
+    .select('id', { count: 'exact', head: true })
+    .is('read_at', null);
+
+  if (error) throw error;
+  return count ?? 0;
+}
+
+export async function markNotificationInboxRead(): Promise<void> {
+  const { error } = await supabase.rpc('mark_notification_inbox_read');
+  if (error) throw error;
 }
 
 export function useNotificationInbox() {
@@ -39,7 +56,17 @@ export function useNotificationInbox() {
   });
 }
 
+export function useNotificationUnreadCount() {
+  return useQuery({
+    queryKey: queryKeys.notificationUnreadCount,
+    queryFn: fetchUnreadCount,
+  });
+}
+
 export function useRefreshNotificationInbox() {
   const queryClient = useQueryClient();
-  return () => queryClient.invalidateQueries({ queryKey: queryKeys.notificationInbox });
+  return () => {
+    void queryClient.invalidateQueries({ queryKey: queryKeys.notificationInbox });
+    void queryClient.invalidateQueries({ queryKey: queryKeys.notificationUnreadCount });
+  };
 }

@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { FlatList, Pressable, RefreshControl, Text, View } from 'react-native';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import * as Notifications from 'expo-notifications';
 import { formatDistanceToNowStrict } from 'date-fns';
 
@@ -8,13 +8,25 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Screen } from '@/components/ui/Screen';
 import { EmptyState, LoadingState } from '@/components/ui/StateView';
-import { useNotificationInbox } from '@/features/notifications/inbox';
+import { markNotificationInboxRead, useNotificationInbox } from '@/features/notifications/inbox';
+import { queryKeys } from '@/lib/query/keys';
+import { useQueryClient } from '@tanstack/react-query';
 import { syncPushToken } from '@/lib/notifications';
 
 export default function NotificationsScreen() {
+  const queryClient = useQueryClient();
   const inbox = useNotificationInbox();
   const [permission, setPermission] = useState<Notifications.PermissionStatus | null>(null);
   const [enabling, setEnabling] = useState(false);
+
+  useFocusEffect(
+    useCallback(() => {
+      void markNotificationInboxRead().then(() => {
+        void queryClient.invalidateQueries({ queryKey: queryKeys.notificationUnreadCount });
+        void queryClient.invalidateQueries({ queryKey: queryKeys.notificationInbox });
+      });
+    }, [queryClient]),
+  );
 
   useEffect(() => {
     void Notifications.getPermissionsAsync().then((result) => setPermission(result.status));

@@ -714,6 +714,19 @@ select ok(
   'in-app inbox stores response notifications for the requester'
 );
 
+select mark_notification_inbox_read();
+
+select is(
+  (
+    select count(*)::bigint
+    from public.notification_inbox ni
+    where ni.user_id = '11111111-1111-1111-1111-111111111111'::uuid
+      and ni.read_at is null
+  ),
+  0::bigint,
+  'opening the inbox marks notifications read for the badge'
+);
+
 select pg_temp.act_as('33333333-3333-3333-3333-333333333333') as _ \gset
 select respond_to_request(
   :'request_id',

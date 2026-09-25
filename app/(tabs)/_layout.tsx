@@ -2,7 +2,7 @@ import type { ColorValue } from 'react-native';
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
-import { useNotificationInbox } from '@/features/notifications/inbox';
+import { useNotificationUnreadCount } from '@/features/notifications/inbox';
 import { useNotificationBridge } from '@/lib/notifications';
 import { useMyRequests } from '@/features/requests/requester-api';
 import { colors, shadow } from '@/theme';
@@ -27,7 +27,8 @@ function TabIcon({
 
 export default function TabsLayout() {
   const { data: requests } = useMyRequests();
-  const inbox = useNotificationInbox();
+  const unreadNotifications = useNotificationUnreadCount();
+  const unreadCount = unreadNotifications.data ?? 0;
 
   useNotificationBridge();
 
@@ -87,7 +88,7 @@ export default function TabsLayout() {
         name="notifications"
         options={{
           title: 'Notifications',
-          tabBarBadge: (inbox.data?.length ?? 0) > 0 ? inbox.data?.length : undefined,
+          tabBarBadge: unreadCount > 0 ? unreadCount : undefined,
           tabBarIcon: (props) => (
             <TabIcon {...props} focusedName="notifications" outlineName="notifications-outline" />
           ),
