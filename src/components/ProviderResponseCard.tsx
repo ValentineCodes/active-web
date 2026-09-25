@@ -143,7 +143,7 @@ export function ProviderResponseCard({
             onPress={() => setDeclining(true)}
           />
           <Button
-            label="Accept"
+            label="Select"
             variant="active"
             className="flex-1"
             loading={acceptLoading}

@@ -1,6 +1,8 @@
+import { useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { useBrowseRequest, type PublicRequest } from '@/features/requests/browse-api';
+import { useUserId } from '@/features/auth/session';
 import type { Position } from '@/lib/location';
 import { queryKeys } from '@/lib/query/keys';
 import { supabase } from '@/lib/supabase/client';
@@ -168,6 +170,47 @@ export function useRequestForResponse(requestId: string, position: Position | nu
  * stream to subscribe to here. The inbox refreshes on focus, on pull, and when a push
  * notification arrives.
  */
+/**
+ * While Active or committed to a job, refresh when a requester selects this provider
+ * (response accepted) or when commitment clears at the end of a job.
+ */
+export function useLiveProviderHandshake() {
+  const userId = useUserId();
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    if (!userId) return;
+
+    const channel = supabase
+      .channel(`provider-handshake:${userId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'request_responses',
+          filter: `provider_id=eq.${userId}`,
+        },
+        (payload) => {
+          const next = payload.new as { status?: string; request_id?: string };
+          if (next.status !== 'accepted' && next.status !== 'pending') return;
+
+          queryClient.invalidateQueries({ queryKey: queryKeys.availability });
+          queryClient.invalidateQueries({ queryKey: queryKeys.myResponses });
+          queryClient.invalidateQueries({ queryKey: queryKeys.nearbyRequests });
+          if (next.request_id) {
+            queryClient.invalidateQueries({ queryKey: queryKeys.engagement(next.request_id) });
+          }
+        },
+      )
+      .subscribe();
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [userId, queryClient]);
+}
+
 export function useNearbyRequests(options: { enabled: boolean }) {
   return useQuery({
     queryKey: queryKeys.nearbyRequests,

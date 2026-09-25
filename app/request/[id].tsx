@@ -213,12 +213,12 @@ export default function RequestDetailScreen() {
                 }
                 onAccept={() =>
                   Alert.alert(
-                    `Accept ${response.display_name}?`,
-                    'They will get your exact location and phone number, and you get theirs. Everyone else who responded will be told the request is taken.',
+                    `Select ${response.display_name}?`,
+                    'This is the handshake — you can only choose one person. They get your exact location and phone number, you get theirs, and everyone else who responded is turned down.',
                     [
                       { text: 'Not yet', style: 'cancel' },
                       {
-                        text: 'Accept',
+                        text: 'Select',
                         onPress: () => acceptResponse.mutate(response.response_id),
                       },
                     ],

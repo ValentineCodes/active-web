@@ -18,6 +18,7 @@ import {
 } from '@/features/availability/api';
 import { useCategoryIndex } from '@/features/categories/api';
 import {
+  useLiveProviderHandshake,
   useMyResponses,
   useNearbyRequests,
   useWithdrawResponse,
@@ -51,6 +52,10 @@ export default function ActivityScreen() {
   const responses = useMyResponses();
   const withdrawResponse = useWithdrawResponse();
 
+  useLiveProviderHandshake();
+
+  const committedRequestId = availability.data?.committed_request_id ?? null;
+
   // Keep a live position while available or while a client has selected this provider.
   // Going offline stops the refresh. Permission was granted when they went Active.
   useFocusEffect(
@@ -70,12 +75,21 @@ export default function ActivityScreen() {
         <Text className="text-3xl font-bold text-ink">Activity</Text>
 
         {isBusy ? (
-          <Card tone="active" className="gap-1">
-            <Badge label="Selected" tone="active" />
-            <Text className="text-sm text-muted">
-              A client selected you, so other requests pause until this job ends. Responding on its
-              own never does that.
-            </Text>
+          <Card tone="active" className="gap-3">
+            <View className="gap-1">
+              <Badge label="You've been selected!" tone="active" />
+              <Text className="text-sm text-muted">
+                You are committed to this job until it ends. Other requests pause; sending a
+                response alone never does that.
+              </Text>
+            </View>
+            {committedRequestId ? (
+              <Button
+                label="Open job details"
+                variant="active"
+                onPress={() => router.push(`/engagement/${committedRequestId}`)}
+              />
+            ) : null}
           </Card>
         ) : null}
 

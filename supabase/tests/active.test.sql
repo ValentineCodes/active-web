@@ -568,9 +568,33 @@ select is(
   'the request reports a waiting response while it is still searching'
 );
 
+select pg_temp.act_as('33333333-3333-3333-3333-333333333333') as _ \gset
+select respond_to_request(
+  :'request_id',
+  'I can take this one too.',
+  6500,
+  25,
+  6.5400,
+  3.3800
+) as alternate_response_id \gset
+
+select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
+select is(
+  (select count(*) from list_request_responses(:'request_id')),
+  2::bigint,
+  'the requester can compare multiple pending responses before the handshake'
+);
+
 select lives_ok(
   format('select accept_response(%L)', :'response_id'),
   'the requester accepts one provider'
+);
+
+select throws_ok(
+  format('select accept_response(%L)', :'alternate_response_id'),
+  '55000',
+  'this request is already accepted',
+  'a requester cannot handshake with a second provider on the same request'
 );
 
 select is(
@@ -580,6 +604,21 @@ select is(
 );
 
 select pg_temp.act_as_owner() as _ \gset
+select is(
+  (select count(*) from public.handshakes where request_id = :'request_id'::uuid),
+  1::bigint,
+  'acceptance creates exactly one immutable handshake record'
+);
+
+select ok(
+  pg_get_functiondef((
+    select oid from pg_proc
+    where proname = 'notify_provider_of_acceptance'
+      and pronamespace = 'public'::regnamespace
+  )) ~* 'been selected',
+  'the provider push uses the handshake selection title'
+);
+
 select is(
   (select status::text from public.provider_availability
    where user_id = '22222222-2222-2222-2222-222222222222'),

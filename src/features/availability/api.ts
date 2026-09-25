@@ -25,7 +25,9 @@ export function useAvailability() {
     queryFn: async (): Promise<MyAvailability> => {
       const { data, error } = await supabase
         .from('my_availability')
-        .select('status, service_radius_m, went_active_at, expires_at, category_slugs')
+        .select(
+          'status, service_radius_m, went_active_at, expires_at, category_slugs, committed_request_id',
+        )
         .eq('user_id', userId)
         .single();
 
