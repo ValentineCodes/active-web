@@ -96,6 +96,13 @@ select lives_ok(
   'a provider can go Active with a category, a radius and a duration'
 );
 
+select is(
+  (select count(*)::bigint from public.profile_catalogue_media
+   where user_id = '22222222-2222-2222-2222-222222222222'),
+  0::bigint,
+  'going Active does not require catalogue photos or video'
+);
+
 select pg_temp.act_as('33333333-3333-3333-3333-333333333333') as _ \gset
 select lives_ok($$select go_active(6.5600, 3.3800, 10000, array['repair'], 240)$$);
 
@@ -436,6 +443,38 @@ select is(
   'a browser cannot see who responded or how many responses exist'
 );
 
+select pg_temp.act_as_owner() as _ \gset
+select is(
+  (select status::text from public.provider_availability
+   where user_id = '22222222-2222-2222-2222-222222222222'),
+  'available',
+  'responding leaves the provider available for other requests'
+);
+
+select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
+select create_request(
+  'repair',
+  'Second generator, same street, still will not start.',
+  6.5000,
+  3.3800,
+  'Yaba, Lagos',
+  5000
+) as second_request_id \gset
+
+select pg_temp.act_as('22222222-2222-2222-2222-222222222222') as _ \gset
+select lives_ok(
+  format('select respond_to_request(%L)', :'second_request_id'),
+  'a provider can respond to another request without becoming unavailable'
+);
+
+select pg_temp.act_as_owner() as _ \gset
+select is(
+  (select status::text from public.provider_availability
+   where user_id = '22222222-2222-2222-2222-222222222222'),
+  'available',
+  'a second response still leaves the provider available'
+);
+
 select pg_temp.act_as('22222222-2222-2222-2222-222222222222') as _ \gset
 
 select throws_ok(
@@ -560,6 +599,88 @@ select is(
    where user_id = '22222222-2222-2222-2222-222222222222'),
   'available',
   'finishing the job returns the provider to the pool'
+);
+
+-- Going offline drops the provider from matching and clears the live position, while the
+-- services and radius they last chose remain for the next session.
+select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
+select create_request(
+  'repair',
+  'Need a repair after the last provider went back to the pool.',
+  6.5000,
+  3.3800,
+  'Yaba, Lagos',
+  5000
+) as later_request_id \gset
+
+select pg_temp.act_as('22222222-2222-2222-2222-222222222222') as _ \gset
+select is(
+  (select count(*) from nearby_requests() where request_id = :'later_request_id'),
+  1::bigint,
+  'a provider who finished a job can still discover a new request'
+);
+
+select lives_ok($$select go_offline()$$, 'a provider can go offline');
+
+select is(
+  (select status::text from my_availability
+   where user_id = '22222222-2222-2222-2222-222222222222'),
+  'offline',
+  'going offline reports the provider as offline'
+);
+
+select is(
+  (select service_radius_m from my_availability
+   where user_id = '22222222-2222-2222-2222-222222222222'),
+  10000,
+  'going offline keeps the last service radius'
+);
+
+select is(
+  (select category_slugs from my_availability
+   where user_id = '22222222-2222-2222-2222-222222222222'),
+  array['repair']::text[],
+  'going offline keeps the services they last offered'
+);
+
+select is(
+  (select count(*) from nearby_requests() where request_id = :'later_request_id'),
+  0::bigint,
+  'an offline provider is removed from matching'
+);
+
+select pg_temp.act_as_owner() as _ \gset
+select ok(
+  (select location is null from public.provider_availability
+   where user_id = '22222222-2222-2222-2222-222222222222'),
+  'going offline stops location participation'
+);
+
+select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
+select is(
+  (select count(*) from list_request_responses(:'second_request_id')),
+  0::bigint,
+  'an offline provider is not listed as someone who can help'
+);
+
+select is(
+  (select pending_response_count from my_requests where request_id = :'second_request_id'),
+  0,
+  'an offline provider is not counted as a waiting response'
+);
+
+select pg_temp.act_as_owner() as _ \gset
+select id as offline_response_id
+from public.request_responses
+where request_id = :'second_request_id'
+  and provider_id = '22222222-2222-2222-2222-222222222222' \gset
+
+select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
+select throws_ok(
+  format('select accept_response(%L)', :'offline_response_id'),
+  '55000',
+  'This person is no longer available.',
+  'accepting an offline provider says they are no longer available'
 );
 
 select * from finish();

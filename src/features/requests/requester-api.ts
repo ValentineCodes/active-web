@@ -337,6 +337,10 @@ export function useAcceptResponse(requestId: string) {
       queryClient.invalidateQueries({ queryKey: queryKeys.requestResponses(requestId) });
       queryClient.invalidateQueries({ queryKey: queryKeys.engagement(requestId) });
     },
+    onError: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.myRequest(requestId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.requestResponses(requestId) });
+    },
   });
 }
 

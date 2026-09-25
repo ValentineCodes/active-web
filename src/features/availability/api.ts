@@ -8,8 +8,9 @@ import type { Database } from '@/lib/supabase/database.types';
 import type { Guaranteed } from '@/lib/supabase/types';
 
 /**
- * `status` and `category_slugs` always resolve; the radius and window are null exactly
- * when the user is offline.
+ * `status` and `category_slugs` always resolve. The window is null while offline. The
+ * last service radius is kept so the next Active session can start from it, and matching
+ * ignores it until the user is available with a location again.
  */
 type MyAvailability = Guaranteed<
   Database['public']['Views']['my_availability']['Row'],
@@ -37,8 +38,8 @@ export function useAvailability() {
 }
 
 /**
- * The position is captured by the screen immediately after the user taps Go Active, so
- * the permission prompt is attached to that choice and nothing else.
+ * Called only after the screen has a profile photo, at least one category, a radius,
+ * and a location the user just permitted. Going Active does not create a response.
  */
 export function useGoActive() {
   const queryClient = useQueryClient();

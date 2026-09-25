@@ -116,6 +116,7 @@ export default function HomeScreen() {
                 </Text>
                 <Text className="text-base text-muted">
                   Exact location and contact details are open. Tap to see them.
+                  {engagementAsProvider ? ' Other requests pause until this job ends.' : ''}
                 </Text>
               </Card>
             </Pressable>

@@ -41,26 +41,38 @@ export default function ActivityScreen() {
   const refreshPosition = useRefreshActivePosition();
 
   const isActive = availability.data?.status === 'available';
+  const isBusy = availability.data?.status === 'busy';
+  const sharesLocation = isActive || isBusy;
   const nearby = useNearbyRequests({ enabled: isActive });
   const responses = useMyResponses();
 
-  // Match against where the provider is now, not where they were when they went Active.
-  // Permission was granted at that moment, so this never prompts.
+  // Keep a live position while available or while a client has selected this provider.
+  // Going offline stops the refresh. Permission was granted when they went Active.
   useFocusEffect(
     useCallback(() => {
-      if (!isActive) return;
+      if (!sharesLocation) return;
 
       readPositionIfPermitted().then((position) => {
         if (position) refreshPosition.mutate(position);
       });
       // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isActive]),
+    }, [sharesLocation]),
   );
 
   return (
     <Screen>
       <View className="gap-4 p-5 pb-2">
         <Text className="text-3xl font-bold text-ink">Activity</Text>
+
+        {isBusy ? (
+          <Card tone="active" className="gap-1">
+            <Badge label="Selected" tone="active" />
+            <Text className="text-sm text-muted">
+              A client selected you, so other requests pause until this job ends. Responding on its
+              own never does that.
+            </Text>
+          </Card>
+        ) : null}
 
         {isActive && availability.data?.expires_at ? (
           <Card tone="active" className="flex-row items-center gap-3">
@@ -84,11 +96,17 @@ export default function ActivityScreen() {
       </View>
 
       {tab === 'nearby' ? (
-        !isActive ? (
+        isBusy ? (
+          <EmptyState
+            icon="hand-left-outline"
+            title="Paused for this job"
+            message="You stay out of new matches until this job ends. Requests you already answered are under Your responses."
+          />
+        ) : !isActive ? (
           <EmptyState
             icon="flash-outline"
             title="You're offline"
-            message="Go Active to choose what you can help with, set how far you'll travel, and start seeing requests near you."
+            message="Go Active to choose what you can help with, set how far you'll travel, and start seeing requests near you. You answer only the ones you want."
             action={{ label: 'Go Active', onPress: () => router.push('/go-active') }}
           />
         ) : nearby.isPending ? (

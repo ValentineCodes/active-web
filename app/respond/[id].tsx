@@ -46,6 +46,7 @@ export default function RespondScreen() {
   const [eta, setEta] = useState('');
 
   const isActive = availability.data?.status === 'available';
+  const isBusy = availability.data?.status === 'busy';
 
   useFocusEffect(
     useCallback(() => {
@@ -184,11 +185,19 @@ export default function RespondScreen() {
           ) : null}
         </Card>
 
-        {!isActive ? (
+        {isBusy ? (
+          <Card>
+            <Text className="text-base text-ink">You&apos;re on a job.</Text>
+            <Text className="text-sm text-muted">
+              A client already selected you, so new responses wait until that job ends.
+            </Text>
+          </Card>
+        ) : !isActive ? (
           <Card>
             <Text className="text-base text-ink">Go Active to send a response.</Text>
             <Text className="text-sm text-muted">
               Choose what you can help with and how far you will travel, then come back here.
+              Sending a response leaves you available for others.
             </Text>
             <Button label="Go Active" onPress={() => router.push('/go-active')} />
           </Card>

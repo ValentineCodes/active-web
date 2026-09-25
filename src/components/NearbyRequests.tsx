@@ -10,6 +10,8 @@ import { SectionHeader } from '@/components/ui/SectionHeader';
 import { InlineError } from '@/components/ui/StateView';
 import { useCategories, useCategoryIndex } from '@/features/categories/api';
 import { useBrowseNearbyRequests } from '@/features/requests/browse-api';
+import { useMyResponses } from '@/features/requests/provider-api';
+import { responseStatusBadge } from '@/features/requests/status';
 import { cn } from '@/lib/cn';
 import { formatDistance, formatMoney, formatWhen } from '@/lib/format';
 import {
@@ -33,6 +35,7 @@ export function NearbyRequests() {
   const [blocked, setBlocked] = useState<'denied' | 'unavailable' | null>(null);
 
   const nearby = useBrowseNearbyRequests(position, categorySlug);
+  const myResponses = useMyResponses();
   const selectedCategory = categorySlug ? categories.data?.get(categorySlug) : undefined;
 
   useFocusEffect(
@@ -183,13 +186,22 @@ export function NearbyRequests() {
         nearby.data.map((request) => {
           const category = categories.data?.get(request.category_slug);
 
+          const waiting = myResponses.data?.some(
+            (response) =>
+              response.request_id === request.request_id &&
+              response.response_status === 'pending' &&
+              response.request_status === 'searching',
+          );
+
           return (
             <RequestCard
               key={request.request_id}
               icon={category?.icon}
               title={category?.label ?? request.category_slug}
               description={request.description}
-              badge={{ label: 'Searching', tone: 'warning' }}
+              badge={
+                waiting ? responseStatusBadge('pending') : { label: 'Searching', tone: 'warning' }
+              }
               amount={
                 request.offered_amount !== null
                   ? formatMoney(request.offered_amount, request.currency)
