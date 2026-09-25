@@ -41,12 +41,12 @@ export default function HomeScreen() {
 
   // A live engagement can exist on either side, and Home should surface whichever it is.
   const engagementAsRequester = openRequests.find((request) =>
-    ['accepted', 'in_progress'].includes(request.status),
+    ['accepted', 'in_progress', 'completion_pending'].includes(request.status),
   );
   const engagementAsProvider = responses.data?.find(
     (response) =>
       response.response_status === 'accepted' &&
-      ['accepted', 'in_progress'].includes(response.request_status),
+      ['accepted', 'in_progress', 'completion_pending'].includes(response.request_status),
   );
 
   const isActive = availability.data?.status === 'available';

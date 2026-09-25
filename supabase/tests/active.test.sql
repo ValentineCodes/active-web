@@ -788,13 +788,44 @@ select throws_ok(
   format('select complete_request(%L)', :'request_id'),
   'P0002',
   'request not found',
-  'a provider cannot close out work the requester has not confirmed'
+  'a provider cannot confirm completion for the requester'
+);
+
+select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
+select throws_ok(
+  format('select complete_request(%L)', :'request_id'),
+  '55000',
+  'you can confirm completion only after your provider marks the service complete',
+  'the requester cannot skip the provider completion step'
+);
+
+select pg_temp.act_as('22222222-2222-2222-2222-222222222222') as _ \gset
+select lives_ok(
+  format('select mark_service_complete(%L)', :'request_id'),
+  'the provider marks the service complete'
+);
+
+select is(
+  (select request_status::text from get_engagement(:'request_id')),
+  'completion_pending',
+  'the request waits for requester confirmation'
 );
 
 select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
 select lives_ok(
   format('select complete_request(%L)', :'request_id'),
-  'the requester confirms the service happened'
+  'the requester confirms completion'
+);
+
+select lives_ok(
+  format('select complete_request(%L)', :'request_id'),
+  'confirming completion is idempotent'
+);
+
+select is(
+  (select count(*)::integer from public.request_status_events where request_id = :'request_id'),
+  3,
+  'start, mark complete, and confirm leave a status event trail'
 );
 
 select lives_ok(

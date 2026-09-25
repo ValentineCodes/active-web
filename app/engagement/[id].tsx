@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Linking, Platform, RefreshControl, ScrollView, Text, View } from 'react-native';
+import { Alert, Linking, Platform, RefreshControl, ScrollView, Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -12,11 +12,12 @@ import { PersonRow } from '@/components/ui/PersonRow';
 import { Screen } from '@/components/ui/Screen';
 import { EmptyState, ErrorState, InlineError, LoadingState } from '@/components/ui/StateView';
 import { useCategoryIndex } from '@/features/categories/api';
-import { useStartRequest } from '@/features/requests/provider-api';
+import { useStartRequest, useMarkServiceComplete } from '@/features/requests/provider-api';
 import {
   useCompleteRequest,
   useEngagement,
   useLiveRequest,
+  useReportServiceProblem,
 } from '@/features/requests/requester-api';
 import { formatDistance, formatMoney, formatWhen } from '@/lib/format';
 import { colors } from '@/theme';
@@ -51,13 +52,15 @@ function openInMaps(latitude: number, longitude: number, label: string) {
 }
 
 const STEPS = [
-  { key: 'accepted', label: 'Accepted' },
-  { key: 'in_progress', label: 'On the way' },
+  { key: 'accepted', label: 'Connected' },
+  { key: 'in_progress', label: 'In progress' },
+  { key: 'completion_pending', label: 'Confirm' },
   { key: 'completed', label: 'Complete' },
 ] as const;
 
 function statusStepIndex(status: string): number {
-  if (status === 'completed') return 2;
+  if (status === 'completed') return 3;
+  if (status === 'completion_pending') return 2;
   if (status === 'in_progress') return 1;
   return 0;
 }
@@ -76,7 +79,9 @@ export default function EngagementScreen() {
   const engagement = useEngagement(id);
   const categories = useCategoryIndex();
   const startRequest = useStartRequest(id);
+  const markServiceComplete = useMarkServiceComplete(id);
   const completeRequest = useCompleteRequest(id);
+  const reportProblem = useReportServiceProblem(id);
   const [profileOpen, setProfileOpen] = useState(false);
 
   useLiveRequest(id);
@@ -125,6 +130,22 @@ export default function EngagementScreen() {
           { latitude: data.request_latitude, longitude: data.request_longitude },
         )
       : null;
+
+  const providerFirstName = data.counterparty_display_name?.split(' ')[0] ?? 'Your provider';
+
+  const confirmReportProblem = () =>
+    Alert.alert(
+      'Report a problem?',
+      'This flags the job for review and pauses payment release. Only do this if the service was not delivered as agreed.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Report problem',
+          style: 'destructive',
+          onPress: () => reportProblem.mutate(),
+        },
+      ],
+    );
 
   return (
     <Screen>
@@ -228,8 +249,7 @@ export default function EngagementScreen() {
 
           {data.viewer_is_requester && providerDistance !== null ? (
             <Text className="text-sm text-muted">
-              {data.counterparty_display_name?.split(' ')[0] ?? 'Your provider'} is about{' '}
-              {formatDistance(providerDistance)} from here.
+              {providerFirstName} is about {formatDistance(providerDistance)} from here.
             </Text>
           ) : null}
         </Card>
@@ -267,15 +287,41 @@ export default function EngagementScreen() {
           </View>
         ) : null}
 
-        {data.viewer_is_requester && ['accepted', 'in_progress'].includes(data.request_status) ? (
+        {!data.viewer_is_requester && ['accepted', 'in_progress'].includes(data.request_status) ? (
           <View className="gap-3">
-            <Text className="text-base text-muted">
-              Mark this done once the service has actually happened. You&apos;ll be asked to rate{' '}
-              {data.counterparty_display_name?.split(' ')[0] ?? 'them'} afterwards.
-            </Text>
-            {completeRequest.isError ? <InlineError error={completeRequest.error} /> : null}
+            {markServiceComplete.isError ? <InlineError error={markServiceComplete.error} /> : null}
             <Button
-              label="Mark as completed"
+              label="I've completed the service"
+              size="lg"
+              loading={markServiceComplete.isPending}
+              onPress={() => markServiceComplete.mutate()}
+            />
+          </View>
+        ) : null}
+
+        {!data.viewer_is_requester && data.request_status === 'completion_pending' ? (
+          <Card>
+            <Text className="text-base text-muted">
+              Waiting for the requester to confirm. They&apos;ll be asked to rate you once they do.
+            </Text>
+          </Card>
+        ) : null}
+
+        {data.viewer_is_requester && data.request_status === 'completion_pending' ? (
+          <View className="gap-3">
+            <Card tone="warning">
+              <Text className="text-base font-semibold text-ink">
+                {providerFirstName} says the service is complete.
+              </Text>
+              <Text className="text-sm text-muted">
+                Confirm only if the work was done as agreed.
+              </Text>
+            </Card>
+            {completeRequest.isError ? <InlineError error={completeRequest.error} /> : null}
+            {reportProblem.isError ? <InlineError error={reportProblem.error} /> : null}
+            <Button
+              label="Confirm completion"
+              variant="active"
               size="lg"
               loading={completeRequest.isPending}
               onPress={() =>
@@ -284,7 +330,22 @@ export default function EngagementScreen() {
                 })
               }
             />
+            <Button
+              label="Report a problem"
+              variant="danger"
+              loading={reportProblem.isPending}
+              onPress={confirmReportProblem}
+            />
           </View>
+        ) : null}
+
+        {data.request_status === 'disputed' ? (
+          <Card tone="danger">
+            <Text className="text-base font-semibold text-ink">This job is under review</Text>
+            <Text className="text-sm text-muted">
+              A problem was reported. Support will follow up using the details on this request.
+            </Text>
+          </Card>
         ) : null}
 
         {data.request_status === 'completed' && data.viewer_is_requester && !data.rating_stars ? (

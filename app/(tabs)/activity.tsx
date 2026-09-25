@@ -213,7 +213,9 @@ export default function ActivityScreen() {
           renderItem={({ item }) => {
             const isConnected =
               item.response_status === 'accepted' &&
-              ['accepted', 'in_progress', 'completed'].includes(item.request_status);
+              ['accepted', 'in_progress', 'completion_pending', 'completed'].includes(
+                item.request_status,
+              );
             const canEdit =
               item.response_status === 'pending' && item.request_status === 'searching';
             const badge = isConnected

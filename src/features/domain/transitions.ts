@@ -20,8 +20,8 @@ export const REQUEST_STATUS_LABELS: Record<RequestStatus, string> = {
 /** Allowed request status moves performed only by security-definer RPCs. */
 export const REQUEST_STATUS_TRANSITIONS: Partial<Record<RequestStatus, RequestStatus[]>> = {
   searching: ['accepted', 'cancelled', 'expired'],
-  accepted: ['in_progress', 'completion_pending', 'cancelled', 'completed', 'disputed', 'no_show'],
-  in_progress: ['completion_pending', 'completed', 'disputed', 'no_show'],
+  accepted: ['in_progress', 'completion_pending', 'cancelled', 'disputed', 'no_show'],
+  in_progress: ['completion_pending', 'disputed', 'no_show'],
   completion_pending: ['completed', 'disputed'],
 };
 

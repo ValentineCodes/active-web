@@ -470,6 +470,58 @@ export type Database = {
           },
         ]
       }
+      request_status_events: {
+        Row: {
+          actor_id: string
+          created_at: string
+          from_status: Database["public"]["Enums"]["request_status"]
+          id: string
+          idempotency_key: string
+          request_id: string
+          to_status: Database["public"]["Enums"]["request_status"]
+        }
+        Insert: {
+          actor_id: string
+          created_at?: string
+          from_status: Database["public"]["Enums"]["request_status"]
+          id?: string
+          idempotency_key: string
+          request_id: string
+          to_status: Database["public"]["Enums"]["request_status"]
+        }
+        Update: {
+          actor_id?: string
+          created_at?: string
+          from_status?: Database["public"]["Enums"]["request_status"]
+          id?: string
+          idempotency_key?: string
+          request_id?: string
+          to_status?: Database["public"]["Enums"]["request_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "request_status_events_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "request_status_events_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "my_requests"
+            referencedColumns: ["request_id"]
+          },
+          {
+            foreignKeyName: "request_status_events_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       requests: {
         Row: {
           accepted_at: string | null
@@ -875,6 +927,8 @@ export type Database = {
         Returns: undefined
       }
       expand_request_radius: { Args: { p_request_id: string }; Returns: number }
+      expire_due_requests: { Args: { p_limit?: number }; Returns: number }
+      expire_request: { Args: { p_request_id: string }; Returns: boolean }
       get_engagement: {
         Args: { p_request_id: string }
         Returns: {
@@ -1034,6 +1088,16 @@ export type Database = {
         Args: { p_comment?: string; p_request_id: string; p_stars: number }
         Returns: undefined
       }
+      record_request_status_event: {
+        Args: {
+          p_actor_id: string
+          p_from_status: Database["public"]["Enums"]["request_status"]
+          p_idempotency_key: string
+          p_request_id: string
+          p_to_status: Database["public"]["Enums"]["request_status"]
+        }
+        Returns: undefined
+      }
       refresh_availability_location: {
         Args: { p_latitude: number; p_longitude: number }
         Returns: {
@@ -1054,6 +1118,10 @@ export type Database = {
         }
       }
       release_provider: { Args: { p_provider_id: string }; Returns: undefined }
+      report_service_problem: {
+        Args: { p_request_id: string }
+        Returns: undefined
+      }
       respond_to_request: {
         Args: {
           p_eta_minutes?: number

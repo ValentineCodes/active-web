@@ -383,6 +383,24 @@ export function useCompleteRequest(requestId: string) {
   });
 }
 
+export function useReportServiceProblem(requestId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.rpc('report_service_problem', {
+        p_request_id: requestId,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.myRequest(requestId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.myRequests });
+      queryClient.invalidateQueries({ queryKey: queryKeys.engagement(requestId) });
+    },
+  });
+}
+
 export function useRateRequest(requestId: string) {
   const queryClient = useQueryClient();
 
