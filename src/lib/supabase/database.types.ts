@@ -166,6 +166,41 @@ export type Database = {
           },
         ]
       }
+      notification_inbox: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          title: string
+          url: string | null
+          user_id: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          id?: string
+          title: string
+          url?: string | null
+          user_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          title?: string
+          url?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_inbox_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payment_transitions: {
         Row: {
           created_at: string
@@ -665,10 +700,12 @@ export type Database = {
           category_slug: string
           completed_at: string | null
           completion_confirm_by: string | null
+          completion_reminder_sent_at: string | null
           created_at: string
           currency: string
           description: string
           expires_at: string | null
+          expiry_reminder_sent_at: string | null
           id: string
           location: unknown
           location_label: string
@@ -692,10 +729,12 @@ export type Database = {
           category_slug: string
           completed_at?: string | null
           completion_confirm_by?: string | null
+          completion_reminder_sent_at?: string | null
           created_at?: string
           currency?: string
           description: string
           expires_at?: string | null
+          expiry_reminder_sent_at?: string | null
           id?: string
           location: unknown
           location_label: string
@@ -719,10 +758,12 @@ export type Database = {
           category_slug?: string
           completed_at?: string | null
           completion_confirm_by?: string | null
+          completion_reminder_sent_at?: string | null
           created_at?: string
           currency?: string
           description?: string
           expires_at?: string | null
+          expiry_reminder_sent_at?: string | null
           id?: string
           location?: unknown
           location_label?: string
@@ -1387,6 +1428,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      format_bucketed_distance: {
+        Args: { p_distance_m: number }
+        Returns: string
+      }
       get_engagement: {
         Args: { p_request_id: string }
         Returns: {
@@ -1550,6 +1595,11 @@ export type Database = {
           scheduled_for: string
         }[]
       }
+      notify_completion_reminders: {
+        Args: { p_limit?: number }
+        Returns: number
+      }
+      notify_expiring_requests: { Args: { p_limit?: number }; Returns: number }
       post_wallet_ledger: {
         Args: {
           p_available_delta: number

@@ -704,6 +704,16 @@ select is(
   'the request reports a waiting response while it is still searching'
 );
 
+select ok(
+  exists (
+    select 1
+    from public.notification_inbox ni
+    where ni.user_id = '11111111-1111-1111-1111-111111111111'::uuid
+      and ni.title = 'Someone can help'
+  ),
+  'in-app inbox stores response notifications for the requester'
+);
+
 select pg_temp.act_as('33333333-3333-3333-3333-333333333333') as _ \gset
 select respond_to_request(
   :'request_id',
@@ -753,6 +763,24 @@ select ok(
       and pronamespace = 'public'::regnamespace
   )) ~* 'been selected',
   'the provider push uses the handshake selection title'
+);
+
+select ok(
+  pg_get_functiondef((
+    select oid from pg_proc
+    where proname = 'notify_matching_providers'
+      and pronamespace = 'public'::regnamespace
+  )) !~* 'location_label',
+  'matching provider push copy never includes the requester address label'
+);
+
+select ok(
+  pg_get_functiondef((
+    select oid from pg_proc
+    where proname = 'notify_requester_of_provider_selected'
+      and pronamespace = 'public'::regnamespace
+  )) ~* 'Provider selected',
+  'the requester is notified when a provider is selected'
 );
 
 select is(

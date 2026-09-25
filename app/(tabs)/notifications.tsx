@@ -39,23 +39,6 @@ export default function NotificationsScreen() {
         </Text>
       </View>
 
-      {!notificationsEnabled ? (
-        <View className="px-5 pb-3">
-          <Card>
-            <Text className="text-base font-semibold text-ink">Turn on push notifications</Text>
-            <Text className="text-sm text-muted">
-              You will get a ping when someone responds, when you are chosen for a job, or when a
-              nearby request matches what you offer.
-            </Text>
-            <Button
-              label="Enable notifications"
-              loading={enabling}
-              onPress={() => void enableNotifications()}
-            />
-          </Card>
-        </View>
-      ) : null}
-
       {inbox.isPending ? <LoadingState /> : null}
 
       {inbox.isSuccess ? (
@@ -70,7 +53,7 @@ export default function NotificationsScreen() {
             <EmptyState
               icon="notifications-outline"
               title="Nothing yet"
-              message="When something needs your attention, it will show up here and on your lock screen if notifications are on."
+              message="When something needs your attention, it will show up here."
             />
           }
           renderItem={({ item }) => (
@@ -91,6 +74,22 @@ export default function NotificationsScreen() {
               {item.body ? <Text className="text-sm text-muted">{item.body}</Text> : null}
             </Pressable>
           )}
+          ListFooterComponent={
+            !notificationsEnabled ? (
+              <Card className="mt-2">
+                <Text className="text-base font-semibold text-ink">Get alerts on your phone</Text>
+                <Text className="text-sm text-muted">
+                  Turn on push notifications to hear about new responses and matches right away.
+                  Everything still appears in this list either way.
+                </Text>
+                <Button
+                  label="Enable push notifications"
+                  loading={enabling}
+                  onPress={() => void enableNotifications()}
+                />
+              </Card>
+            ) : null
+          }
         />
       ) : null}
     </Screen>

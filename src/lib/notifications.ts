@@ -6,7 +6,6 @@ import { Platform } from 'react-native';
 import { router } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 
-import { appendInboxItem, inboxItemFromNotification } from '@/features/notifications/inbox';
 import { queryKeys } from '@/lib/query/keys';
 import { supabase } from '@/lib/supabase/client';
 
@@ -70,23 +69,14 @@ export function useNotificationBridge() {
 
     syncPushToken({ prompt: false });
 
-    void Notifications.getLastNotificationResponseAsync().then((response) => {
-      if (!response) return;
-      void appendInboxItem(inboxItemFromNotification(response.notification)).then(refreshInbox);
-    });
-
-    const received = Notifications.addNotificationReceivedListener((notification) => {
-      void appendInboxItem(inboxItemFromNotification(notification)).then(() => {
-        refreshInbox();
-        queryClient.invalidateQueries();
-      });
+    const received = Notifications.addNotificationReceivedListener(() => {
+      refreshInbox();
+      queryClient.invalidateQueries();
     });
 
     const tapped = Notifications.addNotificationResponseReceivedListener((response) => {
-      void appendInboxItem(inboxItemFromNotification(response.notification)).then(() => {
-        refreshInbox();
-        queryClient.invalidateQueries();
-      });
+      refreshInbox();
+      queryClient.invalidateQueries();
 
       const url = response.notification.request.content.data?.url;
       if (typeof url === 'string') router.push(url as never);
