@@ -24,7 +24,7 @@ export function requestStatusBadge(
           }
         : { label: 'Searching', tone: 'warning' };
     case 'accepted':
-      return { label: 'Connected', tone: 'active' };
+      return { label: 'Handshake', tone: 'active' };
     case 'in_progress':
       return { label: 'In progress', tone: 'active' };
     case 'completion_pending':
