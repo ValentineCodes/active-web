@@ -150,6 +150,23 @@ select create_request(
 
 -- Matching --------------------------------------------------------------------------
 
+select pg_temp.act_as_owner() as _ \gset
+update public.profiles
+set avatar_captured_in_app = false
+where id = '22222222-2222-2222-2222-222222222222';
+
+select pg_temp.act_as('22222222-2222-2222-2222-222222222222') as _ \gset
+select is(
+  (select count(*) from nearby_requests() where request_id = :'request_id'),
+  0::bigint,
+  'a provider without an in-app profile photo is not matched'
+);
+
+select pg_temp.act_as_owner() as _ \gset
+update public.profiles
+set avatar_captured_in_app = true
+where id = '22222222-2222-2222-2222-222222222222';
+
 select pg_temp.act_as('22222222-2222-2222-2222-222222222222') as _ \gset
 select is(
   (select count(*) from nearby_requests() where request_id = :'request_id'),
@@ -425,10 +442,38 @@ select throws_ok(
 
 -- Responding and accepting ----------------------------------------------------------
 
+select pg_temp.act_as_owner() as _ \gset
+update public.provider_availability
+set location = extensions.ST_SetSRID(extensions.ST_MakePoint(3.3800, 6.5600), 4326)::extensions.geography
+where user_id = '22222222-2222-2222-2222-222222222222';
+
 select pg_temp.act_as('22222222-2222-2222-2222-222222222222') as _ \gset
+select throws_ok(
+  format('select respond_to_request(%L)', :'request_id'),
+  '55000',
+  'this request is no longer available to you',
+  'a stored position outside both radii cannot answer the request'
+);
+
 select respond_to_request(
-  :'request_id', 'I fix these. Thirty minutes away.', 7000, 30
+  :'request_id',
+  'I fix these. Thirty minutes away.',
+  7000,
+  30,
+  6.5000,
+  3.3800
 ) as response_id \gset
+
+select pg_temp.act_as_owner() as _ \gset
+select ok(
+  extensions.ST_DWithin(
+    (select location from public.provider_availability
+     where user_id = '22222222-2222-2222-2222-222222222222'),
+    extensions.ST_SetSRID(extensions.ST_MakePoint(3.3800, 6.5000), 4326)::extensions.geography,
+    1
+  ),
+  'responding moves matching to the position the provider sent from'
+);
 
 select pg_temp.act_as('66666666-6666-6666-6666-666666666666') as _ \gset
 select is(
@@ -520,6 +565,48 @@ select is(
    where user_id = '22222222-2222-2222-2222-222222222222'),
   'busy',
   'the accepted provider is taken out of matching so they cannot be double-booked'
+);
+
+select is(
+  (select committed_request_id from public.provider_availability
+   where user_id = '22222222-2222-2222-2222-222222222222'),
+  :'request_id'::uuid,
+  'the commitment names the request the handshake belongs to'
+);
+
+select is(
+  (select service_radius_m from public.provider_availability
+   where user_id = '22222222-2222-2222-2222-222222222222'),
+  10000,
+  'a commitment keeps the provider service radius'
+);
+
+select is(
+  (select category_slug from public.provider_services
+   where user_id = '22222222-2222-2222-2222-222222222222'),
+  'repair',
+  'a commitment keeps the provider service categories'
+);
+
+select is(
+  (select status::text from public.request_responses
+   where request_id = :'second_request_id'
+     and provider_id = '22222222-2222-2222-2222-222222222222'),
+  'pending',
+  'answers already sent to other requests stay pending'
+);
+
+select id as second_response_id
+from public.request_responses
+where request_id = :'second_request_id'
+  and provider_id = '22222222-2222-2222-2222-222222222222' \gset
+
+select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
+select throws_ok(
+  format('select accept_response(%L)', :'second_response_id'),
+  '55000',
+  'This person is no longer available.',
+  'another request cannot commit a provider who already has a handshake'
 );
 
 -- Privacy after acceptance ----------------------------------------------------------
@@ -681,6 +768,44 @@ select throws_ok(
   '55000',
   'This person is no longer available.',
   'accepting an offline provider says they are no longer available'
+);
+
+-- A declined answer cannot be retried, so the request leaves every nearby list.
+select pg_temp.act_as('22222222-2222-2222-2222-222222222222') as _ \gset
+select lives_ok(
+  $$select go_active(6.5000, 3.3800, 10000, array['repair'], 240)$$,
+  'the provider can go Active again after being offline'
+);
+
+select is(
+  (select count(*) from browse_nearby_requests(6.5000::double precision, 3.3800::double precision) where request_id = :'second_request_id'),
+  1::bigint,
+  'a request with a pending answer stays on the public nearby list'
+);
+
+select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
+select lives_ok(
+  format('select decline_response(%L)', :'offline_response_id'),
+  'the requester declines the provider'
+);
+
+select pg_temp.act_as('22222222-2222-2222-2222-222222222222') as _ \gset
+select is(
+  (select count(*) from browse_nearby_requests(6.5000::double precision, 3.3800::double precision) where request_id = :'second_request_id'),
+  0::bigint,
+  'a declined request leaves the public nearby list'
+);
+
+select is(
+  (select count(*) from browse_request(:'second_request_id', 6.5000::double precision, 3.3800::double precision)),
+  0::bigint,
+  'a declined request cannot be opened from nearby browse'
+);
+
+select is(
+  (select count(*) from nearby_requests() where request_id = :'second_request_id'),
+  0::bigint,
+  'a declined request stays out of the Active inbox'
 );
 
 select * from finish();

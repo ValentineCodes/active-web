@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ScrollView, Text, View } from 'react-native';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -12,7 +12,7 @@ import { Screen } from '@/components/ui/Screen';
 import { EmptyState, ErrorState, InlineError, LoadingState } from '@/components/ui/StateView';
 import { TextField } from '@/components/ui/TextField';
 import { MARKET } from '@/config';
-import { useAvailability } from '@/features/availability/api';
+import { useAvailability, useRefreshActivePosition } from '@/features/availability/api';
 import { useCategoryIndex } from '@/features/categories/api';
 import { useRequestForResponse, useRespondToRequest } from '@/features/requests/provider-api';
 import { formatDistance, formatMoney, formatWhen } from '@/lib/format';
@@ -38,8 +38,16 @@ export default function RespondScreen() {
   const [position, setPosition] = useState<Position | null>(() => seedPosition);
   const [locationChecked, setLocationChecked] = useState(() => seedPosition !== null);
 
-  const { request, hasRequesterProfile, needsLocation, isPending, isError, error, refetch } =
-    useRequestForResponse(id, position);
+  const {
+    request,
+    hasRequesterProfile,
+    needsLocation,
+    isFetchingMatch,
+    isPending,
+    isError,
+    error,
+    refetch,
+  } = useRequestForResponse(id, position);
 
   const [message, setMessage] = useState('');
   const [quote, setQuote] = useState('');
@@ -47,6 +55,22 @@ export default function RespondScreen() {
 
   const isActive = availability.data?.status === 'available';
   const isBusy = availability.data?.status === 'busy';
+  const refreshPosition = useRefreshActivePosition();
+  const syncedPosition = useRef<string | null>(null);
+  const offersCategory = availability.data?.category_slugs.includes(request?.category_slug ?? '');
+
+  // Browse lists a request from the phone's position and the requester's search radius.
+  // Matching uses the stored Active position and both radii. Move to this position first
+  // so a request that is actually in range can be answered.
+  useEffect(() => {
+    if (!isActive || !position || hasRequesterProfile) return;
+    const key = `${position.latitude},${position.longitude}`;
+    if (syncedPosition.current === key) return;
+    syncedPosition.current = key;
+    refreshPosition.mutate(position);
+    // mutate is stable; the mutation object is not.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasRequesterProfile, isActive, position]);
 
   useFocusEffect(
     useCallback(() => {
@@ -201,6 +225,19 @@ export default function RespondScreen() {
             </Text>
             <Button label="Go Active" onPress={() => router.push('/go-active')} />
           </Card>
+        ) : !hasRequesterProfile &&
+          (refreshPosition.isPending || isFetchingMatch || syncedPosition.current === null) ? (
+          <LoadingState label="Checking this request against what you offer" />
+        ) : !hasRequesterProfile ? (
+          <Card>
+            <Text className="text-base text-ink">This one isn&apos;t a match.</Text>
+            <Text className="text-sm text-muted">
+              {offersCategory
+                ? 'It is outside the distance you and the requester both set. Widen your service radius, or wait for a closer request.'
+                : 'It is not one of the services you are Active for. Add that service, then come back.'}
+            </Text>
+            <Button label="Change what you offer" onPress={() => router.push('/go-active')} />
+          </Card>
         ) : (
           <View className="gap-4">
             <TextField
@@ -244,7 +281,7 @@ export default function RespondScreen() {
 
         {respond.isError ? <InlineError error={respond.error} /> : null}
 
-        {isActive ? (
+        {hasRequesterProfile ? (
           <Button
             label="Send response"
             size="lg"
@@ -257,6 +294,7 @@ export default function RespondScreen() {
                   message: message.trim() || null,
                   quotedAmount: parsedQuote,
                   etaMinutes: parsedEta,
+                  position,
                 },
                 { onSuccess: () => router.back() },
               )

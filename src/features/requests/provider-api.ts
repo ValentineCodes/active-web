@@ -97,6 +97,7 @@ export function useRequestForResponse(requestId: string, position: Position | nu
     request,
     hasRequesterProfile: Boolean(inbox),
     needsLocation: nearby.isSuccess && !inbox && position === null,
+    isFetchingMatch: nearby.isFetching,
     isPending: nearby.isPending || (browseEnabled && position !== null && browse.isPending),
     isError: nearby.isError || browse.isError,
     error: nearby.error ?? browse.error,
@@ -149,12 +150,15 @@ export function useRespondToRequest() {
       message: string | null;
       quotedAmount: number | null;
       etaMinutes: number | null;
+      position: Position | null;
     }) => {
       const { error } = await supabase.rpc('respond_to_request', {
         p_request_id: input.requestId,
         p_message: input.message ?? undefined,
         p_quoted_amount: input.quotedAmount ?? undefined,
         p_eta_minutes: input.etaMinutes ?? undefined,
+        p_latitude: input.position?.latitude,
+        p_longitude: input.position?.longitude,
       });
 
       if (error) throw error;

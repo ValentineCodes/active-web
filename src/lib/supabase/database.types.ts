@@ -232,6 +232,7 @@ export type Database = {
       }
       provider_availability: {
         Row: {
+          committed_request_id: string | null
           expires_at: string | null
           location: unknown
           service_radius_m: number | null
@@ -241,6 +242,7 @@ export type Database = {
           went_active_at: string | null
         }
         Insert: {
+          committed_request_id?: string | null
           expires_at?: string | null
           location?: unknown
           service_radius_m?: number | null
@@ -250,6 +252,7 @@ export type Database = {
           went_active_at?: string | null
         }
         Update: {
+          committed_request_id?: string | null
           expires_at?: string | null
           location?: unknown
           service_radius_m?: number | null
@@ -259,6 +262,13 @@ export type Database = {
           went_active_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "provider_availability_committed_request_id_fkey"
+            columns: ["committed_request_id"]
+            isOneToOne: false
+            referencedRelation: "requests"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "provider_availability_user_id_fkey"
             columns: ["user_id"]
@@ -606,6 +616,7 @@ export type Database = {
       my_availability: {
         Row: {
           category_slugs: string[] | null
+          committed_request_id: string | null
           expires_at: string | null
           service_radius_m: number | null
           status: Database["public"]["Enums"]["availability_status"] | null
@@ -615,6 +626,7 @@ export type Database = {
         }
         Insert: {
           category_slugs?: never
+          committed_request_id?: string | null
           expires_at?: string | null
           service_radius_m?: number | null
           status?: never
@@ -624,6 +636,7 @@ export type Database = {
         }
         Update: {
           category_slugs?: never
+          committed_request_id?: string | null
           expires_at?: string | null
           service_radius_m?: number | null
           status?: never
@@ -1004,6 +1017,8 @@ export type Database = {
       respond_to_request: {
         Args: {
           p_eta_minutes?: number
+          p_latitude?: number
+          p_longitude?: number
           p_message?: string
           p_quoted_amount?: number
           p_request_id: string
