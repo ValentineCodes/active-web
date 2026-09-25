@@ -202,7 +202,9 @@ export default function RequestDetailScreen() {
                 createdAt={response.created_at}
                 acceptLoading={acceptResponse.isPending}
                 declineLoading={declineResponse.isPending}
-                onDecline={() => declineResponse.mutate(response.response_id)}
+                onDecline={(reason) =>
+                  declineResponse.mutate({ responseId: response.response_id, reason })
+                }
                 onAccept={() =>
                   Alert.alert(
                     `Accept ${response.display_name}?`,

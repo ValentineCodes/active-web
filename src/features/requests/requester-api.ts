@@ -348,8 +348,11 @@ export function useDeclineResponse(requestId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (responseId: string) => {
-      const { error } = await supabase.rpc('decline_response', { p_response_id: responseId });
+    mutationFn: async (input: { responseId: string; reason: string | null }) => {
+      const { error } = await supabase.rpc('decline_response', {
+        p_response_id: input.responseId,
+        p_reason: input.reason ?? undefined,
+      });
       if (error) throw error;
     },
     onSuccess: () => {

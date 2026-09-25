@@ -222,6 +222,8 @@ export default function ActivityScreen() {
                     <Text className="text-sm font-semibold text-active">
                       Tap to see the exact location and contact details
                     </Text>
+                  ) : item.response_status === 'declined' && item.decline_reason ? (
+                    <Text className="text-sm text-muted">{item.decline_reason}</Text>
                   ) : undefined
                 }
               />

@@ -785,11 +785,16 @@ select is(
 
 select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
 select lives_ok(
-  format('select decline_response(%L)', :'offline_response_id'),
+  format('select decline_response(%L, %L)', :'offline_response_id', 'The time does not work.'),
   'the requester declines the provider'
 );
 
 select pg_temp.act_as('22222222-2222-2222-2222-222222222222') as _ \gset
+select is(
+  (select decline_reason from my_responses() where response_id = :'offline_response_id'),
+  'The time does not work.',
+  'the provider can read the optional decline reason'
+);
 select is(
   (select count(*) from browse_nearby_requests(6.5000::double precision, 3.3800::double precision) where request_id = :'second_request_id'),
   0::bigint,

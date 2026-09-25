@@ -78,6 +78,7 @@ type MyResponse = Nullable<
   | 'quoted_amount'
   | 'requester_display_name'
   | 'requester_avatar_path'
+  | 'decline_reason'
 >;
 
 /** One respond-screen row: provider inbox when eligible, otherwise the public browse RPC. */

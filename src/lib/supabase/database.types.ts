@@ -399,6 +399,7 @@ export type Database = {
       request_responses: {
         Row: {
           created_at: string
+          decline_reason: string | null
           distance_m: number
           eta_minutes: number | null
           expires_at: string | null
@@ -412,6 +413,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          decline_reason?: string | null
           distance_m: number
           eta_minutes?: number | null
           expires_at?: string | null
@@ -425,6 +427,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          decline_reason?: string | null
           distance_m?: number
           eta_minutes?: number | null
           expires_at?: string | null
@@ -841,7 +844,10 @@ export type Database = {
         }
         Returns: string
       }
-      decline_response: { Args: { p_response_id: string }; Returns: undefined }
+      decline_response: {
+        Args: { p_reason?: string; p_response_id: string }
+        Returns: undefined
+      }
       expand_request_radius: { Args: { p_request_id: string }; Returns: number }
       get_engagement: {
         Args: { p_request_id: string }
@@ -955,6 +961,7 @@ export type Database = {
           category_slug: string
           created_at: string
           currency: string
+          decline_reason: string
           description: string
           distance_m: number
           location_label: string

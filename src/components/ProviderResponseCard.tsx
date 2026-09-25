@@ -6,6 +6,7 @@ import { ProviderProfileModal } from '@/components/ProviderProfileModal';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { PersonRow } from '@/components/ui/PersonRow';
+import { TextField } from '@/components/ui/TextField';
 import { formatAgo, formatDistance, formatMoney } from '@/lib/format';
 
 /**
@@ -46,12 +47,15 @@ export function ProviderResponseCard({
   currency: string;
   createdAt: string;
   onAccept: () => void;
-  onDecline: () => void;
+  onDecline: (reason: string | null) => void;
   acceptLoading: boolean;
   declineLoading: boolean;
 }) {
   const [profileOpen, setProfileOpen] = useState(false);
+  const [declining, setDeclining] = useState(false);
+  const [reason, setReason] = useState('');
   const distanceLabel = formatDistance(distanceM);
+  const reasonError = reason.trim().length > 500 ? 'Keep this to 500 characters.' : null;
 
   return (
     <Card>
@@ -86,22 +90,57 @@ export function ProviderResponseCard({
         <Text className="text-sm text-subtle">{formatAgo(createdAt)}</Text>
       </View>
 
-      <View className="flex-row gap-3">
-        <Button
-          label="Not this one"
-          variant="secondary"
-          className="flex-1"
-          loading={declineLoading}
-          onPress={onDecline}
-        />
-        <Button
-          label="Accept"
-          variant="active"
-          className="flex-1"
-          loading={acceptLoading}
-          onPress={onAccept}
-        />
-      </View>
+      {declining ? (
+        <View className="gap-3">
+          <TextField
+            label="Reason (optional)"
+            value={reason}
+            onChangeText={setReason}
+            placeholder="e.g. The time doesn't work."
+            multiline
+            numberOfLines={3}
+            maxLength={500}
+            counterMax={500}
+            error={reasonError}
+          />
+          <View className="flex-row gap-3">
+            <Button
+              label="Keep them"
+              variant="secondary"
+              className="flex-1"
+              onPress={() => {
+                setDeclining(false);
+                setReason('');
+              }}
+            />
+            <Button
+              label="Decline"
+              variant="danger"
+              className="flex-1"
+              loading={declineLoading}
+              disabled={Boolean(reasonError)}
+              onPress={() => onDecline(reason.trim() || null)}
+            />
+          </View>
+        </View>
+      ) : (
+        <View className="flex-row gap-3">
+          <Button
+            label="Not this one"
+            variant="secondary"
+            className="flex-1"
+            loading={declineLoading}
+            onPress={() => setDeclining(true)}
+          />
+          <Button
+            label="Accept"
+            variant="active"
+            className="flex-1"
+            loading={acceptLoading}
+            onPress={onAccept}
+          />
+        </View>
+      )}
 
       <ProviderProfileModal
         visible={profileOpen}
