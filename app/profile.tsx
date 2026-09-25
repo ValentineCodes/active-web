@@ -1,26 +1,28 @@
 import { useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
+import { router } from 'expo-router';
 import { useMutation } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 
+import { ServiceCatalogue } from '@/components/ServiceCatalogue';
 import { Avatar } from '@/components/ui/Avatar';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { Header } from '@/components/ui/Header';
 import { Screen } from '@/components/ui/Screen';
 import { ErrorState, InlineError, LoadingState } from '@/components/ui/StateView';
 import { StarRating } from '@/components/ui/Stars';
 import { TextField } from '@/components/ui/TextField';
+import { ServiceTag } from '@/components/ui/ServiceTag';
 import { useAvailability } from '@/features/availability/api';
 import { signOut } from '@/features/auth/api';
 import { useCategoryIndex } from '@/features/categories/api';
-import { ServiceCatalogue } from '@/components/ServiceCatalogue';
 import {
   hasProviderPhotoReady,
   useCaptureProfilePhoto,
   useProfile,
   useSaveProfile,
 } from '@/features/profile/api';
-import { ServiceTag } from '@/components/ui/ServiceTag';
 import { colors } from '@/theme';
 
 export default function ProfileScreen() {
@@ -36,6 +38,7 @@ export default function ProfileScreen() {
   if (profile.isPending) {
     return (
       <Screen>
+        <Header title="Profile" onBack={() => router.back()} />
         <LoadingState />
       </Screen>
     );
@@ -44,6 +47,7 @@ export default function ProfileScreen() {
   if (profile.isError) {
     return (
       <Screen>
+        <Header title="Profile" onBack={() => router.back()} />
         <ErrorState error={profile.error} onRetry={() => profile.refetch()} />
       </Screen>
     );
@@ -54,6 +58,8 @@ export default function ProfileScreen() {
 
   return (
     <Screen>
+      <Header title="Profile" onBack={() => router.back()} />
+
       <ScrollView
         contentContainerClassName="gap-6 p-5 pb-12"
         refreshControl={

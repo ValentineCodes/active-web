@@ -2,6 +2,7 @@ import type { ColorValue } from 'react-native';
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
+import { useNotificationInbox } from '@/features/notifications/inbox';
 import { useNotificationBridge } from '@/lib/notifications';
 import { useMyRequests } from '@/features/requests/requester-api';
 import { colors, shadow } from '@/theme';
@@ -26,6 +27,7 @@ function TabIcon({
 
 export default function TabsLayout() {
   const { data: requests } = useMyRequests();
+  const inbox = useNotificationInbox();
 
   useNotificationBridge();
 
@@ -82,11 +84,12 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="profile"
+        name="notifications"
         options={{
-          title: 'Profile',
+          title: 'Notifications',
+          tabBarBadge: (inbox.data?.length ?? 0) > 0 ? inbox.data?.length : undefined,
           tabBarIcon: (props) => (
-            <TabIcon {...props} focusedName="person" outlineName="person-outline" />
+            <TabIcon {...props} focusedName="notifications" outlineName="notifications-outline" />
           ),
         }}
       />

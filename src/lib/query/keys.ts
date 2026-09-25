@@ -17,4 +17,5 @@ export const queryKeys = {
   catalogue: (userId: string) => ['catalogue', userId] as const,
   catalogueMediaUrl: (path: string) => ['catalogue-media-url', path] as const,
   requestMediaUrl: (path: string) => ['request-media-url', path] as const,
+  notificationInbox: ['notification-inbox'] as const,
 };
