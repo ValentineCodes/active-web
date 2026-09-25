@@ -102,11 +102,7 @@ export function useUploadAvatar() {
 
       if (uploadError) throw uploadError;
 
-      const { error } = await supabase
-        .from('profiles')
-        .update({ avatar_path: path })
-        .eq('id', userId);
-
+      const { error } = await supabase.rpc('confirm_avatar_capture', { p_storage_path: path });
       if (error) throw error;
       return true;
     },

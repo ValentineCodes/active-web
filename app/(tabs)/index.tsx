@@ -32,7 +32,7 @@ export default function HomeScreen() {
   const firstName = profile.data?.display_name?.split(' ')[0];
   const openRequests =
     requests.data?.filter((request) =>
-      ['searching', 'accepted', 'in_progress'].includes(request.status),
+      ['searching', 'accepted', 'in_progress', 'completion_pending'].includes(request.status),
     ) ?? [];
 
   // A live engagement can exist on either side, and Home should surface whichever it is.

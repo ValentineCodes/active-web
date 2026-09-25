@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tansta
 import type { Position } from '@/lib/location';
 import { queryKeys } from '@/lib/query/keys';
 import { supabase } from '@/lib/supabase/client';
-import type { Database } from '@/lib/supabase/database.types';
+import type { Database, Json } from '@/lib/supabase/database.types';
 import type { Guaranteed, Nullable, RpcRow } from '@/lib/supabase/types';
 
 type Functions = Database['public']['Functions'];
@@ -35,10 +35,13 @@ type Engagement = Nullable<
   | 'counterparty_phone'
   | 'counterparty_rating_average'
   | 'rating_stars'
+  | 'payment_status'
+  | 'handshake_id'
+  | 'handshake_at'
 >;
 
 const REQUEST_COLUMNS =
-  'request_id, category_slug, description, scheduled_for, offered_amount, currency, location_label, latitude, longitude, search_radius_m, radius_expansions, status, provider_id, pending_response_count, is_rated, created_at, expires_at, accepted_at, started_at, completed_at, cancelled_at';
+  'request_id, category_slug, description, category_data, scheduled_for, offered_amount, currency, payment_status, location_label, latitude, longitude, search_radius_m, radius_expansions, status, provider_id, source_request_id, pending_response_count, is_rated, created_at, expires_at, accepted_at, started_at, completed_at, cancelled_at';
 
 /** The columns public.requests declares NOT NULL, plus the two the view always computes. */
 type MyRequest = Guaranteed<
@@ -243,6 +246,7 @@ export function useCreateRequest() {
       searchRadiusM: number;
       scheduledFor: Date | null;
       offeredAmount: number | null;
+      categoryData?: Json;
     }) => {
       const { data, error } = await supabase.rpc('create_request', {
         p_category_slug: input.categorySlug,
@@ -254,6 +258,7 @@ export function useCreateRequest() {
         // Omitted rather than sent as null, so the function's own default applies.
         p_scheduled_for: input.scheduledFor?.toISOString(),
         p_offered_amount: input.offeredAmount ?? undefined,
+        p_category_data: input.categoryData ?? undefined,
       });
 
       if (error) throw error;
@@ -369,6 +374,23 @@ export function useRateRequest(requestId: string) {
 }
 
 /** Shared by both parties once a request has been accepted. */
+export function useCloneRequestFromPrior() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (input: { sourceRequestId: string; idempotencyKey: string }) => {
+      const { data, error } = await supabase.rpc('clone_request_from_prior', {
+        p_source_request_id: input.sourceRequestId,
+        p_idempotency_key: input.idempotencyKey,
+      });
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.myRequests }),
+  });
+}
+
 export function useEngagement(requestId: string) {
   return useQuery({
     queryKey: queryKeys.engagement(requestId),

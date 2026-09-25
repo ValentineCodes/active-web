@@ -29,7 +29,11 @@ begin
   );
 
   -- public.handle_new_user has created the profile shell; finish onboarding.
-  update public.profiles set display_name = p_name where id = p_id;
+  update public.profiles
+  set display_name = p_name,
+      avatar_path = p_id::text || '/avatar.jpg',
+      avatar_captured_in_app = true
+  where id = p_id;
 
   return p_name;
 end;

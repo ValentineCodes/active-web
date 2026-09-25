@@ -12,7 +12,7 @@ import { useMyRequests } from '@/features/requests/requester-api';
 import { requestStatusBadge } from '@/features/requests/status';
 import { formatMoney, formatWhen } from '@/lib/format';
 
-const OPEN_STATUSES = ['draft', 'searching', 'accepted', 'in_progress'];
+const OPEN_STATUSES = ['draft', 'searching', 'accepted', 'in_progress', 'completion_pending'];
 
 const TABS = [
   { key: 'open', label: 'Active' },

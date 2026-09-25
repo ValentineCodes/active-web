@@ -9,8 +9,185 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      handshakes: {
+        Row: {
+          created_at: string
+          id: string
+          provider_id: string
+          request_id: string
+          requester_id: string
+          response_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          provider_id: string
+          request_id: string
+          requester_id: string
+          response_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          provider_id?: string
+          request_id?: string
+          requester_id?: string
+          response_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "handshakes_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "handshakes_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: true
+            referencedRelation: "my_requests"
+            referencedColumns: ["request_id"]
+          },
+          {
+            foreignKeyName: "handshakes_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: true
+            referencedRelation: "requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "handshakes_requester_id_fkey"
+            columns: ["requester_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "handshakes_response_id_fkey"
+            columns: ["response_id"]
+            isOneToOne: true
+            referencedRelation: "request_responses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      idempotent_operations: {
+        Row: {
+          created_at: string
+          key: string
+          operation: string
+          request_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          key: string
+          operation: string
+          request_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          key?: string
+          operation?: string
+          request_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "idempotent_operations_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "my_requests"
+            referencedColumns: ["request_id"]
+          },
+          {
+            foreignKeyName: "idempotent_operations_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payment_transitions: {
+        Row: {
+          created_at: string
+          from_status: Database["public"]["Enums"]["payment_status"]
+          id: string
+          idempotency_key: string
+          request_id: string
+          to_status: Database["public"]["Enums"]["payment_status"]
+        }
+        Insert: {
+          created_at?: string
+          from_status: Database["public"]["Enums"]["payment_status"]
+          id?: string
+          idempotency_key: string
+          request_id: string
+          to_status: Database["public"]["Enums"]["payment_status"]
+        }
+        Update: {
+          created_at?: string
+          from_status?: Database["public"]["Enums"]["payment_status"]
+          id?: string
+          idempotency_key?: string
+          request_id?: string
+          to_status?: Database["public"]["Enums"]["payment_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_transitions_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "my_requests"
+            referencedColumns: ["request_id"]
+          },
+          {
+            foreignKeyName: "payment_transitions_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profile_catalogue_media: {
+        Row: {
+          created_at: string
+          id: string
+          kind: Database["public"]["Enums"]["profile_catalogue_kind"]
+          sort_order: number
+          storage_path: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          kind: Database["public"]["Enums"]["profile_catalogue_kind"]
+          sort_order: number
+          storage_path: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          kind?: Database["public"]["Enums"]["profile_catalogue_kind"]
+          sort_order?: number
+          storage_path?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profile_catalogue_media_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
+          avatar_captured_in_app: boolean
           avatar_path: string | null
           bio: string | null
           created_at: string
@@ -24,6 +201,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          avatar_captured_in_app?: boolean
           avatar_path?: string | null
           bio?: string | null
           created_at?: string
@@ -37,6 +215,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          avatar_captured_in_app?: boolean
           avatar_path?: string | null
           bio?: string | null
           created_at?: string
@@ -212,6 +391,7 @@ export type Database = {
           created_at: string
           distance_m: number
           eta_minutes: number | null
+          expires_at: string | null
           id: string
           message: string | null
           provider_id: string
@@ -224,6 +404,7 @@ export type Database = {
           created_at?: string
           distance_m: number
           eta_minutes?: number | null
+          expires_at?: string | null
           id?: string
           message?: string | null
           provider_id: string
@@ -236,6 +417,7 @@ export type Database = {
           created_at?: string
           distance_m?: number
           eta_minutes?: number | null
+          expires_at?: string | null
           id?: string
           message?: string | null
           provider_id?: string
@@ -273,6 +455,7 @@ export type Database = {
           accepted_at: string | null
           accepted_response_id: string | null
           cancelled_at: string | null
+          category_data: Json
           category_slug: string
           completed_at: string | null
           created_at: string
@@ -283,11 +466,13 @@ export type Database = {
           location: unknown
           location_label: string
           offered_amount: number | null
+          payment_status: Database["public"]["Enums"]["payment_status"]
           provider_id: string | null
           radius_expansions: number
           requester_id: string
           scheduled_for: string | null
           search_radius_m: number
+          source_request_id: string | null
           started_at: string | null
           status: Database["public"]["Enums"]["request_status"]
           submitted_at: string | null
@@ -296,6 +481,7 @@ export type Database = {
           accepted_at?: string | null
           accepted_response_id?: string | null
           cancelled_at?: string | null
+          category_data?: Json
           category_slug: string
           completed_at?: string | null
           created_at?: string
@@ -306,11 +492,13 @@ export type Database = {
           location: unknown
           location_label: string
           offered_amount?: number | null
+          payment_status?: Database["public"]["Enums"]["payment_status"]
           provider_id?: string | null
           radius_expansions?: number
           requester_id: string
           scheduled_for?: string | null
           search_radius_m: number
+          source_request_id?: string | null
           started_at?: string | null
           status?: Database["public"]["Enums"]["request_status"]
           submitted_at?: string | null
@@ -319,6 +507,7 @@ export type Database = {
           accepted_at?: string | null
           accepted_response_id?: string | null
           cancelled_at?: string | null
+          category_data?: Json
           category_slug?: string
           completed_at?: string | null
           created_at?: string
@@ -329,11 +518,13 @@ export type Database = {
           location?: unknown
           location_label?: string
           offered_amount?: number | null
+          payment_status?: Database["public"]["Enums"]["payment_status"]
           provider_id?: string | null
           radius_expansions?: number
           requester_id?: string
           scheduled_for?: string | null
           search_radius_m?: number
+          source_request_id?: string | null
           started_at?: string | null
           status?: Database["public"]["Enums"]["request_status"]
           submitted_at?: string | null
@@ -365,6 +556,20 @@ export type Database = {
             columns: ["requester_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "requests_source_request_id_fkey"
+            columns: ["source_request_id"]
+            isOneToOne: false
+            referencedRelation: "my_requests"
+            referencedColumns: ["request_id"]
+          },
+          {
+            foreignKeyName: "requests_source_request_id_fkey"
+            columns: ["source_request_id"]
+            isOneToOne: false
+            referencedRelation: "requests"
             referencedColumns: ["id"]
           },
         ]
@@ -440,6 +645,7 @@ export type Database = {
         Row: {
           accepted_at: string | null
           cancelled_at: string | null
+          category_data: Json | null
           category_slug: string | null
           completed_at: string | null
           created_at: string | null
@@ -451,12 +657,14 @@ export type Database = {
           location_label: string | null
           longitude: number | null
           offered_amount: number | null
+          payment_status: Database["public"]["Enums"]["payment_status"] | null
           pending_response_count: number | null
           provider_id: string | null
           radius_expansions: number | null
           request_id: string | null
           scheduled_for: string | null
           search_radius_m: number | null
+          source_request_id: string | null
           started_at: string | null
           status: Database["public"]["Enums"]["request_status"] | null
           submitted_at: string | null
@@ -464,6 +672,7 @@ export type Database = {
         Insert: {
           accepted_at?: string | null
           cancelled_at?: string | null
+          category_data?: Json | null
           category_slug?: string | null
           completed_at?: string | null
           created_at?: string | null
@@ -475,12 +684,14 @@ export type Database = {
           location_label?: string | null
           longitude?: never
           offered_amount?: number | null
+          payment_status?: Database["public"]["Enums"]["payment_status"] | null
           pending_response_count?: never
           provider_id?: string | null
           radius_expansions?: number | null
           request_id?: string | null
           scheduled_for?: string | null
           search_radius_m?: number | null
+          source_request_id?: string | null
           started_at?: string | null
           status?: never
           submitted_at?: string | null
@@ -488,6 +699,7 @@ export type Database = {
         Update: {
           accepted_at?: string | null
           cancelled_at?: string | null
+          category_data?: Json | null
           category_slug?: string | null
           completed_at?: string | null
           created_at?: string | null
@@ -499,12 +711,14 @@ export type Database = {
           location_label?: string | null
           longitude?: never
           offered_amount?: number | null
+          payment_status?: Database["public"]["Enums"]["payment_status"] | null
           pending_response_count?: never
           provider_id?: string | null
           radius_expansions?: number | null
           request_id?: string | null
           scheduled_for?: string | null
           search_radius_m?: number | null
+          source_request_id?: string | null
           started_at?: string | null
           status?: never
           submitted_at?: string | null
@@ -524,11 +738,33 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "requests_source_request_id_fkey"
+            columns: ["source_request_id"]
+            isOneToOne: false
+            referencedRelation: "my_requests"
+            referencedColumns: ["request_id"]
+          },
+          {
+            foreignKeyName: "requests_source_request_id_fkey"
+            columns: ["source_request_id"]
+            isOneToOne: false
+            referencedRelation: "requests"
+            referencedColumns: ["id"]
+          },
         ]
       }
     }
     Functions: {
       accept_response: { Args: { p_response_id: string }; Returns: string }
+      apply_payment_transition: {
+        Args: {
+          p_idempotency_key: string
+          p_request_id: string
+          p_to_status: Database["public"]["Enums"]["payment_status"]
+        }
+        Returns: Database["public"]["Enums"]["payment_status"]
+      }
       assert_authenticated: { Args: never; Returns: string }
       assert_coordinates: {
         Args: { p_latitude: number; p_longitude: number }
@@ -537,9 +773,18 @@ export type Database = {
       assert_onboarded: { Args: never; Returns: string }
       bucket_distance_m: { Args: { p_distance_m: number }; Returns: number }
       cancel_request: { Args: { p_request_id: string }; Returns: undefined }
+      clone_request_from_prior: {
+        Args: { p_idempotency_key: string; p_source_request_id: string }
+        Returns: string
+      }
       complete_request: { Args: { p_request_id: string }; Returns: undefined }
+      confirm_avatar_capture: {
+        Args: { p_storage_path: string }
+        Returns: undefined
+      }
       create_request: {
         Args: {
+          p_category_data?: Json
           p_category_slug: string
           p_description: string
           p_latitude: number
@@ -567,8 +812,11 @@ export type Database = {
           counterparty_rating_count: number
           currency: string
           description: string
+          handshake_at: string
+          handshake_id: string
           location_label: string
           offered_amount: number
+          payment_status: Database["public"]["Enums"]["payment_status"]
           provider_latitude: number
           provider_longitude: number
           quoted_amount: number
@@ -642,6 +890,10 @@ export type Database = {
           response_id: string
           status: Database["public"]["Enums"]["response_status"]
         }[]
+      }
+      mark_service_complete: {
+        Args: { p_request_id: string }
+        Returns: undefined
       }
       matches: {
         Args: { p_provider_id?: string; p_request_id?: string }
@@ -738,6 +990,15 @@ export type Database = {
     }
     Enums: {
       availability_status: "offline" | "available" | "busy"
+      payment_status:
+        | "not_required"
+        | "available"
+        | "locked"
+        | "pending"
+        | "released"
+        | "refunded"
+        | "disputed"
+      profile_catalogue_kind: "photo" | "video"
       request_status:
         | "draft"
         | "searching"
@@ -746,6 +1007,9 @@ export type Database = {
         | "completed"
         | "cancelled"
         | "expired"
+        | "completion_pending"
+        | "disputed"
+        | "no_show"
       response_status:
         | "pending"
         | "accepted"
@@ -880,6 +1144,16 @@ export const Constants = {
   public: {
     Enums: {
       availability_status: ["offline", "available", "busy"],
+      payment_status: [
+        "not_required",
+        "available",
+        "locked",
+        "pending",
+        "released",
+        "refunded",
+        "disputed",
+      ],
+      profile_catalogue_kind: ["photo", "video"],
       request_status: [
         "draft",
         "searching",
@@ -888,6 +1162,9 @@ export const Constants = {
         "completed",
         "cancelled",
         "expired",
+        "completion_pending",
+        "disputed",
+        "no_show",
       ],
       response_status: [
         "pending",

@@ -24,9 +24,15 @@ export function requestStatusBadge(
           }
         : { label: 'Searching', tone: 'warning' };
     case 'accepted':
-      return { label: 'Accepted', tone: 'active' };
+      return { label: 'Connected', tone: 'active' };
     case 'in_progress':
       return { label: 'In progress', tone: 'active' };
+    case 'completion_pending':
+      return { label: 'Awaiting confirmation', tone: 'warning' };
+    case 'disputed':
+      return { label: 'Disputed', tone: 'danger' };
+    case 'no_show':
+      return { label: 'No-show', tone: 'danger' };
     case 'completed':
       return { label: 'Completed', tone: 'neutral' };
     case 'cancelled':

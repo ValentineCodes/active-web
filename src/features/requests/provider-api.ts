@@ -100,6 +100,22 @@ export function useWithdrawResponse() {
   });
 }
 
+export function useMarkServiceComplete(requestId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.rpc('mark_service_complete', { p_request_id: requestId });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.engagement(requestId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.myResponses });
+      queryClient.invalidateQueries({ queryKey: queryKeys.myRequests });
+    },
+  });
+}
+
 export function useStartRequest(requestId: string) {
   const queryClient = useQueryClient();
 
