@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { ScrollView, Text, View } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { addHours, format, set, startOfTomorrow } from 'date-fns';
 
 import { LocationStep } from '@/components/LocationStep';
@@ -15,18 +15,21 @@ import { Screen } from '@/components/ui/Screen';
 import { ErrorState, InlineError, LoadingState } from '@/components/ui/StateView';
 import { TextField } from '@/components/ui/TextField';
 import { DESCRIPTION_LIMITS, MARKET, REQUEST_REQUIRES_FUNDING, SEARCH_RADII_M } from '@/config';
-import { useCategories } from '@/features/categories/api';
+import { useCategories, type ServiceCategory } from '@/features/categories/api';
 import {
   categoryDetailsError,
+  categoryDetailsFromCategoryData,
   categoryDetailsSummary,
   emptyCategoryDetails,
   type RequestCategorySlug,
 } from '@/features/requests/category-data';
 import { isFundedOffer } from '@/features/requests/funding';
-import { useCreateRequest } from '@/features/requests/requester-api';
+import { canReuseRequest } from '@/features/requests/reuse';
+import { useCreateRequest, useMyRequest } from '@/features/requests/requester-api';
 import { cn } from '@/lib/cn';
 import { formatMoney, formatRadius } from '@/lib/format';
 import type { Position } from '@/lib/location';
+import type { Json } from '@/lib/supabase/database.types';
 import { syncPushToken } from '@/lib/notifications';
 
 function whenOptions() {
@@ -50,21 +53,66 @@ function isRequestCategorySlug(slug: string): slug is RequestCategorySlug {
   return ['ride', 'delivery', 'errand', 'repair', 'cleaning', 'moving', 'other'].includes(slug);
 }
 
-export default function NewRequestScreen() {
-  const categories = useCategories();
+type ReuseSeed = {
+  sourceRequestId: string;
+  categorySlug: RequestCategorySlug;
+  description: string;
+  categoryData: Json;
+  offeredAmount: number | null;
+  latitude: number;
+  longitude: number;
+  locationLabel: string;
+  searchRadiusM: number;
+};
+
+function newRequestFormState(reuse?: ReuseSeed) {
+  if (!reuse) {
+    return {
+      categorySlug: null as string | null,
+      description: '',
+      categoryDetails: emptyCategoryDetails(),
+      whenKey: 'asap',
+      amount: '',
+      position: null as Position | null,
+      areaLabel: '',
+      searchRadiusM: 5000,
+    };
+  }
+
+  return {
+    categorySlug: reuse.categorySlug,
+    description: reuse.description,
+    categoryDetails: categoryDetailsFromCategoryData(reuse.categorySlug, reuse.categoryData),
+    whenKey: 'asap',
+    amount: reuse.offeredAmount !== null ? String(reuse.offeredAmount) : '',
+    position: { latitude: reuse.latitude, longitude: reuse.longitude },
+    areaLabel: reuse.locationLabel,
+    searchRadiusM: reuse.searchRadiusM,
+  };
+}
+
+function NewRequestForm({
+  categories,
+  reuseSeed,
+}: {
+  categories: ServiceCategory[];
+  reuseSeed?: ReuseSeed;
+}) {
+  const seeded = newRequestFormState(reuseSeed);
   const create = useCreateRequest();
 
   const [step, setStep] = useState(0);
-  const [categorySlug, setCategorySlug] = useState<string | null>(null);
-  const [description, setDescription] = useState('');
-  const [categoryDetails, setCategoryDetails] = useState(emptyCategoryDetails);
+  const [categorySlug, setCategorySlug] = useState(seeded.categorySlug);
+  const [description, setDescription] = useState(seeded.description);
+  const [categoryDetails, setCategoryDetails] = useState(seeded.categoryDetails);
   const [detailsError, setDetailsError] = useState<string | null>(null);
-  const [whenKey, setWhenKey] = useState<string>('asap');
-  const [amount, setAmount] = useState('');
-  const [position, setPosition] = useState<Position | null>(null);
-  const [areaLabel, setAreaLabel] = useState('');
-  const [searchRadiusM, setSearchRadiusM] = useState<number>(5000);
+  const [whenKey, setWhenKey] = useState(seeded.whenKey);
+  const [amount, setAmount] = useState(seeded.amount);
+  const [position, setPosition] = useState<Position | null>(seeded.position);
+  const [areaLabel, setAreaLabel] = useState(seeded.areaLabel);
+  const [searchRadiusM, setSearchRadiusM] = useState(seeded.searchRadiusM);
 
+  const reusingPrior = Boolean(reuseSeed);
   const when = whenOptions();
   const trimmedDescription = description.trim();
   const parsedAmount = amount.trim() ? Number(amount.replace(/[^\d.]/g, '')) : null;
@@ -89,23 +137,7 @@ export default function NewRequestScreen() {
       categoryDetailsError(typedCategory, categoryDetails) === null,
   ];
 
-  if (categories.isPending) {
-    return (
-      <Screen edges={['top', 'bottom']}>
-        <LoadingState />
-      </Screen>
-    );
-  }
-
-  if (categories.isError) {
-    return (
-      <Screen edges={['top', 'bottom']}>
-        <ErrorState error={categories.error} onRetry={() => categories.refetch()} />
-      </Screen>
-    );
-  }
-
-  const category = categories.data.find((item) => item.slug === categorySlug);
+  const category = categories.find((item) => item.slug === categorySlug);
   const selectedWhen = when.find((option) => option.key === whenKey);
   const isFirstStep = step === 0;
   const isLastStep = step === STEP_TITLES.length - 1;
@@ -146,6 +178,7 @@ export default function NewRequestScreen() {
         scheduledFor: selectedWhen?.at ?? null,
         offeredAmount,
         categoryDetails,
+        sourceRequestId: reusingPrior ? reuseSeed?.sourceRequestId : undefined,
       },
       {
         onSuccess: (requestId) => {
@@ -158,7 +191,10 @@ export default function NewRequestScreen() {
 
   return (
     <Screen edges={['top', 'bottom']}>
-      <Header title="Make a request" onBack={isFirstStep ? () => router.back() : goBack} />
+      <Header
+        title={reusingPrior ? 'Send request again' : 'Make a request'}
+        onBack={isFirstStep ? () => router.back() : goBack}
+      />
 
       <View className="flex-row gap-1.5 px-5 pb-2">
         {STEP_TITLES.map((title, index) => (
@@ -174,7 +210,7 @@ export default function NewRequestScreen() {
           <View className="gap-6">
             <Text className="text-2xl font-bold text-ink">What do you need?</Text>
             <View className="gap-3">
-              {categories.data.map((item) => (
+              {categories.map((item) => (
                 <Choice
                   key={item.slug}
                   title={item.label}
@@ -345,5 +381,81 @@ export default function NewRequestScreen() {
         )}
       </View>
     </Screen>
+  );
+}
+
+export default function NewRequestScreen() {
+  const { from } = useLocalSearchParams<{ from?: string | string[] }>();
+  const sourceRequestId = typeof from === 'string' ? from : undefined;
+
+  const categories = useCategories();
+  const sourceRequest = useMyRequest(sourceRequestId ?? '');
+
+  if (categories.isPending || (sourceRequestId && sourceRequest.isPending)) {
+    return (
+      <Screen edges={['top', 'bottom']}>
+        <LoadingState />
+      </Screen>
+    );
+  }
+
+  if (categories.isError) {
+    return (
+      <Screen edges={['top', 'bottom']}>
+        <ErrorState error={categories.error} onRetry={() => categories.refetch()} />
+      </Screen>
+    );
+  }
+
+  if (sourceRequestId && sourceRequest.isError) {
+    return (
+      <Screen edges={['top', 'bottom']}>
+        <Header title="Make a request" onBack={() => router.back()} />
+        <ErrorState error={sourceRequest.error} onRetry={() => sourceRequest.refetch()} />
+      </Screen>
+    );
+  }
+
+  if (
+    sourceRequestId &&
+    sourceRequest.isSuccess &&
+    !canReuseRequest(sourceRequest.data.status, sourceRequest.data.expires_at)
+  ) {
+    return (
+      <Screen edges={['top', 'bottom']}>
+        <Header title="Make a request" onBack={() => router.back()} />
+        <ErrorState
+          error={
+            new Error(
+              'This request cannot be sent again. Only finished or expired requests can be reused.',
+            )
+          }
+          onRetry={() => router.back()}
+        />
+      </Screen>
+    );
+  }
+
+  const reuseSeed: ReuseSeed | undefined =
+    sourceRequestId && sourceRequest.data && isRequestCategorySlug(sourceRequest.data.category_slug)
+      ? {
+          sourceRequestId,
+          categorySlug: sourceRequest.data.category_slug,
+          description: sourceRequest.data.description,
+          categoryData: sourceRequest.data.category_data,
+          offeredAmount: sourceRequest.data.offered_amount,
+          latitude: sourceRequest.data.latitude,
+          longitude: sourceRequest.data.longitude,
+          locationLabel: sourceRequest.data.location_label,
+          searchRadiusM: sourceRequest.data.search_radius_m,
+        }
+      : undefined;
+
+  return (
+    <NewRequestForm
+      key={reuseSeed?.sourceRequestId ?? 'new'}
+      categories={categories.data}
+      reuseSeed={reuseSeed}
+    />
   );
 }

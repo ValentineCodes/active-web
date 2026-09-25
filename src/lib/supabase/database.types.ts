@@ -866,6 +866,7 @@ export type Database = {
           p_offered_amount?: number
           p_scheduled_for?: string
           p_search_radius_m: number
+          p_source_request_id?: string
         }
         Returns: string
       }

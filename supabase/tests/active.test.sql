@@ -984,6 +984,56 @@ select is(
   'the handshake keeps the request out of the expired state'
 );
 
+-- Request reuse -----------------------------------------------------------------------
+
+select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
+select create_request(
+  'repair',
+  'Reuse me after expiry',
+  6.5000,
+  3.3800,
+  'Yaba',
+  5000,
+  null,
+  5000,
+  '{"repair_category":"Generator","problem_description":"Will not start"}'::jsonb,
+  :'expired_request_id'::uuid
+) as reused_from_expired_id \gset
+
+select throws_ok(
+  format(
+    'select create_request(''repair'', ''Nope'', 6.5000, 3.3800, ''Yaba'', 5000, null, 5000, ''{}''::jsonb, %L)',
+    :'boundary_request_id'
+  ),
+  '55000',
+  'only expired or completed requests can be reused',
+  'an accepted request cannot be used as a reuse source'
+);
+
+select isnt(
+  :'reused_from_expired_id'::uuid,
+  :'expired_request_id'::uuid,
+  'reuse creates a new request id'
+);
+
+select is(
+  (select status::text from public.requests where id = :'expired_request_id'::uuid),
+  'expired',
+  'reuse leaves the original request unchanged'
+);
+
+select is(
+  (select source_request_id::text from public.requests where id = :'reused_from_expired_id'::uuid),
+  :'expired_request_id'::text,
+  'the new request records which request it was copied from'
+);
+
+select is(
+  (select description from public.requests where id = :'reused_from_expired_id'::uuid),
+  'Reuse me after expiry',
+  'reuse stores the submitted description on the new row'
+);
+
 select * from finish();
 
 rollback;

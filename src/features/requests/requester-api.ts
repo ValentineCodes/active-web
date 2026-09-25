@@ -88,6 +88,7 @@ export function useMyRequests() {
 export function useMyRequest(requestId: string) {
   return useQuery({
     queryKey: queryKeys.myRequest(requestId),
+    enabled: requestId.length > 0,
     queryFn: async (): Promise<MyRequest> => {
       const { data, error } = await supabase
         .from('my_requests')
@@ -257,6 +258,7 @@ export function useCreateRequest() {
       scheduledFor: Date | null;
       offeredAmount: number | null;
       categoryDetails: CategoryDetailsForm;
+      sourceRequestId?: string;
     }) => {
       if (!userId) throw new Error('Sign in to create a request.');
 
@@ -280,6 +282,7 @@ export function useCreateRequest() {
         p_scheduled_for: input.scheduledFor?.toISOString(),
         p_offered_amount: input.offeredAmount ?? undefined,
         p_category_data: categoryData,
+        p_source_request_id: input.sourceRequestId,
       });
 
       if (error) throw error;

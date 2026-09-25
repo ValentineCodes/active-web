@@ -19,6 +19,8 @@ export type CategoryDetailsForm = {
   notes: string;
   /** Local URIs chosen in the form; uploaded on submit. */
   photoUris: string[];
+  /** Storage paths kept from a reused request; not re-uploaded. */
+  storedPhotoPaths: string[];
 };
 
 export function emptyCategoryDetails(): CategoryDetailsForm {
@@ -36,6 +38,7 @@ export function emptyCategoryDetails(): CategoryDetailsForm {
     problemDescription: '',
     notes: '',
     photoUris: [],
+    storedPhotoPaths: [],
   };
 }
 
@@ -128,7 +131,8 @@ export function buildCategoryData(
   const base: Record<string, Json> = {};
   if (note) base.notes = note;
   if (preferredTime) base.preferred_time = preferredTime;
-  if (photoPaths.length > 0) base.photo_paths = photoPaths;
+  const allPhotoPaths = [...details.storedPhotoPaths, ...photoPaths];
+  if (allPhotoPaths.length > 0) base.photo_paths = allPhotoPaths;
 
   switch (slug) {
     case 'ride':
@@ -195,6 +199,38 @@ function asRecord(categoryData: Json): Record<string, unknown> | null {
     return null;
   }
   return categoryData as Record<string, unknown>;
+}
+
+export function categoryDetailsFromCategoryData(
+  _categorySlug: RequestCategorySlug,
+  categoryData: Json,
+): CategoryDetailsForm {
+  const record = asRecord(categoryData) ?? {};
+  const textField = (key: string) => {
+    const value = record[key];
+    return typeof value === 'string' ? value : '';
+  };
+  const numberField = (key: string) => {
+    const value = record[key];
+    return typeof value === 'number' && !Number.isNaN(value) ? String(value) : '';
+  };
+
+  return {
+    pickup: textField('pickup'),
+    destination: textField('destination'),
+    dropOff: textField('drop_off'),
+    passengerCount: numberField('passenger_count'),
+    packageType: textField('package_type'),
+    packageSize: textField('package_size'),
+    propertyType: textField('property_type'),
+    roomCount: numberField('room_count'),
+    preferredTime: textField('preferred_time'),
+    repairCategory: textField('repair_category'),
+    problemDescription: textField('problem_description'),
+    notes: textField('notes'),
+    photoUris: [],
+    storedPhotoPaths: photoPathsFromCategoryData(categoryData),
+  };
 }
 
 export function photoPathsFromCategoryData(categoryData: Json): string[] {
@@ -294,8 +330,8 @@ export function categoryDetailsSummary(
     case 'repair':
       push('Category', t(details.repairCategory));
       push('Problem', t(details.problemDescription));
-      if (details.photoUris.length > 0) {
-        push('Photos', `${details.photoUris.length} attached`);
+      if (details.photoUris.length > 0 || details.storedPhotoPaths.length > 0) {
+        push('Photos', `${details.photoUris.length + details.storedPhotoPaths.length} attached`);
       }
       break;
     case 'moving':

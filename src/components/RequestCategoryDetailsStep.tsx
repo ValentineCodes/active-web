@@ -1,5 +1,6 @@
 import { Image, Pressable, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useQuery } from '@tanstack/react-query';
 
 import { Button } from '@/components/ui/Button';
 import { Choice } from '@/components/ui/Choice';
@@ -11,8 +12,57 @@ import {
   PROPERTY_TYPES,
   type RequestCategorySlug,
 } from '@/features/requests/category-data';
-import { pickRequestPhotos, requestPhotoLimit } from '@/features/requests/request-media';
+import {
+  pickRequestPhotos,
+  REQUEST_MEDIA_BUCKET,
+  requestPhotoLimit,
+} from '@/features/requests/request-media';
+import { SIGNED_URL_TTL_SECONDS } from '@/features/profile/storage';
+import { queryKeys } from '@/lib/query/keys';
+import { supabase } from '@/lib/supabase/client';
 import { colors } from '@/theme';
+
+function useRequestMediaUrl(path: string) {
+  return useQuery({
+    queryKey: queryKeys.requestMediaUrl(path),
+    staleTime: (SIGNED_URL_TTL_SECONDS - 300) * 1000,
+    gcTime: SIGNED_URL_TTL_SECONDS * 1000,
+    queryFn: async () => {
+      const { data, error } = await supabase.storage
+        .from(REQUEST_MEDIA_BUCKET)
+        .createSignedUrl(path, SIGNED_URL_TTL_SECONDS);
+
+      if (error) throw error;
+      return data.signedUrl;
+    },
+  });
+}
+
+function StoredRequestPhoto({ path, onRemove }: { path: string; onRemove: () => void }) {
+  const url = useRequestMediaUrl(path);
+
+  if (url.isPending) {
+    return <View className="h-20 w-20 rounded-xl bg-surface" />;
+  }
+
+  if (url.isError || !url.data) {
+    return null;
+  }
+
+  return (
+    <Pressable
+      onPress={onRemove}
+      accessibilityRole="button"
+      accessibilityLabel="Remove photo"
+      className="relative"
+    >
+      <Image source={{ uri: url.data }} className="h-20 w-20 rounded-xl" />
+      <View className="absolute -right-1 -top-1 rounded-full bg-ink p-0.5">
+        <Ionicons name="close" size={14} color={colors.canvas} />
+      </View>
+    </Pressable>
+  );
+}
 
 function labelForPackageSize(size: string) {
   if (size === 'small') return 'Small (fits in a bag)';
@@ -40,20 +90,30 @@ export function RequestCategoryDetailsStep({
 }) {
   const set = (patch: Partial<CategoryDetailsForm>) => onChange({ ...details, ...patch });
   const fields = CATEGORY_FIELD_DEFS[categorySlug];
+  const photoCount = details.photoUris.length + details.storedPhotoPaths.length;
 
   const addPhotos = async () => {
-    const slotsLeft = requestPhotoLimit - details.photoUris.length;
+    const slotsLeft = requestPhotoLimit - photoCount;
     if (slotsLeft <= 0) return;
 
     const result = await pickRequestPhotos(slotsLeft);
     if (result.canceled) return;
 
     const uris = result.assets.map((asset) => asset.uri);
-    set({ photoUris: [...details.photoUris, ...uris].slice(0, requestPhotoLimit) });
+    set({
+      photoUris: [...details.photoUris, ...uris].slice(
+        0,
+        requestPhotoLimit - details.storedPhotoPaths.length,
+      ),
+    });
   };
 
   const removePhoto = (uri: string) => {
     set({ photoUris: details.photoUris.filter((item) => item !== uri) });
+  };
+
+  const removeStoredPhoto = (path: string) => {
+    set({ storedPhotoPaths: details.storedPhotoPaths.filter((item) => item !== path) });
   };
 
   return (
@@ -162,8 +222,15 @@ export function RequestCategoryDetailsStep({
           />
           <View className="gap-3">
             <Text className="text-sm font-semibold text-ink">Photos (optional)</Text>
-            {details.photoUris.length > 0 ? (
+            {photoCount > 0 ? (
               <View className="flex-row flex-wrap gap-2">
+                {details.storedPhotoPaths.map((path) => (
+                  <StoredRequestPhoto
+                    key={path}
+                    path={path}
+                    onRemove={() => removeStoredPhoto(path)}
+                  />
+                ))}
                 {details.photoUris.map((uri) => (
                   <Pressable
                     key={uri}
@@ -180,7 +247,7 @@ export function RequestCategoryDetailsStep({
                 ))}
               </View>
             ) : null}
-            {details.photoUris.length < requestPhotoLimit ? (
+            {photoCount < requestPhotoLimit ? (
               <Button
                 label="Add photos"
                 icon="image-outline"

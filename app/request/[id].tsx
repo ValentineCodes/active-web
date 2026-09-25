@@ -21,6 +21,11 @@ import {
   useRequestResponses,
 } from '@/features/requests/requester-api';
 import { requestStatusBadge } from '@/features/requests/status';
+import {
+  canReuseRequest,
+  isExpiredRequestView,
+  reuseRequestButtonLabelForRequest,
+} from '@/features/requests/reuse';
 import { formatAgo, formatMoney, formatRadius, formatWhen } from '@/lib/format';
 import { colors } from '@/theme';
 
@@ -60,8 +65,12 @@ export default function RequestDetailScreen() {
   const badge = requestStatusBadge(data.status, data.pending_response_count);
   const category = categories.data?.get(data.category_slug);
   const pending = responses.data?.filter((response) => response.status === 'pending') ?? [];
-  const isSearching = data.status === 'searching';
+  const isExpiredRequest = isExpiredRequestView(data.status, data.expires_at);
+  const isSearching = data.status === 'searching' && !isExpiredRequest;
   const isConnected = ['accepted', 'in_progress'].includes(data.status);
+  const reuseLabel = canReuseRequest(data.status, data.expires_at)
+    ? reuseRequestButtonLabelForRequest(data.status, data.expires_at)
+    : null;
 
   const confirmCancel = () =>
     Alert.alert('Cancel this request?', 'Anyone who responded will be told it is no longer open.', [
@@ -146,6 +155,32 @@ export default function RequestDetailScreen() {
                 onPress={() => router.push(`/rate/${id}`)}
               />
             )}
+            {reuseLabel ? (
+              <Button
+                label={reuseLabel}
+                size="lg"
+                onPress={() => router.push(`/request/new?from=${id}`)}
+              />
+            ) : null}
+          </View>
+        ) : null}
+
+        {isExpiredRequest ? (
+          <View className="gap-3">
+            <Card>
+              <Text className="text-base font-semibold text-ink">This request expired</Text>
+              <Text className="text-sm text-muted">
+                Nobody was connected in time. Your original request stays here as history — send a
+                new one when you are ready.
+              </Text>
+            </Card>
+            {reuseLabel ? (
+              <Button
+                label={reuseLabel}
+                size="lg"
+                onPress={() => router.push(`/request/new?from=${id}`)}
+              />
+            ) : null}
           </View>
         ) : null}
 
