@@ -1,9 +1,10 @@
 import * as Location from 'expo-location';
 
 /**
- * Location is never read at launch or during onboarding. These helpers are called from
- * exactly two places: submitting a request, and going Active. Both are moments the user
- * has just chosen, which is what makes the permission prompt legible.
+ * Location is never read at launch or during onboarding. These helpers are called when
+ * the user submits a request, goes Active, or chooses to browse requests nearby.
+ * Each is a moment they have just chosen, which is what makes the permission prompt
+ * legible.
  */
 
 export type Position = { latitude: number; longitude: number };
@@ -41,6 +42,15 @@ export async function requestPosition(): Promise<PositionResult> {
  * Reads the position only if permission was already granted, used to keep an Active
  * provider's matching position current. Never prompts.
  */
+export type ForegroundPermission = 'granted' | 'denied' | 'undetermined';
+
+export async function readForegroundPermission(): Promise<ForegroundPermission> {
+  const { status } = await Location.getForegroundPermissionsAsync();
+  if (status === 'granted') return 'granted';
+  if (status === 'denied') return 'denied';
+  return 'undetermined';
+}
+
 export async function readPositionIfPermitted(): Promise<Position | null> {
   const { granted } = await Location.getForegroundPermissionsAsync();
   if (!granted) return null;

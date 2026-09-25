@@ -52,7 +52,9 @@ export function RequestCard({
 
         <View className="flex-1 gap-1">
           <View className="flex-row items-start justify-between gap-2">
-            <Text className="flex-1 text-base font-semibold text-ink">{title}</Text>
+            <Text className="flex-1 text-base font-semibold text-ink" numberOfLines={2}>
+              {title}
+            </Text>
             {amount ? <Text className="text-base font-bold text-ink">{amount}</Text> : null}
           </View>
           <Text className="text-sm text-muted" numberOfLines={2}>

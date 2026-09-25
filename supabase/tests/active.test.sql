@@ -198,6 +198,51 @@ select is(
   'a requester is never matched to their own request'
 );
 
+-- Public discovery does not require going Active, and it never returns private fields.
+select pg_temp.act_as('66666666-6666-6666-6666-666666666666') as _ \gset
+select is(
+  (select count(*) from browse_nearby_requests(6.5000::double precision, 3.3800::double precision) where request_id = :'request_id'),
+  1::bigint,
+  'someone who is not Active can still browse a searching request near them'
+);
+
+select is(
+  (select distance_m from browse_nearby_requests(6.5000::double precision, 3.3800::double precision) where request_id = :'request_id'),
+  100,
+  'browsed distance is bucketed rather than exact'
+);
+
+select is(
+  (select count(*) from browse_nearby_requests(6.5600::double precision, 3.3800::double precision) where request_id = :'request_id'),
+  0::bigint,
+  'a browser outside the request search radius does not see it'
+);
+
+select is(
+  (select description from browse_request(:'request_id', 6.5000::double precision, 3.3800::double precision)),
+  'My generator will not start. 5kVA, was fine yesterday.',
+  'opening a nearby request returns its public description'
+);
+
+select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
+select is(
+  (select count(*) from browse_nearby_requests(6.5000::double precision, 3.3800::double precision) where request_id = :'request_id'),
+  0::bigint,
+  'a requester does not see their own request in public discovery'
+);
+
+select pg_temp.act_as_owner() as _ \gset
+select ok(
+  not exists (
+    select 1
+    from pg_proc p
+    where p.pronamespace = 'public'::regnamespace
+      and p.proname in ('browse_nearby_requests', 'browse_request')
+      and pg_get_function_result(p.oid) ~* 'response_count|phone|display_name|avatar|latitude|longitude|provider'
+  ),
+  'public discovery does not return responders, counts, contact details, or coordinates'
+);
+
 -- Privacy before acceptance ---------------------------------------------------------
 
 select pg_temp.act_as('22222222-2222-2222-2222-222222222222') as _ \gset
@@ -361,8 +406,16 @@ select is(
   'a busy provider stops receiving new requests'
 );
 
+select pg_temp.act_as('66666666-6666-6666-6666-666666666666') as _ \gset
+select is(
+  (select count(*) from browse_nearby_requests(6.5000::double precision, 3.3800::double precision) where request_id = :'request_id'),
+  0::bigint,
+  'a request leaves public discovery once someone is accepted'
+);
+
 -- Completion and rating -------------------------------------------------------------
 
+select pg_temp.act_as('22222222-2222-2222-2222-222222222222') as _ \gset
 select lives_ok(
   format('select start_request(%L)', :'request_id'),
   'the provider marks when they begin'

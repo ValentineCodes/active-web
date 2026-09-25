@@ -771,6 +771,36 @@ export type Database = {
         Returns: unknown
       }
       assert_onboarded: { Args: never; Returns: string }
+      browse_nearby_requests: {
+        Args: { p_latitude: number; p_longitude: number }
+        Returns: {
+          category_slug: string
+          currency: string
+          description: string
+          distance_m: number
+          location_label: string
+          offered_amount: number
+          request_id: string
+          scheduled_for: string
+        }[]
+      }
+      browse_request: {
+        Args: {
+          p_latitude: number
+          p_longitude: number
+          p_request_id: string
+        }
+        Returns: {
+          category_slug: string
+          currency: string
+          description: string
+          distance_m: number
+          location_label: string
+          offered_amount: number
+          request_id: string
+          scheduled_for: string
+        }[]
+      }
       bucket_distance_m: { Args: { p_distance_m: number }; Returns: number }
       cancel_request: { Args: { p_request_id: string }; Returns: undefined }
       clone_request_from_prior: {

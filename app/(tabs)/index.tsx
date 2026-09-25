@@ -1,8 +1,10 @@
 import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 import { Link, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useQueryClient } from '@tanstack/react-query';
 import { formatDistanceToNowStrict } from 'date-fns';
 
+import { NearbyRequests } from '@/components/NearbyRequests';
 import { Avatar } from '@/components/ui/Avatar';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -19,6 +21,7 @@ import { useMyResponses } from '@/features/requests/provider-api';
 import { useMyRequests } from '@/features/requests/requester-api';
 import { requestStatusBadge } from '@/features/requests/status';
 import { formatWhen } from '@/lib/format';
+import { queryKeys } from '@/lib/query/keys';
 import { colors } from '@/theme';
 
 export default function HomeScreen() {
@@ -28,6 +31,7 @@ export default function HomeScreen() {
   const responses = useMyResponses();
   const categories = useCategoryIndex();
   const goOffline = useGoOffline();
+  const queryClient = useQueryClient();
 
   const firstName = profile.data?.display_name?.split(' ')[0];
   const openRequests =
@@ -67,33 +71,34 @@ export default function HomeScreen() {
               requests.refetch();
               responses.refetch();
               availability.refetch();
+              queryClient.invalidateQueries({ queryKey: queryKeys.browseNearbyAll });
             }}
           />
         }
       >
-        <View className="flex-row items-center justify-between">
-          <View className="gap-1">
-            <Text className="text-base text-muted">
-              {firstName ? `Hi, ${firstName}` : 'Welcome'}
-            </Text>
-            <Text className="text-3xl font-bold text-ink">
-              {isActive ? "You're Active" : 'Need something?'}
-            </Text>
-            {!isActive ? (
-              <Text className="text-lg text-muted">Someone nearby can help.</Text>
-            ) : null}
+        <View className="gap-3">
+          <View className="flex-row items-center justify-between">
+            <View className="gap-1">
+              <Text className="text-base text-muted">
+                {firstName ? `Hi, ${firstName}` : 'Welcome'}
+              </Text>
+              <Text className="text-3xl font-bold text-ink">One account</Text>
+            </View>
+            <Pressable
+              onPress={() => router.push('/profile')}
+              accessibilityRole="button"
+              accessibilityLabel="Open your profile"
+            >
+              <Avatar
+                path={profile.data?.avatar_path}
+                name={profile.data?.display_name ?? null}
+                showActiveDot={isActive}
+              />
+            </Pressable>
           </View>
-          <Pressable
-            onPress={() => router.push('/profile')}
-            accessibilityRole="button"
-            accessibilityLabel="Open your profile"
-          >
-            <Avatar
-              path={profile.data?.avatar_path}
-              name={profile.data?.display_name ?? null}
-              showActiveDot={isActive}
-            />
-          </Pressable>
+          <Text className="text-base text-muted">
+            Ask for help, or become available to help. Both are temporary.
+          </Text>
         </View>
 
         {engagementAsRequester || engagementAsProvider ? (
@@ -120,7 +125,7 @@ export default function HomeScreen() {
         {isActive && availability.data?.expires_at ? (
           <Card tone="active">
             <View className="flex-row items-center justify-between">
-              <Badge label="Available now" tone="active" />
+              <Badge label="Available to help" tone="active" />
               <Text className="text-sm text-muted">
                 {formatDistanceToNowStrict(new Date(availability.data.expires_at))} left
               </Text>
@@ -142,7 +147,7 @@ export default function HomeScreen() {
 
             <View className="flex-row gap-3">
               <Button
-                label="See nearby requests"
+                label="Your matches"
                 variant="secondary"
                 className="flex-1"
                 onPress={() => router.push('/activity')}
@@ -169,9 +174,9 @@ export default function HomeScreen() {
               <Ionicons name="add" size={26} color={colors.canvas} />
             </View>
             <View className="gap-1">
-              <Text className="text-2xl font-bold text-canvas">Make a request</Text>
+              <Text className="text-2xl font-bold text-canvas">Make a Request</Text>
               <Text className="text-base text-canvas/80">
-                Say what you need. People nearby who can help will answer.
+                Ask for help. It stays open only while you need it.
               </Text>
             </View>
           </Pressable>
@@ -188,11 +193,15 @@ export default function HomeScreen() {
               </View>
               <View className="gap-1">
                 <Text className="text-2xl font-bold text-ink">Go Active</Text>
-                <Text className="text-base text-muted">Let people nearby know you can help.</Text>
+                <Text className="text-base text-muted">
+                  Become available to help, for as long as you choose.
+                </Text>
               </View>
             </Pressable>
           )}
         </View>
+
+        <NearbyRequests />
 
         {openRequests.length > 0 ? (
           <View className="gap-3">

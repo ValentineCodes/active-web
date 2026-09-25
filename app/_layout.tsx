@@ -29,7 +29,8 @@ function BootScreen() {
  * Three mutually exclusive shells: signing in, finishing a profile, and the app itself.
  *
  * Nothing here touches location. A new user reaches Home without ever being asked where
- * they are; that question only arrives when they submit a request or go Active.
+ * they are; that question only arrives when they submit a request, go Active, or choose
+ * to browse requests nearby.
  */
 function RootNavigator() {
   const { session, isRestoring } = useSession();
@@ -58,6 +59,7 @@ function RootNavigator() {
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="request/new" options={{ presentation: 'modal' }} />
         <Stack.Screen name="request/[id]" />
+        <Stack.Screen name="nearby/[id]" />
         <Stack.Screen name="go-active" options={{ presentation: 'modal' }} />
         <Stack.Screen name="respond/[id]" options={{ presentation: 'modal' }} />
         <Stack.Screen name="engagement/[id]" />
