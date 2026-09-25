@@ -173,11 +173,14 @@ export default function PhoneScreen() {
                 <Text className="font-semibold text-muted">Resend in {resendSecondsLeft}s</Text>
               ) : (
                 <Text
-                  className="font-semibold text-brand"
+                  className={
+                    resend.isPending ? 'font-semibold text-muted' : 'font-semibold text-brand'
+                  }
                   onPress={() => !resend.isPending && resend.mutate()}
                   accessibilityRole="button"
+                  accessibilityState={{ disabled: resend.isPending }}
                 >
-                  Resend
+                  {resend.isPending ? 'Sending…' : 'Resend'}
                 </Text>
               )}
             </Text>

@@ -51,9 +51,9 @@ export function useWalletActivity() {
   });
 }
 
-function invalidateWalletQueries(queryClient: QueryClient) {
-  void queryClient.invalidateQueries({ queryKey: queryKeys.wallet });
-  void queryClient.invalidateQueries({ queryKey: queryKeys.walletActivity });
+async function invalidateWalletQueries(queryClient: QueryClient) {
+  await queryClient.invalidateQueries({ queryKey: queryKeys.wallet });
+  await queryClient.invalidateQueries({ queryKey: queryKeys.walletActivity });
 }
 
 export function useWalletTopUp() {
@@ -67,7 +67,7 @@ export function useWalletTopUp() {
       });
       if (error) throw error;
     },
-    onSuccess: () => invalidateWalletQueries(queryClient),
+    onSuccess: () => void invalidateWalletQueries(queryClient),
   });
 }
 
@@ -82,6 +82,6 @@ export function useWalletWithdraw() {
       });
       if (error) throw error;
     },
-    onSuccess: () => invalidateWalletQueries(queryClient),
+    onSuccess: () => void invalidateWalletQueries(queryClient),
   });
 }

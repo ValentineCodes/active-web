@@ -1304,6 +1304,10 @@ export type Database = {
         Returns: undefined
       }
       assert_onboarded: { Args: never; Returns: string }
+      authorize_request_media_read: {
+        Args: { p_latitude: number; p_longitude: number; p_path: string }
+        Returns: undefined
+      }
       auto_complete_due_requests: {
         Args: { p_limit?: number }
         Returns: number

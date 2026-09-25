@@ -56,6 +56,19 @@ export function ErrorState({ error, onRetry }: { error: unknown; onRetry?: () =>
   );
 }
 
+/** Short confirmation after a successful action (submit, save, fund, etc.). */
+export function SuccessBanner({ message }: { message: string }) {
+  return (
+    <View
+      className="flex-row items-start gap-2 rounded-xl bg-active-soft p-3"
+      accessibilityRole="text"
+    >
+      <Ionicons name="checkmark-circle" size={18} color={colors.active} />
+      <Text className="flex-1 text-sm text-ink">{message}</Text>
+    </View>
+  );
+}
+
 /** Inline form/action error, shown next to the control that produced it. */
 export function InlineError({ error }: { error: unknown }) {
   return (

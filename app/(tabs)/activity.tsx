@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { FlatList, RefreshControl, Text, View } from 'react-native';
+import { Alert, FlatList, RefreshControl, Text, View } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
 import { formatDistanceToNowStrict } from 'date-fns';
 
@@ -23,7 +23,12 @@ import {
   useNearbyRequests,
   useWithdrawResponse,
 } from '@/features/requests/provider-api';
-import { requestStatusBadge, responseStatusBadge } from '@/features/requests/status';
+import {
+  availabilityStatusBadge,
+  nearbyRequestBadge,
+  providerResponseLifecycleBadge,
+} from '@/features/requests/status';
+import { confirmGoOffline, confirmWithdrawResponse } from '@/lib/confirm';
 import { formatDistance, formatMoney, formatWhen } from '@/lib/format';
 import { readPositionIfPermitted } from '@/lib/location';
 
@@ -77,10 +82,10 @@ export default function ActivityScreen() {
         {isBusy ? (
           <Card tone="active" className="gap-3">
             <View className="gap-1">
-              <Badge label="You've been selected!" tone="active" />
+              <Badge label="Committed" tone="active" />
               <Text className="text-sm text-muted">
-                You are committed to this job until it ends. Other requests pause; sending a
-                response alone never does that.
+                A requester selected you for this job. You stay out of new matches until it ends.
+                Sending a response alone never commits you.
               </Text>
             </View>
             {committedRequestId ? (
@@ -96,7 +101,10 @@ export default function ActivityScreen() {
         {isActive && availability.data?.expires_at ? (
           <Card tone="active" className="flex-row items-center gap-3">
             <View className="flex-1 gap-1">
-              <Badge label="Available now" tone="active" />
+              {(() => {
+                const badge = availabilityStatusBadge('available');
+                return badge ? <Badge label={badge.label} tone={badge.tone} /> : null;
+              })()}
               <Text className="text-sm text-muted">
                 {formatDistanceToNowStrict(new Date(availability.data.expires_at))} left ·{' '}
                 {(availability.data.service_radius_m ?? 0) / 1000} km
@@ -106,7 +114,7 @@ export default function ActivityScreen() {
               label="Go offline"
               variant="secondary"
               loading={goOffline.isPending}
-              onPress={() => goOffline.mutate()}
+              onPress={() => confirmGoOffline(() => goOffline.mutate())}
             />
           </Card>
         ) : null}
@@ -151,41 +159,51 @@ export default function ActivityScreen() {
                 }}
               />
             }
-            renderItem={({ item }) => (
-              <RequestCard
-                icon={categories.data?.get(item.category_slug)?.icon}
-                title={categories.data?.get(item.category_slug)?.label ?? item.category_slug}
-                description={item.description}
-                amount={
-                  item.offered_amount !== null
-                    ? formatMoney(item.offered_amount, item.currency)
-                    : 'Open to offers'
-                }
-                meta={[
-                  formatDistance(item.distance_m),
-                  item.location_label,
-                  formatWhen(item.scheduled_for),
-                ]}
-                onPress={() => router.push(`/respond/${item.request_id}`)}
-                footer={
-                  <View className="flex-row items-center gap-3 border-t border-hairline pt-3">
-                    <View className="min-w-0 flex-1">
-                      <PersonRow
-                        size="sm"
-                        avatarPath={item.requester_avatar_path}
-                        name={item.requester_display_name}
-                        ratingAverage={item.requester_rating_average}
-                        ratingCount={item.requester_rating_count}
+            renderItem={({ item }) => {
+              const waiting = responses.data?.some(
+                (response) =>
+                  response.request_id === item.request_id &&
+                  response.response_status === 'pending' &&
+                  response.request_status === 'searching',
+              );
+
+              return (
+                <RequestCard
+                  icon={categories.data?.get(item.category_slug)?.icon}
+                  title={categories.data?.get(item.category_slug)?.label ?? item.category_slug}
+                  description={item.description}
+                  badge={nearbyRequestBadge(Boolean(waiting))}
+                  amount={
+                    item.offered_amount !== null
+                      ? formatMoney(item.offered_amount, item.currency)
+                      : 'Open to offers'
+                  }
+                  meta={[
+                    formatDistance(item.distance_m),
+                    item.location_label,
+                    formatWhen(item.scheduled_for),
+                  ]}
+                  onPress={() => router.push(`/respond/${item.request_id}`)}
+                  footer={
+                    <View className="flex-row items-center gap-3 border-t border-hairline pt-3">
+                      <View className="min-w-0 flex-1">
+                        <PersonRow
+                          size="sm"
+                          avatarPath={item.requester_avatar_path}
+                          name={item.requester_display_name}
+                          ratingAverage={item.requester_rating_average}
+                          ratingCount={item.requester_rating_count}
+                        />
+                      </View>
+                      <Button
+                        label="Respond"
+                        onPress={() => router.push(`/respond/${item.request_id}`)}
                       />
                     </View>
-                    <Button
-                      label="Respond"
-                      onPress={() => router.push(`/respond/${item.request_id}`)}
-                    />
-                  </View>
-                }
-              />
-            )}
+                  }
+                />
+              );
+            }}
           />
         )
       ) : responses.isPending ? (
@@ -218,9 +236,7 @@ export default function ActivityScreen() {
               );
             const canEdit =
               item.response_status === 'pending' && item.request_status === 'searching';
-            const badge = isConnected
-              ? requestStatusBadge(item.request_status, 0)
-              : responseStatusBadge(item.response_status);
+            const badge = providerResponseLifecycleBadge(item.response_status, item.request_status);
 
             return (
               <RequestCard
@@ -251,7 +267,17 @@ export default function ActivityScreen() {
                       label="Withdraw response"
                       variant="secondary"
                       loading={withdrawResponse.isPending}
-                      onPress={() => withdrawResponse.mutate(item.response_id)}
+                      onPress={() =>
+                        confirmWithdrawResponse(() =>
+                          withdrawResponse.mutate(item.response_id, {
+                            onSuccess: () =>
+                              Alert.alert(
+                                'Response withdrawn',
+                                'You can respond again if this request is still open.',
+                              ),
+                          }),
+                        )
+                      }
                     />
                   ) : item.response_status === 'declined' && item.decline_reason ? (
                     <Text className="text-sm text-muted">{item.decline_reason}</Text>

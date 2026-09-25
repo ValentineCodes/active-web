@@ -11,7 +11,13 @@ import { Card } from '@/components/ui/Card';
 import { Header } from '@/components/ui/Header';
 import { PersonRow } from '@/components/ui/PersonRow';
 import { Screen } from '@/components/ui/Screen';
+import { Badge } from '@/components/ui/Badge';
 import { EmptyState, ErrorState, InlineError, LoadingState } from '@/components/ui/StateView';
+import {
+  paymentStatusBadge,
+  paymentStatusHint,
+  requestEngagementStatusBadge,
+} from '@/features/requests/status';
 import { useCategoryIndex } from '@/features/categories/api';
 import {
   useCancelService,
@@ -62,7 +68,7 @@ function openInMaps(latitude: number, longitude: number, label: string) {
 }
 
 const STEPS = [
-  { key: 'accepted', label: 'Connected' },
+  { key: 'accepted', label: 'Selected' },
   { key: 'in_progress', label: 'In progress' },
   { key: 'completion_pending', label: 'Confirm' },
   { key: 'completed', label: 'Complete' },
@@ -153,6 +159,15 @@ export default function EngagementScreen() {
   const category = categories.data?.get(data.category_slug);
   const agreedAmount = data.quoted_amount ?? data.offered_amount;
   const stepIndex = statusStepIndex(data.request_status);
+  const statusBadge = requestEngagementStatusBadge(data.request_status);
+  const escrowBadge =
+    data.payment_status && data.payment_status !== 'not_required'
+      ? paymentStatusBadge(data.payment_status)
+      : null;
+  const escrowHint =
+    data.payment_status && data.payment_status !== 'not_required'
+      ? paymentStatusHint(data.payment_status, data.viewer_is_requester)
+      : null;
 
   const providerDistance =
     data.provider_latitude !== null && data.provider_longitude !== null
@@ -383,10 +398,20 @@ export default function EngagementScreen() {
           />
         }
       >
-        <Card tone="active">
+        <Card tone="active" className="gap-2">
+          <Badge label={statusBadge.label} tone={statusBadge.tone} />
           <Text className="text-sm font-semibold text-active">
             {data.viewer_is_requester ? 'Helping you' : "You're helping"}
           </Text>
+          <Text className="text-sm text-muted">
+            Call or message below — there is no in-app chat in this version.
+          </Text>
+          {escrowBadge && data.viewer_is_requester ? (
+            <View className="gap-1">
+              <Badge label={escrowBadge.label} tone={escrowBadge.tone} />
+              {escrowHint ? <Text className="text-sm text-muted">{escrowHint}</Text> : null}
+            </View>
+          ) : null}
 
           <PersonRow
             avatarPath={data.counterparty_avatar_path}
@@ -518,7 +543,16 @@ export default function EngagementScreen() {
               label="I've completed the service"
               size="lg"
               loading={markServiceComplete.isPending}
-              onPress={() => markServiceComplete.mutate()}
+              onPress={() =>
+                Alert.alert(
+                  'Mark this job complete?',
+                  'The requester will be asked to confirm before payment is released.',
+                  [
+                    { text: 'Not yet', style: 'cancel' },
+                    { text: 'Mark complete', onPress: () => markServiceComplete.mutate() },
+                  ],
+                )
+              }
             />
             <Button
               label="Client didn't show up"
@@ -561,9 +595,20 @@ export default function EngagementScreen() {
               size="lg"
               loading={completeRequest.isPending}
               onPress={() =>
-                completeRequest.mutate(undefined, {
-                  onSuccess: () => router.replace(`/rate/${id}`),
-                })
+                Alert.alert(
+                  'Release payment to your provider?',
+                  'Only confirm if the work was done as agreed. This releases escrow to your provider.',
+                  [
+                    { text: 'Not yet', style: 'cancel' },
+                    {
+                      text: 'Confirm',
+                      onPress: () =>
+                        completeRequest.mutate(undefined, {
+                          onSuccess: () => router.replace(`/rate/${id}`),
+                        }),
+                    },
+                  ],
+                )
               }
             />
             <Button

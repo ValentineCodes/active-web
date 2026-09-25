@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ScrollView, Text, View } from 'react-native';
+import { Alert, ScrollView, Text, View } from 'react-native';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -192,6 +192,7 @@ export default function RespondScreen() {
           <RequestCategoryDataSection
             categorySlug={request.category_slug}
             categoryData={request.category_data}
+            discoveryPosition={position}
           />
 
           <View className="flex-row flex-wrap gap-x-4">
@@ -305,7 +306,15 @@ export default function RespondScreen() {
                   etaMinutes: parsedEta,
                   position,
                 },
-                { onSuccess: () => router.back() },
+                {
+                  onSuccess: () => {
+                    Alert.alert(
+                      existingResponse ? 'Response updated' : 'Response sent',
+                      'The requester can compare your offer with others. Exact location stays private until they select you.',
+                      [{ text: 'OK', onPress: () => router.back() }],
+                    );
+                  },
+                },
               )
             }
           />

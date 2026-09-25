@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Alert, RefreshControl, ScrollView, Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -7,7 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Header } from '@/components/ui/Header';
 import { Screen } from '@/components/ui/Screen';
-import { ErrorState, InlineError, LoadingState } from '@/components/ui/StateView';
+import { ErrorState, InlineError, LoadingState, SuccessBanner } from '@/components/ui/StateView';
 import { ProviderResponseCard } from '@/components/ProviderResponseCard';
 import { RequestCategoryDataSection } from '@/components/RequestCategoryDataSection';
 import { useCategoryIndex } from '@/features/categories/api';
@@ -20,7 +21,11 @@ import {
   useMyRequest,
   useRequestResponses,
 } from '@/features/requests/requester-api';
-import { requestStatusBadge } from '@/features/requests/status';
+import {
+  paymentStatusBadge,
+  paymentStatusHint,
+  requestStatusBadge,
+} from '@/features/requests/status';
 import {
   canReuseRequest,
   isExpiredRequestView,
@@ -40,6 +45,7 @@ export default function RequestDetailScreen() {
   const cancelRequest = useCancelRequest(id);
   const acceptResponse = useAcceptResponse(id);
   const declineResponse = useDeclineResponse(id);
+  const [radiusExpanded, setRadiusExpanded] = useState(false);
 
   useLiveRequest(id);
 
@@ -63,6 +69,14 @@ export default function RequestDetailScreen() {
 
   const { data } = request;
   const badge = requestStatusBadge(data.status, data.pending_response_count);
+  const paymentBadge =
+    data.payment_status && data.payment_status !== 'not_required'
+      ? paymentStatusBadge(data.payment_status)
+      : null;
+  const paymentHint =
+    data.payment_status && data.payment_status !== 'not_required'
+      ? paymentStatusHint(data.payment_status, true)
+      : null;
   const category = categories.data?.get(data.category_slug);
   const pending = responses.data?.filter((response) => response.status === 'pending') ?? [];
   const isExpiredRequest = isExpiredRequestView(data.status, data.expires_at);
@@ -84,7 +98,14 @@ export default function RequestDetailScreen() {
       {
         text: 'Cancel request',
         style: 'destructive',
-        onPress: () => cancelRequest.mutate(),
+        onPress: () =>
+          cancelRequest.mutate(undefined, {
+            onSuccess: () =>
+              Alert.alert(
+                'Request cancelled',
+                'Anyone who responded has been notified. Locked funds return to your wallet.',
+              ),
+          }),
       },
     ]);
 
@@ -125,16 +146,27 @@ export default function RequestDetailScreen() {
                 You offered {formatMoney(data.offered_amount, data.currency)}
               </Text>
             ) : null}
+            {paymentBadge ? (
+              <View className="gap-1 pt-1">
+                <Badge label={paymentBadge.label} tone={paymentBadge.tone} />
+                {paymentHint ? <Text className="text-sm text-muted">{paymentHint}</Text> : null}
+              </View>
+            ) : null}
           </View>
         </View>
 
         {isConnected ? (
-          <Button
-            label="Open your connection"
-            variant="active"
-            size="lg"
-            onPress={() => router.push(`/engagement/${id}`)}
-          />
+          <View className="gap-3">
+            <Button
+              label="Open your connection"
+              variant="active"
+              size="lg"
+              onPress={() => router.push(`/engagement/${id}`)}
+            />
+            <Text className="text-center text-sm text-muted">
+              Exact location and phone numbers are shared on the connection screen.
+            </Text>
+          </View>
         ) : null}
 
         {data.status === 'completed' ? (
@@ -217,12 +249,20 @@ export default function RequestDetailScreen() {
                   If nobody answers, widen the area you&apos;re searching. That changes who gets
                   offered the request, and nothing else.
                 </Text>
+                {radiusExpanded ? (
+                  <SuccessBanner message="Search radius widened. More nearby providers may see your request." />
+                ) : null}
                 {expandRadius.isError ? <InlineError error={expandRadius.error} /> : null}
                 <Button
                   label={`Search wider than ${formatRadius(data.search_radius_m)}`}
                   variant="secondary"
                   loading={expandRadius.isPending}
-                  onPress={() => expandRadius.mutate()}
+                  disabled={expandRadius.isPending}
+                  onPress={() =>
+                    expandRadius.mutate(undefined, {
+                      onSuccess: () => setRadiusExpanded(true),
+                    })
+                  }
                 />
               </Card>
             ) : null}
@@ -250,7 +290,16 @@ export default function RequestDetailScreen() {
                 acceptLoading={acceptResponse.isPending}
                 declineLoading={declineResponse.isPending}
                 onDecline={(reason) =>
-                  declineResponse.mutate({ responseId: response.response_id, reason })
+                  declineResponse.mutate(
+                    { responseId: response.response_id, reason },
+                    {
+                      onSuccess: () =>
+                        Alert.alert(
+                          'Declined',
+                          'They can still respond to other requests. You can select someone else anytime.',
+                        ),
+                    },
+                  )
                 }
                 onAccept={() =>
                   Alert.alert(
@@ -260,7 +309,10 @@ export default function RequestDetailScreen() {
                       { text: 'Not yet', style: 'cancel' },
                       {
                         text: 'Select',
-                        onPress: () => acceptResponse.mutate(response.response_id),
+                        onPress: () =>
+                          acceptResponse.mutate(response.response_id, {
+                            onSuccess: () => router.replace(`/engagement/${id}`),
+                          }),
                       },
                     ],
                   )

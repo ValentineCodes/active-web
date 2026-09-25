@@ -11,7 +11,7 @@ import { Header } from '@/components/ui/Header';
 import { RadiusSelector } from '@/components/ui/RadiusSelector';
 import { Screen } from '@/components/ui/Screen';
 import { ServiceTag } from '@/components/ui/ServiceTag';
-import { ErrorState, InlineError, LoadingState } from '@/components/ui/StateView';
+import { ErrorState, InlineError, LoadingState, SuccessBanner } from '@/components/ui/StateView';
 import { ACTIVE_DURATIONS, SERVICE_RADII_M } from '@/config';
 import { useAvailability, useGoActive } from '@/features/availability/api';
 import { useCategories } from '@/features/categories/api';
@@ -40,6 +40,7 @@ export default function GoActiveScreen() {
   const [durationMinutes, setDurationMinutes] = useState<number>(240);
   const [position, setPosition] = useState<Position | null>(null);
   const [photoProgress, setPhotoProgress] = useState<number | null>(null);
+  const [photoReadyNotice, setPhotoReadyNotice] = useState(false);
 
   const chosen = selected ?? availability.data?.category_slugs ?? [];
   const radius = serviceRadiusM ?? availability.data?.service_radius_m ?? 10000;
@@ -92,10 +93,17 @@ export default function GoActiveScreen() {
     );
   }
 
-  if (categories.isError) {
+  if (categories.isError || availability.isError || profile.isError) {
+    const error = categories.error ?? availability.error ?? profile.error;
+    const retry = () => {
+      if (categories.isError) void categories.refetch();
+      if (availability.isError) void availability.refetch();
+      if (profile.isError) void profile.refetch();
+    };
+
     return (
       <Screen edges={['top', 'bottom']}>
-        <ErrorState error={categories.error} onRetry={() => categories.refetch()} />
+        <ErrorState error={error} onRetry={retry} />
       </Screen>
     );
   }
@@ -198,7 +206,12 @@ export default function GoActiveScreen() {
                     setPhotoProgress(0);
                     capturePhoto.mutate(
                       { onProgress: setPhotoProgress },
-                      { onSettled: () => setPhotoProgress(null) },
+                      {
+                        onSettled: () => setPhotoProgress(null),
+                        onSuccess: (saved) => {
+                          if (saved) setPhotoReadyNotice(true);
+                        },
+                      },
                     );
                   }}
                 />
@@ -216,6 +229,9 @@ export default function GoActiveScreen() {
               </View>
             )}
 
+            {photoReadyNotice ? (
+              <SuccessBanner message="Photo saved. You can continue to the next step." />
+            ) : null}
             {capturePhoto.isError ? <InlineError error={capturePhoto.error} /> : null}
           </View>
         ) : null}

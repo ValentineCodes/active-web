@@ -11,7 +11,7 @@ import { InlineError } from '@/components/ui/StateView';
 import { useCategories, useCategoryIndex } from '@/features/categories/api';
 import { useBrowseNearbyRequests } from '@/features/requests/browse-api';
 import { useMyResponses } from '@/features/requests/provider-api';
-import { responseStatusBadge } from '@/features/requests/status';
+import { nearbyRequestBadge } from '@/features/requests/status';
 import { cn } from '@/lib/cn';
 import { formatDistance, formatMoney, formatWhen } from '@/lib/format';
 import {
@@ -199,9 +199,7 @@ export function NearbyRequests() {
               icon={category?.icon}
               title={category?.label ?? request.category_slug}
               description={request.description}
-              badge={
-                waiting ? responseStatusBadge('pending') : { label: 'Searching', tone: 'warning' }
-              }
+              badge={nearbyRequestBadge(Boolean(waiting))}
               amount={
                 request.offered_amount !== null
                   ? formatMoney(request.offered_amount, request.currency)

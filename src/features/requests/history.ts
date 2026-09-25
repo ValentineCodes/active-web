@@ -34,7 +34,7 @@ export const ACTIVE_REQUEST_FILTERS: { key: ActiveRequestFilter; label: string }
   { key: 'all', label: 'All' },
   { key: 'searching', label: 'Searching' },
   { key: 'responses', label: 'Responses' },
-  { key: 'handshake', label: 'Handshake' },
+  { key: 'handshake', label: 'Selected' },
   { key: 'in_progress', label: 'In progress' },
   { key: 'completion_pending', label: 'Completion pending' },
   { key: 'disputed', label: 'Disputed' },

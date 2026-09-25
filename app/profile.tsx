@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Header } from '@/components/ui/Header';
 import { Screen } from '@/components/ui/Screen';
-import { ErrorState, InlineError, LoadingState } from '@/components/ui/StateView';
+import { ErrorState, InlineError, LoadingState, SuccessBanner } from '@/components/ui/StateView';
 import { StarRating } from '@/components/ui/Stars';
 import { TextField } from '@/components/ui/TextField';
 import { ServiceTag } from '@/components/ui/ServiceTag';
@@ -34,6 +34,7 @@ export default function ProfileScreen() {
   const leave = useMutation({ mutationFn: signOut });
 
   const [draft, setDraft] = useState<{ name: string; bio: string } | null>(null);
+  const [photoNotice, setPhotoNotice] = useState<string | null>(null);
 
   if (profile.isPending) {
     return (
@@ -74,7 +75,16 @@ export default function ProfileScreen() {
       >
         <View className="items-center gap-3">
           <Pressable
-            onPress={() => capturePhoto.mutate({})}
+            onPress={() =>
+              capturePhoto.mutate(
+                {},
+                {
+                  onSuccess: (saved) => {
+                    if (saved) setPhotoNotice('Provider photo updated.');
+                  },
+                },
+              )
+            }
             disabled={capturePhoto.isPending}
             accessibilityRole="button"
             accessibilityLabel="Take your provider profile photo"
@@ -87,7 +97,16 @@ export default function ProfileScreen() {
             />
           </Pressable>
           <Pressable
-            onPress={() => capturePhoto.mutate({})}
+            onPress={() =>
+              capturePhoto.mutate(
+                {},
+                {
+                  onSuccess: (saved) => {
+                    if (saved) setPhotoNotice('Provider photo updated.');
+                  },
+                },
+              )
+            }
             disabled={capturePhoto.isPending}
             accessibilityRole="button"
             accessibilityLabel="Take your provider profile photo"
@@ -105,6 +124,7 @@ export default function ProfileScreen() {
             Provider photos are captured in-app with your camera so requesters know who they are
             choosing.
           </Text>
+          {photoNotice ? <SuccessBanner message={photoNotice} /> : null}
           {capturePhoto.isError ? <InlineError error={capturePhoto.error} /> : null}
 
           {draft ? null : (

@@ -20,7 +20,12 @@ import { useProfile } from '@/features/profile/api';
 import { useMyResponses } from '@/features/requests/provider-api';
 import { useMyWallet } from '@/features/wallet/api';
 import { useMyRequests } from '@/features/requests/requester-api';
-import { requestStatusBadge } from '@/features/requests/status';
+import {
+  availabilityStatusBadge,
+  requestEngagementStatusBadge,
+  requestStatusBadge,
+} from '@/features/requests/status';
+import { confirmGoOffline } from '@/lib/confirm';
 import { formatMoney, formatWhen } from '@/lib/format';
 import { queryKeys } from '@/lib/query/keys';
 import { colors } from '@/theme';
@@ -117,13 +122,35 @@ export default function HomeScreen() {
               <View className="gap-0.5">
                 <Text className="text-sm font-semibold text-muted">Wallet</Text>
                 <Text className="text-lg font-bold text-ink">
-                  {wallet.data ? formatMoney(wallet.data.available, wallet.data.currency) : '—'}
+                  {wallet.isPending
+                    ? '…'
+                    : wallet.data
+                      ? formatMoney(wallet.data.available, wallet.data.currency)
+                      : '—'}
                 </Text>
               </View>
             </View>
             <Ionicons name="chevron-forward" size={20} color={colors.subtle} />
           </Card>
         </Pressable>
+
+        {isBusy && !engagementAsRequester && !engagementAsProvider ? (
+          <Card tone="active" className="gap-3">
+            <Badge label="Committed" tone="active" />
+            <Text className="text-sm text-muted">
+              A requester selected you. New nearby matches are paused until this job ends.
+            </Text>
+            {availability.data?.committed_request_id ? (
+              <Button
+                label="Open job details"
+                variant="active"
+                onPress={() =>
+                  router.push(`/engagement/${availability.data!.committed_request_id}`)
+                }
+              />
+            ) : null}
+          </Card>
+        ) : null}
 
         {engagementAsRequester || engagementAsProvider ? (
           <Link
@@ -132,7 +159,12 @@ export default function HomeScreen() {
           >
             <Pressable accessibilityRole="button" accessibilityLabel="Open your connected job">
               <Card tone="active">
-                <Badge label="Connected" tone="active" />
+                {(() => {
+                  const status =
+                    engagementAsRequester?.status ?? engagementAsProvider?.request_status;
+                  const badge = status ? requestEngagementStatusBadge(status) : null;
+                  return badge ? <Badge label={badge.label} tone={badge.tone} /> : null;
+                })()}
                 <Text className="text-lg font-semibold text-ink">
                   {engagementAsRequester
                     ? 'Someone is on your request'
@@ -150,7 +182,10 @@ export default function HomeScreen() {
         {isActive && availability.data?.expires_at ? (
           <Card tone="active">
             <View className="flex-row items-center justify-between">
-              <Badge label="Available to help" tone="active" />
+              {(() => {
+                const badge = availabilityStatusBadge('available');
+                return badge ? <Badge label={badge.label} tone={badge.tone} /> : null;
+              })()}
               <Text className="text-sm text-muted">
                 {formatDistanceToNowStrict(new Date(availability.data.expires_at))} left
               </Text>
@@ -182,7 +217,7 @@ export default function HomeScreen() {
                 variant="secondary"
                 className="flex-1"
                 loading={goOffline.isPending}
-                onPress={() => goOffline.mutate()}
+                onPress={() => confirmGoOffline(() => goOffline.mutate())}
               />
             </View>
           </Card>

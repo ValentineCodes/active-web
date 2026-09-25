@@ -7,7 +7,7 @@ import { formatDistanceToNowStrict } from 'date-fns';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Screen } from '@/components/ui/Screen';
-import { EmptyState, LoadingState } from '@/components/ui/StateView';
+import { EmptyState, ErrorState, LoadingState } from '@/components/ui/StateView';
 import { markNotificationInboxRead, useNotificationInbox } from '@/features/notifications/inbox';
 import { queryKeys } from '@/lib/query/keys';
 import { useQueryClient } from '@tanstack/react-query';
@@ -52,6 +52,8 @@ export default function NotificationsScreen() {
       </View>
 
       {inbox.isPending ? <LoadingState /> : null}
+
+      {inbox.isError ? <ErrorState error={inbox.error} onRetry={() => inbox.refetch()} /> : null}
 
       {inbox.isSuccess ? (
         <FlatList

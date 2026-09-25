@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { ScrollView, Text, View } from 'react-native';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { addHours, format, set, startOfTomorrow } from 'date-fns';
 
 import { LocationStep } from '@/components/LocationStep';
@@ -23,7 +23,8 @@ import {
   emptyCategoryDetails,
   type RequestCategorySlug,
 } from '@/features/requests/category-data';
-import { isFundedOffer } from '@/features/requests/funding';
+import { isFundedOffer, summarizeRequestFunding } from '@/features/requests/funding';
+import { useMyWallet } from '@/features/wallet/api';
 import { canReuseRequest } from '@/features/requests/reuse';
 import { useCreateRequest, useMyRequest } from '@/features/requests/requester-api';
 import { cn } from '@/lib/cn';
@@ -100,6 +101,14 @@ function NewRequestForm({
 }) {
   const seeded = newRequestFormState(reuseSeed);
   const create = useCreateRequest();
+  const wallet = useMyWallet();
+  const { refetch: refetchWallet } = wallet;
+
+  useFocusEffect(
+    useCallback(() => {
+      void refetchWallet();
+    }, [refetchWallet]),
+  );
 
   const [step, setStep] = useState(0);
   const [categorySlug, setCategorySlug] = useState(seeded.categorySlug);
@@ -142,6 +151,12 @@ function NewRequestForm({
   const isFirstStep = step === 0;
   const isLastStep = step === STEP_TITLES.length - 1;
   const detailSummary = typedCategory ? categoryDetailsSummary(typedCategory, categoryDetails) : [];
+  const funding = isFundedOffer(parsedAmount) ? summarizeRequestFunding(parsedAmount) : null;
+  const walletShort =
+    REQUEST_REQUIRES_FUNDING &&
+    funding !== null &&
+    wallet.data !== undefined &&
+    wallet.data.available < funding.total;
 
   const goNext = () => {
     if (step === 1 && typedCategory) {
@@ -362,6 +377,44 @@ function NewRequestForm({
               ) : null}
             </Card>
 
+            {REQUEST_REQUIRES_FUNDING && funding ? (
+              <Card className="gap-2">
+                <Text className="text-sm font-semibold text-ink">Your wallet</Text>
+                {wallet.isPending ? (
+                  <Text className="text-sm text-muted">Checking balance…</Text>
+                ) : wallet.isError ? (
+                  <InlineError error={wallet.error} />
+                ) : wallet.data ? (
+                  <>
+                    <Text className="text-sm text-muted">
+                      Available:{' '}
+                      {wallet.isFetching
+                        ? '…'
+                        : formatMoney(wallet.data.available, wallet.data.currency)}
+                    </Text>
+                    {walletShort ? (
+                      <Text className="text-sm text-warning">
+                        You need {formatMoney(funding.total, funding.currency)} to fund this request
+                        (including the service fee). Top up before sending.
+                      </Text>
+                    ) : (
+                      <Text className="text-sm text-muted">
+                        {formatMoney(funding.total, funding.currency)} will be held when your
+                        request goes live.
+                      </Text>
+                    )}
+                  </>
+                ) : null}
+                {walletShort ? (
+                  <Button
+                    label="Top up wallet"
+                    variant="secondary"
+                    onPress={() => router.push('/wallet')}
+                  />
+                ) : null}
+              </Card>
+            ) : null}
+
             {create.isError ? <InlineError error={create.error} /> : null}
           </View>
         ) : null}
@@ -372,8 +425,8 @@ function NewRequestForm({
           <Button
             label="Send request"
             size="lg"
-            loading={create.isPending}
-            disabled={!stepValid[step]}
+            loading={create.isPending || (isLastStep && wallet.isPending)}
+            disabled={!stepValid[step] || (isLastStep && walletShort)}
             onPress={submit}
           />
         ) : (

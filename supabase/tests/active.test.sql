@@ -1805,6 +1805,310 @@ select is(
   'reuse stores the submitted description on the new row'
 );
 
+-- Privacy authorization -------------------------------------------------------------
+
+select pg_temp.act_as_owner() as _ \gset
+select pg_temp.make_user('88888888-8888-8888-8888-888888888888', 'Privacy Requester', '+2348000000188') as _ \gset
+select pg_temp.make_user('99999999-9999-9999-9999-999999999999', 'Privacy Provider', '+2348000000199') as _ \gset
+
+select pg_temp.act_as('88888888-8888-8888-8888-888888888888') as _ \gset
+select create_request(
+  'repair',
+  'Privacy fixture with a street address.',
+  6.5000,
+  3.3800,
+  'Yaba, Lagos',
+  5000,
+  null,
+  null,
+  jsonb_build_object(
+    'pickup', '12 Hughes Avenue',
+    'destination', 'Ikeja',
+    'drop_off', 'Warehouse 4',
+    'repair_category', 'Generator',
+    'photo_paths', jsonb_build_array('88888888-8888-8888-8888-888888888888/drafts/1.jpg')
+  )
+) as privacy_request_id \gset
+
+select ok(
+  (select category_data ? 'pickup' from my_requests where request_id = :'privacy_request_id'::uuid),
+  'the requester still sees their own pickup text'
+);
+
+select pg_temp.act_as('99999999-9999-9999-9999-999999999999') as _ \gset
+select ok(
+  not (
+    select category_data ? 'pickup'
+    from browse_request(:'privacy_request_id'::uuid, 6.5000::double precision, 3.3800::double precision)
+  ),
+  'discovery hides pickup, destination, and drop-off text'
+);
+
+select ok(
+  not (
+    select category_data ? 'drop_off'
+    from browse_request(:'privacy_request_id'::uuid, 6.5000::double precision, 3.3800::double precision)
+  ),
+  'discovery hides drop-off text'
+);
+
+select is(
+  (
+    select category_data ->> 'repair_category'
+    from browse_request(:'privacy_request_id'::uuid, 6.5000::double precision, 3.3800::double precision)
+  ),
+  'Generator',
+  'discovery still returns non-location job details'
+);
+
+select is(
+  (select count(*) from public.requests where id = :'privacy_request_id'::uuid),
+  0::bigint,
+  'a nearby browser still cannot read the request row'
+);
+
+select ok(
+  not public.can_read_request_media('88888888-8888-8888-8888-888888888888/drafts/1.jpg'),
+  'a nearby browser cannot read request photos before access is granted'
+);
+
+select throws_ok(
+  $$select authorize_request_media_read(
+      '88888888-8888-8888-8888-888888888888/drafts/1.jpg',
+      7.2000,
+      3.3800
+    )$$,
+  '42501',
+  'media is not available',
+  'request photos are not granted from outside the search radius'
+);
+
+select throws_ok(
+  $$select authorize_request_media_read(
+      '88888888-8888-8888-8888-888888888888/drafts/evidence.jpg',
+      6.5000,
+      3.3800
+    )$$,
+  '42501',
+  'media is not available',
+  'uploads that are not on the request are not opened by discovery'
+);
+
+select lives_ok(
+  $$select authorize_request_media_read(
+      '88888888-8888-8888-8888-888888888888/drafts/1.jpg',
+      6.5000,
+      3.3800
+    )$$,
+  'a nearby browser can be granted the job photo'
+);
+
+select ok(
+  public.can_read_request_media('88888888-8888-8888-8888-888888888888/drafts/1.jpg'),
+  'the grant allows that photo while the request is still searching'
+);
+
+select throws_ok(
+  $$update public.request_responses set message = 'taken over'$$,
+  '42501',
+  null,
+  'a provider cannot write response rows directly'
+);
+
+select throws_ok(
+  format(
+    'select apply_payment_transition(%L, %L::public.payment_status, %L)',
+    :'privacy_request_id',
+    'released',
+    'steal'
+  ),
+  '42501',
+  null,
+  'a client cannot move payment state directly'
+);
+
+select lives_ok(
+  $$select go_active(6.5000, 3.3800, 10000, array['repair'], 240)$$,
+  'privacy provider goes active beside the request'
+);
+
+select respond_to_request(
+  :'privacy_request_id'::uuid,
+  'I can look at the generator.',
+  4000,
+  20,
+  6.5000,
+  3.3800
+) as privacy_response_id \gset
+
+select ok(
+  not (
+    select category_data ? 'pickup'
+    from my_responses()
+    where response_id = :'privacy_response_id'::uuid
+  ),
+  'a pending response does not reveal the street address'
+);
+
+select pg_temp.act_as_owner() as _ \gset
+update public.requests
+set expires_at = now() - interval '1 minute'
+where id = :'privacy_request_id'::uuid;
+
+select ok(
+  public.expire_request(:'privacy_request_id'::uuid),
+  'expiry still closes a searching request that never reached a handshake'
+);
+
+select is(
+  (select count(*) from public.handshakes where request_id = :'privacy_request_id'::uuid),
+  0::bigint,
+  'an expired request has no handshake'
+);
+
+select pg_temp.act_as('88888888-8888-8888-8888-888888888888') as _ \gset
+select wallet_top_up(100000, 'privacy-top-up');
+
+select create_request(
+  'repair',
+  'Privacy handshake fixture.',
+  6.5000,
+  3.3800,
+  'Yaba, Lagos',
+  5000,
+  null,
+  null,
+  '{"pickup":"12 Hughes Avenue","repair_category":"Generator"}'::jsonb
+) as privacy_handshake_id \gset
+
+select pg_temp.act_as('99999999-9999-9999-9999-999999999999') as _ \gset
+select respond_to_request(
+  :'privacy_handshake_id'::uuid,
+  'I can take the handshake fixture.',
+  4000,
+  20,
+  6.5000,
+  3.3800
+) as privacy_handshake_response_id \gset
+
+select pg_temp.act_as('88888888-8888-8888-8888-888888888888') as _ \gset
+select lives_ok(
+  format('select accept_response(%L)', :'privacy_handshake_response_id'),
+  'the requester can accept a response on their own request'
+);
+
+select ok(
+  (select category_data ? 'pickup' from get_engagement(:'privacy_handshake_id'::uuid)),
+  'the handshake releases the street address'
+);
+
+select ok(
+  (select request_latitude from get_engagement(:'privacy_handshake_id'::uuid)) = 6.5000,
+  'the handshake releases the exact requester coordinate'
+);
+
+select ok(
+  (select provider_latitude is not null from get_engagement(:'privacy_handshake_id'::uuid)),
+  'the requester sees the provider coordinate while they are committed'
+);
+
+select pg_temp.act_as('99999999-9999-9999-9999-999999999999') as _ \gset
+select throws_ok(
+  format('select mark_service_complete(%L)', :'privacy_request_id'),
+  'P0002',
+  'request not found',
+  'a provider cannot mark someone else''s request complete'
+);
+
+select pg_temp.act_as_owner() as _ \gset
+select public.release_provider('99999999-9999-9999-9999-999999999999'::uuid);
+
+select pg_temp.act_as('88888888-8888-8888-8888-888888888888') as _ \gset
+select ok(
+  (select provider_latitude is null from get_engagement(:'privacy_handshake_id'::uuid)),
+  'provider coordinates stop once they are no longer committed to the request'
+);
+
+select lives_ok(
+  format('select cancel_request(%L)', :'privacy_handshake_id'),
+  'the requester can close the handshake fixture so the provider can take another job'
+);
+
+select pg_temp.act_as('99999999-9999-9999-9999-999999999999') as _ \gset
+select lives_ok(
+  $$select go_active(6.5000, 3.3800, 10000, array['repair'], 240)$$,
+  'the provider can go active again after release'
+);
+
+select pg_temp.act_as('88888888-8888-8888-8888-888888888888') as _ \gset
+select create_request(
+  'repair',
+  'Disputed funds must stay put.',
+  6.5000,
+  3.3800,
+  'Yaba, Lagos',
+  5000,
+  null,
+  10000
+) as privacy_funded_id \gset
+
+select pg_temp.act_as('99999999-9999-9999-9999-999999999999') as _ \gset
+select respond_to_request(
+  :'privacy_funded_id'::uuid,
+  'I can take the funded fixture.',
+  10000,
+  30,
+  6.5000,
+  3.3800
+) as privacy_funded_response_id \gset
+
+select pg_temp.act_as('88888888-8888-8888-8888-888888888888') as _ \gset
+select lives_ok(
+  format('select accept_response(%L)', :'privacy_funded_response_id'),
+  'the funded request can be accepted'
+);
+
+select pg_temp.act_as('99999999-9999-9999-9999-999999999999') as _ \gset
+select lives_ok(
+  format('select mark_service_complete(%L)', :'privacy_funded_id'),
+  'the provider marks the funded request complete'
+);
+
+select pg_temp.act_as_owner() as _ \gset
+update public.requests
+set payment_status = 'disputed'
+where id = :'privacy_funded_id'::uuid;
+
+select pg_temp.act_as('88888888-8888-8888-8888-888888888888') as _ \gset
+select throws_ok(
+  format('select complete_request(%L)', :'privacy_funded_id'),
+  '55000',
+  'disputed funds cannot be released through completion',
+  'the requester cannot release disputed funds by confirming completion'
+);
+
+select pg_temp.act_as_owner() as _ \gset
+update public.requests
+set completion_confirm_by = now() - interval '1 minute'
+where id = :'privacy_funded_id'::uuid;
+
+select ok(
+  not public.auto_complete_request(:'privacy_funded_id'::uuid),
+  'automatic completion does not release disputed funds'
+);
+
+select is(
+  (select payment_status::text from public.requests where id = :'privacy_funded_id'::uuid),
+  'disputed',
+  'disputed escrow stays disputed'
+);
+
+select is(
+  (select available from public.wallet_accounts where user_id = '99999999-9999-9999-9999-999999999999'::uuid),
+  0::numeric,
+  'the provider is not paid while the request is disputed'
+);
+
 select * from finish();
 
 rollback;
