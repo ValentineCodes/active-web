@@ -219,6 +219,94 @@ select is(
 );
 
 select is(
+  (select count(*) from browse_nearby_requests(6.5000::double precision, 3.3800::double precision, 'repair') where request_id = :'request_id'),
+  1::bigint,
+  'category filtering keeps a request in its own category'
+);
+
+select is(
+  (select count(*) from browse_nearby_requests(6.5000::double precision, 3.3800::double precision, 'cleaning') where request_id = :'request_id'),
+  0::bigint,
+  'category filtering hides a request from other categories'
+);
+
+select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
+select create_request(
+  'cleaning',
+  'Need the hallway mopped before guests arrive.',
+  6.5000,
+  3.3800,
+  'Yaba, Lagos',
+  5000
+) as cleaning_request_id \gset
+
+select create_request(
+  'repair',
+  'This one has already run past its search window.',
+  6.5000,
+  3.3800,
+  'Yaba, Lagos',
+  5000
+) as expired_request_id \gset
+
+select create_request(
+  'repair',
+  'This one will be cancelled before anyone answers.',
+  6.5000,
+  3.3800,
+  'Yaba, Lagos',
+  5000
+) as cancelled_request_id \gset
+
+select pg_temp.act_as_owner() as _ \gset
+update public.requests
+set expires_at = now() - interval '1 minute'
+where id = :'expired_request_id';
+
+select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
+select lives_ok(
+  format('select cancel_request(%L)', :'cancelled_request_id'),
+  'the requester can cancel a searching request'
+);
+
+select pg_temp.act_as('66666666-6666-6666-6666-666666666666') as _ \gset
+select is(
+  (select count(*) from browse_nearby_requests(6.5000::double precision, 3.3800::double precision, 'cleaning') where request_id = :'cleaning_request_id'),
+  1::bigint,
+  'a category filter returns the matching nearby request'
+);
+
+select is(
+  (select count(*) from browse_nearby_requests(6.5000::double precision, 3.3800::double precision) where request_id = :'expired_request_id'),
+  0::bigint,
+  'an expired request disappears from discovery even if its status is still searching'
+);
+
+select is(
+  (select count(*) from browse_request(:'expired_request_id', 6.5000::double precision, 3.3800::double precision)),
+  0::bigint,
+  'an expired request cannot be opened from discovery'
+);
+
+select is(
+  (select count(*) from browse_nearby_requests(6.5000::double precision, 3.3800::double precision) where request_id = :'cancelled_request_id'),
+  0::bigint,
+  'a cancelled request disappears from discovery'
+);
+
+select is(
+  (select count(*) from browse_request(:'cancelled_request_id', 6.5000::double precision, 3.3800::double precision)),
+  0::bigint,
+  'a cancelled request cannot be opened from discovery'
+);
+
+select is(
+  (select count(*) from public.requests where id = :'request_id'),
+  0::bigint,
+  'a browser cannot read the request row, so exact coordinates stay on the table'
+);
+
+select is(
   (select description from browse_request(:'request_id', 6.5000::double precision, 3.3800::double precision)),
   'My generator will not start. 5kVA, was fine yesterday.',
   'opening a nearby request returns its public description'
@@ -334,6 +422,21 @@ select pg_temp.act_as('22222222-2222-2222-2222-222222222222') as _ \gset
 select respond_to_request(
   :'request_id', 'I fix these. Thirty minutes away.', 7000, 30
 ) as response_id \gset
+
+select pg_temp.act_as('66666666-6666-6666-6666-666666666666') as _ \gset
+select is(
+  (select count(*) from browse_nearby_requests(6.5000::double precision, 3.3800::double precision) where request_id = :'request_id'),
+  1::bigint,
+  'a request stays discoverable after someone responds'
+);
+
+select is(
+  (select count(*) from public.request_responses where request_id = :'request_id'),
+  0::bigint,
+  'a browser cannot see who responded or how many responses exist'
+);
+
+select pg_temp.act_as('22222222-2222-2222-2222-222222222222') as _ \gset
 
 select throws_ok(
   format('select respond_to_request(%L)', :'request_id'),

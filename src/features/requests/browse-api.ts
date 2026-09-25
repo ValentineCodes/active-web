@@ -23,12 +23,12 @@ function roundCoordinate(value: number) {
  * Active is not required. The server returns a bucketed distance and a coarse area
  * label, never a coordinate, a person, or a response.
  */
-export function useBrowseNearbyRequests(position: Position | null) {
+export function useBrowseNearbyRequests(position: Position | null, categorySlug: string | null) {
   const latitude = position ? roundCoordinate(position.latitude) : null;
   const longitude = position ? roundCoordinate(position.longitude) : null;
 
   return useQuery({
-    queryKey: queryKeys.browseNearby(latitude, longitude),
+    queryKey: queryKeys.browseNearby(latitude, longitude, categorySlug),
     enabled: position !== null,
     staleTime: 15_000,
     queryFn: async (): Promise<PublicRequest[]> => {
@@ -37,6 +37,7 @@ export function useBrowseNearbyRequests(position: Position | null) {
       const { data, error } = await supabase.rpc('browse_nearby_requests', {
         p_latitude: position.latitude,
         p_longitude: position.longitude,
+        p_category_slug: categorySlug ?? undefined,
       });
       if (error) throw error;
       return data;

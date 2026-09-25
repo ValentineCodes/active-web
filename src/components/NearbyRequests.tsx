@@ -1,14 +1,16 @@
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { RequestCard } from '@/components/ui/RequestCard';
 import { SectionHeader } from '@/components/ui/SectionHeader';
 import { InlineError } from '@/components/ui/StateView';
-import { useCategoryIndex } from '@/features/categories/api';
+import { useCategories, useCategoryIndex } from '@/features/categories/api';
 import { useBrowseNearbyRequests } from '@/features/requests/browse-api';
+import { cn } from '@/lib/cn';
 import { formatDistance, formatMoney, formatWhen } from '@/lib/format';
 import {
   readForegroundPermission,
@@ -24,11 +26,14 @@ import { colors } from '@/theme';
  */
 export function NearbyRequests() {
   const categories = useCategoryIndex();
+  const categoryList = useCategories();
   const [position, setPosition] = useState<Position | null>(null);
+  const [categorySlug, setCategorySlug] = useState<string | null>(null);
   const [locating, setLocating] = useState(false);
   const [blocked, setBlocked] = useState<'denied' | 'unavailable' | null>(null);
 
-  const nearby = useBrowseNearbyRequests(position);
+  const nearby = useBrowseNearbyRequests(position, categorySlug);
+  const selectedCategory = categorySlug ? categories.data?.get(categorySlug) : undefined;
 
   useFocusEffect(
     useCallback(() => {
@@ -70,6 +75,60 @@ export function NearbyRequests() {
         Open requests around you. Distance is approximate, and who has responded stays private.
       </Text>
 
+      {position !== null ? (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerClassName="gap-2"
+        >
+          <Pressable
+            accessibilityRole="button"
+            accessibilityState={{ selected: categorySlug === null }}
+            onPress={() => setCategorySlug(null)}
+            className={cn(
+              'rounded-full px-3 py-1.5',
+              categorySlug === null ? 'bg-brand' : 'bg-surface',
+            )}
+          >
+            <Text
+              className={cn(
+                'text-sm font-semibold',
+                categorySlug === null ? 'text-canvas' : 'text-muted',
+              )}
+            >
+              All
+            </Text>
+          </Pressable>
+          {categoryList.data?.map((category) => {
+            const selected = category.slug === categorySlug;
+
+            return (
+              <Pressable
+                key={category.slug}
+                accessibilityRole="button"
+                accessibilityState={{ selected }}
+                onPress={() => setCategorySlug(selected ? null : category.slug)}
+                className={cn(
+                  'flex-row items-center gap-1.5 rounded-full px-3 py-1.5',
+                  selected ? 'bg-brand' : 'bg-surface',
+                )}
+              >
+                <Ionicons
+                  name={category.icon}
+                  size={14}
+                  color={selected ? colors.canvas : colors.muted}
+                />
+                <Text
+                  className={cn('text-sm font-semibold', selected ? 'text-canvas' : 'text-muted')}
+                >
+                  {category.label}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
+      ) : null}
+
       {position === null ? (
         <Card>
           <Text className="text-base text-ink">
@@ -109,10 +168,15 @@ export function NearbyRequests() {
         </Card>
       ) : nearby.data.length === 0 ? (
         <Card>
-          <Text className="text-base font-semibold text-ink">Nothing open nearby</Text>
+          <Text className="text-base font-semibold text-ink">
+            {selectedCategory
+              ? `No ${selectedCategory.label.toLowerCase()} requests nearby`
+              : 'Nothing open nearby'}
+          </Text>
           <Text className="text-sm text-muted">
-            When someone near you asks for help, it shows up here. You can still make a request or
-            go Active.
+            {selectedCategory
+              ? 'Try another category, or check again when someone nearby asks for this.'
+              : 'When someone near you asks for help, it shows up here. You can still make a request or go Active.'}
           </Text>
         </Card>
       ) : (
@@ -125,6 +189,7 @@ export function NearbyRequests() {
               icon={category?.icon}
               title={category?.label ?? request.category_slug}
               description={request.description}
+              badge={{ label: 'Searching', tone: 'warning' }}
               amount={
                 request.offered_amount !== null
                   ? formatMoney(request.offered_amount, request.currency)

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 import { useMutation } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -54,7 +54,18 @@ export default function ProfileScreen() {
 
   return (
     <Screen>
-      <ScrollView contentContainerClassName="gap-6 p-5 pb-12">
+      <ScrollView
+        contentContainerClassName="gap-6 p-5 pb-12"
+        refreshControl={
+          <RefreshControl
+            refreshing={profile.isRefetching || availability.isRefetching}
+            onRefresh={() => {
+              profile.refetch();
+              availability.refetch();
+            }}
+          />
+        }
+      >
         <View className="items-center gap-3">
           <Pressable
             onPress={() => capturePhoto.mutate({})}

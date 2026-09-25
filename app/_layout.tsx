@@ -8,6 +8,7 @@ import { StatusBar } from 'expo-status-bar';
 import { QueryClientProvider, useQuery } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 
+import { ErrorState } from '@/components/ui/StateView';
 import { SessionProvider, useSession } from '@/features/auth/session';
 import { profileQueryOptions } from '@/features/profile/api';
 import { queryClient } from '@/lib/query/client';
@@ -35,12 +36,22 @@ function BootScreen() {
 function RootNavigator() {
   const { session, isRestoring } = useSession();
 
-  const { data: profile, isPending: isProfilePending } = useQuery({
+  const profileQuery = useQuery({
     ...profileQueryOptions(session?.user.id ?? ''),
     enabled: Boolean(session),
   });
 
-  if (isRestoring || (session && isProfilePending)) return <BootScreen />;
+  if (isRestoring || (session && profileQuery.isPending)) return <BootScreen />;
+
+  if (session && profileQuery.isError) {
+    return (
+      <View className="flex-1 bg-canvas">
+        <ErrorState error={profileQuery.error} onRetry={() => profileQuery.refetch()} />
+      </View>
+    );
+  }
+
+  const profile = profileQuery.data;
 
   const isSignedIn = Boolean(session);
   const needsProfile = isSignedIn && !profile?.display_name;

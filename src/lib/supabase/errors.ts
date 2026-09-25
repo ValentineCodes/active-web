@@ -19,10 +19,12 @@ const NETWORK_MESSAGE = 'You appear to be offline. Check your connection and try
 const FALLBACK_MESSAGE = 'Something went wrong. Please try again.';
 
 export function isNetworkError(error: unknown): boolean {
+  if (error instanceof TypeError) return true;
   if (!(error instanceof Error)) return false;
   return (
     error.message === 'Network request failed' ||
     error.message.includes('Failed to fetch') ||
+    error.message.includes('Network Error') ||
     error.name === 'AbortError'
   );
 }

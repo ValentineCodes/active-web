@@ -7,7 +7,11 @@ import { isNetworkError } from '@/lib/supabase/errors';
 // React Query's defaults read `window` for connectivity and focus, neither of which
 // exists here, so both are wired to the React Native equivalents.
 onlineManager.setEventListener((setOnline) =>
-  NetInfo.addEventListener((state) => setOnline(Boolean(state.isConnected))),
+  NetInfo.addEventListener((state) => {
+    // Android reports `null` while it is still deciding. Treating that as offline
+    // pauses the profile query, and the boot screen waits on that query forever.
+    setOnline(state.isConnected !== false);
+  }),
 );
 
 focusManager.setEventListener((setFocused) => {

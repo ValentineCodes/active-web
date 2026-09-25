@@ -772,7 +772,11 @@ export type Database = {
       }
       assert_onboarded: { Args: never; Returns: string }
       browse_nearby_requests: {
-        Args: { p_latitude: number; p_longitude: number }
+        Args: {
+          p_category_slug?: string
+          p_latitude: number
+          p_longitude: number
+        }
         Returns: {
           category_slug: string
           currency: string
@@ -785,11 +789,7 @@ export type Database = {
         }[]
       }
       browse_request: {
-        Args: {
-          p_latitude: number
-          p_longitude: number
-          p_request_id: string
-        }
+        Args: { p_latitude: number; p_longitude: number; p_request_id: string }
         Returns: {
           category_slug: string
           currency: string

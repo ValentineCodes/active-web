@@ -3,6 +3,7 @@ import { ScrollView, Text, View } from 'react-native';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
+import { Badge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
 import { Header } from '@/components/ui/Header';
 import { Screen } from '@/components/ui/Screen';
@@ -103,9 +104,12 @@ export default function PublicRequestScreen() {
           <View className="h-12 w-12 items-center justify-center rounded-2xl bg-brand-soft">
             <Ionicons name={category?.icon ?? 'ellipse-outline'} size={22} color={colors.brand} />
           </View>
-          <Text className="flex-1 text-xl font-bold text-ink">
-            {category?.label ?? data.category_slug}
-          </Text>
+          <View className="flex-1 gap-2">
+            <Text className="text-xl font-bold text-ink">
+              {category?.label ?? data.category_slug}
+            </Text>
+            <Badge label="Searching" tone="warning" />
+          </View>
         </View>
 
         <Text className="text-base text-ink">{data.description}</Text>

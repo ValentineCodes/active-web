@@ -25,7 +25,14 @@ export function profileQueryOptions(userId: string) {
         .eq('id', userId)
         .single();
 
-      if (error) throw error;
+      if (error) {
+        // A device can keep a session across a local db reset; signing out is clearer
+        // than leaving someone on a boot error they cannot fix.
+        if (error.code === 'PGRST116' || error.code === 'PGRST301' || error.code === '42501') {
+          await supabase.auth.signOut();
+        }
+        throw error;
+      }
       return data;
     },
   };
