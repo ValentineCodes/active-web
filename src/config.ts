@@ -28,3 +28,12 @@ export const ACTIVE_DURATIONS = [
 ] as const;
 
 export const DESCRIPTION_LIMITS = { min: 10, max: 1000 } as const;
+
+/**
+ * When true, a request must carry a positive offer before it enters discovery. That
+ * matches payment_status moving to `locked` on create.
+ */
+export const REQUEST_REQUIRES_FUNDING = true;
+
+/** Active's service fee as a fraction of the provider amount (10% → 0.1). */
+export const SERVICE_FEE_RATE = 0.1;

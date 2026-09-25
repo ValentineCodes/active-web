@@ -1,10 +1,17 @@
 import { useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
 
+import {
+  buildCategoryData,
+  type CategoryDetailsForm,
+  type RequestCategorySlug,
+} from '@/features/requests/category-data';
+import { uploadRequestPhotos } from '@/features/requests/request-media';
+import { useUserId } from '@/features/auth/session';
 import type { Position } from '@/lib/location';
 import { queryKeys } from '@/lib/query/keys';
 import { supabase } from '@/lib/supabase/client';
-import type { Database, Json } from '@/lib/supabase/database.types';
+import type { Database } from '@/lib/supabase/database.types';
 import type { Guaranteed, Nullable, RpcRow } from '@/lib/supabase/types';
 
 type Functions = Database['public']['Functions'];
@@ -49,6 +56,7 @@ type MyRequest = Guaranteed<
   | 'request_id'
   | 'category_slug'
   | 'description'
+  | 'category_data'
   | 'currency'
   | 'location_label'
   | 'latitude'
@@ -236,18 +244,31 @@ export function useLiveRequest(requestId: string) {
 
 export function useCreateRequest() {
   const queryClient = useQueryClient();
+  const userId = useUserId();
 
   return useMutation({
     mutationFn: async (input: {
-      categorySlug: string;
+      categorySlug: RequestCategorySlug;
       description: string;
       position: Position;
       locationLabel: string;
       searchRadiusM: number;
       scheduledFor: Date | null;
       offeredAmount: number | null;
-      categoryData?: Json;
+      categoryDetails: CategoryDetailsForm;
     }) => {
+      if (!userId) throw new Error('Sign in to create a request.');
+
+      const photoPaths =
+        input.categoryDetails.photoUris.length > 0
+          ? await uploadRequestPhotos(
+              userId,
+              input.categoryDetails.photoUris.map((uri) => ({ uri })),
+            )
+          : [];
+
+      const categoryData = buildCategoryData(input.categorySlug, input.categoryDetails, photoPaths);
+
       const { data, error } = await supabase.rpc('create_request', {
         p_category_slug: input.categorySlug,
         p_description: input.description,
@@ -255,10 +276,9 @@ export function useCreateRequest() {
         p_longitude: input.position.longitude,
         p_location_label: input.locationLabel,
         p_search_radius_m: input.searchRadiusM,
-        // Omitted rather than sent as null, so the function's own default applies.
         p_scheduled_for: input.scheduledFor?.toISOString(),
         p_offered_amount: input.offeredAmount ?? undefined,
-        p_category_data: input.categoryData ?? undefined,
+        p_category_data: categoryData,
       });
 
       if (error) throw error;

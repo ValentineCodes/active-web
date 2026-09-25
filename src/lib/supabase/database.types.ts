@@ -778,6 +778,7 @@ export type Database = {
           p_longitude: number
         }
         Returns: {
+          category_data: Json
           category_slug: string
           currency: string
           description: string
@@ -791,6 +792,7 @@ export type Database = {
       browse_request: {
         Args: { p_latitude: number; p_longitude: number; p_request_id: string }
         Returns: {
+          category_data: Json
           category_slug: string
           currency: string
           description: string
@@ -832,6 +834,7 @@ export type Database = {
         Args: { p_request_id: string }
         Returns: {
           accepted_at: string
+          category_data: Json
           category_slug: string
           completed_at: string
           counterparty_avatar_path: string
@@ -956,6 +959,7 @@ export type Database = {
       nearby_requests: {
         Args: never
         Returns: {
+          category_data: Json
           category_slug: string
           created_at: string
           currency: string

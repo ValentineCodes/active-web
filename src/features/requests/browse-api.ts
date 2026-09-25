@@ -45,13 +45,18 @@ export function useBrowseNearbyRequests(position: Position | null, categorySlug:
   });
 }
 
-export function useBrowseRequest(requestId: string, position: Position | null) {
+export function useBrowseRequest(
+  requestId: string,
+  position: Position | null,
+  options?: { enabled?: boolean },
+) {
   const latitude = position ? roundCoordinate(position.latitude) : null;
   const longitude = position ? roundCoordinate(position.longitude) : null;
+  const enabled = (options?.enabled ?? true) && position !== null;
 
   return useQuery({
     queryKey: queryKeys.browseRequest(requestId, latitude, longitude),
-    enabled: position !== null,
+    enabled,
     staleTime: 15_000,
     queryFn: async (): Promise<PublicRequest | null> => {
       if (!position) throw new Error('Location is required to open this request.');

@@ -4,6 +4,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 import { ProviderProfileModal } from '@/components/ProviderProfileModal';
+import { RequestCategoryDataSection } from '@/components/RequestCategoryDataSection';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Header } from '@/components/ui/Header';
@@ -236,6 +237,10 @@ export default function EngagementScreen() {
         <View className="gap-2">
           <Text className="text-lg font-bold text-ink">What was asked for</Text>
           <Text className="text-base text-ink">{data.description}</Text>
+          <RequestCategoryDataSection
+            categorySlug={data.category_slug}
+            categoryData={data.category_data}
+          />
           <Text className="text-sm text-muted">{formatWhen(data.scheduled_for)}</Text>
           {agreedAmount !== null ? (
             <Text className="text-base font-semibold text-ink">

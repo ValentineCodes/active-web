@@ -4,6 +4,8 @@ import { router } from 'expo-router';
 import { addHours, format, set, startOfTomorrow } from 'date-fns';
 
 import { LocationStep } from '@/components/LocationStep';
+import { RequestCategoryDetailsStep } from '@/components/RequestCategoryDetailsStep';
+import { RequestFundingSummary } from '@/components/RequestFundingSummary';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Choice } from '@/components/ui/Choice';
@@ -12,19 +14,21 @@ import { RadiusSelector } from '@/components/ui/RadiusSelector';
 import { Screen } from '@/components/ui/Screen';
 import { ErrorState, InlineError, LoadingState } from '@/components/ui/StateView';
 import { TextField } from '@/components/ui/TextField';
-import { DESCRIPTION_LIMITS, MARKET, SEARCH_RADII_M } from '@/config';
+import { DESCRIPTION_LIMITS, MARKET, REQUEST_REQUIRES_FUNDING, SEARCH_RADII_M } from '@/config';
 import { useCategories } from '@/features/categories/api';
+import {
+  categoryDetailsError,
+  categoryDetailsSummary,
+  emptyCategoryDetails,
+  type RequestCategorySlug,
+} from '@/features/requests/category-data';
+import { isFundedOffer } from '@/features/requests/funding';
 import { useCreateRequest } from '@/features/requests/requester-api';
 import { cn } from '@/lib/cn';
 import { formatMoney, formatRadius } from '@/lib/format';
 import type { Position } from '@/lib/location';
 import { syncPushToken } from '@/lib/notifications';
 
-/**
- * "When" is deliberately a short list of concrete times rather than a calendar. Real
- * scheduling is out of MVP scope, and these cover what someone asking for help now
- * actually means.
- */
 function whenOptions() {
   const now = new Date();
 
@@ -40,14 +44,12 @@ function whenOptions() {
   ] as const;
 }
 
-const STEP_TITLES = ['What do you need?', 'When?', 'What are you offering?', 'Where?', 'Review'];
+const STEP_TITLES = ['What', 'Details', 'When', 'Offer', 'Where', 'Review'];
 
-/**
- * A short wizard rather than one long form: each step asks one question, so making a
- * request never feels like filling out a listing. Nothing here changes what gets
- * submitted — it is the same fields as a single form, just revealed a step at a time,
- * with location deliberately the second-to-last thing asked for.
- */
+function isRequestCategorySlug(slug: string): slug is RequestCategorySlug {
+  return ['ride', 'delivery', 'errand', 'repair', 'cleaning', 'moving', 'other'].includes(slug);
+}
+
 export default function NewRequestScreen() {
   const categories = useCategories();
   const create = useCreateRequest();
@@ -55,6 +57,8 @@ export default function NewRequestScreen() {
   const [step, setStep] = useState(0);
   const [categorySlug, setCategorySlug] = useState<string | null>(null);
   const [description, setDescription] = useState('');
+  const [categoryDetails, setCategoryDetails] = useState(emptyCategoryDetails);
+  const [detailsError, setDetailsError] = useState<string | null>(null);
   const [whenKey, setWhenKey] = useState<string>('asap');
   const [amount, setAmount] = useState('');
   const [position, setPosition] = useState<Position | null>(null);
@@ -64,18 +68,25 @@ export default function NewRequestScreen() {
   const when = whenOptions();
   const trimmedDescription = description.trim();
   const parsedAmount = amount.trim() ? Number(amount.replace(/[^\d.]/g, '')) : null;
+  const typedCategory = categorySlug && isRequestCategorySlug(categorySlug) ? categorySlug : null;
 
   const amountError =
     parsedAmount !== null && (Number.isNaN(parsedAmount) || parsedAmount < 0)
-      ? 'Enter a number, or leave this empty.'
-      : null;
+      ? 'Enter a valid amount.'
+      : REQUEST_REQUIRES_FUNDING && !isFundedOffer(parsedAmount)
+        ? 'Enter what you are offering so your request can go live.'
+        : null;
 
   const stepValid = [
-    Boolean(categorySlug) && trimmedDescription.length >= DESCRIPTION_LIMITS.min,
+    Boolean(typedCategory) && trimmedDescription.length >= DESCRIPTION_LIMITS.min,
+    typedCategory ? categoryDetailsError(typedCategory, categoryDetails) === null : false,
     true,
-    !amountError,
+    REQUEST_REQUIRES_FUNDING ? isFundedOffer(parsedAmount) && !amountError : amountError === null,
     Boolean(position) && areaLabel.trim().length >= 2,
-    true,
+    Boolean(typedCategory) &&
+      (REQUEST_REQUIRES_FUNDING ? isFundedOffer(parsedAmount) : true) &&
+      Boolean(position) &&
+      categoryDetailsError(typedCategory, categoryDetails) === null,
   ];
 
   if (categories.isPending) {
@@ -98,25 +109,46 @@ export default function NewRequestScreen() {
   const selectedWhen = when.find((option) => option.key === whenKey);
   const isFirstStep = step === 0;
   const isLastStep = step === STEP_TITLES.length - 1;
+  const detailSummary = typedCategory ? categoryDetailsSummary(typedCategory, categoryDetails) : [];
 
-  const goNext = () => setStep((current) => Math.min(current + 1, STEP_TITLES.length - 1));
+  const goNext = () => {
+    if (step === 1 && typedCategory) {
+      const error = categoryDetailsError(typedCategory, categoryDetails);
+      if (error) {
+        setDetailsError(error);
+        return;
+      }
+      setDetailsError(null);
+    }
+    setStep((current) => Math.min(current + 1, STEP_TITLES.length - 1));
+  };
+
   const goBack = () => setStep((current) => Math.max(current - 1, 0));
 
   const submit = () => {
+    const offeredAmount = parsedAmount;
+    if (
+      !typedCategory ||
+      !position ||
+      (REQUEST_REQUIRES_FUNDING && !isFundedOffer(offeredAmount)) ||
+      categoryDetailsError(typedCategory, categoryDetails)
+    ) {
+      return;
+    }
+
     create.mutate(
       {
-        categorySlug: categorySlug as string,
+        categorySlug: typedCategory,
         description: trimmedDescription,
-        position: position as Position,
+        position,
         locationLabel: areaLabel.trim(),
         searchRadiusM,
         scheduledFor: selectedWhen?.at ?? null,
-        offeredAmount: parsedAmount,
+        offeredAmount,
+        categoryDetails,
       },
       {
         onSuccess: (requestId) => {
-          // Now that someone is waiting on an answer, being told about it is worth a
-          // permission prompt.
           syncPushToken({ prompt: true });
           router.replace(`/request/${requestId}`);
         },
@@ -149,7 +181,13 @@ export default function NewRequestScreen() {
                   subtitle={item.tagline}
                   icon={item.icon}
                   selected={categorySlug === item.slug}
-                  onPress={() => setCategorySlug(item.slug)}
+                  onPress={() => {
+                    if (categorySlug !== item.slug) {
+                      setCategoryDetails(emptyCategoryDetails());
+                      setDetailsError(null);
+                    }
+                    setCategorySlug(item.slug);
+                  }}
                 />
               ))}
             </View>
@@ -171,7 +209,19 @@ export default function NewRequestScreen() {
           </View>
         ) : null}
 
-        {step === 1 ? (
+        {step === 1 && typedCategory ? (
+          <RequestCategoryDetailsStep
+            categorySlug={typedCategory}
+            details={categoryDetails}
+            onChange={(next) => {
+              setCategoryDetails(next);
+              if (detailsError) setDetailsError(null);
+            }}
+            error={detailsError}
+          />
+        ) : null}
+
+        {step === 2 ? (
           <View className="gap-3">
             <Text className="text-2xl font-bold text-ink">When do you need this?</Text>
             {when.map((option) => (
@@ -185,11 +235,13 @@ export default function NewRequestScreen() {
           </View>
         ) : null}
 
-        {step === 2 ? (
+        {step === 3 ? (
           <View className="gap-3">
             <Text className="text-2xl font-bold text-ink">What are you offering?</Text>
             <Text className="text-base text-muted">
-              Optional — leave it empty to let people quote you instead.
+              {REQUEST_REQUIRES_FUNDING
+                ? 'This is held before providers can see your request.'
+                : 'Optional — leave it empty to let people quote you instead.'}
             </Text>
             <TextField
               label={`Amount in ${MARKET.currency}`}
@@ -202,10 +254,14 @@ export default function NewRequestScreen() {
           </View>
         ) : null}
 
-        {step === 3 ? (
+        {step === 4 ? (
           <View className="gap-8">
             <View className="gap-3">
               <Text className="text-2xl font-bold text-ink">Where should this happen?</Text>
+              <Text className="text-base text-muted">
+                We only ask for this when you are ready to send the request. It is used to find
+                nearby providers, not during sign-up.
+              </Text>
               <LocationStep
                 purpose="request"
                 position={position}
@@ -229,7 +285,7 @@ export default function NewRequestScreen() {
           </View>
         ) : null}
 
-        {step === 4 ? (
+        {step === 5 ? (
           <View className="gap-4">
             <Text className="text-2xl font-bold text-ink">Review your request</Text>
 
@@ -241,18 +297,33 @@ export default function NewRequestScreen() {
                 <Text className="text-sm text-muted">{selectedWhen?.label}</Text>
               </View>
               <Text className="text-base text-muted">{trimmedDescription}</Text>
+
+              {detailSummary.length > 0 ? (
+                <View className="gap-1 border-t border-hairline pt-3">
+                  {detailSummary.map((line) => (
+                    <Text key={line.label} className="text-sm text-muted">
+                      {line.label}: {line.value}
+                    </Text>
+                  ))}
+                </View>
+              ) : null}
+
               <View className="gap-1 border-t border-hairline pt-3">
                 <Text className="text-sm text-muted">
                   Offer:{' '}
-                  {parsedAmount !== null
+                  {isFundedOffer(parsedAmount)
                     ? formatMoney(parsedAmount, MARKET.currency)
-                    : 'Open to quotes'}
+                    : 'Not set'}
                 </Text>
                 <Text className="text-sm text-muted">Location: {areaLabel}</Text>
                 <Text className="text-sm text-muted">
                   Search radius: {formatRadius(searchRadiusM)}
                 </Text>
               </View>
+
+              {isFundedOffer(parsedAmount) ? (
+                <RequestFundingSummary offeredAmount={parsedAmount} />
+              ) : null}
             </Card>
 
             {create.isError ? <InlineError error={create.error} /> : null}
@@ -262,7 +333,13 @@ export default function NewRequestScreen() {
 
       <View className="gap-3 border-t border-hairline p-5">
         {isLastStep ? (
-          <Button label="Send request" size="lg" loading={create.isPending} onPress={submit} />
+          <Button
+            label="Send request"
+            size="lg"
+            loading={create.isPending}
+            disabled={!stepValid[step]}
+            onPress={submit}
+          />
         ) : (
           <Button label="Next" size="lg" disabled={!stepValid[step]} onPress={goNext} />
         )}

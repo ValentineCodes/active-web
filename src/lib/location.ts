@@ -51,18 +51,56 @@ export async function readForegroundPermission(): Promise<ForegroundPermission> 
   return 'undetermined';
 }
 
+const POSITION_READ_TIMEOUT_MS = 12_000;
+
+async function readCurrentPosition(): Promise<Position | null> {
+  try {
+    const fix = await Promise.race([
+      Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }),
+      new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error('location-timeout')), POSITION_READ_TIMEOUT_MS);
+      }),
+    ]);
+    return { latitude: fix.coords.latitude, longitude: fix.coords.longitude };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Silent position read for screens that already have permission. Uses the last known
+ * fix first so navigation stays instant; only waits on GPS when nothing is cached.
+ */
 export async function readPositionIfPermitted(): Promise<Position | null> {
   const { granted } = await Location.getForegroundPermissionsAsync();
   if (!granted) return null;
 
   try {
-    const { coords } = await Location.getCurrentPositionAsync({
-      accuracy: Location.Accuracy.Balanced,
-    });
-    return { latitude: coords.latitude, longitude: coords.longitude };
+    const last = await Location.getLastKnownPositionAsync();
+    if (last) {
+      return { latitude: last.coords.latitude, longitude: last.coords.longitude };
+    }
   } catch {
-    return null;
+    // Fall through to a live read.
   }
+
+  return readCurrentPosition();
+}
+
+export function parsePositionParam(
+  latitude: string | string[] | undefined,
+  longitude: string | string[] | undefined,
+): Position | null {
+  const latRaw = Array.isArray(latitude) ? latitude[0] : latitude;
+  const lngRaw = Array.isArray(longitude) ? longitude[0] : longitude;
+  if (!latRaw || !lngRaw) return null;
+
+  const lat = Number(latRaw);
+  const lng = Number(lngRaw);
+  if (Number.isNaN(lat) || Number.isNaN(lng)) return null;
+  if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return null;
+
+  return { latitude: lat, longitude: lng };
 }
 
 /**

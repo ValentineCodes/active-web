@@ -70,7 +70,6 @@ function RootNavigator() {
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="request/new" options={{ presentation: 'modal' }} />
         <Stack.Screen name="request/[id]" />
-        <Stack.Screen name="nearby/[id]" />
         <Stack.Screen name="go-active" options={{ presentation: 'modal' }} />
         <Stack.Screen name="respond/[id]" options={{ presentation: 'modal' }} />
         <Stack.Screen name="engagement/[id]" />

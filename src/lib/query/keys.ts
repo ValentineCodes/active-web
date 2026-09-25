@@ -16,4 +16,5 @@ export const queryKeys = {
   avatarUrl: (path: string) => ['avatar-url', path] as const,
   catalogue: (userId: string) => ['catalogue', userId] as const,
   catalogueMediaUrl: (path: string) => ['catalogue-media-url', path] as const,
+  requestMediaUrl: (path: string) => ['request-media-url', path] as const,
 };

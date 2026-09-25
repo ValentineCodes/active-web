@@ -200,7 +200,16 @@ export function NearbyRequests() {
                 request.location_label,
                 formatWhen(request.scheduled_for),
               ]}
-              onPress={() => router.push(`/nearby/${request.request_id}`)}
+              onPress={() =>
+                router.push({
+                  pathname: '/respond/[id]',
+                  params: {
+                    id: request.request_id,
+                    lat: String(position.latitude),
+                    lng: String(position.longitude),
+                  },
+                })
+              }
             />
           );
         })

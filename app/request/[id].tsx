@@ -9,6 +9,7 @@ import { Header } from '@/components/ui/Header';
 import { Screen } from '@/components/ui/Screen';
 import { ErrorState, InlineError, LoadingState } from '@/components/ui/StateView';
 import { ProviderResponseCard } from '@/components/ProviderResponseCard';
+import { RequestCategoryDataSection } from '@/components/RequestCategoryDataSection';
 import { useCategoryIndex } from '@/features/categories/api';
 import {
   useAcceptResponse,
@@ -94,6 +95,10 @@ export default function RequestDetailScreen() {
       >
         <View className="gap-3">
           <Text className="text-base text-ink">{data.description}</Text>
+          <RequestCategoryDataSection
+            categorySlug={data.category_slug}
+            categoryData={data.category_data}
+          />
 
           <View className="gap-1">
             <Text className="text-sm text-muted">{formatWhen(data.scheduled_for)}</Text>
