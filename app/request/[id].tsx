@@ -92,7 +92,7 @@ export default function RequestDetailScreen() {
     : null;
 
   const confirmCancel = () =>
-    Alert.alert('Cancel this request?', 'Anyone who responded will be told it is no longer open.', [
+    Alert.alert('Cancel request?', 'Anyone who responded will be told it is no longer open.', [
       { text: 'Keep it', style: 'cancel' },
       {
         text: 'Cancel request',
@@ -303,7 +303,7 @@ export default function RequestDetailScreen() {
           <View className="gap-3">
             {cancelRequest.isError ? <InlineError error={cancelRequest.error} /> : null}
             <Button
-              label="Cancel this request"
+              label="Cancel request"
               variant="danger"
               loading={cancelRequest.isPending}
               onPress={confirmCancel}

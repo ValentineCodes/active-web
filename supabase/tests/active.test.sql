@@ -478,6 +478,120 @@ select is(
   'a request leaves public discovery once someone is selected'
 );
 
+-- Expiration idempotency and selection race -----------------------------------------
+
+select pg_temp.act_as_owner() as _ \gset
+select ok(
+  not public.expire_request(:'expired_request_id'::uuid),
+  'expire_request is idempotent once the row is already expired'
+);
+
+select is(
+  (select count(*) from public.request_status_events
+   where request_id = :'expired_request_id'::uuid and to_status = 'expired'),
+  1::bigint,
+  'expiration records a single status event'
+);
+
+select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
+select create_request(
+  'Past window',
+  'Nobody can be chosen after the open window ends.',
+  6.5000,
+  3.3800,
+  'Yaba, Lagos',
+  null,
+  5000
+) as past_window_request_id \gset
+
+select pg_temp.act_as('22222222-2222-2222-2222-222222222222') as _ \gset
+select respond_to_request(
+  :'past_window_request_id'::uuid,
+  null,
+  null,
+  6.5000,
+  3.3800
+) as past_window_response_id \gset
+
+select pg_temp.act_as_owner() as _ \gset
+update public.requests
+set expires_at = now() - interval '1 minute'
+where id = :'past_window_request_id'::uuid;
+
+select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
+select throws_ok(
+  format('select accept_response(%L)', :'past_window_response_id'),
+  '55000',
+  null,
+  'selection is rejected once the request open window has ended'
+);
+
+select pg_temp.act_as_owner() as _ \gset
+select ok(
+  not public.expire_request(:'request_id'::uuid),
+  'expiration does not override a request that was already selected'
+);
+
+-- Cancellation before selection -----------------------------------------------------
+
+select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
+select create_request(
+  'Cancel with responses',
+  'Funded request cancelled before selection.',
+  6.5000,
+  3.3800,
+  'Yaba, Lagos',
+  null,
+  4000
+) as cancel_funded_request_id \gset
+
+select pg_temp.act_as('22222222-2222-2222-2222-222222222222') as _ \gset
+select respond_to_request(
+  :'cancel_funded_request_id'::uuid,
+  null,
+  null,
+  6.5000,
+  3.3800
+) as _ \gset
+
+select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
+select lives_ok(
+  format('select cancel_request(%L)', :'cancel_funded_request_id'),
+  'requester can cancel before selection'
+);
+
+select is(
+  (select status::text from public.requests where id = :'cancel_funded_request_id'::uuid),
+  'cancelled',
+  'cancellation writes cancelled status'
+);
+
+select is(
+  (select payment_status::text from public.requests where id = :'cancel_funded_request_id'::uuid),
+  'refunded',
+  'pre-selection cancellation refunds locked funds'
+);
+
+select is(
+  (select status::text from public.request_responses
+   where request_id = :'cancel_funded_request_id'::uuid
+   limit 1),
+  'expired',
+  'pending responses become inactive when the requester cancels'
+);
+
+select is(
+  (select count(*) from public.request_status_events
+   where request_id = :'cancel_funded_request_id'::uuid and to_status = 'cancelled'),
+  1::bigint,
+  'cancellation records a status event'
+);
+
+select lives_ok(
+  format('select cancel_request(%L)', :'cancel_funded_request_id'),
+  'cancel_request is idempotent after the request is already cancelled'
+);
+
 select * from finish();
 
 rollback;

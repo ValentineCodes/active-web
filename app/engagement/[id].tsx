@@ -320,7 +320,7 @@ export default function EngagementScreen() {
 
   const confirmCancelRequest = () =>
     Alert.alert(
-      'Cancel this job?',
+      'Cancel job?',
       'You will receive a full refund for any payment held in the app. This cannot be undone.',
       [
         { text: 'Keep it', style: 'cancel' },
@@ -337,7 +337,7 @@ export default function EngagementScreen() {
 
   const confirmCancelService = () =>
     Alert.alert(
-      'Cancel this job?',
+      'Cancel job?',
       'The requester will be refunded in full and the job will close. You will be available for other requests.',
       [
         { text: 'Keep it', style: 'cancel' },

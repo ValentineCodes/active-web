@@ -1476,6 +1476,8 @@ export type Database = {
         }
         Returns: undefined
       }
+      request_expires_at: { Args: { p_scheduled_for: string }; Returns: string }
+      request_lifetime_interval: { Args: never; Returns: string }
       request_media_visible_to_party: {
         Args: { p_name: string; p_user_id: string }
         Returns: boolean
