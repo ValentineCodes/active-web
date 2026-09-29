@@ -1,13 +1,14 @@
 import type { PaymentStatus, RequestStatus } from '@/features/domain/model';
 
 /**
- * Request/service lifecycle (stored on public.requests.status).
+ * Request lifecycle (stored on public.requests.status).
  * Payment state is independent — see PAYMENT_TRANSITIONS.
  */
 export const REQUEST_STATUS_LABELS: Record<RequestStatus, string> = {
   draft: 'Draft',
-  searching: 'Searching',
-  accepted: 'Handshake',
+  posted: 'Posted',
+  searching: 'Posted',
+  accepted: 'Selected',
   in_progress: 'In progress',
   completion_pending: 'Completion pending',
   completed: 'Completed',
@@ -19,10 +20,10 @@ export const REQUEST_STATUS_LABELS: Record<RequestStatus, string> = {
 
 /** Allowed request status moves performed only by security-definer RPCs. */
 export const REQUEST_STATUS_TRANSITIONS: Partial<Record<RequestStatus, RequestStatus[]>> = {
+  posted: ['accepted', 'cancelled', 'expired'],
   searching: ['accepted', 'cancelled', 'expired'],
   accepted: ['in_progress', 'completion_pending', 'cancelled', 'disputed', 'no_show'],
   in_progress: ['completion_pending', 'cancelled', 'disputed', 'no_show'],
-  /** Requester cancel is blocked; provider `cancel_service` may still cancel server-side. */
   completion_pending: ['completed', 'disputed'],
   disputed: ['accepted', 'in_progress', 'no_show'],
 };
@@ -37,14 +38,6 @@ export const PAYMENT_STATUS_LABELS: Record<PaymentStatus, string> = {
   disputed: 'Disputed',
 };
 
-/**
- * Idempotent transitions recorded in public.payment_transitions.
- * Wallet buckets (public.wallet_accounts) move in sync via sync_wallet_payment_transition:
- *   fund (create)     available → locked
- *   handshake         locked → pending
- *   release           pending → provider available + platform fee
- *   refund            locked|pending → requester available
- */
 export const PAYMENT_TRANSITIONS: Partial<Record<PaymentStatus, PaymentStatus[]>> = {
   not_required: ['not_required'],
   available: ['locked', 'not_required'],
@@ -61,4 +54,8 @@ export function canTransitionRequest(from: RequestStatus, to: RequestStatus): bo
 
 export function canTransitionPayment(from: PaymentStatus, to: PaymentStatus): boolean {
   return PAYMENT_TRANSITIONS[from]?.includes(to) ?? false;
+}
+
+export function normalizeRequestStatus(status: RequestStatus): RequestStatus {
+  return status === 'searching' ? 'posted' : status;
 }

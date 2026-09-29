@@ -13,10 +13,8 @@ import { Screen } from '@/components/ui/Screen';
 import { ErrorState, InlineError, LoadingState, SuccessBanner } from '@/components/ui/StateView';
 import { StarRating } from '@/components/ui/Stars';
 import { TextField } from '@/components/ui/TextField';
-import { ServiceTag } from '@/components/ui/ServiceTag';
-import { useAvailability } from '@/features/availability/api';
+import { useAttendance } from '@/features/attendance/api';
 import { signOut } from '@/features/auth/api';
-import { useCategoryIndex } from '@/features/categories/api';
 import {
   hasProviderPhotoReady,
   useCaptureProfilePhoto,
@@ -27,8 +25,7 @@ import { colors } from '@/theme';
 
 export default function ProfileScreen() {
   const profile = useProfile();
-  const availability = useAvailability();
-  const categories = useCategoryIndex();
+  const attendance = useAttendance();
   const save = useSaveProfile();
   const capturePhoto = useCaptureProfilePhoto();
   const leave = useMutation({ mutationFn: signOut });
@@ -55,7 +52,7 @@ export default function ProfileScreen() {
   }
 
   const { data } = profile;
-  const isActive = availability.data?.status === 'available';
+  const attending = attendance.data?.attending_request_id != null;
 
   return (
     <Screen>
@@ -65,10 +62,10 @@ export default function ProfileScreen() {
         contentContainerClassName="gap-6 p-5 pb-12"
         refreshControl={
           <RefreshControl
-            refreshing={profile.isRefetching || availability.isRefetching}
+            refreshing={profile.isRefetching || attendance.isRefetching}
             onRefresh={() => {
               profile.refetch();
-              availability.refetch();
+              attendance.refetch();
             }}
           />
         }
@@ -93,7 +90,7 @@ export default function ProfileScreen() {
               path={data.avatar_path}
               name={data.display_name}
               size="lg"
-              showActiveDot={isActive}
+              showActiveDot={attending}
             />
           </Pressable>
           <Pressable
@@ -202,34 +199,14 @@ export default function ProfileScreen() {
 
         <ServiceCatalogue />
 
-        {isActive && availability.data ? (
-          <Card tone="active">
-            <Text className="text-sm font-semibold text-active">Available now</Text>
-            <View className="flex-row flex-wrap gap-2">
-              {availability.data.category_slugs.map((slug) => (
-                <ServiceTag
-                  key={slug}
-                  label={categories.data?.get(slug)?.label ?? slug}
-                  icon={categories.data?.get(slug)?.icon}
-                />
-              ))}
-            </View>
-            <Text className="text-sm text-muted">
-              Service radius {(availability.data.service_radius_m ?? 0) / 1000} km
-            </Text>
-          </Card>
-        ) : null}
-
         <Card>
           <View className="flex-row items-center gap-2">
             <Ionicons name="lock-closed-outline" size={18} color={colors.ink} />
             <Text className="text-base font-semibold text-ink">How your location is used</Text>
           </View>
           <Text className="text-base text-muted">
-            Active reads your location only when you submit a request or go Active, and uses it
-            privately to work out who is nearby. Nobody sees where you are — only an approximate
-            distance — until you accept someone. After that, the two of you can see each
-            other&apos;s details.
+            Active reads your location when you post a request, browse nearby, or respond, and uses
+            it privately to work out distance. Nobody sees where you are until you select someone.
           </Text>
         </Card>
 

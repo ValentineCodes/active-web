@@ -2,7 +2,6 @@ import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native'
 import { Link, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useQueryClient } from '@tanstack/react-query';
-import { formatDistanceToNowStrict } from 'date-fns';
 
 import { NearbyRequests } from '@/components/NearbyRequests';
 import { Avatar } from '@/components/ui/Avatar';
@@ -12,60 +11,40 @@ import { Card } from '@/components/ui/Card';
 import { RequestCard } from '@/components/ui/RequestCard';
 import { Screen } from '@/components/ui/Screen';
 import { SectionHeader } from '@/components/ui/SectionHeader';
-import { ErrorState } from '@/components/ui/StateView';
-import { ServiceTag } from '@/components/ui/ServiceTag';
-import { useAvailability, useGoOffline } from '@/features/availability/api';
-import { useCategoryIndex } from '@/features/categories/api';
+import { useAttendance } from '@/features/attendance/api';
 import { useProfile } from '@/features/profile/api';
 import { useMyResponses } from '@/features/requests/provider-api';
 import { useMyWallet } from '@/features/wallet/api';
 import { useMyRequests } from '@/features/requests/requester-api';
-import {
-  availabilityStatusBadge,
-  requestEngagementStatusBadge,
-  requestStatusBadge,
-} from '@/features/requests/status';
-import { confirmGoOffline } from '@/lib/confirm';
+import { requestEngagementStatusBadge, requestStatusBadge } from '@/features/requests/status';
 import { formatMoney, formatWhen } from '@/lib/format';
 import { queryKeys } from '@/lib/query/keys';
 import { colors } from '@/theme';
 
+const OPEN_STATUSES = ['posted', 'searching', 'accepted', 'in_progress', 'completion_pending'];
+
 export default function HomeScreen() {
   const profile = useProfile();
-  const availability = useAvailability();
+  const attendance = useAttendance();
   const requests = useMyRequests();
   const responses = useMyResponses();
   const wallet = useMyWallet();
-  const categories = useCategoryIndex();
-  const goOffline = useGoOffline();
   const queryClient = useQueryClient();
 
   const firstName = profile.data?.display_name?.split(' ')[0];
   const openRequests =
-    requests.data?.filter((request) =>
-      ['searching', 'accepted', 'in_progress', 'completion_pending'].includes(request.status),
-    ) ?? [];
+    requests.data?.filter((request) => OPEN_STATUSES.includes(request.status)) ?? [];
 
-  // A live engagement can exist on either side, and Home should surface whichever it is.
   const engagementAsRequester = openRequests.find((request) =>
     ['accepted', 'in_progress', 'completion_pending'].includes(request.status),
   );
-  const engagementAsProvider = responses.data?.find(
+  const engagementAsHelper = responses.data?.find(
     (response) =>
       response.response_status === 'accepted' &&
       ['accepted', 'in_progress', 'completion_pending'].includes(response.request_status),
   );
 
-  const isActive = availability.data?.status === 'available';
-  const isBusy = availability.data?.status === 'busy';
-
-  if (availability.isError) {
-    return (
-      <Screen>
-        <ErrorState error={availability.error} onRetry={() => availability.refetch()} />
-      </Screen>
-    );
-  }
+  const attendingRequestId = attendance.data?.attending_request_id ?? null;
 
   return (
     <Screen>
@@ -73,11 +52,11 @@ export default function HomeScreen() {
         contentContainerClassName="gap-6 p-5 pb-10"
         refreshControl={
           <RefreshControl
-            refreshing={requests.isRefetching || availability.isRefetching}
+            refreshing={requests.isRefetching || attendance.isRefetching}
             onRefresh={() => {
               requests.refetch();
               responses.refetch();
-              availability.refetch();
+              attendance.refetch();
               wallet.refetch();
               queryClient.invalidateQueries({ queryKey: queryKeys.browseNearbyAll });
             }}
@@ -100,12 +79,12 @@ export default function HomeScreen() {
               <Avatar
                 path={profile.data?.avatar_path}
                 name={profile.data?.display_name ?? null}
-                showActiveDot={isActive}
+                showActiveDot={attendingRequestId != null}
               />
             </Pressable>
           </View>
           <Text className="text-base text-muted">
-            Ask for help, or become available to help. Both are temporary.
+            Post what you need, or respond to what others need nearby.
           </Text>
         </View>
 
@@ -134,132 +113,60 @@ export default function HomeScreen() {
           </Card>
         </Pressable>
 
-        {isBusy && !engagementAsRequester && !engagementAsProvider ? (
+        {attendingRequestId && !engagementAsRequester && !engagementAsHelper ? (
           <Card tone="active" className="gap-3">
-            <Badge label="Committed" tone="active" />
+            <Badge label="Attending" tone="active" />
             <Text className="text-sm text-muted">
-              A requester selected you. New nearby matches are paused until this job ends.
+              You are on a request. Finish it before taking another.
             </Text>
-            {availability.data?.committed_request_id ? (
-              <Button
-                label="Open job details"
-                variant="active"
-                onPress={() =>
-                  router.push(`/engagement/${availability.data!.committed_request_id}`)
-                }
-              />
-            ) : null}
+            <Button
+              label="Open request"
+              variant="active"
+              onPress={() => router.push(`/engagement/${attendingRequestId}`)}
+            />
           </Card>
         ) : null}
 
-        {engagementAsRequester || engagementAsProvider ? (
+        {engagementAsRequester || engagementAsHelper ? (
           <Link
-            href={`/engagement/${engagementAsRequester?.request_id ?? engagementAsProvider?.request_id}`}
+            href={`/engagement/${engagementAsRequester?.request_id ?? engagementAsHelper?.request_id}`}
             asChild
           >
             <Pressable accessibilityRole="button" accessibilityLabel="Open your connected job">
               <Card tone="active">
                 {(() => {
                   const status =
-                    engagementAsRequester?.status ?? engagementAsProvider?.request_status;
+                    engagementAsRequester?.status ?? engagementAsHelper?.request_status;
                   const badge = status ? requestEngagementStatusBadge(status) : null;
                   return badge ? <Badge label={badge.label} tone={badge.tone} /> : null;
                 })()}
                 <Text className="text-lg font-semibold text-ink">
-                  {engagementAsRequester
-                    ? 'Someone is on your request'
-                    : 'You have a job to deliver'}
+                  {engagementAsRequester ? 'Someone is on your request' : 'You are helping someone'}
                 </Text>
                 <Text className="text-base text-muted">
                   Exact location and contact details are open. Tap to see them.
-                  {engagementAsProvider ? ' Other requests pause until this job ends.' : ''}
                 </Text>
               </Card>
             </Pressable>
           </Link>
         ) : null}
 
-        {isActive && availability.data?.expires_at ? (
-          <Card tone="active">
-            <View className="flex-row items-center justify-between">
-              {(() => {
-                const badge = availabilityStatusBadge('available');
-                return badge ? <Badge label={badge.label} tone={badge.tone} /> : null;
-              })()}
-              <Text className="text-sm text-muted">
-                {formatDistanceToNowStrict(new Date(availability.data.expires_at))} left
-              </Text>
-            </View>
-
-            <View className="flex-row flex-wrap gap-2">
-              {availability.data.category_slugs.map((slug) => (
-                <ServiceTag
-                  key={slug}
-                  label={categories.data?.get(slug)?.label ?? slug}
-                  icon={categories.data?.get(slug)?.icon}
-                />
-              ))}
-            </View>
-
-            <Text className="text-sm text-muted">
-              Service radius {(availability.data.service_radius_m ?? 0) / 1000} km
+        <Pressable
+          onPress={() => router.push('/request/new')}
+          accessibilityRole="button"
+          accessibilityLabel="Make a request"
+          className="gap-3 rounded-3xl bg-brand p-6 active:opacity-90"
+        >
+          <View className="h-11 w-11 items-center justify-center rounded-full bg-white/15">
+            <Ionicons name="add" size={26} color={colors.canvas} />
+          </View>
+          <View className="gap-1">
+            <Text className="text-2xl font-bold text-canvas">Make a request</Text>
+            <Text className="text-base text-canvas/80">
+              Ask for help. It stays open only while you need it.
             </Text>
-
-            <View className="flex-row gap-3">
-              <Button
-                label="Your matches"
-                variant="secondary"
-                className="flex-1"
-                onPress={() => router.push('/activity')}
-              />
-              <Button
-                label="Go offline"
-                variant="secondary"
-                className="flex-1"
-                loading={goOffline.isPending}
-                onPress={() => confirmGoOffline(() => goOffline.mutate())}
-              />
-            </View>
-          </Card>
-        ) : null}
-
-        <View className="gap-3">
-          <Pressable
-            onPress={() => router.push('/request/new')}
-            accessibilityRole="button"
-            accessibilityLabel="Make a request"
-            className="gap-3 rounded-3xl bg-brand p-6 active:opacity-90"
-          >
-            <View className="h-11 w-11 items-center justify-center rounded-full bg-white/15">
-              <Ionicons name="add" size={26} color={colors.canvas} />
-            </View>
-            <View className="gap-1">
-              <Text className="text-2xl font-bold text-canvas">Make a Request</Text>
-              <Text className="text-base text-canvas/80">
-                Ask for help. It stays open only while you need it.
-              </Text>
-            </View>
-          </Pressable>
-
-          {isActive || isBusy ? null : (
-            <Pressable
-              onPress={() => router.push('/go-active')}
-              accessibilityRole="button"
-              accessibilityLabel="Go Active and offer your services"
-              className="gap-3 rounded-3xl bg-active-soft p-6 active:opacity-80"
-            >
-              <View className="h-11 w-11 items-center justify-center rounded-full bg-canvas">
-                <Ionicons name="flash" size={24} color={colors.active} />
-              </View>
-              <View className="gap-1">
-                <Text className="text-2xl font-bold text-ink">Go Active</Text>
-                <Text className="text-base text-muted">
-                  Become available to help, for as long as you choose.
-                </Text>
-              </View>
-            </Pressable>
-          )}
-        </View>
+          </View>
+        </Pressable>
 
         <NearbyRequests />
 
@@ -273,16 +180,19 @@ export default function HomeScreen() {
 
             {openRequests.slice(0, 3).map((request) => {
               const badge = requestStatusBadge(request.status, request.pending_response_count);
-              const category = categories.data?.get(request.category_slug);
 
               return (
                 <RequestCard
                   key={request.request_id}
-                  icon={category?.icon}
-                  title={category?.label ?? request.category_slug}
-                  description={request.description}
+                  title={request.title ?? 'Request'}
+                  description={request.description ?? undefined}
                   badge={badge}
-                  meta={[formatWhen(request.scheduled_for)]}
+                  amount={
+                    request.offered_amount !== null
+                      ? formatMoney(request.offered_amount, request.currency)
+                      : '—'
+                  }
+                  meta={[formatWhen(request.scheduled_for), request.location_label]}
                   onPress={() => router.push(`/request/${request.request_id}`)}
                 />
               );

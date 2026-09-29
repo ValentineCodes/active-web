@@ -19,13 +19,14 @@ export function requestStatusBadge(
   switch (status) {
     case 'draft':
       return { label: 'Draft', tone: 'neutral' };
+    case 'posted':
     case 'searching':
       return pendingResponseCount > 0
         ? {
             label: `${pendingResponseCount} ${pendingResponseCount === 1 ? 'response' : 'responses'}`,
             tone: 'brand',
           }
-        : { label: 'Searching', tone: 'warning' };
+        : { label: 'Posted', tone: 'warning' };
     case 'accepted':
       return { label: 'Selected', tone: 'active' };
     case 'in_progress':
@@ -89,7 +90,10 @@ export function providerResponseLifecycleBadge(
     return requestEngagementStatusBadge(requestStatus);
   }
 
-  if (responseStatus === 'pending' && requestStatus === 'searching') {
+  if (
+    (responseStatus === 'pending' && requestStatus === 'posted') ||
+    (responseStatus === 'pending' && requestStatus === 'searching')
+  ) {
     return { label: 'Responded', tone: 'brand' };
   }
 

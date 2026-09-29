@@ -14,20 +14,9 @@ export const MARKET = {
 } as const;
 
 /** Radius options offered to a requester. Expansion beyond these is server-driven. */
-export const SEARCH_RADII_M = [2000, 5000, 10000, 20000] as const;
+export const TITLE_LIMITS = { min: 3, max: 120 } as const;
 
-/** Radius options offered to a provider going Active. */
-export const SERVICE_RADII_M = [5000, 10000, 20000, 35000] as const;
-
-/** How long an Active session lasts before it lapses on its own. */
-export const ACTIVE_DURATIONS = [
-  { minutes: 60, label: '1 hour' },
-  { minutes: 240, label: '4 hours' },
-  { minutes: 480, label: '8 hours' },
-  { minutes: 720, label: '12 hours' },
-] as const;
-
-export const DESCRIPTION_LIMITS = { min: 10, max: 1000 } as const;
+export const DESCRIPTION_LIMITS = { min: 1, max: 1000 } as const;
 
 /**
  * When true, a request must carry a positive offer before it enters discovery. That

@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { Alert, RefreshControl, ScrollView, Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -8,15 +7,12 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Header } from '@/components/ui/Header';
 import { Screen } from '@/components/ui/Screen';
-import { ErrorState, InlineError, LoadingState, SuccessBanner } from '@/components/ui/StateView';
+import { ErrorState, InlineError, LoadingState } from '@/components/ui/StateView';
 import { ProviderResponseCard } from '@/components/ProviderResponseCard';
-import { RequestCategoryDataSection } from '@/components/RequestCategoryDataSection';
-import { useCategoryIndex } from '@/features/categories/api';
 import {
   useAcceptResponse,
   useCancelRequest,
   useDeclineResponse,
-  useExpandRadius,
   useLiveRequest,
   useMyRequest,
   useRequestResponses,
@@ -31,7 +27,7 @@ import {
   isExpiredRequestView,
   reuseRequestButtonLabelForRequest,
 } from '@/features/requests/reuse';
-import { formatAgo, formatMoney, formatRadius, formatWhen } from '@/lib/format';
+import { formatAgo, formatMoney, formatWhen } from '@/lib/format';
 import { colors } from '@/theme';
 
 export default function RequestDetailScreen() {
@@ -39,13 +35,10 @@ export default function RequestDetailScreen() {
 
   const request = useMyRequest(id);
   const responses = useRequestResponses(id);
-  const categories = useCategoryIndex();
 
-  const expandRadius = useExpandRadius(id);
   const cancelRequest = useCancelRequest(id);
   const acceptResponse = useAcceptResponse(id);
   const declineResponse = useDeclineResponse(id);
-  const [radiusExpanded, setRadiusExpanded] = useState(false);
 
   useLiveRequest(id);
 
@@ -77,10 +70,9 @@ export default function RequestDetailScreen() {
     data.payment_status && data.payment_status !== 'not_required'
       ? paymentStatusHint(data.payment_status, true)
       : null;
-  const category = categories.data?.get(data.category_slug);
   const pending = responses.data?.filter((response) => response.status === 'pending') ?? [];
   const isExpiredRequest = isExpiredRequestView(data.status, data.expires_at);
-  const isSearching = data.status === 'searching' && !isExpiredRequest;
+  const isOpen = (data.status === 'posted' || data.status === 'searching') && !isExpiredRequest;
   const isConnected = [
     'accepted',
     'in_progress',
@@ -112,7 +104,7 @@ export default function RequestDetailScreen() {
   return (
     <Screen>
       <Header
-        title={category?.label ?? data.category_slug}
+        title={data.title}
         onBack={() => router.back()}
         right={<Badge label={badge.label} tone={badge.tone} />}
       />
@@ -130,17 +122,11 @@ export default function RequestDetailScreen() {
         }
       >
         <View className="gap-3">
-          <Text className="text-base text-ink">{data.description}</Text>
-          <RequestCategoryDataSection
-            categorySlug={data.category_slug}
-            categoryData={data.category_data}
-          />
+          {data.description ? <Text className="text-base text-ink">{data.description}</Text> : null}
 
           <View className="gap-1">
             <Text className="text-sm text-muted">{formatWhen(data.scheduled_for)}</Text>
-            <Text className="text-sm text-muted">
-              {data.location_label} · searching within {formatRadius(data.search_radius_m)}
-            </Text>
+            <Text className="text-sm text-muted">{data.location_label}</Text>
             {data.offered_amount !== null ? (
               <Text className="text-sm font-semibold text-ink">
                 You offered {formatMoney(data.offered_amount, data.currency)}
@@ -187,11 +173,7 @@ export default function RequestDetailScreen() {
                 onPress={() => router.push(`/engagement/${id}`)}
               />
             ) : (
-              <Button
-                label="Rate your provider"
-                size="lg"
-                onPress={() => router.push(`/rate/${id}`)}
-              />
+              <Button label="Rate them" size="lg" onPress={() => router.push(`/rate/${id}`)} />
             )}
             {reuseLabel ? (
               <Button
@@ -208,8 +190,7 @@ export default function RequestDetailScreen() {
             <Card>
               <Text className="text-base font-semibold text-ink">This request expired</Text>
               <Text className="text-sm text-muted">
-                Nobody was connected in time. Your original request stays here as history — send a
-                new one when you are ready.
+                Nobody was connected in time. Send a new one when you are ready.
               </Text>
             </Card>
             {reuseLabel ? (
@@ -222,12 +203,12 @@ export default function RequestDetailScreen() {
           </View>
         ) : null}
 
-        {isSearching ? (
+        {isOpen ? (
           <View className="gap-4">
             <Text className="text-lg font-bold text-ink">
               {pending.length > 0
-                ? `${pending.length} ${pending.length === 1 ? 'person' : 'people'} can help`
-                : 'Looking for someone'}
+                ? `${pending.length} ${pending.length === 1 ? 'person' : 'people'} responded`
+                : 'Waiting for responses'}
             </Text>
 
             {responses.isPending && !responses.data ? (
@@ -241,29 +222,9 @@ export default function RequestDetailScreen() {
             {responses.isSuccess && pending.length === 0 ? (
               <Card>
                 <Text className="text-base text-muted">
-                  Your request is with everyone Active nearby who offers{' '}
-                  {category?.label.toLowerCase() ?? 'this'}. Nobody can see where you are — only
-                  roughly how far away you are.
+                  Your request is visible to people nearby. They see approximate distance, not your
+                  exact location.
                 </Text>
-                <Text className="text-base text-muted">
-                  If nobody answers, widen the area you&apos;re searching. That changes who gets
-                  offered the request, and nothing else.
-                </Text>
-                {radiusExpanded ? (
-                  <SuccessBanner message="Search radius widened. More nearby providers may see your request." />
-                ) : null}
-                {expandRadius.isError ? <InlineError error={expandRadius.error} /> : null}
-                <Button
-                  label={`Search wider than ${formatRadius(data.search_radius_m)}`}
-                  variant="secondary"
-                  loading={expandRadius.isPending}
-                  disabled={expandRadius.isPending}
-                  onPress={() =>
-                    expandRadius.mutate(undefined, {
-                      onSuccess: () => setRadiusExpanded(true),
-                    })
-                  }
-                />
               </Card>
             ) : null}
 
@@ -272,7 +233,7 @@ export default function RequestDetailScreen() {
             {pending.map((response) => (
               <ProviderResponseCard
                 key={response.response_id}
-                providerId={response.provider_id}
+                responderId={response.responder_id}
                 displayName={response.display_name}
                 avatarPath={response.avatar_path}
                 bio={response.bio}
@@ -283,7 +244,6 @@ export default function RequestDetailScreen() {
                 distanceM={response.distance_m}
                 message={response.message}
                 quotedAmount={response.quoted_amount}
-                etaMinutes={response.eta_minutes}
                 currency={data.currency}
                 createdAt={response.created_at}
                 expiresAt={response.expires_at}
@@ -296,7 +256,7 @@ export default function RequestDetailScreen() {
                       onSuccess: () =>
                         Alert.alert(
                           'Declined',
-                          'They can still respond to other requests. You can select someone else anytime.',
+                          'They can respond to other requests. You can select someone else anytime.',
                         ),
                     },
                   )
@@ -304,7 +264,7 @@ export default function RequestDetailScreen() {
                 onAccept={() =>
                   Alert.alert(
                     `Select ${response.display_name}?`,
-                    'This is the handshake — you can only choose one person. They get your exact location and phone number, you get theirs, and everyone else who responded is turned down.',
+                    'You can only choose one person. They get your exact location and phone number; everyone else is turned down.',
                     [
                       { text: 'Not yet', style: 'cancel' },
                       {
@@ -322,7 +282,7 @@ export default function RequestDetailScreen() {
           </View>
         ) : null}
 
-        {isSearching ? (
+        {isOpen ? (
           <View className="gap-3">
             {cancelRequest.isError ? <InlineError error={cancelRequest.error} /> : null}
             <Button

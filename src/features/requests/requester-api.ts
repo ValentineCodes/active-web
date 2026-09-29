@@ -1,12 +1,6 @@
 import { useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
 
-import {
-  buildCategoryData,
-  type CategoryDetailsForm,
-  type RequestCategorySlug,
-} from '@/features/requests/category-data';
-import { uploadRequestPhotos } from '@/features/requests/request-media';
 import { useUserId } from '@/features/auth/session';
 import type { Position } from '@/lib/location';
 import { queryKeys } from '@/lib/query/keys';
@@ -24,7 +18,6 @@ type RequestResponse = Nullable<
   | 'rating_average'
   | 'message'
   | 'quoted_amount'
-  | 'eta_minutes'
   | 'expires_at'
 >;
 
@@ -36,8 +29,6 @@ type Engagement = Nullable<
   | 'accepted_at'
   | 'started_at'
   | 'completed_at'
-  | 'provider_latitude'
-  | 'provider_longitude'
   | 'counterparty_display_name'
   | 'counterparty_avatar_path'
   | 'counterparty_phone'
@@ -53,21 +44,16 @@ type Engagement = Nullable<
 >;
 
 const REQUEST_COLUMNS =
-  'request_id, category_slug, description, category_data, scheduled_for, offered_amount, currency, payment_status, location_label, latitude, longitude, search_radius_m, radius_expansions, status, provider_id, source_request_id, pending_response_count, is_rated, created_at, expires_at, accepted_at, started_at, completed_at, cancelled_at';
+  'request_id, title, description, scheduled_for, offered_amount, currency, payment_status, location_label, latitude, longitude, status, selected_user_id, source_request_id, pending_response_count, is_rated, created_at, updated_at, expires_at, accepted_at, started_at, completed_at, cancelled_at';
 
-/** The columns public.requests declares NOT NULL, plus the two the view always computes. */
 type MyRequest = Guaranteed<
   Database['public']['Views']['my_requests']['Row'],
   | 'request_id'
-  | 'category_slug'
-  | 'description'
-  | 'category_data'
+  | 'title'
   | 'currency'
   | 'location_label'
   | 'latitude'
   | 'longitude'
-  | 'search_radius_m'
-  | 'radius_expansions'
   | 'status'
   | 'created_at'
   | 'pending_response_count'
@@ -254,38 +240,24 @@ export function useCreateRequest() {
 
   return useMutation({
     mutationFn: async (input: {
-      categorySlug: RequestCategorySlug;
-      description: string;
+      title: string;
+      description: string | null;
       position: Position;
       locationLabel: string;
-      searchRadiusM: number;
       scheduledFor: Date | null;
-      offeredAmount: number | null;
-      categoryDetails: CategoryDetailsForm;
+      offeredAmount: number;
       sourceRequestId?: string;
     }) => {
       if (!userId) throw new Error('Sign in to create a request.');
 
-      const photoPaths =
-        input.categoryDetails.photoUris.length > 0
-          ? await uploadRequestPhotos(
-              userId,
-              input.categoryDetails.photoUris.map((uri) => ({ uri })),
-            )
-          : [];
-
-      const categoryData = buildCategoryData(input.categorySlug, input.categoryDetails, photoPaths);
-
       const { data, error } = await supabase.rpc('create_request', {
-        p_category_slug: input.categorySlug,
-        p_description: input.description,
+        p_title: input.title.trim(),
+        p_description: input.description?.trim() || '',
         p_latitude: input.position.latitude,
         p_longitude: input.position.longitude,
         p_location_label: input.locationLabel,
-        p_search_radius_m: input.searchRadiusM,
         p_scheduled_for: input.scheduledFor?.toISOString(),
-        p_offered_amount: input.offeredAmount ?? undefined,
-        p_category_data: categoryData,
+        p_offered_amount: input.offeredAmount,
         p_source_request_id: input.sourceRequestId,
       });
 
@@ -293,25 +265,6 @@ export function useCreateRequest() {
       return data;
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.myRequests }),
-  });
-}
-
-export function useExpandRadius(requestId: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async () => {
-      const { data, error } = await supabase.rpc('expand_request_radius', {
-        p_request_id: requestId,
-      });
-
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.myRequest(requestId) });
-      queryClient.invalidateQueries({ queryKey: queryKeys.myRequests });
-    },
   });
 }
 
@@ -328,7 +281,7 @@ export function useCancelRequest(requestId: string) {
       queryClient.invalidateQueries({ queryKey: queryKeys.myRequests });
       queryClient.invalidateQueries({ queryKey: queryKeys.engagement(requestId) });
       queryClient.invalidateQueries({ queryKey: queryKeys.myResponses });
-      queryClient.invalidateQueries({ queryKey: queryKeys.nearbyRequests });
+      queryClient.invalidateQueries({ queryKey: queryKeys.browseNearbyAll });
     },
   });
 }
@@ -347,6 +300,8 @@ export function useAcceptResponse(requestId: string) {
       queryClient.invalidateQueries({ queryKey: queryKeys.myRequests });
       queryClient.invalidateQueries({ queryKey: queryKeys.requestResponses(requestId) });
       queryClient.invalidateQueries({ queryKey: queryKeys.engagement(requestId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.attendance });
+      queryClient.invalidateQueries({ queryKey: queryKeys.myResponses });
     },
     onError: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.myRequest(requestId) });

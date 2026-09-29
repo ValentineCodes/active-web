@@ -16,7 +16,7 @@ import { formatAgo, formatDistance, formatMoney } from '@/lib/format';
  * where they are.
  */
 export function ProviderResponseCard({
-  providerId,
+  responderId,
   displayName,
   avatarPath,
   bio,
@@ -27,7 +27,6 @@ export function ProviderResponseCard({
   distanceM,
   message,
   quotedAmount,
-  etaMinutes,
   currency,
   createdAt,
   expiresAt,
@@ -36,7 +35,7 @@ export function ProviderResponseCard({
   acceptLoading,
   declineLoading,
 }: {
-  providerId: string;
+  responderId: string;
   displayName: string | null;
   avatarPath: string | null;
   bio: string | null;
@@ -47,7 +46,6 @@ export function ProviderResponseCard({
   distanceM: number;
   message: string | null;
   quotedAmount: number | null;
-  etaMinutes: number | null;
   currency: string;
   createdAt: string;
   expiresAt: string | null;
@@ -77,7 +75,7 @@ export function ProviderResponseCard({
 
       {phoneVerified ? <Badge label="Phone verified" tone="info" dot={false} /> : null}
 
-      <CatalogueStrip userId={providerId} />
+      <CatalogueStrip userId={responderId} />
 
       {message ? (
         <View className="rounded-2xl bg-surface p-3">
@@ -90,9 +88,6 @@ export function ProviderResponseCard({
           <Text className="text-base font-bold text-ink">
             {formatMoney(quotedAmount, currency)}
           </Text>
-        ) : null}
-        {etaMinutes !== null ? (
-          <Text className="text-sm text-muted">Can be there in {etaMinutes} min</Text>
         ) : null}
         <Text className="text-sm text-subtle">{formatAgo(createdAt)}</Text>
         {expiresAt ? (
@@ -155,7 +150,7 @@ export function ProviderResponseCard({
       <ProviderProfileModal
         visible={profileOpen}
         onClose={() => setProfileOpen(false)}
-        providerId={providerId}
+        providerId={responderId}
         displayName={displayName}
         avatarPath={avatarPath}
         bio={bio}

@@ -7,7 +7,7 @@ type RequestStatus = Database['public']['Enums']['request_status'];
 
 /** User-facing lifecycle slice for lists and filters (not identical to stored status). */
 export type RequestHistoryBucket =
-  | 'searching'
+  | 'posted'
   | 'responses'
   | 'handshake'
   | 'in_progress'
@@ -20,19 +20,13 @@ export type RequestHistoryBucket =
   | 'no_show';
 
 export type ActiveRequestFilter =
-  | 'all'
-  | 'searching'
-  | 'responses'
-  | 'handshake'
-  | 'in_progress'
-  | 'completion_pending'
-  | 'disputed';
+  'all' | 'posted' | 'responses' | 'handshake' | 'in_progress' | 'completion_pending' | 'disputed';
 
 export type PastRequestFilter = 'all' | 'completed' | 'cancelled' | 'expired';
 
 export const ACTIVE_REQUEST_FILTERS: { key: ActiveRequestFilter; label: string }[] = [
   { key: 'all', label: 'All' },
-  { key: 'searching', label: 'Searching' },
+  { key: 'posted', label: 'Posted' },
   { key: 'responses', label: 'Responses' },
   { key: 'handshake', label: 'Selected' },
   { key: 'in_progress', label: 'In progress' },
@@ -87,8 +81,9 @@ export function requestHistoryBucket(request: {
   switch (request.status) {
     case 'draft':
       return 'draft';
+    case 'posted':
     case 'searching':
-      return request.pending_response_count > 0 ? 'responses' : 'searching';
+      return request.pending_response_count > 0 ? 'responses' : 'posted';
     case 'accepted':
       return 'handshake';
     case 'in_progress':
@@ -119,6 +114,7 @@ export function isActiveRequest(request: {
 
   return [
     'draft',
+    'posted',
     'searching',
     'accepted',
     'in_progress',

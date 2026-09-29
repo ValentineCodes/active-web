@@ -71,31 +71,31 @@ export type Database = {
         Row: {
           created_at: string
           id: string
-          provider_id: string
           request_id: string
           requester_id: string
           response_id: string
+          selected_user_id: string
         }
         Insert: {
           created_at?: string
           id?: string
-          provider_id: string
           request_id: string
           requester_id: string
           response_id: string
+          selected_user_id: string
         }
         Update: {
           created_at?: string
           id?: string
-          provider_id?: string
           request_id?: string
           requester_id?: string
           response_id?: string
+          selected_user_id?: string
         }
         Relationships: [
           {
             foreignKeyName: "handshakes_provider_id_fkey"
-            columns: ["provider_id"]
+            columns: ["selected_user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -347,91 +347,6 @@ export type Database = {
         }
         Relationships: []
       }
-      provider_availability: {
-        Row: {
-          committed_request_id: string | null
-          expires_at: string | null
-          location: unknown
-          service_radius_m: number | null
-          status: Database["public"]["Enums"]["availability_status"]
-          updated_at: string
-          user_id: string
-          went_active_at: string | null
-        }
-        Insert: {
-          committed_request_id?: string | null
-          expires_at?: string | null
-          location?: unknown
-          service_radius_m?: number | null
-          status?: Database["public"]["Enums"]["availability_status"]
-          updated_at?: string
-          user_id: string
-          went_active_at?: string | null
-        }
-        Update: {
-          committed_request_id?: string | null
-          expires_at?: string | null
-          location?: unknown
-          service_radius_m?: number | null
-          status?: Database["public"]["Enums"]["availability_status"]
-          updated_at?: string
-          user_id?: string
-          went_active_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "provider_availability_committed_request_id_fkey"
-            columns: ["committed_request_id"]
-            isOneToOne: false
-            referencedRelation: "my_requests"
-            referencedColumns: ["request_id"]
-          },
-          {
-            foreignKeyName: "provider_availability_committed_request_id_fkey"
-            columns: ["committed_request_id"]
-            isOneToOne: false
-            referencedRelation: "requests"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "provider_availability_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: true
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      provider_services: {
-        Row: {
-          category_slug: string
-          user_id: string
-        }
-        Insert: {
-          category_slug: string
-          user_id: string
-        }
-        Update: {
-          category_slug?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "provider_services_category_slug_fkey"
-            columns: ["category_slug"]
-            isOneToOne: false
-            referencedRelation: "service_categories"
-            referencedColumns: ["slug"]
-          },
-          {
-            foreignKeyName: "provider_services_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       push_tokens: {
         Row: {
           platform: string
@@ -575,53 +490,76 @@ export type Database = {
           },
         ]
       }
+      request_media_read_grants: {
+        Row: {
+          expires_at: string
+          object_name: string
+          user_id: string
+        }
+        Insert: {
+          expires_at: string
+          object_name: string
+          user_id: string
+        }
+        Update: {
+          expires_at?: string
+          object_name?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "request_media_read_grants_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       request_responses: {
         Row: {
           created_at: string
           decline_reason: string | null
           distance_m: number
-          eta_minutes: number | null
           expires_at: string | null
           id: string
           message: string | null
-          provider_id: string
           quoted_amount: number | null
           request_id: string
           resolved_at: string | null
+          responder_id: string
           status: Database["public"]["Enums"]["response_status"]
         }
         Insert: {
           created_at?: string
           decline_reason?: string | null
           distance_m: number
-          eta_minutes?: number | null
           expires_at?: string | null
           id?: string
           message?: string | null
-          provider_id: string
           quoted_amount?: number | null
           request_id: string
           resolved_at?: string | null
+          responder_id: string
           status?: Database["public"]["Enums"]["response_status"]
         }
         Update: {
           created_at?: string
           decline_reason?: string | null
           distance_m?: number
-          eta_minutes?: number | null
           expires_at?: string | null
           id?: string
           message?: string | null
-          provider_id?: string
           quoted_amount?: number | null
           request_id?: string
           resolved_at?: string | null
+          responder_id?: string
           status?: Database["public"]["Enums"]["response_status"]
         }
         Relationships: [
           {
             foreignKeyName: "request_responses_provider_id_fkey"
-            columns: ["provider_id"]
+            columns: ["responder_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -699,14 +637,12 @@ export type Database = {
           accepted_at: string | null
           accepted_response_id: string | null
           cancelled_at: string | null
-          category_data: Json
-          category_slug: string
           completed_at: string | null
           completion_confirm_by: string | null
           completion_reminder_sent_at: string | null
           created_at: string
           currency: string
-          description: string
+          description: string | null
           expires_at: string | null
           expiry_reminder_sent_at: string | null
           id: string
@@ -714,28 +650,26 @@ export type Database = {
           location_label: string
           offered_amount: number | null
           payment_status: Database["public"]["Enums"]["payment_status"]
-          provider_id: string | null
-          radius_expansions: number
           requester_id: string
           scheduled_for: string | null
-          search_radius_m: number
+          selected_user_id: string | null
           source_request_id: string | null
           started_at: string | null
           status: Database["public"]["Enums"]["request_status"]
           submitted_at: string | null
+          title: string
+          updated_at: string
         }
         Insert: {
           accepted_at?: string | null
           accepted_response_id?: string | null
           cancelled_at?: string | null
-          category_data?: Json
-          category_slug: string
           completed_at?: string | null
           completion_confirm_by?: string | null
           completion_reminder_sent_at?: string | null
           created_at?: string
           currency?: string
-          description: string
+          description?: string | null
           expires_at?: string | null
           expiry_reminder_sent_at?: string | null
           id?: string
@@ -743,28 +677,26 @@ export type Database = {
           location_label: string
           offered_amount?: number | null
           payment_status?: Database["public"]["Enums"]["payment_status"]
-          provider_id?: string | null
-          radius_expansions?: number
           requester_id: string
           scheduled_for?: string | null
-          search_radius_m: number
+          selected_user_id?: string | null
           source_request_id?: string | null
           started_at?: string | null
           status?: Database["public"]["Enums"]["request_status"]
           submitted_at?: string | null
+          title: string
+          updated_at?: string
         }
         Update: {
           accepted_at?: string | null
           accepted_response_id?: string | null
           cancelled_at?: string | null
-          category_data?: Json
-          category_slug?: string
           completed_at?: string | null
           completion_confirm_by?: string | null
           completion_reminder_sent_at?: string | null
           created_at?: string
           currency?: string
-          description?: string
+          description?: string | null
           expires_at?: string | null
           expiry_reminder_sent_at?: string | null
           id?: string
@@ -772,15 +704,15 @@ export type Database = {
           location_label?: string
           offered_amount?: number | null
           payment_status?: Database["public"]["Enums"]["payment_status"]
-          provider_id?: string | null
-          radius_expansions?: number
           requester_id?: string
           scheduled_for?: string | null
-          search_radius_m?: number
+          selected_user_id?: string | null
           source_request_id?: string | null
           started_at?: string | null
           status?: Database["public"]["Enums"]["request_status"]
           submitted_at?: string | null
+          title?: string
+          updated_at?: string
         }
         Relationships: [
           {
@@ -791,15 +723,8 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "requests_category_slug_fkey"
-            columns: ["category_slug"]
-            isOneToOne: false
-            referencedRelation: "service_categories"
-            referencedColumns: ["slug"]
-          },
-          {
             foreignKeyName: "requests_provider_id_fkey"
-            columns: ["provider_id"]
+            columns: ["selected_user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -826,33 +751,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      service_categories: {
-        Row: {
-          icon: string
-          is_active: boolean
-          label: string
-          slug: string
-          sort_order: number
-          tagline: string
-        }
-        Insert: {
-          icon: string
-          is_active?: boolean
-          label: string
-          slug: string
-          sort_order: number
-          tagline: string
-        }
-        Update: {
-          icon?: string
-          is_active?: boolean
-          label?: string
-          slug?: string
-          sort_order?: number
-          tagline?: string
-        }
-        Relationships: []
       }
       service_problems: {
         Row: {
@@ -920,6 +818,46 @@ export type Database = {
             columns: ["request_id"]
             isOneToOne: false
             referencedRelation: "requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_attendance: {
+        Row: {
+          request_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          request_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          request_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_attendance_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "my_requests"
+            referencedColumns: ["request_id"]
+          },
+          {
+            foreignKeyName: "user_attendance_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_attendance_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -1025,54 +963,39 @@ export type Database = {
       }
     }
     Views: {
-      my_availability: {
+      my_attendance: {
         Row: {
-          category_slugs: string[] | null
-          committed_request_id: string | null
-          expires_at: string | null
-          service_radius_m: number | null
-          status: Database["public"]["Enums"]["availability_status"] | null
+          attending_request_id: string | null
           updated_at: string | null
           user_id: string | null
-          went_active_at: string | null
         }
         Insert: {
-          category_slugs?: never
-          committed_request_id?: string | null
-          expires_at?: string | null
-          service_radius_m?: number | null
-          status?: never
+          attending_request_id?: string | null
           updated_at?: string | null
           user_id?: string | null
-          went_active_at?: string | null
         }
         Update: {
-          category_slugs?: never
-          committed_request_id?: string | null
-          expires_at?: string | null
-          service_radius_m?: number | null
-          status?: never
+          attending_request_id?: string | null
           updated_at?: string | null
           user_id?: string | null
-          went_active_at?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "provider_availability_committed_request_id_fkey"
-            columns: ["committed_request_id"]
+            foreignKeyName: "user_attendance_request_id_fkey"
+            columns: ["attending_request_id"]
             isOneToOne: false
             referencedRelation: "my_requests"
             referencedColumns: ["request_id"]
           },
           {
-            foreignKeyName: "provider_availability_committed_request_id_fkey"
-            columns: ["committed_request_id"]
+            foreignKeyName: "user_attendance_request_id_fkey"
+            columns: ["attending_request_id"]
             isOneToOne: false
             referencedRelation: "requests"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "provider_availability_user_id_fkey"
+            foreignKeyName: "user_attendance_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: true
             referencedRelation: "profiles"
@@ -1084,8 +1007,6 @@ export type Database = {
         Row: {
           accepted_at: string | null
           cancelled_at: string | null
-          category_data: Json | null
-          category_slug: string | null
           completed_at: string | null
           created_at: string | null
           currency: string | null
@@ -1098,21 +1019,19 @@ export type Database = {
           offered_amount: number | null
           payment_status: Database["public"]["Enums"]["payment_status"] | null
           pending_response_count: number | null
-          provider_id: string | null
-          radius_expansions: number | null
           request_id: string | null
           scheduled_for: string | null
-          search_radius_m: number | null
+          selected_user_id: string | null
           source_request_id: string | null
           started_at: string | null
           status: Database["public"]["Enums"]["request_status"] | null
           submitted_at: string | null
+          title: string | null
+          updated_at: string | null
         }
         Insert: {
           accepted_at?: string | null
           cancelled_at?: string | null
-          category_data?: Json | null
-          category_slug?: string | null
           completed_at?: string | null
           created_at?: string | null
           currency?: string | null
@@ -1125,21 +1044,19 @@ export type Database = {
           offered_amount?: number | null
           payment_status?: Database["public"]["Enums"]["payment_status"] | null
           pending_response_count?: never
-          provider_id?: string | null
-          radius_expansions?: number | null
           request_id?: string | null
           scheduled_for?: string | null
-          search_radius_m?: number | null
+          selected_user_id?: string | null
           source_request_id?: string | null
           started_at?: string | null
           status?: never
           submitted_at?: string | null
+          title?: string | null
+          updated_at?: string | null
         }
         Update: {
           accepted_at?: string | null
           cancelled_at?: string | null
-          category_data?: Json | null
-          category_slug?: string | null
           completed_at?: string | null
           created_at?: string | null
           currency?: string | null
@@ -1152,27 +1069,20 @@ export type Database = {
           offered_amount?: number | null
           payment_status?: Database["public"]["Enums"]["payment_status"] | null
           pending_response_count?: never
-          provider_id?: string | null
-          radius_expansions?: number | null
           request_id?: string | null
           scheduled_for?: string | null
-          search_radius_m?: number | null
+          selected_user_id?: string | null
           source_request_id?: string | null
           started_at?: string | null
           status?: never
           submitted_at?: string | null
+          title?: string | null
+          updated_at?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "requests_category_slug_fkey"
-            columns: ["category_slug"]
-            isOneToOne: false
-            referencedRelation: "service_categories"
-            referencedColumns: ["slug"]
-          },
-          {
             foreignKeyName: "requests_provider_id_fkey"
-            columns: ["provider_id"]
+            columns: ["selected_user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -1304,6 +1214,10 @@ export type Database = {
         Returns: undefined
       }
       assert_onboarded: { Args: never; Returns: string }
+      attending_request_statuses: {
+        Args: never
+        Returns: Database["public"]["Enums"]["request_status"][]
+      }
       authorize_request_media_read: {
         Args: { p_latitude: number; p_longitude: number; p_path: string }
         Returns: undefined
@@ -1316,15 +1230,10 @@ export type Database = {
         Args: { p_request_id: string }
         Returns: boolean
       }
+      avatar_is_published: { Args: { p_name: string }; Returns: boolean }
       browse_nearby_requests: {
-        Args: {
-          p_category_slug?: string
-          p_latitude: number
-          p_longitude: number
-        }
+        Args: { p_latitude: number; p_longitude: number }
         Returns: {
-          category_data: Json
-          category_slug: string
           currency: string
           description: string
           distance_m: number
@@ -1332,13 +1241,12 @@ export type Database = {
           offered_amount: number
           request_id: string
           scheduled_for: string
+          title: string
         }[]
       }
       browse_request: {
         Args: { p_latitude: number; p_longitude: number; p_request_id: string }
         Returns: {
-          category_data: Json
-          category_slug: string
           currency: string
           description: string
           distance_m: number
@@ -1346,11 +1254,18 @@ export type Database = {
           offered_amount: number
           request_id: string
           scheduled_for: string
+          title: string
         }[]
       }
       bucket_distance_m: { Args: { p_distance_m: number }; Returns: number }
+      can_read_request_media: { Args: { p_name: string }; Returns: boolean }
       cancel_request: { Args: { p_request_id: string }; Returns: undefined }
       cancel_service: { Args: { p_request_id: string }; Returns: undefined }
+      catalogue_media_is_published: {
+        Args: { p_name: string }
+        Returns: boolean
+      }
+      clear_user_attendance: { Args: { p_user_id: string }; Returns: undefined }
       clone_request_from_prior: {
         Args: { p_idempotency_key: string; p_source_request_id: string }
         Returns: string
@@ -1379,16 +1294,14 @@ export type Database = {
       }
       create_request: {
         Args: {
-          p_category_data?: Json
-          p_category_slug: string
           p_description: string
           p_latitude: number
           p_location_label: string
           p_longitude: number
           p_offered_amount?: number
           p_scheduled_for?: string
-          p_search_radius_m: number
           p_source_request_id?: string
+          p_title: string
         }
         Returns: string
       }
@@ -1396,8 +1309,8 @@ export type Database = {
         Args: { p_reason?: string; p_response_id: string }
         Returns: undefined
       }
+      discovery_radius_m: { Args: never; Returns: number }
       ensure_wallet_account: { Args: { p_user_id: string }; Returns: undefined }
-      expand_request_radius: { Args: { p_request_id: string }; Returns: number }
       expire_due_requests: { Args: { p_limit?: number }; Returns: number }
       expire_request: { Args: { p_request_id: string }; Returns: boolean }
       finalize_client_no_show_resolution: {
@@ -1443,8 +1356,6 @@ export type Database = {
         Args: { p_request_id: string }
         Returns: {
           accepted_at: string
-          category_data: Json
-          category_slug: string
           completed_at: string
           completion_confirm_by: string
           counterparty_avatar_path: string
@@ -1460,8 +1371,6 @@ export type Database = {
           location_label: string
           offered_amount: number
           payment_status: Database["public"]["Enums"]["payment_status"]
-          provider_latitude: number
-          provider_longitude: number
           quoted_amount: number
           rating_stars: number
           request_id: string
@@ -1474,52 +1383,9 @@ export type Database = {
           service_problem_reported_by_me: boolean
           service_problem_respond_by: string
           started_at: string
+          title: string
           viewer_is_requester: boolean
         }[]
-      }
-      go_active: {
-        Args: {
-          p_categories: string[]
-          p_duration_minutes?: number
-          p_latitude: number
-          p_longitude: number
-          p_service_radius_m: number
-        }
-        Returns: {
-          category_slugs: string[] | null
-          committed_request_id: string | null
-          expires_at: string | null
-          service_radius_m: number | null
-          status: Database["public"]["Enums"]["availability_status"] | null
-          updated_at: string | null
-          user_id: string | null
-          went_active_at: string | null
-        }
-        SetofOptions: {
-          from: "*"
-          to: "my_availability"
-          isOneToOne: true
-          isSetofReturn: false
-        }
-      }
-      go_offline: {
-        Args: never
-        Returns: {
-          category_slugs: string[] | null
-          committed_request_id: string | null
-          expires_at: string | null
-          service_radius_m: number | null
-          status: Database["public"]["Enums"]["availability_status"] | null
-          updated_at: string | null
-          user_id: string | null
-          went_active_at: string | null
-        }
-        SetofOptions: {
-          from: "*"
-          to: "my_availability"
-          isOneToOne: true
-          isSetofReturn: false
-        }
       }
       list_request_responses: {
         Args: { p_request_id: string }
@@ -1529,15 +1395,14 @@ export type Database = {
           created_at: string
           display_name: string
           distance_m: number
-          eta_minutes: number
           expires_at: string
           jobs_completed: number
           message: string
           phone_verified: boolean
-          provider_id: string
           quoted_amount: number
           rating_average: number
           rating_count: number
+          responder_id: string
           response_id: string
           status: Database["public"]["Enums"]["response_status"]
         }[]
@@ -1551,25 +1416,14 @@ export type Database = {
         Args: { p_request_id: string }
         Returns: undefined
       }
-      matches: {
-        Args: { p_provider_id?: string; p_request_id?: string }
-        Returns: {
-          distance_m: number
-          provider_id: string
-          request_id: string
-        }[]
-      }
       my_responses: {
         Args: never
         Returns: {
-          category_data: Json
-          category_slug: string
           created_at: string
           currency: string
           decline_reason: string
           description: string
           distance_m: number
-          eta_minutes: number
           location_label: string
           message: string
           offered_amount: number
@@ -1581,6 +1435,7 @@ export type Database = {
           response_id: string
           response_status: Database["public"]["Enums"]["response_status"]
           scheduled_for: string
+          title: string
         }[]
       }
       nearby_requests: {
@@ -1608,6 +1463,10 @@ export type Database = {
         Returns: number
       }
       notify_expiring_requests: { Args: { p_limit?: number }; Returns: number }
+      open_request_statuses: {
+        Args: never
+        Returns: Database["public"]["Enums"]["request_status"][]
+      }
       post_wallet_ledger: {
         Args: {
           p_available_delta: number
@@ -1634,7 +1493,6 @@ export type Database = {
         }
         Returns: boolean
       }
-      radius_ladder_m: { Args: never; Returns: number[] }
       rate_request: {
         Args: { p_comment?: string; p_request_id: string; p_stars: number }
         Returns: undefined
@@ -1649,25 +1507,7 @@ export type Database = {
         }
         Returns: undefined
       }
-      refresh_availability_location: {
-        Args: { p_latitude: number; p_longitude: number }
-        Returns: {
-          category_slugs: string[] | null
-          committed_request_id: string | null
-          expires_at: string | null
-          service_radius_m: number | null
-          status: Database["public"]["Enums"]["availability_status"] | null
-          updated_at: string | null
-          user_id: string | null
-          went_active_at: string | null
-        }
-        SetofOptions: {
-          from: "*"
-          to: "my_availability"
-          isOneToOne: true
-          isSetofReturn: false
-        }
-      }
+      redact_discovery_category_data: { Args: { p_data: Json }; Returns: Json }
       release_provider: { Args: { p_provider_id: string }; Returns: undefined }
       report_service_problem: {
         Args: {
@@ -1677,6 +1517,23 @@ export type Database = {
           p_request_id: string
         }
         Returns: undefined
+      }
+      request_has_media_path: {
+        Args: { p_category_data: Json; p_name: string }
+        Returns: boolean
+      }
+      request_media_visible_to_party: {
+        Args: { p_name: string; p_user_id: string }
+        Returns: boolean
+      }
+      request_open_to_user: {
+        Args: {
+          p_latitude?: number
+          p_longitude?: number
+          p_request_id: string
+          p_user_id: string
+        }
+        Returns: number
       }
       resolve_due_service_problems: {
         Args: { p_limit?: number }
@@ -1688,7 +1545,6 @@ export type Database = {
       }
       respond_to_request: {
         Args: {
-          p_eta_minutes?: number
           p_latitude?: number
           p_longitude?: number
           p_message?: string
@@ -1711,6 +1567,10 @@ export type Database = {
         Returns: boolean
       }
       service_problem_response_interval: { Args: never; Returns: string }
+      set_user_attendance: {
+        Args: { p_request_id: string; p_user_id: string }
+        Returns: undefined
+      }
       start_request: { Args: { p_request_id: string }; Returns: undefined }
       sync_wallet_payment_transition: {
         Args: {
@@ -1762,6 +1622,7 @@ export type Database = {
         | "completion_pending"
         | "disputed"
         | "no_show"
+        | "posted"
       response_status:
         | "pending"
         | "accepted"
@@ -1925,6 +1786,7 @@ export const Constants = {
         "completion_pending",
         "disputed",
         "no_show",
+        "posted",
       ],
       response_status: [
         "pending",

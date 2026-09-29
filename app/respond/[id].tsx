@@ -3,17 +3,14 @@ import { Alert, ScrollView, Text, View } from 'react-native';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
-import { RequestCategoryDataSection } from '@/components/RequestCategoryDataSection';
+import { useAttendance, isAttendingAnotherRequest } from '@/features/attendance/api';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Header } from '@/components/ui/Header';
-import { PersonRow } from '@/components/ui/PersonRow';
 import { Screen } from '@/components/ui/Screen';
 import { EmptyState, ErrorState, InlineError, LoadingState } from '@/components/ui/StateView';
 import { TextField } from '@/components/ui/TextField';
 import { MARKET } from '@/config';
-import { useAvailability, useRefreshActivePosition } from '@/features/availability/api';
-import { useCategoryIndex } from '@/features/categories/api';
 import { useRequestForResponse, useRespondToRequest } from '@/features/requests/provider-api';
 import { formatDistance, formatMoney, formatWhen } from '@/lib/format';
 import {
@@ -30,8 +27,7 @@ export default function RespondScreen() {
     lat?: string;
     lng?: string;
   }>();
-  const categories = useCategoryIndex();
-  const availability = useAvailability();
+  const attendance = useAttendance();
   const respond = useRespondToRequest();
 
   const seedPosition = useMemo(() => parsePositionParam(lat, lng), [lat, lng]);
@@ -41,7 +37,6 @@ export default function RespondScreen() {
   const {
     request,
     existingResponse,
-    hasRequesterProfile,
     needsLocation,
     isFetchingMatch,
     isPending,
@@ -52,7 +47,6 @@ export default function RespondScreen() {
 
   const [message, setMessage] = useState('');
   const [quote, setQuote] = useState('');
-  const [eta, setEta] = useState('');
   const seededResponseId = useRef<string | null>(null);
 
   useEffect(() => {
@@ -60,27 +54,9 @@ export default function RespondScreen() {
     seededResponseId.current = existingResponse.responseId;
     setMessage(existingResponse.message ?? '');
     setQuote(existingResponse.quotedAmount !== null ? String(existingResponse.quotedAmount) : '');
-    setEta(existingResponse.etaMinutes !== null ? String(existingResponse.etaMinutes) : '');
   }, [existingResponse]);
 
-  const isActive = availability.data?.status === 'available';
-  const isBusy = availability.data?.status === 'busy';
-  const refreshPosition = useRefreshActivePosition();
-  const syncedPosition = useRef<string | null>(null);
-  const offersCategory = availability.data?.category_slugs.includes(request?.category_slug ?? '');
-
-  // Browse lists a request from the phone's position and the requester's search radius.
-  // Matching uses the stored Active position and both radii. Move to this position first
-  // so a request that is actually in range can be answered.
-  useEffect(() => {
-    if (!isActive || !position || hasRequesterProfile) return;
-    const key = `${position.latitude},${position.longitude}`;
-    if (syncedPosition.current === key) return;
-    syncedPosition.current = key;
-    refreshPosition.mutate(position);
-    // mutate is stable; the mutation object is not.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hasRequesterProfile, isActive, position]);
+  const attendingElsewhere = isAttendingAnotherRequest(attendance.data, id);
 
   useFocusEffect(
     useCallback(() => {
@@ -106,15 +82,10 @@ export default function RespondScreen() {
   );
 
   const parsedQuote = quote.trim() ? Number(quote.replace(/[^\d.]/g, '')) : null;
-  const parsedEta = eta.trim() ? Number(eta.replace(/[^\d]/g, '')) : null;
 
   const quoteError =
     parsedQuote !== null && (Number.isNaN(parsedQuote) || parsedQuote < 0)
       ? 'Enter a number, or leave this empty.'
-      : null;
-  const etaError =
-    parsedEta !== null && (Number.isNaN(parsedEta) || parsedEta < 1 || parsedEta > 1440)
-      ? 'Enter minutes between 1 and 1440.'
       : null;
 
   if (!locationChecked || isPending) {
@@ -163,14 +134,14 @@ export default function RespondScreen() {
         <EmptyState
           icon="close-circle-outline"
           title="This request has moved on"
-          message="It was answered, withdrawn, or is no longer a match for what you offer."
+          message="It was answered, withdrawn, or is no longer open near you."
           action={{ label: 'Back', onPress: () => router.back() }}
         />
       </Screen>
     );
   }
 
-  const requesterFirstName = request.requester_display_name?.split(' ')[0];
+  const canRespond = !attendingElsewhere && Boolean(position);
 
   return (
     <Screen edges={['top', 'bottom']}>
@@ -178,22 +149,10 @@ export default function RespondScreen() {
 
       <ScrollView contentContainerClassName="gap-8 p-5 pb-12" keyboardShouldPersistTaps="handled">
         <Card>
-          <View className="flex-row items-center gap-2">
-            <Ionicons
-              name={categories.data?.get(request.category_slug)?.icon ?? 'ellipse-outline'}
-              size={18}
-              color={colors.brand}
-            />
-            <Text className="text-lg font-bold text-ink">
-              {categories.data?.get(request.category_slug)?.label ?? request.category_slug}
-            </Text>
-          </View>
-          <Text className="text-base text-muted">{request.description}</Text>
-          <RequestCategoryDataSection
-            categorySlug={request.category_slug}
-            categoryData={request.category_data}
-            discoveryPosition={position}
-          />
+          <Text className="text-lg font-bold text-ink">{request.title}</Text>
+          {request.description ? (
+            <Text className="text-base text-muted">{request.description}</Text>
+          ) : null}
 
           <View className="flex-row flex-wrap gap-x-4">
             <Text className="text-sm text-subtle">{formatDistance(request.distance_m)}</Text>
@@ -202,59 +161,27 @@ export default function RespondScreen() {
           </View>
 
           <Text className="text-base font-semibold text-ink">
-            {request.offered_amount !== null
-              ? `Offering ${formatMoney(request.offered_amount, request.currency)}`
-              : 'No amount offered — quote what you would charge.'}
+            Offering {formatMoney(request.offered_amount!, request.currency)}
           </Text>
-
-          {hasRequesterProfile ? (
-            <View className="border-t border-hairline pt-3">
-              <PersonRow
-                size="sm"
-                avatarPath={request.requester_avatar_path}
-                name={request.requester_display_name}
-                ratingAverage={request.requester_rating_average}
-                ratingCount={request.requester_rating_count}
-              />
-            </View>
-          ) : null}
         </Card>
 
-        {isBusy ? (
+        {attendingElsewhere ? (
           <Card>
-            <Text className="text-base text-ink">You&apos;re on a job.</Text>
+            <Text className="text-base text-ink">You&apos;re on another job.</Text>
             <Text className="text-sm text-muted">
-              A client already selected you, so new responses wait until that job ends.
+              Finish that request before responding to new ones. Sending a response does not commit
+              you — only being selected does.
             </Text>
           </Card>
-        ) : !isActive ? (
-          <Card>
-            <Text className="text-base text-ink">Go Active to send a response.</Text>
-            <Text className="text-sm text-muted">
-              Choose what you can help with and how far you will travel, then come back here.
-              Sending a response leaves you available for others.
-            </Text>
-            <Button label="Go Active" onPress={() => router.push('/go-active')} />
-          </Card>
-        ) : !hasRequesterProfile && (refreshPosition.isPending || isFetchingMatch) ? (
-          <LoadingState label="Checking this request against what you offer" />
-        ) : !hasRequesterProfile ? (
-          <Card>
-            <Text className="text-base text-ink">This one isn&apos;t a match.</Text>
-            <Text className="text-sm text-muted">
-              {offersCategory
-                ? 'It is outside the distance you and the requester both set. Widen your service radius, or wait for a closer request.'
-                : 'It is not one of the services you are Active for. Add that service, then come back.'}
-            </Text>
-            <Button label="Change what you offer" onPress={() => router.push('/go-active')} />
-          </Card>
+        ) : isFetchingMatch ? (
+          <LoadingState label="Checking this request" />
         ) : (
           <View className="gap-4">
             <TextField
               label="Message (optional)"
               value={message}
               onChangeText={setMessage}
-              placeholder="e.g. I repair Elepaq generators. Can be there in 30 minutes."
+              placeholder="e.g. I can be there in 30 minutes."
               multiline
               numberOfLines={4}
               maxLength={500}
@@ -262,21 +189,12 @@ export default function RespondScreen() {
             />
 
             <TextField
-              label={`Your price in ${MARKET.currency} (optional)`}
+              label={`Counter offer in ${MARKET.currency} (optional)`}
               value={quote}
               onChangeText={setQuote}
               keyboardType="numeric"
-              placeholder="e.g. 7000"
+              placeholder="Leave empty to accept their offer"
               error={quoteError}
-            />
-
-            <TextField
-              label="How soon can you be there, in minutes (optional)"
-              value={eta}
-              onChangeText={setEta}
-              keyboardType="number-pad"
-              placeholder="e.g. 30"
-              error={etaError}
             />
           </View>
         )}
@@ -284,18 +202,18 @@ export default function RespondScreen() {
         <View className="flex-row items-start gap-3 rounded-2xl bg-surface p-4">
           <Ionicons name="lock-closed-outline" size={18} color={colors.muted} />
           <Text className="flex-1 text-sm text-muted">
-            {requesterFirstName ?? 'The requester'} sees your name, rating and roughly how far away
-            you are. The exact address and phone numbers open up only if they choose you.
+            They see your name, rating and approximate distance. Exact location and phone open only
+            if they select you.
           </Text>
         </View>
 
         {respond.isError ? <InlineError error={respond.error} /> : null}
 
-        {hasRequesterProfile ? (
+        {canRespond && !attendingElsewhere ? (
           <Button
             label={existingResponse ? 'Update response' : 'Send response'}
             size="lg"
-            disabled={Boolean(quoteError || etaError)}
+            disabled={Boolean(quoteError)}
             loading={respond.isPending}
             onPress={() =>
               respond.mutate(
@@ -303,14 +221,13 @@ export default function RespondScreen() {
                   requestId: request.request_id,
                   message: message.trim() || null,
                   quotedAmount: parsedQuote,
-                  etaMinutes: parsedEta,
                   position,
                 },
                 {
                   onSuccess: () => {
                     Alert.alert(
                       existingResponse ? 'Response updated' : 'Response sent',
-                      'The requester can compare your offer with others. Exact location stays private until they select you.',
+                      'The requester can compare your offer with others.',
                       [{ text: 'OK', onPress: () => router.back() }],
                     );
                   },

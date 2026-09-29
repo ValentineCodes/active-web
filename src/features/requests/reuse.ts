@@ -7,7 +7,7 @@ export function canReuseRequest(status: RequestStatus, expiresAt: string | null)
     return true;
   }
 
-  if (status === 'searching' && expiresAt !== null && new Date(expiresAt).getTime() <= Date.now()) {
+  if (status === 'posted' && expiresAt !== null && new Date(expiresAt).getTime() <= Date.now()) {
     return true;
   }
 
@@ -32,7 +32,7 @@ export function isExpiredRequestView(status: RequestStatus, expiresAt: string | 
     return true;
   }
 
-  return status === 'searching' && canReuseRequest(status, expiresAt);
+  return status === 'posted' && canReuseRequest(status, expiresAt);
 }
 
 /** Searching rows past expiry use the same action as expired. */

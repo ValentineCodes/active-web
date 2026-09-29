@@ -5,7 +5,6 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { ProviderProfileModal } from '@/components/ProviderProfileModal';
 import { ReportProblemModal, type ReportProblemPayload } from '@/components/ReportProblemModal';
-import { RequestCategoryDataSection } from '@/components/RequestCategoryDataSection';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Header } from '@/components/ui/Header';
@@ -18,7 +17,6 @@ import {
   paymentStatusHint,
   requestEngagementStatusBadge,
 } from '@/features/requests/status';
-import { useCategoryIndex } from '@/features/categories/api';
 import {
   useCancelService,
   useContestServiceProblem as useProviderContestServiceProblem,
@@ -37,25 +35,6 @@ import {
 } from '@/features/requests/requester-api';
 import { formatDistance, formatMoney, formatWhen } from '@/lib/format';
 import { colors } from '@/theme';
-
-/** Straight-line distance, used only to tell the requester roughly where their provider is. */
-function metresBetween(
-  from: { latitude: number; longitude: number },
-  to: { latitude: number; longitude: number },
-): number {
-  const earthRadius = 6_371_000;
-  const toRadians = (degrees: number) => (degrees * Math.PI) / 180;
-
-  const deltaLat = toRadians(to.latitude - from.latitude);
-  const deltaLng = toRadians(to.longitude - from.longitude);
-  const a =
-    Math.sin(deltaLat / 2) ** 2 +
-    Math.cos(toRadians(from.latitude)) *
-      Math.cos(toRadians(to.latitude)) *
-      Math.sin(deltaLng / 2) ** 2;
-
-  return Math.round(2 * earthRadius * Math.asin(Math.sqrt(a)));
-}
 
 function openInMaps(latitude: number, longitude: number, label: string) {
   const url = Platform.select({
@@ -108,7 +87,6 @@ export default function EngagementScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
 
   const engagement = useEngagement(id);
-  const categories = useCategoryIndex();
   const startRequest = useStartRequest(id);
   const markServiceComplete = useMarkServiceComplete(id);
   const completeRequest = useCompleteRequest(id);
@@ -156,7 +134,6 @@ export default function EngagementScreen() {
   }
 
   const data = engagement.data;
-  const category = categories.data?.get(data.category_slug);
   const agreedAmount = data.quoted_amount ?? data.offered_amount;
   const stepIndex = statusStepIndex(data.request_status);
   const statusBadge = requestEngagementStatusBadge(data.request_status);
@@ -169,13 +146,7 @@ export default function EngagementScreen() {
       ? paymentStatusHint(data.payment_status, data.viewer_is_requester)
       : null;
 
-  const providerDistance =
-    data.provider_latitude !== null && data.provider_longitude !== null
-      ? metresBetween(
-          { latitude: data.provider_latitude, longitude: data.provider_longitude },
-          { latitude: data.request_latitude, longitude: data.request_longitude },
-        )
-      : null;
+  const providerDistance = null;
 
   const providerFirstName = data.counterparty_display_name?.split(' ')[0] ?? 'Your provider';
 
@@ -387,7 +358,7 @@ export default function EngagementScreen() {
 
   return (
     <Screen>
-      <Header title={category?.label ?? data.category_slug} onBack={() => router.back()} />
+      <Header title={data.title} onBack={() => router.back()} />
 
       <ScrollView
         contentContainerClassName="gap-6 p-5 pb-12"
@@ -504,11 +475,7 @@ export default function EngagementScreen() {
 
         <View className="gap-2">
           <Text className="text-lg font-bold text-ink">What was asked for</Text>
-          <Text className="text-base text-ink">{data.description}</Text>
-          <RequestCategoryDataSection
-            categorySlug={data.category_slug}
-            categoryData={data.category_data}
-          />
+          {data.description ? <Text className="text-base text-ink">{data.description}</Text> : null}
           <Text className="text-sm text-muted">{formatWhen(data.scheduled_for)}</Text>
           {agreedAmount !== null ? (
             <Text className="text-base font-semibold text-ink">

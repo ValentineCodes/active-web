@@ -27,7 +27,7 @@ export function RequestCard({
 }: {
   icon?: keyof typeof Ionicons.glyphMap;
   title: string;
-  description: string;
+  description?: string;
   badge?: { label: string; tone: Tone };
   meta: string[];
   amount?: string | null;
@@ -57,9 +57,11 @@ export function RequestCard({
             </Text>
             {amount ? <Text className="text-base font-bold text-ink">{amount}</Text> : null}
           </View>
-          <Text className="text-sm text-muted" numberOfLines={2}>
-            {description}
-          </Text>
+          {description ? (
+            <Text className="text-sm text-muted" numberOfLines={2}>
+              {description}
+            </Text>
+          ) : null}
         </View>
       </View>
 

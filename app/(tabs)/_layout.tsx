@@ -35,7 +35,9 @@ export default function TabsLayout() {
   const waitingResponses =
     requests?.reduce(
       (total, request) =>
-        request.status === 'searching' ? total + request.pending_response_count : total,
+        request.status === 'posted' || request.status === 'searching'
+          ? total + request.pending_response_count
+          : total,
       0,
     ) ?? 0;
 

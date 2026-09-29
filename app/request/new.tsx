@@ -4,33 +4,22 @@ import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { addHours, format, set, startOfTomorrow } from 'date-fns';
 
 import { LocationStep } from '@/components/LocationStep';
-import { RequestCategoryDetailsStep } from '@/components/RequestCategoryDetailsStep';
 import { RequestFundingSummary } from '@/components/RequestFundingSummary';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Choice } from '@/components/ui/Choice';
 import { Header } from '@/components/ui/Header';
-import { RadiusSelector } from '@/components/ui/RadiusSelector';
 import { Screen } from '@/components/ui/Screen';
 import { ErrorState, InlineError, LoadingState } from '@/components/ui/StateView';
 import { TextField } from '@/components/ui/TextField';
-import { DESCRIPTION_LIMITS, MARKET, REQUEST_REQUIRES_FUNDING, SEARCH_RADII_M } from '@/config';
-import { useCategories, type ServiceCategory } from '@/features/categories/api';
-import {
-  categoryDetailsError,
-  categoryDetailsFromCategoryData,
-  categoryDetailsSummary,
-  emptyCategoryDetails,
-  type RequestCategorySlug,
-} from '@/features/requests/category-data';
+import { DESCRIPTION_LIMITS, MARKET, REQUEST_REQUIRES_FUNDING, TITLE_LIMITS } from '@/config';
 import { isFundedOffer, summarizeRequestFunding } from '@/features/requests/funding';
 import { useMyWallet } from '@/features/wallet/api';
 import { canReuseRequest } from '@/features/requests/reuse';
 import { useCreateRequest, useMyRequest } from '@/features/requests/requester-api';
 import { cn } from '@/lib/cn';
-import { formatMoney, formatRadius } from '@/lib/format';
+import { formatMoney } from '@/lib/format';
 import type { Position } from '@/lib/location';
-import type { Json } from '@/lib/supabase/database.types';
 import { syncPushToken } from '@/lib/notifications';
 
 function whenOptions() {
@@ -48,57 +37,41 @@ function whenOptions() {
   ] as const;
 }
 
-const STEP_TITLES = ['What', 'Details', 'When', 'Offer', 'Where', 'Review'];
-
-function isRequestCategorySlug(slug: string): slug is RequestCategorySlug {
-  return ['ride', 'delivery', 'errand', 'repair', 'cleaning', 'moving', 'other'].includes(slug);
-}
+const STEP_TITLES = ['What', 'When', 'Offer', 'Where', 'Review'];
 
 type ReuseSeed = {
   sourceRequestId: string;
-  categorySlug: RequestCategorySlug;
-  description: string;
-  categoryData: Json;
-  offeredAmount: number | null;
+  title: string;
+  description: string | null;
+  offeredAmount: number;
   latitude: number;
   longitude: number;
   locationLabel: string;
-  searchRadiusM: number;
 };
 
 function newRequestFormState(reuse?: ReuseSeed) {
   if (!reuse) {
     return {
-      categorySlug: null as string | null,
+      title: '',
       description: '',
-      categoryDetails: emptyCategoryDetails(),
       whenKey: 'asap',
       amount: '',
       position: null as Position | null,
       areaLabel: '',
-      searchRadiusM: 5000,
     };
   }
 
   return {
-    categorySlug: reuse.categorySlug,
-    description: reuse.description,
-    categoryDetails: categoryDetailsFromCategoryData(reuse.categorySlug, reuse.categoryData),
+    title: reuse.title,
+    description: reuse.description ?? '',
     whenKey: 'asap',
-    amount: reuse.offeredAmount !== null ? String(reuse.offeredAmount) : '',
+    amount: String(reuse.offeredAmount),
     position: { latitude: reuse.latitude, longitude: reuse.longitude },
     areaLabel: reuse.locationLabel,
-    searchRadiusM: reuse.searchRadiusM,
   };
 }
 
-function NewRequestForm({
-  categories,
-  reuseSeed,
-}: {
-  categories: ServiceCategory[];
-  reuseSeed?: ReuseSeed;
-}) {
+function NewRequestForm({ reuseSeed }: { reuseSeed?: ReuseSeed }) {
   const seeded = newRequestFormState(reuseSeed);
   const create = useCreateRequest();
   const wallet = useMyWallet();
@@ -111,21 +84,18 @@ function NewRequestForm({
   );
 
   const [step, setStep] = useState(0);
-  const [categorySlug, setCategorySlug] = useState(seeded.categorySlug);
+  const [title, setTitle] = useState(seeded.title);
   const [description, setDescription] = useState(seeded.description);
-  const [categoryDetails, setCategoryDetails] = useState(seeded.categoryDetails);
-  const [detailsError, setDetailsError] = useState<string | null>(null);
   const [whenKey, setWhenKey] = useState(seeded.whenKey);
   const [amount, setAmount] = useState(seeded.amount);
   const [position, setPosition] = useState<Position | null>(seeded.position);
   const [areaLabel, setAreaLabel] = useState(seeded.areaLabel);
-  const [searchRadiusM, setSearchRadiusM] = useState(seeded.searchRadiusM);
 
   const reusingPrior = Boolean(reuseSeed);
   const when = whenOptions();
+  const trimmedTitle = title.trim();
   const trimmedDescription = description.trim();
   const parsedAmount = amount.trim() ? Number(amount.replace(/[^\d.]/g, '')) : null;
-  const typedCategory = categorySlug && isRequestCategorySlug(categorySlug) ? categorySlug : null;
 
   const amountError =
     parsedAmount !== null && (Number.isNaN(parsedAmount) || parsedAmount < 0)
@@ -135,22 +105,18 @@ function NewRequestForm({
         : null;
 
   const stepValid = [
-    Boolean(typedCategory) && trimmedDescription.length >= DESCRIPTION_LIMITS.min,
-    typedCategory ? categoryDetailsError(typedCategory, categoryDetails) === null : false,
+    trimmedTitle.length >= TITLE_LIMITS.min,
     true,
     REQUEST_REQUIRES_FUNDING ? isFundedOffer(parsedAmount) && !amountError : amountError === null,
     Boolean(position) && areaLabel.trim().length >= 2,
-    Boolean(typedCategory) &&
+    trimmedTitle.length >= TITLE_LIMITS.min &&
       (REQUEST_REQUIRES_FUNDING ? isFundedOffer(parsedAmount) : true) &&
-      Boolean(position) &&
-      categoryDetailsError(typedCategory, categoryDetails) === null,
+      Boolean(position),
   ];
 
-  const category = categories.find((item) => item.slug === categorySlug);
   const selectedWhen = when.find((option) => option.key === whenKey);
   const isFirstStep = step === 0;
   const isLastStep = step === STEP_TITLES.length - 1;
-  const detailSummary = typedCategory ? categoryDetailsSummary(typedCategory, categoryDetails) : [];
   const funding = isFundedOffer(parsedAmount) ? summarizeRequestFunding(parsedAmount) : null;
   const walletShort =
     REQUEST_REQUIRES_FUNDING &&
@@ -158,41 +124,26 @@ function NewRequestForm({
     wallet.data !== undefined &&
     wallet.data.available < funding.total;
 
-  const goNext = () => {
-    if (step === 1 && typedCategory) {
-      const error = categoryDetailsError(typedCategory, categoryDetails);
-      if (error) {
-        setDetailsError(error);
-        return;
-      }
-      setDetailsError(null);
-    }
-    setStep((current) => Math.min(current + 1, STEP_TITLES.length - 1));
-  };
-
+  const goNext = () => setStep((current) => Math.min(current + 1, STEP_TITLES.length - 1));
   const goBack = () => setStep((current) => Math.max(current - 1, 0));
 
   const submit = () => {
-    const offeredAmount = parsedAmount;
     if (
-      !typedCategory ||
       !position ||
-      (REQUEST_REQUIRES_FUNDING && !isFundedOffer(offeredAmount)) ||
-      categoryDetailsError(typedCategory, categoryDetails)
+      trimmedTitle.length < TITLE_LIMITS.min ||
+      (REQUEST_REQUIRES_FUNDING && !isFundedOffer(parsedAmount))
     ) {
       return;
     }
 
     create.mutate(
       {
-        categorySlug: typedCategory,
-        description: trimmedDescription,
+        title: trimmedTitle,
+        description: trimmedDescription || null,
         position,
         locationLabel: areaLabel.trim(),
-        searchRadiusM,
         scheduledFor: selectedWhen?.at ?? null,
-        offeredAmount,
-        categoryDetails,
+        offeredAmount: parsedAmount!,
         sourceRequestId: reusingPrior ? reuseSeed?.sourceRequestId : undefined,
       },
       {
@@ -212,9 +163,9 @@ function NewRequestForm({
       />
 
       <View className="flex-row gap-1.5 px-5 pb-2">
-        {STEP_TITLES.map((title, index) => (
+        {STEP_TITLES.map((titleLabel, index) => (
           <View
-            key={title}
+            key={titleLabel}
             className={cn('h-1.5 flex-1 rounded-full', index <= step ? 'bg-brand' : 'bg-surface')}
           />
         ))}
@@ -224,55 +175,33 @@ function NewRequestForm({
         {step === 0 ? (
           <View className="gap-6">
             <Text className="text-2xl font-bold text-ink">What do you need?</Text>
-            <View className="gap-3">
-              {categories.map((item) => (
-                <Choice
-                  key={item.slug}
-                  title={item.label}
-                  subtitle={item.tagline}
-                  icon={item.icon}
-                  selected={categorySlug === item.slug}
-                  onPress={() => {
-                    if (categorySlug !== item.slug) {
-                      setCategoryDetails(emptyCategoryDetails());
-                      setDetailsError(null);
-                    }
-                    setCategorySlug(item.slug);
-                  }}
-                />
-              ))}
-            </View>
             <TextField
-              label="Describe it"
+              label="Short title"
+              value={title}
+              onChangeText={setTitle}
+              placeholder="e.g. Generator won't start"
+              maxLength={TITLE_LIMITS.max}
+              counterMax={TITLE_LIMITS.max}
+              hint={
+                trimmedTitle.length < TITLE_LIMITS.min
+                  ? `At least ${TITLE_LIMITS.min} characters.`
+                  : undefined
+              }
+            />
+            <TextField
+              label="Details (optional)"
               value={description}
               onChangeText={setDescription}
-              placeholder="e.g. My generator won't start. It's a 5kVA Elepaq, ran fine yesterday."
+              placeholder="Anything helpful — model, access, timing constraints…"
               multiline
               numberOfLines={5}
               maxLength={DESCRIPTION_LIMITS.max}
               counterMax={DESCRIPTION_LIMITS.max}
-              hint={
-                trimmedDescription.length < DESCRIPTION_LIMITS.min
-                  ? `At least ${DESCRIPTION_LIMITS.min} characters, so people know what they're taking on.`
-                  : undefined
-              }
             />
           </View>
         ) : null}
 
-        {step === 1 && typedCategory ? (
-          <RequestCategoryDetailsStep
-            categorySlug={typedCategory}
-            details={categoryDetails}
-            onChange={(next) => {
-              setCategoryDetails(next);
-              if (detailsError) setDetailsError(null);
-            }}
-            error={detailsError}
-          />
-        ) : null}
-
-        {step === 2 ? (
+        {step === 1 ? (
           <View className="gap-3">
             <Text className="text-2xl font-bold text-ink">When do you need this?</Text>
             {when.map((option) => (
@@ -286,13 +215,11 @@ function NewRequestForm({
           </View>
         ) : null}
 
-        {step === 3 ? (
+        {step === 2 ? (
           <View className="gap-3">
             <Text className="text-2xl font-bold text-ink">What are you offering?</Text>
             <Text className="text-base text-muted">
-              {REQUEST_REQUIRES_FUNDING
-                ? 'This is held before providers can see your request.'
-                : 'Optional — leave it empty to let people quote you instead.'}
+              This is held in your wallet before people can respond.
             </Text>
             <TextField
               label={`Amount in ${MARKET.currency}`}
@@ -305,73 +232,40 @@ function NewRequestForm({
           </View>
         ) : null}
 
-        {step === 4 ? (
-          <View className="gap-8">
-            <View className="gap-3">
-              <Text className="text-2xl font-bold text-ink">Where should this happen?</Text>
-              <Text className="text-base text-muted">
-                We only ask for this when you are ready to send the request. It is used to find
-                nearby providers, not during sign-up.
-              </Text>
-              <LocationStep
-                purpose="request"
-                position={position}
-                onPositionChange={setPosition}
-                areaLabel={areaLabel}
-                onAreaLabelChange={setAreaLabel}
-              />
-            </View>
-
-            <View className="gap-3">
-              <Text className="text-lg font-bold text-ink">How far should we look?</Text>
-              <Text className="text-base text-muted">
-                This decides who is offered your request. You can widen it later if nobody answers.
-              </Text>
-              <RadiusSelector
-                options={SEARCH_RADII_M}
-                value={searchRadiusM}
-                onChange={setSearchRadiusM}
-              />
-            </View>
+        {step === 3 ? (
+          <View className="gap-3">
+            <Text className="text-2xl font-bold text-ink">Where should this happen?</Text>
+            <Text className="text-base text-muted">
+              We only ask for this when you send the request. Exact location stays private until you
+              select someone.
+            </Text>
+            <LocationStep
+              purpose="request"
+              position={position}
+              onPositionChange={setPosition}
+              areaLabel={areaLabel}
+              onAreaLabelChange={setAreaLabel}
+            />
           </View>
         ) : null}
 
-        {step === 5 ? (
+        {step === 4 ? (
           <View className="gap-4">
             <Text className="text-2xl font-bold text-ink">Review your request</Text>
 
-            <Card>
-              <View className="flex-row items-center justify-between">
-                <Text className="text-lg font-bold text-ink">
-                  {category?.label ?? categorySlug}
-                </Text>
-                <Text className="text-sm text-muted">{selectedWhen?.label}</Text>
-              </View>
-              <Text className="text-base text-muted">{trimmedDescription}</Text>
-
-              {detailSummary.length > 0 ? (
-                <View className="gap-1 border-t border-hairline pt-3">
-                  {detailSummary.map((line) => (
-                    <Text key={line.label} className="text-sm text-muted">
-                      {line.label}: {line.value}
-                    </Text>
-                  ))}
-                </View>
+            <Card className="gap-2">
+              <Text className="text-lg font-bold text-ink">{trimmedTitle}</Text>
+              {trimmedDescription ? (
+                <Text className="text-base text-muted">{trimmedDescription}</Text>
               ) : null}
-
-              <View className="gap-1 border-t border-hairline pt-3">
-                <Text className="text-sm text-muted">
-                  Offer:{' '}
-                  {isFundedOffer(parsedAmount)
-                    ? formatMoney(parsedAmount, MARKET.currency)
-                    : 'Not set'}
-                </Text>
-                <Text className="text-sm text-muted">Location: {areaLabel}</Text>
-                <Text className="text-sm text-muted">
-                  Search radius: {formatRadius(searchRadiusM)}
-                </Text>
-              </View>
-
+              <Text className="text-sm text-muted">{selectedWhen?.label}</Text>
+              <Text className="text-sm text-muted">
+                Offer:{' '}
+                {isFundedOffer(parsedAmount)
+                  ? formatMoney(parsedAmount, MARKET.currency)
+                  : 'Not set'}
+              </Text>
+              <Text className="text-sm text-muted">Location: {areaLabel}</Text>
               {isFundedOffer(parsedAmount) ? (
                 <RequestFundingSummary offeredAmount={parsedAmount} />
               ) : null}
@@ -440,22 +334,12 @@ function NewRequestForm({
 export default function NewRequestScreen() {
   const { from } = useLocalSearchParams<{ from?: string | string[] }>();
   const sourceRequestId = typeof from === 'string' ? from : undefined;
-
-  const categories = useCategories();
   const sourceRequest = useMyRequest(sourceRequestId ?? '');
 
-  if (categories.isPending || (sourceRequestId && sourceRequest.isPending)) {
+  if (sourceRequestId && sourceRequest.isPending) {
     return (
       <Screen edges={['top', 'bottom']}>
         <LoadingState />
-      </Screen>
-    );
-  }
-
-  if (categories.isError) {
-    return (
-      <Screen edges={['top', 'bottom']}>
-        <ErrorState error={categories.error} onRetry={() => categories.refetch()} />
       </Screen>
     );
   }
@@ -490,25 +374,17 @@ export default function NewRequestScreen() {
   }
 
   const reuseSeed: ReuseSeed | undefined =
-    sourceRequestId && sourceRequest.data && isRequestCategorySlug(sourceRequest.data.category_slug)
+    sourceRequestId && sourceRequest.data && sourceRequest.data.offered_amount != null
       ? {
           sourceRequestId,
-          categorySlug: sourceRequest.data.category_slug,
+          title: sourceRequest.data.title,
           description: sourceRequest.data.description,
-          categoryData: sourceRequest.data.category_data,
           offeredAmount: sourceRequest.data.offered_amount,
           latitude: sourceRequest.data.latitude,
           longitude: sourceRequest.data.longitude,
           locationLabel: sourceRequest.data.location_label,
-          searchRadiusM: sourceRequest.data.search_radius_m,
         }
       : undefined;
 
-  return (
-    <NewRequestForm
-      key={reuseSeed?.sourceRequestId ?? 'new'}
-      categories={categories.data}
-      reuseSeed={reuseSeed}
-    />
-  );
+  return <NewRequestForm key={reuseSeed?.sourceRequestId ?? 'new'} reuseSeed={reuseSeed} />;
 }

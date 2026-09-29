@@ -15,7 +15,6 @@ import { RequestCard } from '@/components/ui/RequestCard';
 import { Screen } from '@/components/ui/Screen';
 import { Segmented } from '@/components/ui/Segmented';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/StateView';
-import { useCategoryIndex } from '@/features/categories/api';
 import {
   ACTIVE_REQUEST_FILTERS,
   type ActiveRequestFilter,
@@ -104,7 +103,6 @@ export default function RequestsScreen() {
   const [activeFilter, setActiveFilter] = useState<ActiveRequestFilter>('all');
   const [pastFilter, setPastFilter] = useState<PastRequestFilter>('all');
   const requests = useMyRequests();
-  const categories = useCategoryIndex();
 
   const activeRequests = useMemo(
     () => requests.data?.filter(isActiveRequest) ?? [],
@@ -138,16 +136,14 @@ export default function RequestsScreen() {
 
   const renderRequest = (item: (typeof visibleActive)[number]) => {
     const badge = requestStatusBadge(item.status, item.pending_response_count);
-    const category = categories.data?.get(item.category_slug);
     const reuseLabel = canReuseRequest(item.status, item.expires_at)
       ? reuseRequestButtonLabelForRequest(item.status, item.expires_at)
       : null;
 
     return (
       <RequestCard
-        icon={category?.icon}
-        title={category?.label ?? item.category_slug}
-        description={item.description}
+        title={item.title ?? 'Request'}
+        description={item.description ?? undefined}
         badge={badge}
         meta={requestHistoryMeta(item)}
         amount={
