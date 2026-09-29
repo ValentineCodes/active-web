@@ -47,7 +47,7 @@ export default function NotificationsScreen() {
       <View className="gap-1 p-5 pb-2">
         <Text className="text-3xl font-bold text-ink">Notifications</Text>
         <Text className="text-base text-muted">
-          Responses, matches, and updates from your requests and Activity.
+          Updates about your requests, responses, and when you are helping someone.
         </Text>
       </View>
 
@@ -93,8 +93,8 @@ export default function NotificationsScreen() {
               <Card className="mt-2">
                 <Text className="text-base font-semibold text-ink">Get alerts on your phone</Text>
                 <Text className="text-sm text-muted">
-                  Turn on push notifications to hear about new responses and matches right away.
-                  Everything still appears in this list either way.
+                  Turn on push notifications to hear about new responses and important updates right
+                  away. Everything still appears in this list either way.
                 </Text>
                 <Button
                   label="Enable push notifications"
