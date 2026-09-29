@@ -9,6 +9,7 @@ import { Card } from '@/components/ui/Card';
 import { PersonRow } from '@/components/ui/PersonRow';
 import { TextField } from '@/components/ui/TextField';
 import { formatAgo, formatMoney, formatProximity } from '@/lib/format';
+import { responderAvailabilityBadge } from '@/features/requests/status';
 
 /**
  * A provider's answer to a request, as the requester sees it before they've accepted
@@ -30,6 +31,7 @@ export function ProviderResponseCard({
   currency,
   createdAt,
   expiresAt,
+  responderAvailable,
   onAccept,
   onDecline,
   acceptLoading,
@@ -49,6 +51,7 @@ export function ProviderResponseCard({
   currency: string;
   createdAt: string;
   expiresAt: string | null;
+  responderAvailable: boolean;
   onAccept: () => void;
   onDecline: (reason: string | null) => void;
   acceptLoading: boolean;
@@ -59,6 +62,8 @@ export function ProviderResponseCard({
   const [reason, setReason] = useState('');
   const distanceLabel = formatProximity(distanceM);
   const reasonError = reason.trim().length > 500 ? 'Keep this to 500 characters.' : null;
+  const availability = responderAvailabilityBadge(responderAvailable);
+  const canSelect = responderAvailable;
 
   return (
     <Card>
@@ -74,6 +79,8 @@ export function ProviderResponseCard({
       {bio ? <Text className="text-sm text-muted">{bio}</Text> : null}
 
       {phoneVerified ? <Badge label="Phone verified" tone="info" dot={false} /> : null}
+
+      <Badge label={availability.label} tone={availability.tone} dot={false} />
 
       <CatalogueStrip userId={responderId} />
 
@@ -138,14 +145,22 @@ export function ProviderResponseCard({
             onPress={() => setDeclining(true)}
           />
           <Button
-            label="Select"
+            label="Choose"
             variant="active"
             className="flex-1"
             loading={acceptLoading}
+            disabled={!canSelect}
             onPress={onAccept}
           />
         </View>
       )}
+
+      {!responderAvailable ? (
+        <Text className="text-sm text-muted">
+          They responded here, but are already attending another request and cannot be selected
+          right now.
+        </Text>
+      ) : null}
 
       <ProviderProfileModal
         visible={profileOpen}

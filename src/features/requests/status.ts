@@ -1,48 +1,30 @@
 import { PAYMENT_STATUS_LABELS } from '@/features/domain/transitions';
 import type { PaymentStatus } from '@/features/domain/model';
+import {
+  requestLifecycleBadge,
+  resolveRequestLifecycleStage,
+  type RequestLifecycleStage,
+} from '@/features/domain/lifecycle';
 import type { Database } from '@/lib/supabase/database.types';
 
 type RequestStatus = Database['public']['Enums']['request_status'];
 type ResponseStatus = Database['public']['Enums']['response_status'];
 type Tone = 'neutral' | 'brand' | 'active' | 'danger' | 'warning';
 
-/**
- * The lifecycle has a "Responses" stage that is not a stored status: a request is still
- * searching, it just has offers waiting. That distinction is made here, so every list
- * says the same thing about the same row.
- */
 export function requestStatusBadge(
   status: RequestStatus,
   pendingResponseCount: number,
-): { label: string; tone: Tone } {
-  switch (status) {
-    case 'draft':
-      return { label: 'Draft', tone: 'neutral' };
-    case 'posted':
-    case 'searching':
-      return pendingResponseCount > 0
-        ? {
-            label: `${pendingResponseCount} ${pendingResponseCount === 1 ? 'response' : 'responses'}`,
-            tone: 'brand',
-          }
-        : { label: 'Posted', tone: 'warning' };
-    case 'accepted':
-      return { label: 'Selected', tone: 'active' };
-    case 'in_progress':
-      return { label: 'In progress', tone: 'active' };
-    case 'completion_pending':
-      return { label: 'Awaiting confirmation', tone: 'warning' };
-    case 'disputed':
-      return { label: 'Disputed', tone: 'danger' };
-    case 'no_show':
-      return { label: 'No-show', tone: 'danger' };
-    case 'completed':
-      return { label: 'Completed', tone: 'neutral' };
-    case 'cancelled':
-      return { label: 'Cancelled', tone: 'danger' };
-    case 'expired':
-      return { label: 'Expired', tone: 'neutral' };
-  }
+  options?: { expiresAt?: string | null; viewerIsRequester?: boolean },
+): { label: string; tone: Tone; hint: string } {
+  const stage = resolveRequestLifecycleStage({
+    status,
+    pendingResponseCount,
+    expiresAt: options?.expiresAt,
+  });
+  const badge = requestLifecycleBadge(stage, {
+    viewerIsRequester: options?.viewerIsRequester ?? true,
+  });
+  return badge;
 }
 
 export function responseStatusBadge(status: ResponseStatus): { label: string; tone: Tone } {
@@ -50,7 +32,7 @@ export function responseStatusBadge(status: ResponseStatus): { label: string; to
     case 'pending':
       return { label: 'Responded', tone: 'brand' };
     case 'accepted':
-      return { label: 'Selected', tone: 'active' };
+      return { label: 'Chosen', tone: 'active' };
     case 'declined':
       return { label: 'Not chosen', tone: 'neutral' };
     case 'withdrawn':
@@ -60,38 +42,29 @@ export function responseStatusBadge(status: ResponseStatus): { label: string; to
   }
 }
 
-/** Connected job screen and engagement cards — same words everywhere. */
-export function requestEngagementStatusBadge(status: RequestStatus): { label: string; tone: Tone } {
-  switch (status) {
-    case 'accepted':
-      return { label: 'Selected', tone: 'active' };
-    case 'in_progress':
-      return { label: 'In progress', tone: 'active' };
-    case 'completion_pending':
-      return { label: 'Awaiting confirmation', tone: 'warning' };
-    case 'completed':
-      return { label: 'Completed', tone: 'neutral' };
-    case 'disputed':
-      return { label: 'Disputed', tone: 'danger' };
-    case 'no_show':
-      return { label: 'No-show', tone: 'danger' };
-    default:
-      return { label: 'Selected', tone: 'active' };
-  }
+export function requestEngagementStatusBadge(
+  status: RequestStatus,
+  options?: { viewerIsRequester?: boolean },
+): { label: string; tone: Tone; hint: string } {
+  const stage = resolveRequestLifecycleStage({ status, pendingResponseCount: 0 });
+  return requestLifecycleBadge(stage, options);
 }
 
-/** Your responses list: how your answer relates to the request lifecycle. */
 export function myResponseLifecycleBadge(
   responseStatus: ResponseStatus,
   requestStatus: RequestStatus,
+  options?: { viewerIsRequester?: boolean },
 ): { label: string; tone: Tone } {
   if (responseStatus === 'accepted') {
-    return requestEngagementStatusBadge(requestStatus);
+    const badge = requestEngagementStatusBadge(requestStatus, {
+      viewerIsRequester: options?.viewerIsRequester ?? false,
+    });
+    return { label: badge.label, tone: badge.tone };
   }
 
   if (
-    (responseStatus === 'pending' && requestStatus === 'posted') ||
-    (responseStatus === 'pending' && requestStatus === 'searching')
+    responseStatus === 'pending' &&
+    (requestStatus === 'posted' || requestStatus === 'searching')
   ) {
     return { label: 'Responded', tone: 'brand' };
   }
@@ -99,7 +72,14 @@ export function myResponseLifecycleBadge(
   return responseStatusBadge(responseStatus);
 }
 
-/** Browse lists: you can still answer, or you already did. */
+export function responderAvailabilityBadge(available: boolean): { label: string; tone: Tone } {
+  if (available) {
+    return { label: 'Available', tone: 'brand' };
+  }
+
+  return { label: 'Currently attending another request', tone: 'warning' };
+}
+
 export function nearbyRequestBadge(alreadyResponded: boolean): { label: string; tone: Tone } {
   if (alreadyResponded) {
     return { label: 'Responded', tone: 'brand' };
@@ -113,6 +93,7 @@ export function paymentStatusBadge(status: PaymentStatus): { label: string; tone
 
   switch (status) {
     case 'locked':
+      return { label, tone: 'warning' };
     case 'pending':
       return { label, tone: 'warning' };
     case 'disputed':
@@ -135,9 +116,9 @@ export function paymentStatusHint(
 
   switch (status) {
     case 'locked':
-      return 'Held from your wallet while this request is open.';
+      return 'Held from your wallet while your request is open.';
     case 'pending':
-      return 'Held until the job completes, is cancelled, or is refunded.';
+      return 'Held until the job is done, cancelled, or refunded.';
     case 'disputed':
       return 'Locked while support reviews a report.';
     case 'released':
@@ -148,3 +129,5 @@ export function paymentStatusHint(
       return null;
   }
 }
+
+export type { RequestLifecycleStage };

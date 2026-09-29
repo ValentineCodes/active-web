@@ -23,6 +23,11 @@ import {
   requestStatusBadge,
 } from '@/features/requests/status';
 import {
+  chooseResponderDialog,
+  chosenResponderMessage,
+  helpingYouTitle,
+} from '@/features/requests/selection-copy';
+import {
   canReuseRequest,
   isExpiredRequestView,
   reuseRequestButtonLabelForRequest,
@@ -61,7 +66,9 @@ export default function RequestDetailScreen() {
   }
 
   const { data } = request;
-  const badge = requestStatusBadge(data.status, data.pending_response_count);
+  const badge = requestStatusBadge(data.status, data.pending_response_count, {
+    expiresAt: data.expires_at,
+  });
   const paymentBadge =
     data.payment_status && data.payment_status !== 'not_required'
       ? paymentStatusBadge(data.payment_status)
@@ -122,6 +129,7 @@ export default function RequestDetailScreen() {
         }
       >
         <View className="gap-3">
+          <Text className="text-base text-muted">{badge.hint}</Text>
           {data.description ? <Text className="text-base text-ink">{data.description}</Text> : null}
 
           <View className="gap-1">
@@ -207,7 +215,7 @@ export default function RequestDetailScreen() {
           <View className="gap-4">
             <Text className="text-lg font-bold text-ink">
               {pending.length > 0
-                ? `${pending.length} ${pending.length === 1 ? 'person' : 'people'} responded`
+                ? `Choose who helps (${pending.length})`
                 : 'Waiting for responses'}
             </Text>
 
@@ -247,6 +255,7 @@ export default function RequestDetailScreen() {
                 currency={data.currency}
                 createdAt={response.created_at}
                 expiresAt={response.expires_at}
+                responderAvailable={response.responder_available}
                 acceptLoading={acceptResponse.isPending}
                 declineLoading={declineResponse.isPending}
                 onDecline={(reason) =>
@@ -261,22 +270,30 @@ export default function RequestDetailScreen() {
                     },
                   )
                 }
-                onAccept={() =>
-                  Alert.alert(
-                    `Select ${response.display_name}?`,
-                    'You can only choose one person. They get your exact location and phone number; everyone else is turned down.',
-                    [
-                      { text: 'Not yet', style: 'cancel' },
-                      {
-                        text: 'Select',
-                        onPress: () =>
-                          acceptResponse.mutate(response.response_id, {
-                            onSuccess: () => router.replace(`/engagement/${id}`),
-                          }),
-                      },
-                    ],
-                  )
-                }
+                onAccept={() => {
+                  const dialog = chooseResponderDialog(response.display_name);
+                  Alert.alert(dialog.title, dialog.message, [
+                    { text: dialog.cancel, style: 'cancel' },
+                    {
+                      text: dialog.confirm,
+                      onPress: () =>
+                        acceptResponse.mutate(response.response_id, {
+                          onSuccess: () => {
+                            Alert.alert(
+                              helpingYouTitle(response.display_name),
+                              chosenResponderMessage(response.display_name),
+                              [
+                                {
+                                  text: 'Open job',
+                                  onPress: () => router.replace(`/engagement/${id}`),
+                                },
+                              ],
+                            );
+                          },
+                        }),
+                    },
+                  ]);
+                }}
               />
             ))}
           </View>

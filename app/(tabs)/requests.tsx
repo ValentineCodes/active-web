@@ -135,7 +135,9 @@ export default function RequestsScreen() {
   );
 
   const renderRequest = (item: (typeof visibleActive)[number]) => {
-    const badge = requestStatusBadge(item.status, item.pending_response_count);
+    const badge = requestStatusBadge(item.status, item.pending_response_count, {
+      expiresAt: item.expires_at,
+    });
     const reuseLabel = canReuseRequest(item.status, item.expires_at)
       ? reuseRequestButtonLabelForRequest(item.status, item.expires_at)
       : null;
@@ -148,7 +150,7 @@ export default function RequestsScreen() {
         description={item.description ?? undefined}
         badge={badge}
         when={scheduled}
-        meta={[historyNote, area].filter((line): line is string => Boolean(line))}
+        meta={[badge.hint, historyNote, area].filter((line): line is string => Boolean(line))}
         amount={
           item.offered_amount !== null ? formatMoney(item.offered_amount, item.currency) : null
         }

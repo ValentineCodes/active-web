@@ -41,19 +41,6 @@ export const REQUEST_MAX_LIFETIME_HOURS = 24;
 /** Must stay aligned with public.completion_confirmation_interval(). */
 export const REQUEST_COMPLETION_CONFIRMATION_HOURS = 72;
 
-/** User-facing lifecycle labels mapped to stored request_status values. */
-export const REQUEST_LIFECYCLE_LABELS: Record<
-  'posted' | 'responses' | 'selected' | 'in_progress' | 'completion_pending' | 'completed',
-  string
-> = {
-  posted: 'Posted',
-  responses: 'Responses',
-  selected: 'Selected',
-  in_progress: 'In progress',
-  completion_pending: 'Completion pending',
-  completed: 'Completed',
-};
-
 export function isOpenRequestStatus(status: RequestStatus): boolean {
   return status === 'posted' || status === 'draft';
 }

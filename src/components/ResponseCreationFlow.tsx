@@ -24,7 +24,6 @@ type ResponseCreationFlowProps = {
   initialYourOffer: number;
   initialMessage: string;
   position: Position;
-  attendingElsewhere: boolean;
   isUpdate: boolean;
   submitting: boolean;
   submitError: Error | null;
@@ -38,7 +37,6 @@ export function ResponseCreationFlow({
   initialYourOffer,
   initialMessage,
   position,
-  attendingElsewhere,
   isUpdate,
   submitting,
   submitError,
@@ -64,13 +62,13 @@ export function ResponseCreationFlow({
   };
 
   const send = () => {
-    if (attendingElsewhere || offerError) return;
+    if (offerError) return;
     const quoted = counterOfferForRpc(requesterOffer, yourOffer);
     if (quoted === 'invalid') return;
     onSubmit({ message: message.trim() || null, quotedAmount: quoted });
   };
 
-  const canSend = Boolean(position) && !attendingElsewhere && !offerError;
+  const canSend = Boolean(position) && !offerError;
 
   return (
     <View className="flex-1">
@@ -142,12 +140,6 @@ export function ResponseCreationFlow({
             </View>
 
             {submitError ? <InlineError error={submitError} /> : null}
-
-            {attendingElsewhere ? (
-              <Text className="text-center text-sm text-muted">
-                You can&apos;t send while you&apos;re attending another request.
-              </Text>
-            ) : null}
 
             <Button
               label={isUpdate ? 'Update response' : 'Send response'}

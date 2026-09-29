@@ -1380,6 +1380,7 @@ export type Database = {
           quoted_amount: number
           rating_average: number
           rating_count: number
+          responder_available: boolean
           responder_id: string
           response_id: string
           status: Database["public"]["Enums"]["response_status"]

@@ -1,5 +1,6 @@
 import type { Database } from '@/lib/supabase/database.types';
 import { formatAgo, formatWhen } from '@/lib/format';
+import { resolveRequestLifecycleStage } from '@/features/domain/lifecycle';
 
 import { isExpiredRequestView } from '@/features/requests/reuse';
 
@@ -9,7 +10,7 @@ type RequestStatus = Database['public']['Enums']['request_status'];
 export type RequestHistoryBucket =
   | 'posted'
   | 'responses'
-  | 'handshake'
+  | 'selected'
   | 'in_progress'
   | 'completion_pending'
   | 'completed'
@@ -20,7 +21,7 @@ export type RequestHistoryBucket =
   | 'no_show';
 
 export type ActiveRequestFilter =
-  'all' | 'posted' | 'responses' | 'handshake' | 'in_progress' | 'completion_pending' | 'disputed';
+  'all' | 'posted' | 'responses' | 'selected' | 'in_progress' | 'completion_pending' | 'disputed';
 
 export type PastRequestFilter = 'all' | 'completed' | 'cancelled' | 'expired';
 
@@ -28,7 +29,7 @@ export const ACTIVE_REQUEST_FILTERS: { key: ActiveRequestFilter; label: string }
   { key: 'all', label: 'All' },
   { key: 'posted', label: 'Posted' },
   { key: 'responses', label: 'Responses' },
-  { key: 'handshake', label: 'Selected' },
+  { key: 'selected', label: 'Selected' },
   { key: 'in_progress', label: 'In progress' },
   { key: 'completion_pending', label: 'Completion pending' },
   { key: 'disputed', label: 'Disputed' },
@@ -74,36 +75,20 @@ export function requestHistoryBucket(request: {
   expires_at: string | null;
   pending_response_count: number;
 }): RequestHistoryBucket {
-  if (isExpiredRequestView(request.status, request.expires_at)) {
-    return 'expired';
+  const stage = resolveRequestLifecycleStage({
+    status: request.status,
+    pendingResponseCount: request.pending_response_count,
+    expiresAt: request.expires_at,
+  });
+
+  if (stage === 'draft' || stage === 'no_show') {
+    return stage;
   }
 
-  switch (request.status) {
-    case 'draft':
-      return 'draft';
-    case 'posted':
-    case 'searching':
-      return request.pending_response_count > 0 ? 'responses' : 'posted';
-    case 'accepted':
-      return 'handshake';
-    case 'in_progress':
-      return 'in_progress';
-    case 'completion_pending':
-      return 'completion_pending';
-    case 'completed':
-      return 'completed';
-    case 'cancelled':
-      return 'cancelled';
-    case 'expired':
-      return 'expired';
-    case 'disputed':
-      return 'disputed';
-    case 'no_show':
-      return 'no_show';
-  }
+  return stage;
 }
 
-/** Open work — expired searching rows belong in history instead. */
+/** Open work — expired posted rows belong in history instead. */
 export function isActiveRequest(request: {
   status: RequestStatus;
   expires_at: string | null;
@@ -201,3 +186,6 @@ export function groupPastRequests<T extends RequestRow & { request_id: string }>
     return [{ title: PAST_SECTION_LABELS[bucket], data }];
   });
 }
+
+/** @deprecated Use bucket `selected` instead of `handshake`. */
+export type LegacyRequestHistoryBucket = RequestHistoryBucket | 'handshake';

@@ -125,7 +125,7 @@ export default function WalletScreen() {
                 label={WALLET.buckets.locked}
                 amount={locked}
                 currency={currency}
-                hint="Held while your request is searching for help"
+                hint="Held while your request is open"
               />
               <View className="h-px bg-hairline" />
               <BalanceRow

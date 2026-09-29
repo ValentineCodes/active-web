@@ -162,7 +162,9 @@ export default function HomeScreen() {
               onAction={() => router.push('/requests')}
             />
             {openRequests.slice(0, 3).map((request) => {
-              const badge = requestStatusBadge(request.status, request.pending_response_count);
+              const badge = requestStatusBadge(request.status, request.pending_response_count, {
+                expiresAt: request.expires_at,
+              });
 
               return (
                 <RequestCard
@@ -171,7 +173,7 @@ export default function HomeScreen() {
                   description={request.description ?? undefined}
                   badge={badge}
                   when={formatWhen(request.scheduled_for)}
-                  meta={[request.location_label]}
+                  meta={[badge.hint, request.location_label]}
                   amount={
                     request.offered_amount !== null
                       ? formatMoney(request.offered_amount, request.currency)

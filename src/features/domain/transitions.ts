@@ -1,8 +1,8 @@
 import type { PaymentStatus, RequestStatus } from '@/features/domain/model';
+import { requestStatusLifecycleTitle } from '@/features/domain/lifecycle';
 
 /**
- * Request lifecycle (stored on public.requests.status).
- * Payment state is independent — see PAYMENT_TRANSITIONS.
+ * Stored request_status values (Postgres enum). UI lifecycle copy lives in lifecycle.ts.
  */
 export const REQUEST_STATUS_LABELS: Record<RequestStatus, string> = {
   draft: 'Draft',
@@ -58,4 +58,9 @@ export function canTransitionPayment(from: PaymentStatus, to: PaymentStatus): bo
 
 export function normalizeRequestStatus(status: RequestStatus): RequestStatus {
   return status === 'searching' ? 'posted' : status;
+}
+
+/** Human title for a stored status without pending-response context. */
+export function storedRequestStatusTitle(status: RequestStatus): string {
+  return requestStatusLifecycleTitle(status);
 }

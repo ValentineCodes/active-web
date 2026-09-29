@@ -98,8 +98,6 @@ export default function RespondScreen() {
   }, []);
 
   const tryStartResponse = useCallback(async () => {
-    if (attendingElsewhere) return;
-
     setGateMode('checking');
     setGateBlocker(null);
 
@@ -112,13 +110,13 @@ export default function RespondScreen() {
 
     setPosition(result.position);
     beginFlow();
-  }, [attendingElsewhere, profile.data, beginFlow]);
+  }, [profile.data, beginFlow]);
 
   useEffect(() => {
-    if (!autoStartPending.current || attendingElsewhere || isPending || !request) return;
+    if (!autoStartPending.current || isPending || !request) return;
     autoStartPending.current = false;
     void tryStartResponse();
-  }, [attendingElsewhere, isPending, request, tryStartResponse]);
+  }, [isPending, request, tryStartResponse]);
 
   const exitFlow = () => {
     setInFlow(false);
@@ -257,7 +255,6 @@ export default function RespondScreen() {
           initialYourOffer={initialYourOffer}
           initialMessage={initialMessage}
           position={position}
-          attendingElsewhere={attendingElsewhere}
           isUpdate={Boolean(existingResponse)}
           submitting={respond.isPending}
           submitError={respond.error}
@@ -279,11 +276,11 @@ export default function RespondScreen() {
         {attendingElsewhere ? (
           <Card tone="warning">
             <Text className="text-base font-semibold text-ink">
-              You&apos;re already on another request
+              You&apos;re attending another request
             </Text>
             <Text className="text-sm text-muted">
-              Keep browsing — you just can&apos;t be selected for a new job until you finish the one
-              you&apos;re on.
+              You can still send responses — that does not commit you. Other requesters cannot
+              select you while you are attending a job elsewhere.
             </Text>
           </Card>
         ) : null}
@@ -309,15 +306,8 @@ export default function RespondScreen() {
         <Button
           label={existingResponse ? 'Update response' : 'I can help'}
           size="lg"
-          disabled={attendingElsewhere}
           onPress={() => void tryStartResponse()}
         />
-
-        {attendingElsewhere ? (
-          <Text className="text-center text-sm text-muted">
-            Response is disabled while you&apos;re attending another request.
-          </Text>
-        ) : null}
       </ScrollView>
     </Screen>
   );

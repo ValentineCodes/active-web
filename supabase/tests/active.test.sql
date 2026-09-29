@@ -409,7 +409,7 @@ select lives_ok(
 select throws_ok(
   format('select accept_response(%L)', :'alternate_response_id'),
   '55000',
-  'this request is already accepted',
+  'someone is already helping on this request',
   'a requester cannot select a second helper on the same request'
 );
 
@@ -430,16 +430,25 @@ select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
 select throws_ok(
   format('select accept_response(%L)', :'second_response_id'),
   '55000',
-  'This person is already on another job.',
+  'This person is currently attending to another request.',
   'another request cannot select a helper who is already attending a job'
 );
 
+select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
+select is(
+  (
+    select responder_available
+    from list_request_responses(:'second_request_id')
+    where response_id = :'second_response_id'
+  ),
+  false,
+  'requesters see when a responder is attending another request'
+);
+
 select pg_temp.act_as('22222222-2222-2222-2222-222222222222') as _ \gset
-select throws_ok(
+select lives_ok(
   format('select respond_to_request(%L, null, null, 6.5000, 3.3800)', :'second_request_id'),
-  '55000',
-  'this request is no longer available to you',
-  'attending one job blocks responding elsewhere'
+  'a helper can still respond to other requests while attending a job'
 );
 
 -- Privacy after selection -----------------------------------------------------------

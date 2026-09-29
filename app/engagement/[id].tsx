@@ -12,6 +12,7 @@ import { PersonRow } from '@/components/ui/PersonRow';
 import { Screen } from '@/components/ui/Screen';
 import { Badge } from '@/components/ui/Badge';
 import { EmptyState, ErrorState, InlineError, LoadingState } from '@/components/ui/StateView';
+import { requestLifecycleCopy } from '@/features/domain/lifecycle';
 import {
   paymentStatusBadge,
   paymentStatusHint,
@@ -46,12 +47,19 @@ function openInMaps(latitude: number, longitude: number, label: string) {
   Linking.openURL(url);
 }
 
-const STEPS = [
-  { key: 'accepted', label: 'Selected' },
-  { key: 'in_progress', label: 'In progress' },
-  { key: 'completion_pending', label: 'Confirm' },
-  { key: 'completed', label: 'Complete' },
+const ENGAGEMENT_STEP_STAGES = [
+  'selected',
+  'in_progress',
+  'completion_pending',
+  'completed',
 ] as const;
+
+function engagementSteps(viewerIsRequester: boolean) {
+  return ENGAGEMENT_STEP_STAGES.map((stage) => ({
+    key: stage === 'selected' ? 'accepted' : stage,
+    label: requestLifecycleCopy(stage, { viewerIsRequester }).title,
+  }));
+}
 
 function statusStepIndex(status: string): number {
   if (status === 'completed') return 3;
@@ -77,7 +85,7 @@ type ReportModalState = {
 
 /**
  * The connected screen. This is the only place exact coordinates and phone numbers are
- * shown, and it is reachable only after the requester accepted a provider — the server
+ * shown, and it is reachable only after the requester chose someone to help — the server
  * refuses public.get_engagement for any earlier state.
  *
  * Communication in the MVP is the phone the account was created with. There is no in-app
@@ -126,7 +134,7 @@ export default function EngagementScreen() {
         <EmptyState
           icon="lock-closed-outline"
           title="Nothing to show here"
-          message="This request has not been accepted, so there are no shared details yet."
+          message="No one has been chosen yet, so contact details and exact locations stay private."
           action={{ label: 'Go back', onPress: () => router.back() }}
         />
       </Screen>
@@ -136,7 +144,10 @@ export default function EngagementScreen() {
   const data = engagement.data;
   const agreedAmount = data.quoted_amount ?? data.offered_amount;
   const stepIndex = statusStepIndex(data.request_status);
-  const statusBadge = requestEngagementStatusBadge(data.request_status);
+  const statusBadge = requestEngagementStatusBadge(data.request_status, {
+    viewerIsRequester: data.viewer_is_requester,
+  });
+  const steps = engagementSteps(data.viewer_is_requester);
   const escrowBadge =
     data.payment_status && data.payment_status !== 'not_required'
       ? paymentStatusBadge(data.payment_status)
@@ -371,9 +382,7 @@ export default function EngagementScreen() {
       >
         <Card tone="active" className="gap-2">
           <Badge label={statusBadge.label} tone={statusBadge.tone} />
-          <Text className="text-sm font-semibold text-active">
-            {data.viewer_is_requester ? 'Helping you' : "You're helping"}
-          </Text>
+          <Text className="text-sm text-muted">{statusBadge.hint}</Text>
           <Text className="text-sm text-muted">
             Call or message below — there is no in-app chat in this version.
           </Text>
@@ -414,7 +423,7 @@ export default function EngagementScreen() {
         {/* A calm, simple stepper — the two people involved should never have to guess
             where things stand. */}
         <View className="flex-row items-center">
-          {STEPS.map((step, index) => (
+          {steps.map((step, index) => (
             <View key={step.key} className="flex-1 flex-row items-center">
               <View className="items-center gap-1.5">
                 <View
@@ -432,7 +441,7 @@ export default function EngagementScreen() {
                   {step.label}
                 </Text>
               </View>
-              {index < STEPS.length - 1 ? (
+              {index < steps.length - 1 ? (
                 <View
                   className={
                     index < stepIndex ? 'h-0.5 flex-1 bg-active' : 'h-0.5 flex-1 bg-hairline'

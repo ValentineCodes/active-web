@@ -45,8 +45,8 @@ export default function ActivityScreen() {
           <Card tone="active" className="gap-3">
             <Badge label="Attending" tone="active" />
             <Text className="text-sm text-muted">
-              You&apos;re on a request right now. You can still browse and read details — finish
-              that job before you can be selected for another.
+              You are attending one request. You can still browse and respond elsewhere — other
+              requesters cannot select you until that job is finished.
             </Text>
             <Button
               label="Open request"
