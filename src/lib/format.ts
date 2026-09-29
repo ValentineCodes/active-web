@@ -1,16 +1,19 @@
 import { format, formatDistanceToNowStrict, isThisYear, isToday, isTomorrow } from 'date-fns';
 
 /**
- * Distances arrive already rounded by the database, so this only chooses units. It
- * deliberately reads as an approximation, because before acceptance that is all it is.
+ * Bucketed metres from the server → vague travel-time wording (not a route estimate).
  */
+export function formatProximity(meters: number): string {
+  if (meters <= 2500) return 'Nearby';
+  if (meters <= 8000) return 'A few minutes away';
+  if (meters <= 20_000) return 'About 10 minutes away';
+  return 'About 30 minutes away';
+}
+
+/** Exact distance — only after selection when coordinates are shared. */
 export function formatDistance(meters: number): string {
   if (meters < 1000) return `${meters} m away`;
   return `${(meters / 1000).toFixed(meters < 10_000 ? 1 : 0)} km away`;
-}
-
-export function formatRadius(meters: number): string {
-  return `${meters / 1000} km`;
 }
 
 export function formatMoney(amount: number, currency: string): string {

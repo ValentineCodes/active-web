@@ -13,7 +13,6 @@ export const MARKET = {
   currency: 'NGN',
 } as const;
 
-/** Radius options offered to a requester. Expansion beyond these is server-driven. */
 export const TITLE_LIMITS = { min: 3, max: 120 } as const;
 
 export const DESCRIPTION_LIMITS = { min: 1, max: 1000 } as const;

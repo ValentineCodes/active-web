@@ -82,7 +82,7 @@ export function useCaptureProfilePhoto() {
     mutationFn: async ({ onProgress }: { onProgress?: (fraction: number) => void } = {}) => {
       const permission = await ImagePicker.requestCameraPermissionsAsync();
       if (!permission.granted) {
-        throw new Error('Camera access is needed for your provider profile photo.');
+        throw new Error('Camera access is needed for your profile photo.');
       }
 
       const result = await ImagePicker.launchCameraAsync({

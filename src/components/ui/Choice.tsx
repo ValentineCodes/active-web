@@ -5,8 +5,8 @@ import { cn } from '@/lib/cn';
 import { colors } from '@/theme';
 
 /**
- * A selectable row used wherever the product asks "which one?" — service category,
- * radius, availability duration. Works for single and multi select; the caller owns the
+ * A selectable row used wherever the product asks "which one?" — timing and similar
+ * options. Works for single and multi select; the caller owns the
  * selection state. Flat and filled rather than bordered, so a long list of these never
  * reads as a form full of boxes.
  */

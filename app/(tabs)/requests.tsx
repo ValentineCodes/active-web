@@ -140,12 +140,15 @@ export default function RequestsScreen() {
       ? reuseRequestButtonLabelForRequest(item.status, item.expires_at)
       : null;
 
+    const [historyNote, scheduled, area] = requestHistoryMeta(item);
+
     return (
       <RequestCard
         title={item.title ?? 'Request'}
         description={item.description ?? undefined}
         badge={badge}
-        meta={requestHistoryMeta(item)}
+        when={scheduled}
+        meta={[historyNote, area].filter((line): line is string => Boolean(line))}
         amount={
           item.offered_amount !== null ? formatMoney(item.offered_amount, item.currency) : null
         }

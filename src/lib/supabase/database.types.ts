@@ -490,32 +490,6 @@ export type Database = {
           },
         ]
       }
-      request_media_read_grants: {
-        Row: {
-          expires_at: string
-          object_name: string
-          user_id: string
-        }
-        Insert: {
-          expires_at: string
-          object_name: string
-          user_id: string
-        }
-        Update: {
-          expires_at?: string
-          object_name?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "request_media_read_grants_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       request_responses: {
         Row: {
           created_at: string
@@ -1218,10 +1192,6 @@ export type Database = {
         Args: never
         Returns: Database["public"]["Enums"]["request_status"][]
       }
-      authorize_request_media_read: {
-        Args: { p_latitude: number; p_longitude: number; p_path: string }
-        Returns: undefined
-      }
       auto_complete_due_requests: {
         Args: { p_limit?: number }
         Returns: number
@@ -1438,26 +1408,6 @@ export type Database = {
           title: string
         }[]
       }
-      nearby_requests: {
-        Args: never
-        Returns: {
-          category_data: Json
-          category_slug: string
-          created_at: string
-          currency: string
-          description: string
-          distance_m: number
-          expires_at: string
-          location_label: string
-          offered_amount: number
-          request_id: string
-          requester_avatar_path: string
-          requester_display_name: string
-          requester_rating_average: number
-          requester_rating_count: number
-          scheduled_for: string
-        }[]
-      }
       notify_completion_reminders: {
         Args: { p_limit?: number }
         Returns: number
@@ -1507,7 +1457,6 @@ export type Database = {
         }
         Returns: undefined
       }
-      redact_discovery_category_data: { Args: { p_data: Json }; Returns: Json }
       release_provider: { Args: { p_provider_id: string }; Returns: undefined }
       report_service_problem: {
         Args: {
@@ -1517,10 +1466,6 @@ export type Database = {
           p_request_id: string
         }
         Returns: undefined
-      }
-      request_has_media_path: {
-        Args: { p_category_data: Json; p_name: string }
-        Returns: boolean
       }
       request_media_visible_to_party: {
         Args: { p_name: string; p_user_id: string }

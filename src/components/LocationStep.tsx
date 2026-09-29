@@ -15,25 +15,22 @@ const REFUSAL_COPY: Record<'permission-denied' | 'services-disabled' | 'unavaila
 };
 
 /**
- * The one place in the app that asks for location, used by both the request form and the
- * Go Active form. It runs when the user presses the button on it and never on mount, so
- * the system prompt always arrives attached to an action the person just chose.
+ * The one place in the app that asks for location on the request form. It runs when the
+ * user presses the button and never on mount, so the system prompt arrives with an action
+ * they just chose.
  *
- * `areaLabel` is only collected for a request: it is the coarse, human description shown
- * to providers in place of coordinates.
+ * `areaLabel` is the coarse, human description shown to others before selection.
  */
 export function LocationStep({
   position,
   onPositionChange,
   areaLabel,
   onAreaLabelChange,
-  purpose,
 }: {
   position: Position | null;
   onPositionChange: (position: Position | null) => void;
   areaLabel?: string;
   onAreaLabelChange?: (label: string) => void;
-  purpose: 'request' | 'active';
 }) {
   const [isLocating, setIsLocating] = useState(false);
   const [refusal, setRefusal] = useState<keyof typeof REFUSAL_COPY | null>(null);
@@ -85,9 +82,8 @@ export function LocationStep({
           </View>
         ) : (
           <Text className="text-sm text-muted">
-            {purpose === 'request'
-              ? 'Used privately to find people near you. Your exact spot is shared only with the person you accept.'
-              : 'Used privately to match you with nearby requests. Nobody sees where you are.'}
+            Used privately to find people near you. Your exact spot is shared only with the person
+            you select.
           </Text>
         )}
       </View>
@@ -99,9 +95,7 @@ export function LocationStep({
       <View className="flex-row items-center gap-2 rounded-xl bg-active-soft p-3">
         <Ionicons name="checkmark-circle" size={18} color={colors.active} />
         <Text className="flex-1 text-sm text-ink">
-          {purpose === 'request'
-            ? 'Location captured. It stays hidden until you accept someone.'
-            : 'Location captured. Used only to match you with nearby requests.'}
+          Location captured. It stays hidden until you select someone.
         </Text>
       </View>
 
@@ -112,7 +106,7 @@ export function LocationStep({
           onChangeText={onAreaLabelChange}
           placeholder="e.g. Yaba, Lagos"
           maxLength={120}
-          hint="This is all providers see before you accept one. Keep it general."
+          hint="This is all others see before you select someone. Keep it general."
         />
       ) : null}
 

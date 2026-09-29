@@ -179,7 +179,7 @@ function NewRequestForm({ reuseSeed }: { reuseSeed?: ReuseSeed }) {
               label="Short title"
               value={title}
               onChangeText={setTitle}
-              placeholder="e.g. Generator won't start"
+              placeholder="e.g. Help me move a sofa"
               maxLength={TITLE_LIMITS.max}
               counterMax={TITLE_LIMITS.max}
               hint={
@@ -240,7 +240,6 @@ function NewRequestForm({ reuseSeed }: { reuseSeed?: ReuseSeed }) {
               select someone.
             </Text>
             <LocationStep
-              purpose="request"
               position={position}
               onPositionChange={setPosition}
               areaLabel={areaLabel}

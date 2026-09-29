@@ -1,6 +1,5 @@
 export const queryKeys = {
   profile: ['profile'] as const,
-  categories: ['categories'] as const,
   attendance: ['attendance'] as const,
   myRequests: ['my-requests'] as const,
   myRequest: (requestId: string) => ['my-requests', requestId] as const,
@@ -15,7 +14,6 @@ export const queryKeys = {
   avatarUrl: (path: string) => ['avatar-url', path] as const,
   catalogue: (userId: string) => ['catalogue', userId] as const,
   catalogueMediaUrl: (path: string) => ['catalogue-media-url', path] as const,
-  requestMediaUrl: (path: string) => ['request-media-url', path] as const,
   notificationInbox: ['notification-inbox'] as const,
   notificationUnreadCount: ['notification-unread-count'] as const,
   wallet: ['wallet'] as const,

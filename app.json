@@ -36,7 +36,7 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Active uses your location only when you submit a request or go Active, so we can match you with nearby people. Your exact location stays hidden until you accept someone."
+          "locationWhenInUsePermission": "Active uses your location when you post a request or browse and respond to nearby ones. Your exact location stays hidden until someone is selected."
         }
       ],
       [

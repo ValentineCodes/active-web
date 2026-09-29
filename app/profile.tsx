@@ -84,7 +84,7 @@ export default function ProfileScreen() {
             }
             disabled={capturePhoto.isPending}
             accessibilityRole="button"
-            accessibilityLabel="Take your provider profile photo"
+            accessibilityLabel="Take your profile photo"
           >
             <Avatar
               path={data.avatar_path}
@@ -106,7 +106,7 @@ export default function ProfileScreen() {
             }
             disabled={capturePhoto.isPending}
             accessibilityRole="button"
-            accessibilityLabel="Take your provider profile photo"
+            accessibilityLabel="Take your profile photo"
             hitSlop={8}
           >
             <Text className="text-base font-medium text-brand">
@@ -114,7 +114,7 @@ export default function ProfileScreen() {
                 ? 'Uploading…'
                 : hasProviderPhotoReady(data)
                   ? 'Retake photo'
-                  : 'Take provider photo'}
+                  : 'Take profile photo'}
             </Text>
           </Pressable>
           <Text className="max-w-xs text-center text-sm text-muted">

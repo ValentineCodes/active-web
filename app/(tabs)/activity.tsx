@@ -15,10 +15,10 @@ import {
   useLiveResponseUpdates,
   useMyResponses,
   useWithdrawResponse,
-} from '@/features/requests/provider-api';
-import { providerResponseLifecycleBadge } from '@/features/requests/status';
+} from '@/features/requests/responses-api';
+import { myResponseLifecycleBadge } from '@/features/requests/status';
 import { confirmWithdrawResponse } from '@/lib/confirm';
-import { formatDistance, formatMoney, formatWhen } from '@/lib/format';
+import { formatMoney, formatProximity, formatWhen } from '@/lib/format';
 
 const TABS = [
   { key: 'nearby', label: 'Nearby' },
@@ -86,7 +86,7 @@ export default function ActivityScreen() {
             />
           }
           renderItem={({ item }) => {
-            const badge = providerResponseLifecycleBadge(item.response_status, item.request_status);
+            const badge = myResponseLifecycleBadge(item.response_status, item.request_status);
             const canWithdraw =
               item.response_status === 'pending' &&
               (item.request_status === 'posted' || item.request_status === 'searching');
@@ -96,16 +96,14 @@ export default function ActivityScreen() {
                 title={item.title ?? 'Request'}
                 description={item.description ?? undefined}
                 badge={badge}
+                when={formatWhen(item.scheduled_for)}
+                proximity={formatProximity(item.distance_m)}
+                meta={[item.location_label]}
                 amount={
                   item.offered_amount !== null
                     ? formatMoney(item.offered_amount, item.currency)
                     : 'Open'
                 }
-                meta={[
-                  formatDistance(item.distance_m),
-                  item.location_label,
-                  formatWhen(item.scheduled_for),
-                ]}
                 onPress={() => router.push(`/respond/${item.request_id}`)}
                 footer={
                   canWithdraw ? (

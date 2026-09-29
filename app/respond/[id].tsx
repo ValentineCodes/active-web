@@ -11,8 +11,8 @@ import { Screen } from '@/components/ui/Screen';
 import { EmptyState, ErrorState, InlineError, LoadingState } from '@/components/ui/StateView';
 import { TextField } from '@/components/ui/TextField';
 import { MARKET } from '@/config';
-import { useRequestForResponse, useRespondToRequest } from '@/features/requests/provider-api';
-import { formatDistance, formatMoney, formatWhen } from '@/lib/format';
+import { useRequestForResponse, useRespondToRequest } from '@/features/requests/responses-api';
+import { formatMoney, formatProximity, formatWhen } from '@/lib/format';
 import {
   parsePositionParam,
   readPositionIfPermitted,
@@ -104,7 +104,7 @@ export default function RespondScreen() {
         <EmptyState
           icon="location-outline"
           title="Location is needed"
-          message="Distance is worked out from where you are. The exact place stays private."
+          message="We use your location once to see if this request is relevant near you. Exact addresses stay private."
           action={{
             label: 'Use my location',
             onPress: () => {
@@ -155,7 +155,7 @@ export default function RespondScreen() {
           ) : null}
 
           <View className="flex-row flex-wrap gap-x-4">
-            <Text className="text-sm text-subtle">{formatDistance(request.distance_m)}</Text>
+            <Text className="text-sm text-subtle">{formatProximity(request.distance_m)}</Text>
             <Text className="text-sm text-subtle">{request.location_label}</Text>
             <Text className="text-sm text-subtle">{formatWhen(request.scheduled_for)}</Text>
           </View>
@@ -202,8 +202,8 @@ export default function RespondScreen() {
         <View className="flex-row items-start gap-3 rounded-2xl bg-surface p-4">
           <Ionicons name="lock-closed-outline" size={18} color={colors.muted} />
           <Text className="flex-1 text-sm text-muted">
-            They see your name, rating and approximate distance. Exact location and phone open only
-            if they select you.
+            They see your name, rating, and a rough sense of how close you are. Exact location and
+            phone open only if they select you.
           </Text>
         </View>
 

@@ -4,7 +4,6 @@ import type { Database } from '@/lib/supabase/database.types';
 
 type RequestStatus = Database['public']['Enums']['request_status'];
 type ResponseStatus = Database['public']['Enums']['response_status'];
-type AvailabilityStatus = Database['public']['Enums']['availability_status'];
 type Tone = 'neutral' | 'brand' | 'active' | 'danger' | 'warning';
 
 /**
@@ -81,8 +80,8 @@ export function requestEngagementStatusBadge(status: RequestStatus): { label: st
   }
 }
 
-/** Provider inbox: how your answer relates to the request lifecycle. */
-export function providerResponseLifecycleBadge(
+/** Your responses list: how your answer relates to the request lifecycle. */
+export function myResponseLifecycleBadge(
   responseStatus: ResponseStatus,
   requestStatus: RequestStatus,
 ): { label: string; tone: Tone } {
@@ -98,20 +97,6 @@ export function providerResponseLifecycleBadge(
   }
 
   return responseStatusBadge(responseStatus);
-}
-
-export function availabilityStatusBadge(
-  status: AvailabilityStatus,
-): { label: string; tone: Tone } | null {
-  if (status === 'available') {
-    return { label: 'Available', tone: 'active' };
-  }
-
-  if (status === 'busy') {
-    return { label: 'Committed', tone: 'active' };
-  }
-
-  return null;
 }
 
 /** Browse lists: you can still answer, or you already did. */
@@ -156,7 +141,7 @@ export function paymentStatusHint(
     case 'disputed':
       return 'Locked while support reviews a report.';
     case 'released':
-      return 'Paid to your provider after you confirmed completion.';
+      return 'Paid to the person who helped after you confirmed completion.';
     case 'refunded':
       return 'Returned to your available wallet balance.';
     default:

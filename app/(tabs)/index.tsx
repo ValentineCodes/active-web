@@ -2,18 +2,20 @@ import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native'
 import { Link, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useQueryClient } from '@tanstack/react-query';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { NearbyRequests } from '@/components/NearbyRequests';
 import { Avatar } from '@/components/ui/Avatar';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { FloatingActionButton } from '@/components/ui/FloatingActionButton';
 import { RequestCard } from '@/components/ui/RequestCard';
 import { Screen } from '@/components/ui/Screen';
 import { SectionHeader } from '@/components/ui/SectionHeader';
 import { useAttendance } from '@/features/attendance/api';
 import { useProfile } from '@/features/profile/api';
-import { useMyResponses } from '@/features/requests/provider-api';
+import { useMyResponses } from '@/features/requests/responses-api';
 import { useMyWallet } from '@/features/wallet/api';
 import { useMyRequests } from '@/features/requests/requester-api';
 import { requestEngagementStatusBadge, requestStatusBadge } from '@/features/requests/status';
@@ -24,6 +26,7 @@ import { colors } from '@/theme';
 const OPEN_STATUSES = ['posted', 'searching', 'accepted', 'in_progress', 'completion_pending'];
 
 export default function HomeScreen() {
+  const insets = useSafeAreaInsets();
   const profile = useProfile();
   const attendance = useAttendance();
   const requests = useMyRequests();
@@ -31,7 +34,6 @@ export default function HomeScreen() {
   const wallet = useMyWallet();
   const queryClient = useQueryClient();
 
-  const firstName = profile.data?.display_name?.split(' ')[0];
   const openRequests =
     requests.data?.filter((request) => OPEN_STATUSES.includes(request.status)) ?? [];
 
@@ -45,11 +47,12 @@ export default function HomeScreen() {
   );
 
   const attendingRequestId = attendance.data?.attending_request_id ?? null;
+  const fabBottom = Math.max(insets.bottom, 12) + 72;
 
   return (
-    <Screen>
+    <Screen className="bg-surface">
       <ScrollView
-        contentContainerClassName="gap-6 p-5 pb-10"
+        contentContainerClassName="gap-5 px-5 pb-8 pt-4"
         refreshControl={
           <RefreshControl
             refreshing={requests.isRefetching || attendance.isRefetching}
@@ -63,14 +66,25 @@ export default function HomeScreen() {
           />
         }
       >
-        <View className="gap-3">
-          <View className="flex-row items-center justify-between">
-            <View className="gap-1">
-              <Text className="text-base text-muted">
-                {firstName ? `Hi, ${firstName}` : 'Welcome'}
-              </Text>
-              <Text className="text-3xl font-bold text-ink">One account</Text>
-            </View>
+        <View className="flex-row items-start justify-between gap-3">
+          <View className="flex-1 gap-2">
+            <Text className="text-xs font-semibold uppercase tracking-wider text-subtle">
+              Local help
+            </Text>
+            <Text className="text-3xl font-bold text-ink">Near you</Text>
+            <Text className="text-base leading-6 text-muted">
+              Need something? Ask.{'\n'}Can help? Respond.
+            </Text>
+          </View>
+          <View className="flex-row items-center gap-2">
+            <Pressable
+              onPress={() => router.push('/wallet')}
+              accessibilityRole="button"
+              accessibilityLabel="Open wallet"
+              className="h-11 w-11 items-center justify-center rounded-full bg-canvas"
+            >
+              <Ionicons name="wallet-outline" size={22} color={colors.ink} />
+            </Pressable>
             <Pressable
               onPress={() => router.push('/profile')}
               accessibilityRole="button"
@@ -83,42 +97,23 @@ export default function HomeScreen() {
               />
             </Pressable>
           </View>
-          <Text className="text-base text-muted">
-            Post what you need, or respond to what others need nearby.
-          </Text>
         </View>
 
-        <Pressable
-          onPress={() => router.push('/wallet')}
-          accessibilityRole="button"
-          accessibilityLabel="Open wallet"
-        >
-          <Card className="flex-row items-center justify-between gap-3">
-            <View className="flex-row items-center gap-3">
-              <View className="h-11 w-11 items-center justify-center rounded-full bg-brand-soft">
-                <Ionicons name="wallet-outline" size={22} color={colors.brand} />
-              </View>
-              <View className="gap-0.5">
-                <Text className="text-sm font-semibold text-muted">Wallet</Text>
-                <Text className="text-lg font-bold text-ink">
-                  {wallet.isPending
-                    ? '…'
-                    : wallet.data
-                      ? formatMoney(wallet.data.available, wallet.data.currency)
-                      : '—'}
-                </Text>
-              </View>
-            </View>
-            <Ionicons name="chevron-forward" size={20} color={colors.subtle} />
-          </Card>
-        </Pressable>
+        {wallet.data ? (
+          <Pressable onPress={() => router.push('/wallet')} accessibilityRole="button">
+            <Text className="text-sm text-muted">
+              Wallet ·{' '}
+              <Text className="font-semibold text-ink">
+                {formatMoney(wallet.data.available, wallet.data.currency)} available
+              </Text>
+            </Text>
+          </Pressable>
+        ) : null}
 
         {attendingRequestId && !engagementAsRequester && !engagementAsHelper ? (
           <Card tone="active" className="gap-3">
-            <Badge label="Attending" tone="active" />
-            <Text className="text-sm text-muted">
-              You are on a request. Finish it before taking another.
-            </Text>
+            <Badge label="On a request" tone="active" />
+            <Text className="text-sm text-muted">Finish it before taking another.</Text>
             <Button
               label="Open request"
               variant="active"
@@ -132,8 +127,8 @@ export default function HomeScreen() {
             href={`/engagement/${engagementAsRequester?.request_id ?? engagementAsHelper?.request_id}`}
             asChild
           >
-            <Pressable accessibilityRole="button" accessibilityLabel="Open your connected job">
-              <Card tone="active">
+            <Pressable accessibilityRole="button" accessibilityLabel="Open your active request">
+              <Card tone="active" className="gap-2">
                 {(() => {
                   const status =
                     engagementAsRequester?.status ?? engagementAsHelper?.request_status;
@@ -141,43 +136,31 @@ export default function HomeScreen() {
                   return badge ? <Badge label={badge.label} tone={badge.tone} /> : null;
                 })()}
                 <Text className="text-lg font-semibold text-ink">
-                  {engagementAsRequester ? 'Someone is on your request' : 'You are helping someone'}
+                  {engagementAsRequester
+                    ? 'Your request is in progress'
+                    : 'You are helping someone'}
                 </Text>
-                <Text className="text-base text-muted">
-                  Exact location and contact details are open. Tap to see them.
-                </Text>
+                <Text className="text-sm text-muted">Tap for location and contact details.</Text>
               </Card>
             </Pressable>
           </Link>
         ) : null}
 
-        <Pressable
-          onPress={() => router.push('/request/new')}
-          accessibilityRole="button"
-          accessibilityLabel="Make a request"
-          className="gap-3 rounded-3xl bg-brand p-6 active:opacity-90"
-        >
-          <View className="h-11 w-11 items-center justify-center rounded-full bg-white/15">
-            <Ionicons name="add" size={26} color={colors.canvas} />
-          </View>
-          <View className="gap-1">
-            <Text className="text-2xl font-bold text-canvas">Make a request</Text>
-            <Text className="text-base text-canvas/80">
-              Ask for help. It stays open only while you need it.
-            </Text>
-          </View>
-        </Pressable>
-
-        <NearbyRequests />
+        <NearbyRequests
+          compact
+          limit={12}
+          sectionTitle="Open nearby"
+          seeAllLabel="See all on Activity"
+          onSeeAll={() => router.push('/(tabs)/activity')}
+        />
 
         {openRequests.length > 0 ? (
           <View className="gap-3">
             <SectionHeader
-              title="Your open requests"
+              title="Your requests"
               actionLabel={openRequests.length > 3 ? 'See all' : undefined}
               onAction={() => router.push('/requests')}
             />
-
             {openRequests.slice(0, 3).map((request) => {
               const badge = requestStatusBadge(request.status, request.pending_response_count);
 
@@ -187,12 +170,13 @@ export default function HomeScreen() {
                   title={request.title ?? 'Request'}
                   description={request.description ?? undefined}
                   badge={badge}
+                  when={formatWhen(request.scheduled_for)}
+                  meta={[request.location_label]}
                   amount={
                     request.offered_amount !== null
                       ? formatMoney(request.offered_amount, request.currency)
                       : '—'
                   }
-                  meta={[formatWhen(request.scheduled_for), request.location_label]}
                   onPress={() => router.push(`/request/${request.request_id}`)}
                 />
               );
@@ -200,6 +184,12 @@ export default function HomeScreen() {
           </View>
         ) : null}
       </ScrollView>
+
+      <FloatingActionButton
+        accessibilityLabel="Ask for help — create a request"
+        onPress={() => router.push('/request/new')}
+        style={{ position: 'absolute', right: 20, bottom: fabBottom }}
+      />
     </Screen>
   );
 }

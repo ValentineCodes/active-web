@@ -2,7 +2,7 @@ import * as Location from 'expo-location';
 
 /**
  * Location is never read at launch or during onboarding. These helpers are called when
- * the user submits a request, goes Active, or chooses to browse requests nearby.
+ * the user posts a request, responds to one, or chooses to browse nearby.
  * Each is a moment they have just chosen, which is what makes the permission prompt
  * legible.
  */
@@ -39,8 +39,7 @@ export async function requestPosition(): Promise<PositionResult> {
 }
 
 /**
- * Reads the position only if permission was already granted, used to keep an Active
- * provider's matching position current. Never prompts.
+ * Reads the position only if permission was already granted. Never prompts.
  */
 export type ForegroundPermission = 'granted' | 'denied' | 'undetermined';
 
@@ -104,7 +103,7 @@ export function parsePositionParam(
 }
 
 /**
- * Suggests the coarse area label shown to providers before acceptance. The requester
+ * Suggests the coarse area label shown to others before selection. The requester
  * confirms or edits it, so a wrong guess is harmless and nothing precise is derived
  * from it.
  */

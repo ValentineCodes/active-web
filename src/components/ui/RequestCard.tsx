@@ -9,32 +9,44 @@ import { colors, shadow } from '@/theme';
 type Tone = 'neutral' | 'brand' | 'active' | 'danger' | 'warning' | 'info';
 
 /**
- * The one summary tile for "a request" — used for a requester's own request (Home,
- * Requests) and, with a different meta line, a provider's nearby inbox row (Activity).
- * Keeping this in one place is what makes every list of requests in the app feel like
- * the same product.
+ * Summary tile for a request — title, optional preview, when/proximity, offer, and status.
  */
 export function RequestCard({
-  icon = 'ellipse-outline',
   title,
   description,
   badge,
-  meta,
+  when,
+  proximity,
+  meta = [],
   amount,
   onPress,
   disabled = false,
   footer,
 }: {
-  icon?: keyof typeof Ionicons.glyphMap;
   title: string;
   description?: string;
   badge?: { label: string; tone: Tone };
-  meta: string[];
+  when?: string | null;
+  proximity?: string | null;
+  /** Extra lines below when/proximity (e.g. area label, history note). */
+  meta?: string[];
   amount?: string | null;
   onPress: () => void;
   disabled?: boolean;
   footer?: ReactNode;
 }) {
+  type DetailLine = {
+    icon: 'time-outline' | 'navigate-outline' | 'location-outline';
+    text: string;
+  };
+
+  const detailLines: DetailLine[] = [];
+  if (when) detailLines.push({ icon: 'time-outline', text: when });
+  if (proximity) detailLines.push({ icon: 'navigate-outline', text: proximity });
+  for (const text of meta) {
+    if (text) detailLines.push({ icon: 'location-outline', text });
+  }
+
   return (
     <Pressable
       accessibilityRole="button"
@@ -43,37 +55,40 @@ export function RequestCard({
       disabled={disabled}
       onPress={onPress}
       style={shadow.card}
-      className={cn('gap-3 rounded-3xl bg-canvas p-4', !disabled && 'active:opacity-80')}
+      className={cn(
+        'gap-3 rounded-2xl border border-hairline bg-canvas p-4',
+        !disabled && 'active:opacity-90',
+      )}
     >
-      <View className="flex-row items-start gap-3">
-        <View className="h-11 w-11 items-center justify-center rounded-xl bg-brand-soft">
-          <Ionicons name={icon} size={20} color={colors.brand} />
-        </View>
-
-        <View className="flex-1 gap-1">
-          <View className="flex-row items-start justify-between gap-2">
-            <Text className="flex-1 text-base font-semibold text-ink" numberOfLines={2}>
-              {title}
-            </Text>
-            {amount ? <Text className="text-base font-bold text-ink">{amount}</Text> : null}
-          </View>
-          {description ? (
-            <Text className="text-sm text-muted" numberOfLines={2}>
-              {description}
-            </Text>
-          ) : null}
-        </View>
+      <View className="flex-row items-start justify-between gap-3">
+        <Text className="flex-1 text-lg font-bold text-ink" numberOfLines={2}>
+          {title}
+        </Text>
+        {badge ? <Badge label={badge.label} tone={badge.tone} dot={false} /> : null}
       </View>
 
-      <View className="flex-row flex-wrap items-center justify-between gap-2 pl-14">
-        <View className="flex-1 flex-row flex-wrap gap-x-3 gap-y-1">
-          {meta.map((line) => (
-            <Text key={line} className="text-xs text-subtle">
-              {line}
-            </Text>
+      {description ? (
+        <Text className="text-sm leading-5 text-muted" numberOfLines={3}>
+          {description}
+        </Text>
+      ) : null}
+
+      <View className="flex-row items-end justify-between gap-3">
+        <View className="flex-1 gap-2">
+          {detailLines.map((line) => (
+            <View key={line.text} className="flex-row items-center gap-2">
+              <Ionicons name={line.icon} size={14} color={colors.subtle} />
+              <Text className="flex-1 text-sm text-muted" numberOfLines={1}>
+                {line.text}
+              </Text>
+            </View>
           ))}
         </View>
-        {badge ? <Badge label={badge.label} tone={badge.tone} /> : null}
+        {amount ? (
+          <Text className="text-xl font-bold text-ink" numberOfLines={1}>
+            {amount}
+          </Text>
+        ) : null}
       </View>
 
       {footer}

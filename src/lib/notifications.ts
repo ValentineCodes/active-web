@@ -21,10 +21,8 @@ Notifications.setNotificationHandler({
 /**
  * Registers this device for push.
  *
- * `prompt` is only true at the two moments notifications start to matter — after
- * submitting a request, and after going Active — so the system dialog arrives with a
- * reason the person can see. On launch it is false, which refreshes the token for anyone
- * who already agreed and asks nobody who has not.
+ * `prompt` is only true after moments notifications start to matter — for example after
+ * posting a request or sending a response — so the system dialog arrives with context.
  */
 export async function syncPushToken({ prompt }: { prompt: boolean }): Promise<void> {
   if (!Device.isDevice) return;

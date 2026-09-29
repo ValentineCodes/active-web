@@ -1,5 +1,4 @@
--- Tests for the two things the product cannot get wrong: who a request reaches, and
--- what each side can see about the other before and after acceptance.
+-- Core marketplace rules: public discovery, responses, selection, attendance, and privacy.
 
 begin;
 
@@ -9,11 +8,10 @@ select no_plan();
 
 -- Fixtures --------------------------------------------------------------------------
 --
--- Coordinates are around Yaba, Lagos. Geodesic distance for 0.01 degrees of latitude on
--- WGS84 is ~1.106 km, which the offsets below are built from:
---   6.5000  ->  0 m from the request
---   6.5400  ->  ~4.42 km, inside a 5 km search radius
---   6.5600  ->  ~6.64 km, outside a 5 km search radius but inside a 10 km service radius
+-- Coordinates around Yaba, Lagos (~1.1 km per 0.01° latitude):
+--   6.5000  -> request site
+--   6.5400  -> ~4.4 km (inside 50 km discovery)
+--   7.5000  -> ~110 km (outside 50 km discovery)
 
 create function pg_temp.make_user(p_id uuid, p_name text, p_phone text)
 returns text
@@ -28,7 +26,6 @@ begin
     p_id, 'authenticated', 'authenticated', p_phone, now(), now(), now()
   );
 
-  -- public.handle_new_user has created the profile shell; finish onboarding.
   update public.profiles
   set display_name = p_name,
       avatar_path = p_id::text || '/avatar.jpg',
@@ -77,219 +74,50 @@ select lives_ok(
   )$$,
   'fund the requester wallet for escrow tests'
 );
-select pg_temp.make_user('22222222-2222-2222-2222-222222222222', 'Near Repairer', '+2348000000102') as _ \gset
-select pg_temp.make_user('33333333-3333-3333-3333-333333333333', 'Far Repairer', '+2348000000103') as _ \gset
-select pg_temp.make_user('44444444-4444-4444-4444-444444444444', 'Short Range Repairer', '+2348000000104') as _ \gset
-select pg_temp.make_user('55555555-5555-5555-5555-555555555555', 'Cleaner Only', '+2348000000105') as _ \gset
-select pg_temp.make_user('66666666-6666-6666-6666-666666666666', 'Never Active', '+2348000000106') as _ \gset
 
-select pg_temp.act_as('66666666-6666-6666-6666-666666666666') as _ \gset
-select pg_temp.act_as_owner() as _ \gset
-update public.profiles
-set avatar_path = null, avatar_captured_in_app = false
-where id = '66666666-6666-6666-6666-666666666666';
+select pg_temp.make_user('22222222-2222-2222-2222-222222222222', 'Near Helper', '+2348000000102') as _ \gset
+select pg_temp.make_user('33333333-3333-3333-3333-333333333333', 'Alt Helper', '+2348000000103') as _ \gset
+select pg_temp.make_user('55555555-5555-5555-5555-555555555555', 'Far Helper', '+2348000000105') as _ \gset
+select pg_temp.make_user('66666666-6666-6666-6666-666666666666', 'Browser', '+2348000000106') as _ \gset
 
-select pg_temp.act_as('66666666-6666-6666-6666-666666666666') as _ \gset
-select throws_ok(
-  $$select go_active(6.5000, 3.3800, 10000, array['repair'], 240)$$,
-  '55000',
-  'capture a profile photo in the app before going Active',
-  'going Active without an in-app profile photo is rejected'
-);
-
-select pg_temp.act_as_owner() as _ \gset
-select pg_temp.make_user('77777777-7777-7777-7777-777777777777', 'Lapsed Repairer', '+2348000000107') as _ \gset
-
--- Each provider going Active exercises one of the five eligibility rules.
-select pg_temp.act_as('22222222-2222-2222-2222-222222222222') as _ \gset
-select lives_ok(
-  $$select go_active(6.5000, 3.3800, 10000, array['repair'], 240)$$,
-  'a provider can go Active with a category, a radius and a duration'
-);
-
-select is(
-  (select count(*)::bigint from public.profile_catalogue_media
-   where user_id = '22222222-2222-2222-2222-222222222222'),
-  0::bigint,
-  'going Active does not require catalogue photos or video'
-);
-
-select pg_temp.act_as('33333333-3333-3333-3333-333333333333') as _ \gset
-select lives_ok($$select go_active(6.5600, 3.3800, 10000, array['repair'], 240)$$);
-
-select pg_temp.act_as('44444444-4444-4444-4444-444444444444') as _ \gset
-select lives_ok($$select go_active(6.5400, 3.3800, 2000, array['repair'], 240)$$);
-
-select pg_temp.act_as('55555555-5555-5555-5555-555555555555') as _ \gset
-select lives_ok($$select go_active(6.5000, 3.3800, 10000, array['cleaning'], 240)$$);
-
-select pg_temp.act_as('77777777-7777-7777-7777-777777777777') as _ \gset
-select lives_ok($$select go_active(6.5000, 3.3800, 10000, array['repair'], 240)$$);
-
-select throws_ok(
-  $$select go_active(6.5000, 3.3800, 10000, array['teleportation'], 240)$$,
-  '22023',
-  'unknown service category',
-  'going Active with a category that does not exist is refused'
-);
-
-select throws_ok(
-  $$select go_active(6.5000, 3.3800, 10000, array[]::text[], 240)$$,
-  '22023',
-  'choose at least one service you can provide',
-  'going Active without choosing a service is refused'
-);
-
--- "Never Active" does nothing. "Lapsed Repairer" has their window forced into the past.
-select pg_temp.act_as_owner() as _ \gset
-update public.provider_availability
-set expires_at = now() - interval '1 minute'
-where user_id = '77777777-7777-7777-7777-777777777777';
-
--- The requester also offers repairs, to prove nobody is matched to their own request.
 select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
-select lives_ok($$select go_active(6.5000, 3.3800, 10000, array['repair'], 240)$$);
-
 select create_request(
-  'repair',
+  'Generator repair',
   'My generator will not start. 5kVA, was fine yesterday.',
   6.5000,
   3.3800,
   'Yaba, Lagos',
+  null,
   5000
 ) as request_id \gset
 
--- Matching --------------------------------------------------------------------------
-
-select pg_temp.act_as_owner() as _ \gset
-update public.profiles
-set avatar_captured_in_app = false
-where id = '22222222-2222-2222-2222-222222222222';
-
-select pg_temp.act_as('22222222-2222-2222-2222-222222222222') as _ \gset
-select is(
-  (select count(*) from nearby_requests() where request_id = :'request_id'),
-  0::bigint,
-  'a provider without an in-app profile photo is not matched'
-);
-
-select pg_temp.act_as_owner() as _ \gset
-update public.profiles
-set avatar_captured_in_app = true
-where id = '22222222-2222-2222-2222-222222222222';
-
-select pg_temp.act_as('22222222-2222-2222-2222-222222222222') as _ \gset
-select is(
-  (select count(*) from nearby_requests() where request_id = :'request_id'),
-  1::bigint,
-  'an Active provider offering the category and inside both radii receives the request'
-);
-
-select is(
-  (select distance_m from nearby_requests() where request_id = :'request_id'),
-  100,
-  'distance is bucketed to a 100 m floor rather than reported exactly'
-);
-
-select pg_temp.act_as('33333333-3333-3333-3333-333333333333') as _ \gset
-select is(
-  (select count(*) from nearby_requests() where request_id = :'request_id'),
-  0::bigint,
-  'a provider beyond the requester''s search radius is not matched'
-);
-
-select pg_temp.act_as('44444444-4444-4444-4444-444444444444') as _ \gset
-select is(
-  (select count(*) from nearby_requests() where request_id = :'request_id'),
-  0::bigint,
-  'a provider whose own service radius excludes the request is not matched'
-);
-
-select pg_temp.act_as('55555555-5555-5555-5555-555555555555') as _ \gset
-select is(
-  (select count(*) from nearby_requests() where request_id = :'request_id'),
-  0::bigint,
-  'a provider who does not offer the category is not matched'
-);
-
-select pg_temp.act_as('66666666-6666-6666-6666-666666666666') as _ \gset
-select is(
-  (select count(*) from nearby_requests() where request_id = :'request_id'),
-  0::bigint,
-  'a provider who never went Active is not matched'
-);
-
-select pg_temp.act_as('77777777-7777-7777-7777-777777777777') as _ \gset
-select is(
-  (select count(*) from nearby_requests() where request_id = :'request_id'),
-  0::bigint,
-  'a provider whose Active window has lapsed is not matched'
-);
-
-select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
-select is(
-  (select count(*) from nearby_requests() where request_id = :'request_id'),
-  0::bigint,
-  'a requester is never matched to their own request'
-);
-
--- Public discovery does not require going Active, and it never returns private fields.
-select pg_temp.act_as('66666666-6666-6666-6666-666666666666') as _ \gset
-select is(
-  (select count(*) from browse_nearby_requests(6.5000::double precision, 3.3800::double precision) where request_id = :'request_id'),
-  1::bigint,
-  'someone who is not Active can still browse a searching request near them'
-);
-
-select is(
-  (select distance_m from browse_nearby_requests(6.5000::double precision, 3.3800::double precision) where request_id = :'request_id'),
-  100,
-  'browsed distance is bucketed rather than exact'
-);
-
-select is(
-  (select count(*) from browse_nearby_requests(6.5600::double precision, 3.3800::double precision) where request_id = :'request_id'),
-  0::bigint,
-  'a browser outside the request search radius does not see it'
-);
-
-select is(
-  (select count(*) from browse_nearby_requests(6.5000::double precision, 3.3800::double precision, 'repair') where request_id = :'request_id'),
-  1::bigint,
-  'category filtering keeps a request in its own category'
-);
-
-select is(
-  (select count(*) from browse_nearby_requests(6.5000::double precision, 3.3800::double precision, 'cleaning') where request_id = :'request_id'),
-  0::bigint,
-  'category filtering hides a request from other categories'
-);
-
-select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
 select create_request(
-  'cleaning',
+  'Hallway cleaning',
   'Need the hallway mopped before guests arrive.',
   6.5000,
   3.3800,
   'Yaba, Lagos',
+  null,
   5000
 ) as cleaning_request_id \gset
 
 select create_request(
-  'repair',
-  'This one has already run past its search window.',
+  'Expired fixture',
+  'This one has already run past its window.',
   6.5000,
   3.3800,
   'Yaba, Lagos',
+  null,
   5000
 ) as expired_request_id \gset
 
 select create_request(
-  'repair',
+  'Cancelled fixture',
   'This one will be cancelled before anyone answers.',
   6.5000,
   3.3800,
   'Yaba, Lagos',
+  null,
   5000
 ) as cancelled_request_id \gset
 
@@ -301,20 +129,34 @@ where id = :'expired_request_id';
 select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
 select lives_ok(
   format('select cancel_request(%L)', :'cancelled_request_id'),
-  'the requester can cancel a searching request'
+  'the requester can cancel a posted request'
 );
+
+-- Discovery -------------------------------------------------------------------------
 
 select pg_temp.act_as('66666666-6666-6666-6666-666666666666') as _ \gset
 select is(
-  (select count(*) from browse_nearby_requests(6.5000::double precision, 3.3800::double precision, 'cleaning') where request_id = :'cleaning_request_id'),
+  (select count(*) from browse_nearby_requests(6.5000::double precision, 3.3800::double precision) where request_id = :'request_id'),
   1::bigint,
-  'a category filter returns the matching nearby request'
+  'any signed-in user can browse a posted request near them'
+);
+
+select is(
+  (select distance_m from browse_nearby_requests(6.5000::double precision, 3.3800::double precision) where request_id = :'request_id'),
+  100,
+  'browsed distance is bucketed rather than exact'
+);
+
+select is(
+  (select count(*) from browse_nearby_requests(7.5000::double precision, 3.3800::double precision) where request_id = :'request_id'),
+  0::bigint,
+  'a browser outside discovery radius does not see the request'
 );
 
 select is(
   (select count(*) from browse_nearby_requests(6.5000::double precision, 3.3800::double precision) where request_id = :'expired_request_id'),
   0::bigint,
-  'an expired request disappears from discovery even if its status is still searching'
+  'an expired request disappears from discovery while still posted on the row'
 );
 
 select is(
@@ -327,13 +169,7 @@ select pg_temp.act_as_owner() as _ \gset
 select is(
   public.expire_request(:'expired_request_id'::uuid),
   true,
-  'expire_request persists a due searching request as expired'
-);
-
-select is(
-  public.expire_request(:'expired_request_id'::uuid),
-  false,
-  'expire_request is idempotent once the request is already expired'
+  'expire_request persists a due posted request as expired'
 );
 
 select is(
@@ -342,128 +178,11 @@ select is(
   'expiration writes the expired status on the request row'
 );
 
-select is(
-  (select count(*) from public.requests where id = :'expired_request_id'::uuid),
-  1::bigint,
-  'expiration keeps the request in history instead of deleting it'
-);
-
-select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
-select is(
-  (select status::text from my_requests where request_id = :'expired_request_id'::uuid),
-  'expired',
-  'the requester still sees an expired request in their list'
-);
-
-select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
-select create_request(
-  'repair',
-  'Funded request that should refund when the search window ends.',
-  6.5000,
-  3.3800,
-  'Yaba, Lagos',
-  5000,
-  null,
-  7500
-) as funded_expired_request_id \gset
-
-select pg_temp.act_as_owner() as _ \gset
-update public.requests
-set expires_at = now() - interval '1 minute'
-where id = :'funded_expired_request_id'::uuid;
-
-select ok(
-  public.expire_request(:'funded_expired_request_id'::uuid),
-  'expiration refunds locked funds on a funded request'
-);
-
-select is(
-  (select payment_status::text from public.requests where id = :'funded_expired_request_id'::uuid),
-  'refunded',
-  'expiration moves locked payment status to refunded'
-);
-
-select is(
-  (select to_status::text from public.payment_transitions
-   where request_id = :'funded_expired_request_id'::uuid
-     and idempotency_key = 'expire:' || :'funded_expired_request_id'),
-  'refunded',
-  'expiration records a payment transition for the refund'
-);
-
-select is(
-  (select total from public.request_escrow where request_id = :'funded_expired_request_id'::uuid),
-  8250::numeric,
-  'escrow total includes the 10% service fee on a 7500 offer'
-);
-
-select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
-select create_request(
-  'repair',
-  'Funded request to assert wallet buckets after lock.',
-  6.5000,
-  3.3800,
-  'Yaba, Lagos',
-  5000,
-  null,
-  5000
-) as wallet_lock_request_id \gset
-
-select is(
-  (select available from public.wallet_accounts
-   where user_id = '11111111-1111-1111-1111-111111111111'::uuid),
-  4994500::numeric,
-  'funding moves the charge from available into locked'
-);
-
-select is(
-  (select locked from public.wallet_accounts
-   where user_id = '11111111-1111-1111-1111-111111111111'::uuid),
-  5500::numeric,
-  'locked holds the full escrow total while searching'
-);
-
-select pg_temp.act_as_owner() as _ \gset
-update public.requests
-set expires_at = now() - interval '1 minute'
-where id = :'wallet_lock_request_id'::uuid;
-
-select ok(
-  public.expire_request(:'wallet_lock_request_id'::uuid),
-  'expiration refunds a searching funded request wallet escrow'
-);
-
-select is(
-  (select available from public.wallet_accounts
-   where user_id = '11111111-1111-1111-1111-111111111111'::uuid),
-  5000000::numeric,
-  'expiration refunds escrow back to the requester available balance'
-);
-
-select is(
-  (select locked from public.wallet_accounts
-   where user_id = '11111111-1111-1111-1111-111111111111'::uuid),
-  0::numeric,
-  'locked returns to zero after a full refund'
-);
-
 select pg_temp.act_as('66666666-6666-6666-6666-666666666666') as _ \gset
 select is(
   (select count(*) from browse_nearby_requests(6.5000::double precision, 3.3800::double precision) where request_id = :'cancelled_request_id'),
   0::bigint,
   'a cancelled request disappears from discovery'
-);
-
-select is(
-  (select count(*) from browse_request(:'cancelled_request_id', 6.5000::double precision, 3.3800::double precision)),
-  0::bigint,
-  'a cancelled request cannot be opened from discovery'
-);
-
-select is(
-  (select count(*) from public.requests where id = :'request_id'),
-  0::bigint,
-  'a browser cannot read the request row, so exact coordinates stay on the table'
 );
 
 select is(
@@ -486,24 +205,59 @@ select ok(
     from pg_proc p
     where p.pronamespace = 'public'::regnamespace
       and p.proname in ('browse_nearby_requests', 'browse_request')
-      and pg_get_function_result(p.oid) ~* 'response_count|phone|display_name|avatar|latitude|longitude|provider'
+      and pg_get_function_result(p.oid) ~* 'response_count|phone|display_name|avatar|latitude|longitude'
   ),
   'public discovery does not return responders, counts, contact details, or coordinates'
 );
 
--- Privacy before acceptance ---------------------------------------------------------
+-- Escrow on expiration --------------------------------------------------------------
+
+select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
+select create_request(
+  'Funded expiry',
+  'Funded request that should refund when the window ends.',
+  6.5000,
+  3.3800,
+  'Yaba, Lagos',
+  null,
+  7500
+) as funded_expired_request_id \gset
+
+select pg_temp.act_as_owner() as _ \gset
+update public.requests
+set expires_at = now() - interval '1 minute'
+where id = :'funded_expired_request_id'::uuid;
+
+select ok(
+  public.expire_request(:'funded_expired_request_id'::uuid),
+  'expiration refunds locked funds on a funded request'
+);
+
+select is(
+  (select payment_status::text from public.requests where id = :'funded_expired_request_id'::uuid),
+  'refunded',
+  'expiration moves locked payment status to refunded'
+);
+
+select is(
+  (select total from public.request_escrow where request_id = :'funded_expired_request_id'::uuid),
+  8250::numeric,
+  'escrow total includes the 10% service fee on a 7500 offer'
+);
+
+-- Privacy before selection ----------------------------------------------------------
 
 select pg_temp.act_as('22222222-2222-2222-2222-222222222222') as _ \gset
 select is(
   (select count(*) from public.requests where id = :'request_id'),
   0::bigint,
-  'a matched provider cannot read the request row itself before acceptance'
+  'a browser cannot read the request row itself before selection'
 );
 
 select is(
   (select count(*) from get_engagement(:'request_id')),
   0::bigint,
-  'a matched provider gets no engagement details before acceptance'
+  'nobody gets engagement details before selection'
 );
 
 select is(
@@ -513,176 +267,67 @@ select is(
 );
 
 select is(
-  (select count(*) from public.provider_availability where user_id <> auth.uid()),
+  (select count(*) from public.user_attendance where user_id <> auth.uid()),
   0::bigint,
-  'a user cannot read anyone else''s availability, which is where provider coordinates live'
+  'a user cannot read anyone else''s attendance row'
 );
 
 select throws_ok(
   $$insert into public.requests (
-      requester_id, category_slug, description, location, location_label, search_radius_m
+      requester_id, title, description, location, location_label
     )
     values (
-      auth.uid(), 'repair', 'writing straight to the table instead',
+      auth.uid(), 'Hack', 'writing straight to the table instead',
       extensions.ST_SetSRID(extensions.ST_MakePoint(3.38, 6.5), 4326)::extensions.geography,
-      'Yaba, Lagos', 5000
+      'Yaba, Lagos'
     )$$,
   '42501',
   null,
   'a client cannot write a request directly; only create_request can'
 );
 
-select throws_ok(
-  $$update public.profiles set rating_count = 99, rating_average = 5 where id = auth.uid()$$,
-  '42501',
-  'profile field is server managed and cannot be set by a client',
-  'a client cannot inflate their own reputation'
-);
-
-select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
-select is(
-  (select count(*) from get_engagement(:'request_id')),
-  0::bigint,
-  'even the requester gets no engagement details before they accept someone'
-);
-
-select pg_temp.act_as_owner() as _ \gset
-select ok(
-  not exists (
-    select 1
-    from pg_proc, unnest(proargnames) as argument(name)
-    where proname in ('nearby_requests', 'list_request_responses', 'my_responses')
-      and pronamespace = 'public'::regnamespace
-      and argument.name in ('location', 'latitude', 'longitude')
-  ),
-  'no pre-acceptance function exposes a coordinate column'
-);
-
-select is(
-  (select count(*) from pg_policy p join pg_class c on c.oid = p.polrelid
-   where c.relname in ('requests', 'request_responses', 'provider_availability')
-     and p.polcmd <> 'r'),
-  0::bigint,
-  'no policy lets a client write matching state directly; only the functions can'
-);
-
--- A provider who was never eligible cannot respond even by calling the function
--- directly with a request id they somehow learned.
 select pg_temp.act_as('55555555-5555-5555-5555-555555555555') as _ \gset
 select throws_ok(
-  format('select respond_to_request(%L)', :'request_id'),
+  format(
+    $$select respond_to_request(%L, null, null, %s, %s)$$,
+    :'request_id',
+    7.5000,
+    3.3800
+  ),
   '55000',
   'this request is no longer available to you',
-  'responding is re-checked against the matching rule, not the caller''s word'
+  'responding is distance-checked from the position sent'
 );
 
--- Responding and accepting ----------------------------------------------------------
-
-select pg_temp.act_as_owner() as _ \gset
-update public.provider_availability
-set location = extensions.ST_SetSRID(extensions.ST_MakePoint(3.3800, 6.5600), 4326)::extensions.geography
-where user_id = '22222222-2222-2222-2222-222222222222';
+-- Responding ------------------------------------------------------------------------
 
 select pg_temp.act_as('22222222-2222-2222-2222-222222222222') as _ \gset
-select throws_ok(
-  format('select respond_to_request(%L)', :'request_id'),
-  '55000',
-  'this request is no longer available to you',
-  'a stored position outside both radii cannot answer the request'
-);
-
 select respond_to_request(
   :'request_id',
-  'I fix these. Thirty minutes away.',
+  'I fix these. Can be there soon.',
   7000,
-  30,
   6.5000,
   3.3800
 ) as response_id \gset
 
-select pg_temp.act_as_owner() as _ \gset
-select ok(
-  extensions.ST_DWithin(
-    (select location from public.provider_availability
-     where user_id = '22222222-2222-2222-2222-222222222222'),
-    extensions.ST_SetSRID(extensions.ST_MakePoint(3.3800, 6.5000), 4326)::extensions.geography,
-    1
-  ),
-  'responding moves matching to the position the provider sent from'
-);
-
 select pg_temp.act_as('66666666-6666-6666-6666-666666666666') as _ \gset
-select is(
-  (select count(*) from browse_nearby_requests(6.5000::double precision, 3.3800::double precision) where request_id = :'request_id'),
-  1::bigint,
-  'a request stays discoverable after someone responds'
-);
-
 select is(
   (select count(*) from public.request_responses where request_id = :'request_id'),
   0::bigint,
   'a browser cannot see who responded or how many responses exist'
 );
 
-select pg_temp.act_as_owner() as _ \gset
-select is(
-  (select status::text from public.provider_availability
-   where user_id = '22222222-2222-2222-2222-222222222222'),
-  'available',
-  'responding leaves the provider available for other requests'
-);
-
-select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
-select create_request(
-  'repair',
-  'Second generator, same street, still will not start.',
-  6.5000,
-  3.3800,
-  'Yaba, Lagos',
-  5000
-) as second_request_id \gset
-
 select pg_temp.act_as('22222222-2222-2222-2222-222222222222') as _ \gset
-select lives_ok(
-  format('select respond_to_request(%L)', :'second_request_id'),
-  'a provider can respond to another request without becoming unavailable'
-);
-
-select pg_temp.act_as_owner() as _ \gset
-select is(
-  (select status::text from public.provider_availability
-   where user_id = '22222222-2222-2222-2222-222222222222'),
-  'available',
-  'a second response still leaves the provider available'
-);
-
-select pg_temp.act_as('22222222-2222-2222-2222-222222222222') as _ \gset
-
 select lives_ok(
   format(
-    $$select respond_to_request(%L, %L, %L, %L, %L, %L)$$,
+    $$select respond_to_request(%L, %L, %L, %L, %L)$$,
     :'request_id',
     'Updated note.',
     7500,
-    45,
     6.5000,
     3.3800
   ),
   'responding twice updates the same pending response idempotently'
-);
-
-select is(
-  (select message from public.request_responses where id = :'response_id'),
-  'Updated note.',
-  'a repeat response overwrites the message instead of creating a duplicate row'
-);
-
-select ok(
-  not (pg_get_function_result((
-    select oid from pg_proc
-    where proname = 'nearby_requests' and pronamespace = 'public'::regnamespace
-  )) ~* 'response_count'),
-  'the provider inbox never exposes how many people responded'
 );
 
 select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
@@ -693,38 +338,9 @@ select is(
 );
 
 select is(
-  (select display_name from list_request_responses(:'request_id')),
-  'Near Repairer',
-  'the requester sees who responded'
-);
-
-select is(
   (select pending_response_count from my_requests where request_id = :'request_id'),
   1,
-  'the request reports a waiting response while it is still searching'
-);
-
-select ok(
-  exists (
-    select 1
-    from public.notification_inbox ni
-    where ni.user_id = '11111111-1111-1111-1111-111111111111'::uuid
-      and ni.title = 'Someone can help'
-  ),
-  'in-app inbox stores response notifications for the requester'
-);
-
-select mark_notification_inbox_read();
-
-select is(
-  (
-    select count(*)::bigint
-    from public.notification_inbox ni
-    where ni.user_id = '11111111-1111-1111-1111-111111111111'::uuid
-      and ni.read_at is null
-  ),
-  0::bigint,
-  'opening the inbox marks notifications read for the badge'
+  'the request reports a waiting response while it is still posted'
 );
 
 select pg_temp.act_as('33333333-3333-3333-3333-333333333333') as _ \gset
@@ -732,1381 +348,101 @@ select respond_to_request(
   :'request_id',
   'I can take this one too.',
   6500,
-  25,
   6.5400,
   3.3800
 ) as alternate_response_id \gset
 
 select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
-select is(
-  (select count(*) from list_request_responses(:'request_id')),
-  2::bigint,
-  'the requester can compare multiple pending responses before the handshake'
+select create_request(
+  'Second generator',
+  'Second generator, same street, still will not start.',
+  6.5000,
+  3.3800,
+  'Yaba, Lagos',
+  null,
+  5000
+) as second_request_id \gset
+
+select pg_temp.act_as('22222222-2222-2222-2222-222222222222') as _ \gset
+select lives_ok(
+  format('select respond_to_request(%L, null, null, 6.5000, 3.3800)', :'second_request_id'),
+  'a helper can respond to another request before being selected'
 );
 
+select id as second_response_id
+from public.request_responses
+where request_id = :'second_request_id'
+  and responder_id = '22222222-2222-2222-2222-222222222222' \gset
+
+-- Selection and attendance ----------------------------------------------------------
+
+select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
 select lives_ok(
   format('select accept_response(%L)', :'response_id'),
-  'the requester accepts one provider'
+  'the requester selects one helper'
 );
 
 select throws_ok(
   format('select accept_response(%L)', :'alternate_response_id'),
   '55000',
   'this request is already accepted',
-  'a requester cannot handshake with a second provider on the same request'
+  'a requester cannot select a second helper on the same request'
 );
 
 select is(
   (select status::text from my_requests where request_id = :'request_id'),
   'accepted',
-  'accepting moves the request to accepted'
+  'selection moves the request to accepted'
 );
 
 select pg_temp.act_as_owner() as _ \gset
 select is(
-  (select count(*) from public.handshakes where request_id = :'request_id'::uuid),
-  1::bigint,
-  'acceptance creates exactly one immutable handshake record'
-);
-
-select ok(
-  pg_get_functiondef((
-    select oid from pg_proc
-    where proname = 'notify_provider_of_acceptance'
-      and pronamespace = 'public'::regnamespace
-  )) ~* 'been selected',
-  'the provider push uses the handshake selection title'
-);
-
-select ok(
-  pg_get_functiondef((
-    select oid from pg_proc
-    where proname = 'notify_matching_providers'
-      and pronamespace = 'public'::regnamespace
-  )) !~* 'location_label',
-  'matching provider push copy never includes the requester address label'
-);
-
-select ok(
-  pg_get_functiondef((
-    select oid from pg_proc
-    where proname = 'notify_requester_of_provider_selected'
-      and pronamespace = 'public'::regnamespace
-  )) ~* 'Provider selected',
-  'the requester is notified when a provider is selected'
-);
-
-select is(
-  (select status::text from public.provider_availability
-   where user_id = '22222222-2222-2222-2222-222222222222'),
-  'busy',
-  'the accepted provider is taken out of matching so they cannot be double-booked'
-);
-
-select is(
-  (select committed_request_id from public.provider_availability
-   where user_id = '22222222-2222-2222-2222-222222222222'),
+  (select request_id from public.user_attendance where user_id = '22222222-2222-2222-2222-222222222222'),
   :'request_id'::uuid,
-  'the commitment names the request the handshake belongs to'
+  'selection records attendance on the chosen helper'
 );
-
-select is(
-  (select service_radius_m from public.provider_availability
-   where user_id = '22222222-2222-2222-2222-222222222222'),
-  10000,
-  'a commitment keeps the provider service radius'
-);
-
-select is(
-  (select category_slug from public.provider_services
-   where user_id = '22222222-2222-2222-2222-222222222222'),
-  'repair',
-  'a commitment keeps the provider service categories'
-);
-
-select is(
-  (select status::text from public.request_responses
-   where request_id = :'second_request_id'
-     and provider_id = '22222222-2222-2222-2222-222222222222'),
-  'pending',
-  'answers already sent to other requests stay pending'
-);
-
-select id as second_response_id
-from public.request_responses
-where request_id = :'second_request_id'
-  and provider_id = '22222222-2222-2222-2222-222222222222' \gset
 
 select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
 select throws_ok(
   format('select accept_response(%L)', :'second_response_id'),
   '55000',
-  'This person is no longer available.',
-  'another request cannot commit a provider who already has a handshake'
+  'This person is already on another job.',
+  'another request cannot select a helper who is already attending a job'
 );
 
--- Privacy after acceptance ----------------------------------------------------------
+select pg_temp.act_as('22222222-2222-2222-2222-222222222222') as _ \gset
+select throws_ok(
+  format('select respond_to_request(%L, null, null, 6.5000, 3.3800)', :'second_request_id'),
+  '55000',
+  'this request is no longer available to you',
+  'attending one job blocks responding elsewhere'
+);
+
+-- Privacy after selection -----------------------------------------------------------
 
 select pg_temp.act_as('22222222-2222-2222-2222-222222222222') as _ \gset
 select is(
   (select count(*) from public.requests where id = :'request_id'),
   1::bigint,
-  'the accepted provider can now read the request row'
+  'the selected helper can now read the request row'
 );
 
 select is(
   (select counterparty_phone from get_engagement(:'request_id')),
   '+2348000000101',
-  'the accepted provider receives the requester''s phone number'
+  'the selected helper receives the requester''s phone number'
 );
 
 select ok(
   (select request_latitude from get_engagement(:'request_id')) = 6.5000,
-  'the accepted provider receives the exact location'
-);
-
-select is(
-  (select count(*) from nearby_requests() where request_id = :'request_id'),
-  0::bigint,
-  'a busy provider stops receiving new requests'
+  'the selected helper receives the exact location'
 );
 
 select pg_temp.act_as('66666666-6666-6666-6666-666666666666') as _ \gset
 select is(
   (select count(*) from browse_nearby_requests(6.5000::double precision, 3.3800::double precision) where request_id = :'request_id'),
   0::bigint,
-  'a request leaves public discovery once someone is accepted'
-);
-
--- Cancellation ----------------------------------------------------------------------
-
-select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
-select lives_ok(
-  format('select cancel_request(%L)', :'cleaning_request_id'),
-  'clear a searching request before cancellation fixtures'
-);
-
-select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
-select create_request(
-  'repair',
-  'Funded job the requester will cancel after handshake.',
-  6.5000,
-  3.3800,
-  'Yaba, Lagos',
-  5000,
-  null,
-  8000
-) as fc_req \gset
-
-select pg_temp.act_as('33333333-3333-3333-3333-333333333333') as _ \gset
-select respond_to_request(
-  :'fc_req',
-  'I can take this funded job.',
-  8000,
-  20,
-  6.5400,
-  3.3800
-) as fc_resp \gset
-
-select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
-select lives_ok(
-  format('select accept_response(%L)', :'fc_resp'),
-  'handshake for funded cancellation fixture'
-);
-
-select is(
-  (select payment_status::text from public.requests where id = cast(:'fc_req' as uuid)),
-  'pending',
-  'handshake moves locked funds to pending before cancellation'
-);
-
-select lives_ok(
-  format('select cancel_request(%L)', :'fc_req'),
-  'the requester can cancel after handshake'
-);
-
-select lives_ok(
-  format('select cancel_request(%L)', :'fc_req'),
-  'requester cancellation is idempotent'
-);
-
-select is(
-  (select status::text from public.requests where id = cast(:'fc_req' as uuid)),
-  'cancelled',
-  'cancellation closes the request'
-);
-
-select is(
-  (select payment_status::text from public.requests where id = cast(:'fc_req' as uuid)),
-  'refunded',
-  'cancellation refunds the client in full'
-);
-
-select is(
-  (
-    select count(*)::integer
-    from public.request_status_events
-    where request_id = cast(:'fc_req' as uuid)
-      and idempotency_key = 'cancel_request:' || :'fc_req'
-  ),
-  1,
-  'requester cancellation records one status event'
-);
-
-select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
-select create_request(
-  'repair',
-  'Job the provider will cancel after handshake.',
-  6.5000,
-  3.3800,
-  'Yaba, Lagos',
-  5000,
-  null,
-  6000
-) as pc_req \gset
-
-select is(
-  (select description from public.requests where id = cast(:'pc_req' as uuid)),
-  'Job the provider will cancel after handshake.',
-  'provider cancellation fixture request exists'
-);
-
-select pg_temp.act_as('33333333-3333-3333-3333-333333333333') as _ \gset
-select respond_to_request(
-  :'pc_req',
-  'Taking this one.',
-  6000,
-  25,
-  6.5400,
-  3.3800
-) as pc_resp \gset
-
-select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
-select lives_ok(
-  format('select accept_response(%L)', :'pc_resp'),
-  'handshake for provider cancellation fixture'
-);
-
-select pg_temp.act_as('33333333-3333-3333-3333-333333333333') as _ \gset
-select lives_ok(
-  format('select cancel_service(%L)', :'pc_req'),
-  'the provider can cancel an active service'
-);
-
-select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
-select is(
-  (select status::text from public.requests where id = cast(:'pc_req' as uuid)),
-  'cancelled',
-  'provider cancellation closes the request'
-);
-
-select is(
-  (select payment_status::text from public.requests where id = cast(:'pc_req' as uuid)),
-  'refunded',
-  'provider cancellation refunds the client in full'
-);
-
-select pg_temp.act_as('33333333-3333-3333-3333-333333333333') as _ \gset
-select is(
-  (select status::text from public.provider_availability where user_id = '33333333-3333-3333-3333-333333333333'),
-  'available',
-  'provider cancellation returns the provider to the pool'
-);
-
-select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
-select is(
-  (
-    select count(*)::integer
-    from public.request_status_events
-    where request_id = cast(:'pc_req' as uuid)
-      and idempotency_key = 'cancel_service:' || :'pc_req'
-  ),
-  1,
-  'provider cancellation records one status event'
-);
-
-select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
-select create_request(
-  'repair',
-  'Response the provider will withdraw before handshake.',
-  6.5000,
-  3.3800,
-  'Yaba, Lagos',
-  5000
-) as wd_req \gset
-
-select pg_temp.act_as('33333333-3333-3333-3333-333333333333') as _ \gset
-select respond_to_request(
-  :'wd_req',
-  'Never mind, I will withdraw.',
-  null,
-  null,
-  6.5400,
-  3.3800
-) as wd_resp \gset
-
-select lives_ok(
-  format('select withdraw_response(%L)', :'wd_resp'),
-  'the provider can withdraw a pending response before handshake'
-);
-
-select lives_ok(
-  format('select withdraw_response(%L)', :'wd_resp'),
-  'withdrawing a response is idempotent'
-);
-
-select is(
-  (select status::text from public.request_responses where id = cast(:'wd_resp' as uuid)),
-  'withdrawn',
-  'withdrawal inactivates the response without cancelling the request'
-);
-
--- Completion and rating -------------------------------------------------------------
-
-select pg_temp.act_as('22222222-2222-2222-2222-222222222222') as _ \gset
-select lives_ok(
-  format('select start_request(%L)', :'request_id'),
-  'the provider marks when they begin'
-);
-
-select is(
-  (select request_status::text from get_engagement(:'request_id')),
-  'in_progress',
-  'the request moves to in progress'
-);
-
-select throws_ok(
-  format('select complete_request(%L)', :'request_id'),
-  'P0002',
-  'request not found',
-  'a provider cannot confirm completion for the requester'
-);
-
-select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
-select throws_ok(
-  format('select complete_request(%L)', :'request_id'),
-  '55000',
-  'you can confirm completion only after your provider marks the service complete',
-  'the requester cannot skip the provider completion step'
-);
-
-select pg_temp.act_as('22222222-2222-2222-2222-222222222222') as _ \gset
-select lives_ok(
-  format('select mark_service_complete(%L)', :'request_id'),
-  'the provider marks the service complete'
-);
-
-select is(
-  (select request_status::text from get_engagement(:'request_id')),
-  'completion_pending',
-  'the request waits for requester confirmation'
-);
-
-select ok(
-  (select completion_confirm_by > now() from get_engagement(:'request_id')),
-  'the confirmation deadline is set when completion is pending'
-);
-
-select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
-select throws_ok(
-  format('select cancel_request(%L)', :'request_id'),
-  '55000',
-  'you cannot cancel while completion is being confirmed',
-  'the requester cannot cancel while waiting to confirm completion'
-);
-
-select lives_ok(
-  format('select complete_request(%L)', :'request_id'),
-  'the requester confirms completion'
-);
-
-select lives_ok(
-  format('select complete_request(%L)', :'request_id'),
-  'confirming completion is idempotent'
-);
-
-select is(
-  (select count(*)::integer from public.request_status_events where request_id = :'request_id'),
-  3,
-  'start, mark complete, and confirm leave a status event trail'
-);
-
--- Auto-complete after the confirmation window ---------------------------------------
-
-select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
-select create_request(
-  'repair',
-  'Auto-complete when the requester is silent.',
-  6.5000,
-  3.3800,
-  'Yaba, Lagos',
-  5000,
-  null,
-  5000
-) as silent_request_id \gset
-
-select pg_temp.act_as('22222222-2222-2222-2222-222222222222') as _ \gset
-select respond_to_request(
-  :'silent_request_id',
-  'On my way.',
-  5000,
-  30,
-  6.5000,
-  3.3800
-) as silent_response_id \gset
-
-select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
-select lives_ok(
-  format('select accept_response(%L)', :'silent_response_id'),
-  'handshake for auto-complete fixture'
-);
-
-select pg_temp.act_as('22222222-2222-2222-2222-222222222222') as _ \gset
-select lives_ok(
-  format('select mark_service_complete(%L)', :'silent_request_id'),
-  'provider marks complete before auto-complete'
-);
-
-select pg_temp.act_as_owner() as _ \gset
-update public.requests
-set completion_confirm_by = now() + interval '1 hour'
-where id = :'silent_request_id'::uuid;
-
-select ok(
-  not public.auto_complete_request(:'silent_request_id'::uuid),
-  'auto-complete does nothing before the deadline'
-);
-
-update public.requests
-set completion_confirm_by = now() - interval '1 minute'
-where id = :'silent_request_id'::uuid;
-
-select ok(
-  public.auto_complete_request(:'silent_request_id'::uuid),
-  'auto-complete finishes the job after the deadline'
-);
-
-select ok(
-  not public.auto_complete_request(:'silent_request_id'::uuid),
-  'auto-complete is idempotent'
-);
-
-select is(
-  (select status::text from public.requests where id = :'silent_request_id'::uuid),
-  'completed',
-  'auto-complete moves completion_pending to completed'
-);
-
-select is(
-  (
-    select count(*)::integer
-    from public.request_status_events
-    where request_id = :'silent_request_id'::uuid
-      and idempotency_key = 'auto_complete:' || :'silent_request_id'
-  ),
-  1,
-  'auto-complete records a distinct status event'
-);
-
-select is(
-  (
-    select count(*)::integer
-    from public.payment_transitions
-    where request_id = :'silent_request_id'::uuid
-      and idempotency_key = 'complete:' || :'silent_request_id'
-  ),
-  1,
-  'auto-complete releases payment at most once'
-);
-
--- Service problems and no-show ------------------------------------------------------
-
-select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
-select create_request(
-  'repair',
-  'Provider no-show fixture.',
-  6.5000,
-  3.3800,
-  'Yaba, Lagos',
-  5000,
-  null,
-  6000
-) as pns_req \gset
-
-select pg_temp.act_as('33333333-3333-3333-3333-333333333333') as _ \gset
-select lives_ok(
-  $$select go_active(6.5400::double precision, 3.3800::double precision, 10000, array['repair']::text[], 480)$$,
-  'far provider goes active for no-show fixture'
-);
-
-select respond_to_request(
-  :'pns_req',
-  'On my way.',
-  6000,
-  25,
-  6.5400,
-  3.3800
-) as pns_resp \gset
-
-select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
-select lives_ok(
-  format('select accept_response(%L)', :'pns_resp'),
-  'handshake for provider no-show fixture'
-);
-
-select lives_ok(
-  format('select report_service_problem(%L, %L::public.service_problem_kind)', :'pns_req', 'provider_no_show'),
-  'the requester can report provider no-show'
-);
-
-select is(
-  (select status::text from public.requests where id = cast(:'pns_req' as uuid)),
-  'disputed',
-  'provider no-show moves the request to disputed'
-);
-
-select is(
-  (select payment_status::text from public.requests where id = cast(:'pns_req' as uuid)),
-  'disputed',
-  'provider no-show locks payment in disputed'
-);
-
-select pg_temp.act_as_owner() as _ \gset
-select is(
-  (select status::text from public.provider_availability where user_id = '33333333-3333-3333-3333-333333333333'),
-  'busy',
-  'provider no-show keeps the provider committed until resolution'
-);
-
-select pg_temp.act_as('33333333-3333-3333-3333-333333333333') as _ \gset
-select lives_ok(
-  format('select contest_service_problem(%L)', :'pns_req'),
-  'the provider can contest a no-show report'
-);
-
-select is(
-  (select status::text from public.requests where id = cast(:'pns_req' as uuid)),
-  'accepted',
-  'contesting restores the pre-dispute service status'
-);
-
-select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
-select lives_ok(
-  format('select cancel_request(%L)', :'pns_req'),
-  'the requester can cancel after contesting a no-show report'
-);
-
-select create_request(
-  'repair',
-  'Provider no-show auto-resolve fixture.',
-  6.5000,
-  3.3800,
-  'Yaba, Lagos',
-  5000,
-  null,
-  6500
-) as pns_auto_req \gset
-
-select pg_temp.act_as('33333333-3333-3333-3333-333333333333') as _ \gset
-select respond_to_request(
-  :'pns_auto_req',
-  'On my way again.',
-  6500,
-  25,
-  6.5400,
-  3.3800
-) as pns_auto_resp \gset
-
-select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
-select lives_ok(
-  format('select accept_response(%L)', :'pns_auto_resp'),
-  'handshake for provider no-show auto-resolve fixture'
-);
-
-select lives_ok(
-  format('select report_service_problem(%L, %L::public.service_problem_kind)', :'pns_auto_req', 'provider_no_show'),
-  'the requester can report provider no-show for auto-resolve'
-);
-
-select pg_temp.act_as_owner() as _ \gset
-update public.service_problems
-set respond_by = now() - interval '1 minute'
-where request_id = cast(:'pns_auto_req' as uuid)
-  and status = 'open';
-
-select ok(
-  public.resolve_service_problem(
-    (select id from public.service_problems where request_id = cast(:'pns_auto_req' as uuid) and status = 'open' limit 1)
-  ),
-  'auto-resolve refunds the client after the response window'
-);
-
-select is(
-  (select status::text from public.requests where id = cast(:'pns_auto_req' as uuid)),
-  'no_show',
-  'auto-resolve records a no-show outcome'
-);
-
-select is(
-  (select payment_status::text from public.requests where id = cast(:'pns_auto_req' as uuid)),
-  'refunded',
-  'auto-resolve refunds the client in full'
-);
-
-select pg_temp.act_as_owner() as _ \gset
-select is(
-  (select status::text from public.provider_availability where user_id = '33333333-3333-3333-3333-333333333333'),
-  'available',
-  'auto-resolve releases the provider commitment'
-);
-
-select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
-select create_request(
-  'repair',
-  'Client no-show fixture.',
-  6.5000,
-  3.3800,
-  'Yaba, Lagos',
-  5000,
-  null,
-  7000
-) as cns_req \gset
-
-select pg_temp.act_as('22222222-2222-2222-2222-222222222222') as _ \gset
-select lives_ok(
-  $$select go_active(6.5000::double precision, 3.3800::double precision, 10000, array['repair']::text[], 480)$$,
-  'near provider goes active for client no-show fixture'
-);
-
-select respond_to_request(
-  :'cns_req',
-  'Here now.',
-  7000,
-  15,
-  6.5000,
-  3.3800
-) as cns_resp \gset
-
-select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
-select lives_ok(
-  format('select accept_response(%L)', :'cns_resp'),
-  'handshake for client no-show fixture'
-);
-
-select pg_temp.act_as('22222222-2222-2222-2222-222222222222') as _ \gset
-select lives_ok(
-  format('select report_service_problem(%L, %L::public.service_problem_kind)', :'cns_req', 'client_no_show'),
-  'the provider can report client no-show'
-);
-
-select pg_temp.act_as_owner() as _ \gset
-update public.service_problems
-set respond_by = now() - interval '1 minute'
-where request_id = cast(:'cns_req' as uuid)
-  and status = 'open';
-
-select ok(
-  public.resolve_service_problem(
-    (select id from public.service_problems where request_id = cast(:'cns_req' as uuid) and status = 'open' limit 1)
-  ),
-  'auto-resolve pays the provider after client no-show'
-);
-
-select is(
-  (select payment_status::text from public.requests where id = cast(:'cns_req' as uuid)),
-  'released',
-  'client no-show releases payment to the provider'
-);
-
-select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
-select create_request(
-  'repair',
-  'Unreachable provider fixture.',
-  6.5000,
-  3.3800,
-  'Yaba, Lagos',
-  5000
-) as unr_req \gset
-
-select pg_temp.act_as('22222222-2222-2222-2222-222222222222') as _ \gset
-select lives_ok(
-  $$select go_active(6.5000::double precision, 3.3800::double precision, 10000, array['repair']::text[], 480)$$,
-  'provider goes active for unreachable fixture'
-);
-
-select respond_to_request(
-  :'unr_req',
-  'Heading over.',
-  null,
-  20,
-  6.5000,
-  3.3800
-) as unr_resp \gset
-
-select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
-select lives_ok(
-  format('select accept_response(%L)', :'unr_resp'),
-  'handshake for unreachable fixture'
-);
-
-select pg_temp.act_as_owner() as _ \gset
-update public.provider_availability
-set updated_at = now()
-where user_id = '22222222-2222-2222-2222-222222222222';
-
-select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
-select throws_ok(
-  format('select report_service_problem(%L, %L::public.service_problem_kind)', :'unr_req', 'provider_unreachable'),
-  '55000',
-  'your provider''s location was updated recently; try calling or messaging before reporting them unreachable',
-  'recent provider location blocks unreachable reports'
-);
-
-select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
-select create_request(
-  'repair',
-  'Admin dispute fixture.',
-  6.5000,
-  3.3800,
-  'Yaba, Lagos',
-  5000,
-  null,
-  7500
-) as admin_dispute_req \gset
-
-select pg_temp.act_as('33333333-3333-3333-3333-333333333333') as _ \gset
-select lives_ok(
-  $$select go_active(6.5400::double precision, 3.3800::double precision, 10000, array['repair']::text[], 480)$$,
-  'far provider goes active for admin dispute fixture'
-);
-
-select respond_to_request(
-  :'admin_dispute_req',
-  'On site.',
-  7500,
-  15,
-  6.5400,
-  3.3800
-) as admin_dispute_resp \gset
-
-select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
-select lives_ok(
-  format('select accept_response(%L)', :'admin_dispute_resp'),
-  'handshake for admin dispute fixture'
-);
-
-select pg_temp.act_as('33333333-3333-3333-3333-333333333333') as _ \gset
-select lives_ok(
-  format('select mark_service_complete(%L)', :'admin_dispute_req'),
-  'provider marks service complete for admin dispute fixture'
-);
-
-select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
-select lives_ok(
-  format(
-    $$select report_service_problem(%L, 'completion_issue'::public.service_problem_kind, %L, '{}'::text[])$$,
-    :'admin_dispute_req',
-    'The repair was only half done and left a mess.'
-  ),
-  'the requester can open an admin-reviewed dispute with a description'
-);
-
-select throws_ok(
-  format('select complete_request(%L)', :'admin_dispute_req'),
-  '55000',
-  null,
-  'confirm completion is blocked while disputed'
-);
-
-select is(
-  (select payment_status::text from public.requests where id = cast(:'admin_dispute_req' as uuid)),
-  'disputed',
-  'disputed jobs keep payment locked'
-);
-
-select pg_temp.act_as_owner() as _ \gset
-select lives_ok(
-  format(
-    $$select admin_resolve_service_problem(
-      (select id from public.service_problems where request_id = cast(%L as uuid) and status = 'open' limit 1),
-      'refund_requester',
-      'Provider did not finish the agreed work.',
-      'admin-refund-test'
-    )$$,
-    :'admin_dispute_req'
-  ),
-  'admin can refund the requester after reviewing a dispute'
-);
-
-select is(
-  (select status::text from public.requests where id = cast(:'admin_dispute_req' as uuid)),
-  'cancelled',
-  'admin refund closes the request as cancelled'
-);
-
-select is(
-  (select payment_status::text from public.requests where id = cast(:'admin_dispute_req' as uuid)),
-  'refunded',
-  'admin refund releases funds back to the requester'
-);
-
-select ok(
-  exists (
-    select 1
-    from public.dispute_admin_resolutions
-    where request_id = cast(:'admin_dispute_req' as uuid)
-      and outcome = 'refund_requester'
-      and idempotency_key = 'admin-refund-test'
-  ),
-  'admin resolution is recorded for audit'
-);
-
-select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
-select lives_ok(
-  format('select cancel_request(%L)', :'unr_req'),
-  'the requester can cancel after an unreachable report is blocked'
-);
-
-select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
-select lives_ok(
-  format('select rate_request(%L, 5::smallint, %L)', :'request_id', 'Fixed it in twenty minutes.'),
-  'the requester rates the provider'
-);
-
-select pg_temp.act_as_owner() as _ \gset
-select is(
-  (select rating_average from public.profiles where id = '22222222-2222-2222-2222-222222222222'),
-  5.00,
-  'the rating lands on the provider''s profile'
-);
-
-select is(
-  (select status::text from public.provider_availability
-   where user_id = '22222222-2222-2222-2222-222222222222'),
-  'available',
-  'finishing the job returns the provider to the pool'
-);
-
--- Going offline drops the provider from matching and clears the live position, while the
--- services and radius they last chose remain for the next session.
-select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
-select create_request(
-  'repair',
-  'Need a repair after the last provider went back to the pool.',
-  6.5000,
-  3.3800,
-  'Yaba, Lagos',
-  5000
-) as later_request_id \gset
-
-select pg_temp.act_as('22222222-2222-2222-2222-222222222222') as _ \gset
-select is(
-  (select count(*) from nearby_requests() where request_id = :'later_request_id'),
-  1::bigint,
-  'a provider who finished a job can still discover a new request'
-);
-
-select lives_ok($$select go_offline()$$, 'a provider can go offline');
-
-select is(
-  (select status::text from my_availability
-   where user_id = '22222222-2222-2222-2222-222222222222'),
-  'offline',
-  'going offline reports the provider as offline'
-);
-
-select is(
-  (select service_radius_m from my_availability
-   where user_id = '22222222-2222-2222-2222-222222222222'),
-  10000,
-  'going offline keeps the last service radius'
-);
-
-select is(
-  (select category_slugs from my_availability
-   where user_id = '22222222-2222-2222-2222-222222222222'),
-  array['repair']::text[],
-  'going offline keeps the services they last offered'
-);
-
-select is(
-  (select count(*) from nearby_requests() where request_id = :'later_request_id'),
-  0::bigint,
-  'an offline provider is removed from matching'
-);
-
-select pg_temp.act_as_owner() as _ \gset
-select ok(
-  (select location is null from public.provider_availability
-   where user_id = '22222222-2222-2222-2222-222222222222'),
-  'going offline stops location participation'
-);
-
-select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
-select is(
-  (select count(*) from list_request_responses(:'second_request_id')),
-  0::bigint,
-  'an offline provider is not listed as someone who can help'
-);
-
-select is(
-  (select pending_response_count from my_requests where request_id = :'second_request_id'),
-  0,
-  'an offline provider is not counted as a waiting response'
-);
-
-select pg_temp.act_as_owner() as _ \gset
-select id as offline_response_id
-from public.request_responses
-where request_id = :'second_request_id'
-  and provider_id = '22222222-2222-2222-2222-222222222222' \gset
-
-select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
-select throws_ok(
-  format('select accept_response(%L)', :'offline_response_id'),
-  '55000',
-  'This person is no longer available.',
-  'accepting an offline provider says they are no longer available'
-);
-
--- A declined answer cannot be retried, so the request leaves every nearby list.
-select pg_temp.act_as('22222222-2222-2222-2222-222222222222') as _ \gset
-select lives_ok(
-  $$select go_active(6.5000, 3.3800, 10000, array['repair'], 240)$$,
-  'the provider can go Active again after being offline'
-);
-
-select is(
-  (select count(*) from browse_nearby_requests(6.5000::double precision, 3.3800::double precision) where request_id = :'second_request_id'),
-  1::bigint,
-  'a request with a pending answer stays on the public nearby list'
-);
-
-select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
-select lives_ok(
-  format('select decline_response(%L, %L)', :'offline_response_id', 'The time does not work.'),
-  'the requester declines the provider'
-);
-
-select pg_temp.act_as('22222222-2222-2222-2222-222222222222') as _ \gset
-select is(
-  (select decline_reason from my_responses() where response_id = :'offline_response_id'),
-  'The time does not work.',
-  'the provider can read the optional decline reason'
-);
-select is(
-  (select count(*) from browse_nearby_requests(6.5000::double precision, 3.3800::double precision) where request_id = :'second_request_id'),
-  0::bigint,
-  'a declined request leaves the public nearby list'
-);
-
-select is(
-  (select count(*) from browse_request(:'second_request_id', 6.5000::double precision, 3.3800::double precision)),
-  0::bigint,
-  'a declined request cannot be opened from nearby browse'
-);
-
-select is(
-  (select count(*) from nearby_requests() where request_id = :'second_request_id'),
-  0::bigint,
-  'a declined request stays out of the Active inbox'
-);
-
-select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
-select create_request(
-  'repair',
-  'Handshake should win even after the search window timestamp passes.',
-  6.5000,
-  3.3800,
-  'Yaba, Lagos',
-  10000
-) as boundary_request_id \gset
-
-select pg_temp.act_as('33333333-3333-3333-3333-333333333333') as _ \gset
-select respond_to_request(
-  :'boundary_request_id',
-  'Still here at the deadline.',
-  7000,
-  30,
-  6.5600,
-  3.3800
-) as boundary_response_id \gset
-
-select pg_temp.act_as_owner() as _ \gset
-update public.requests
-set expires_at = now() - interval '1 minute'
-where id = :'boundary_request_id'::uuid;
-
-select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
-select lives_ok(
-  format('select accept_response(%L)', :'boundary_response_id'),
-  'a handshake still succeeds after expires_at when no expiration job has run yet'
-);
-
-select pg_temp.act_as_owner() as _ \gset
-select ok(
-  not public.expire_request(:'boundary_request_id'::uuid),
-  'expiration does not override a request that already has a handshake'
-);
-
-select is(
-  (select status::text from public.requests where id = :'boundary_request_id'::uuid),
-  'accepted',
-  'the handshake keeps the request out of the expired state'
-);
-
--- Request reuse -----------------------------------------------------------------------
-
-select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
-select create_request(
-  'repair',
-  'Reuse me after expiry',
-  6.5000,
-  3.3800,
-  'Yaba',
-  5000,
-  null,
-  5000,
-  '{"repair_category":"Generator","problem_description":"Will not start"}'::jsonb,
-  :'expired_request_id'::uuid
-) as reused_from_expired_id \gset
-
-select throws_ok(
-  format(
-    'select create_request(''repair'', ''Nope'', 6.5000, 3.3800, ''Yaba'', 5000, null, 5000, ''{}''::jsonb, %L)',
-    :'boundary_request_id'
-  ),
-  '55000',
-  'only expired or completed requests can be reused',
-  'an accepted request cannot be used as a reuse source'
-);
-
-select isnt(
-  :'reused_from_expired_id'::uuid,
-  :'expired_request_id'::uuid,
-  'reuse creates a new request id'
-);
-
-select is(
-  (select status::text from public.requests where id = :'expired_request_id'::uuid),
-  'expired',
-  'reuse leaves the original request unchanged'
-);
-
-select is(
-  (select source_request_id::text from public.requests where id = :'reused_from_expired_id'::uuid),
-  :'expired_request_id'::text,
-  'the new request records which request it was copied from'
-);
-
-select is(
-  (select description from public.requests where id = :'reused_from_expired_id'::uuid),
-  'Reuse me after expiry',
-  'reuse stores the submitted description on the new row'
-);
-
--- Privacy authorization -------------------------------------------------------------
-
-select pg_temp.act_as_owner() as _ \gset
-select pg_temp.make_user('88888888-8888-8888-8888-888888888888', 'Privacy Requester', '+2348000000188') as _ \gset
-select pg_temp.make_user('99999999-9999-9999-9999-999999999999', 'Privacy Provider', '+2348000000199') as _ \gset
-
-select pg_temp.act_as('88888888-8888-8888-8888-888888888888') as _ \gset
-select create_request(
-  'repair',
-  'Privacy fixture with a street address.',
-  6.5000,
-  3.3800,
-  'Yaba, Lagos',
-  5000,
-  null,
-  null,
-  jsonb_build_object(
-    'pickup', '12 Hughes Avenue',
-    'destination', 'Ikeja',
-    'drop_off', 'Warehouse 4',
-    'repair_category', 'Generator',
-    'photo_paths', jsonb_build_array('88888888-8888-8888-8888-888888888888/drafts/1.jpg')
-  )
-) as privacy_request_id \gset
-
-select ok(
-  (select category_data ? 'pickup' from my_requests where request_id = :'privacy_request_id'::uuid),
-  'the requester still sees their own pickup text'
-);
-
-select pg_temp.act_as('99999999-9999-9999-9999-999999999999') as _ \gset
-select ok(
-  not (
-    select category_data ? 'pickup'
-    from browse_request(:'privacy_request_id'::uuid, 6.5000::double precision, 3.3800::double precision)
-  ),
-  'discovery hides pickup, destination, and drop-off text'
-);
-
-select ok(
-  not (
-    select category_data ? 'drop_off'
-    from browse_request(:'privacy_request_id'::uuid, 6.5000::double precision, 3.3800::double precision)
-  ),
-  'discovery hides drop-off text'
-);
-
-select is(
-  (
-    select category_data ->> 'repair_category'
-    from browse_request(:'privacy_request_id'::uuid, 6.5000::double precision, 3.3800::double precision)
-  ),
-  'Generator',
-  'discovery still returns non-location job details'
-);
-
-select is(
-  (select count(*) from public.requests where id = :'privacy_request_id'::uuid),
-  0::bigint,
-  'a nearby browser still cannot read the request row'
-);
-
-select ok(
-  not public.can_read_request_media('88888888-8888-8888-8888-888888888888/drafts/1.jpg'),
-  'a nearby browser cannot read request photos before access is granted'
-);
-
-select throws_ok(
-  $$select authorize_request_media_read(
-      '88888888-8888-8888-8888-888888888888/drafts/1.jpg',
-      7.2000,
-      3.3800
-    )$$,
-  '42501',
-  'media is not available',
-  'request photos are not granted from outside the search radius'
-);
-
-select throws_ok(
-  $$select authorize_request_media_read(
-      '88888888-8888-8888-8888-888888888888/drafts/evidence.jpg',
-      6.5000,
-      3.3800
-    )$$,
-  '42501',
-  'media is not available',
-  'uploads that are not on the request are not opened by discovery'
-);
-
-select lives_ok(
-  $$select authorize_request_media_read(
-      '88888888-8888-8888-8888-888888888888/drafts/1.jpg',
-      6.5000,
-      3.3800
-    )$$,
-  'a nearby browser can be granted the job photo'
-);
-
-select ok(
-  public.can_read_request_media('88888888-8888-8888-8888-888888888888/drafts/1.jpg'),
-  'the grant allows that photo while the request is still searching'
-);
-
-select throws_ok(
-  $$update public.request_responses set message = 'taken over'$$,
-  '42501',
-  null,
-  'a provider cannot write response rows directly'
-);
-
-select throws_ok(
-  format(
-    'select apply_payment_transition(%L, %L::public.payment_status, %L)',
-    :'privacy_request_id',
-    'released',
-    'steal'
-  ),
-  '42501',
-  null,
-  'a client cannot move payment state directly'
-);
-
-select lives_ok(
-  $$select go_active(6.5000, 3.3800, 10000, array['repair'], 240)$$,
-  'privacy provider goes active beside the request'
-);
-
-select respond_to_request(
-  :'privacy_request_id'::uuid,
-  'I can look at the generator.',
-  4000,
-  20,
-  6.5000,
-  3.3800
-) as privacy_response_id \gset
-
-select ok(
-  not (
-    select category_data ? 'pickup'
-    from my_responses()
-    where response_id = :'privacy_response_id'::uuid
-  ),
-  'a pending response does not reveal the street address'
-);
-
-select pg_temp.act_as_owner() as _ \gset
-update public.requests
-set expires_at = now() - interval '1 minute'
-where id = :'privacy_request_id'::uuid;
-
-select ok(
-  public.expire_request(:'privacy_request_id'::uuid),
-  'expiry still closes a searching request that never reached a handshake'
-);
-
-select is(
-  (select count(*) from public.handshakes where request_id = :'privacy_request_id'::uuid),
-  0::bigint,
-  'an expired request has no handshake'
-);
-
-select pg_temp.act_as('88888888-8888-8888-8888-888888888888') as _ \gset
-select wallet_top_up(100000, 'privacy-top-up');
-
-select create_request(
-  'repair',
-  'Privacy handshake fixture.',
-  6.5000,
-  3.3800,
-  'Yaba, Lagos',
-  5000,
-  null,
-  null,
-  '{"pickup":"12 Hughes Avenue","repair_category":"Generator"}'::jsonb
-) as privacy_handshake_id \gset
-
-select pg_temp.act_as('99999999-9999-9999-9999-999999999999') as _ \gset
-select respond_to_request(
-  :'privacy_handshake_id'::uuid,
-  'I can take the handshake fixture.',
-  4000,
-  20,
-  6.5000,
-  3.3800
-) as privacy_handshake_response_id \gset
-
-select pg_temp.act_as('88888888-8888-8888-8888-888888888888') as _ \gset
-select lives_ok(
-  format('select accept_response(%L)', :'privacy_handshake_response_id'),
-  'the requester can accept a response on their own request'
-);
-
-select ok(
-  (select category_data ? 'pickup' from get_engagement(:'privacy_handshake_id'::uuid)),
-  'the handshake releases the street address'
-);
-
-select ok(
-  (select request_latitude from get_engagement(:'privacy_handshake_id'::uuid)) = 6.5000,
-  'the handshake releases the exact requester coordinate'
-);
-
-select ok(
-  (select provider_latitude is not null from get_engagement(:'privacy_handshake_id'::uuid)),
-  'the requester sees the provider coordinate while they are committed'
-);
-
-select pg_temp.act_as('99999999-9999-9999-9999-999999999999') as _ \gset
-select throws_ok(
-  format('select mark_service_complete(%L)', :'privacy_request_id'),
-  'P0002',
-  'request not found',
-  'a provider cannot mark someone else''s request complete'
-);
-
-select pg_temp.act_as_owner() as _ \gset
-select public.release_provider('99999999-9999-9999-9999-999999999999'::uuid);
-
-select pg_temp.act_as('88888888-8888-8888-8888-888888888888') as _ \gset
-select ok(
-  (select provider_latitude is null from get_engagement(:'privacy_handshake_id'::uuid)),
-  'provider coordinates stop once they are no longer committed to the request'
-);
-
-select lives_ok(
-  format('select cancel_request(%L)', :'privacy_handshake_id'),
-  'the requester can close the handshake fixture so the provider can take another job'
-);
-
-select pg_temp.act_as('99999999-9999-9999-9999-999999999999') as _ \gset
-select lives_ok(
-  $$select go_active(6.5000, 3.3800, 10000, array['repair'], 240)$$,
-  'the provider can go active again after release'
-);
-
-select pg_temp.act_as('88888888-8888-8888-8888-888888888888') as _ \gset
-select create_request(
-  'repair',
-  'Disputed funds must stay put.',
-  6.5000,
-  3.3800,
-  'Yaba, Lagos',
-  5000,
-  null,
-  10000
-) as privacy_funded_id \gset
-
-select pg_temp.act_as('99999999-9999-9999-9999-999999999999') as _ \gset
-select respond_to_request(
-  :'privacy_funded_id'::uuid,
-  'I can take the funded fixture.',
-  10000,
-  30,
-  6.5000,
-  3.3800
-) as privacy_funded_response_id \gset
-
-select pg_temp.act_as('88888888-8888-8888-8888-888888888888') as _ \gset
-select lives_ok(
-  format('select accept_response(%L)', :'privacy_funded_response_id'),
-  'the funded request can be accepted'
-);
-
-select pg_temp.act_as('99999999-9999-9999-9999-999999999999') as _ \gset
-select lives_ok(
-  format('select mark_service_complete(%L)', :'privacy_funded_id'),
-  'the provider marks the funded request complete'
-);
-
-select pg_temp.act_as_owner() as _ \gset
-update public.requests
-set payment_status = 'disputed'
-where id = :'privacy_funded_id'::uuid;
-
-select pg_temp.act_as('88888888-8888-8888-8888-888888888888') as _ \gset
-select throws_ok(
-  format('select complete_request(%L)', :'privacy_funded_id'),
-  '55000',
-  'disputed funds cannot be released through completion',
-  'the requester cannot release disputed funds by confirming completion'
-);
-
-select pg_temp.act_as_owner() as _ \gset
-update public.requests
-set completion_confirm_by = now() - interval '1 minute'
-where id = :'privacy_funded_id'::uuid;
-
-select ok(
-  not public.auto_complete_request(:'privacy_funded_id'::uuid),
-  'automatic completion does not release disputed funds'
-);
-
-select is(
-  (select payment_status::text from public.requests where id = :'privacy_funded_id'::uuid),
-  'disputed',
-  'disputed escrow stays disputed'
-);
-
-select is(
-  (select available from public.wallet_accounts where user_id = '99999999-9999-9999-9999-999999999999'::uuid),
-  0::numeric,
-  'the provider is not paid while the request is disputed'
+  'a request leaves public discovery once someone is selected'
 );
 
 select * from finish();

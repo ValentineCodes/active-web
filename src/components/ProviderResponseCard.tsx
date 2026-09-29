@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { PersonRow } from '@/components/ui/PersonRow';
 import { TextField } from '@/components/ui/TextField';
-import { formatAgo, formatDistance, formatMoney } from '@/lib/format';
+import { formatAgo, formatMoney, formatProximity } from '@/lib/format';
 
 /**
  * A provider's answer to a request, as the requester sees it before they've accepted
@@ -57,7 +57,7 @@ export function ProviderResponseCard({
   const [profileOpen, setProfileOpen] = useState(false);
   const [declining, setDeclining] = useState(false);
   const [reason, setReason] = useState('');
-  const distanceLabel = formatDistance(distanceM);
+  const distanceLabel = formatProximity(distanceM);
   const reasonError = reason.trim().length > 500 ? 'Keep this to 500 characters.' : null;
 
   return (
