@@ -100,7 +100,7 @@ export default function RateScreen() {
           onPress={() =>
             rate.mutate(
               { stars: stars as number, comment: comment.trim() || null },
-              { onSuccess: () => router.dismissTo('/requests') },
+              { onSuccess: () => router.dismissTo('/(tabs)/requests') },
             )
           }
         />

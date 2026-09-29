@@ -96,7 +96,7 @@ async function pickCataloguePhotoSource(): Promise<'camera' | 'library' | null> 
 async function pickCatalogueVideoSource(): Promise<'camera' | 'library' | null> {
   const { Alert } = await import('react-native');
   return new Promise((resolve) => {
-    Alert.alert('Add a video', 'One short clip is enough to show how you work.', [
+    Alert.alert('Add a video', 'One short clip is optional.', [
       { text: 'Cancel', style: 'cancel', onPress: () => resolve(null) },
       { text: 'Record video', onPress: () => resolve('camera') },
       { text: 'Choose from library', onPress: () => resolve('library') },

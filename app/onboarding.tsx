@@ -67,12 +67,12 @@ export default function OnboardingScreen() {
             label="A line about you (optional)"
             value={bio}
             onChangeText={setBio}
-            placeholder="e.g. Generator repairs, 6 years around Surulere."
+            placeholder="e.g. Usually free on weekday evenings around Yaba."
             multiline
             numberOfLines={3}
             counterMax={280}
             maxLength={280}
-            hint="Helpful when you offer a service."
+            hint="Optional — a sentence about you can help people feel comfortable choosing you."
           />
 
           {uploadAvatar.isError ? <InlineError error={uploadAvatar.error} /> : null}

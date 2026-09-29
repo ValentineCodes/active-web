@@ -70,20 +70,17 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="requests"
         options={{
-          title: 'Requests',
+          title: 'Activity',
           tabBarBadge: waitingResponses > 0 ? waitingResponses : undefined,
           tabBarIcon: (props) => (
-            <TabIcon {...props} focusedName="document-text" outlineName="document-text-outline" />
+            <TabIcon {...props} focusedName="list" outlineName="list-outline" />
           ),
         }}
       />
       <Tabs.Screen
         name="activity"
         options={{
-          title: 'Activity',
-          tabBarIcon: (props) => (
-            <TabIcon {...props} focusedName="pulse" outlineName="pulse-outline" />
-          ),
+          href: null,
         }}
       />
       <Tabs.Screen

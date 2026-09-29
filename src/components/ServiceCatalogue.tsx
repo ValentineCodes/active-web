@@ -99,7 +99,7 @@ function CatalogueVideoTile({
           <Ionicons name="videocam" size={26} color={colors.canvas} />
         </View>
         <View className="flex-1 gap-1">
-          <Text className="text-base font-semibold text-ink">Catalogue video</Text>
+          <Text className="text-base font-semibold text-ink">Profile video</Text>
           <Text className="text-sm text-muted">Replace or remove your clip any time.</Text>
         </View>
       </View>
@@ -124,8 +124,8 @@ function CatalogueVideoTile({
   );
 }
 
-/** Optional work samples the signed-in user manages on their profile. */
-export function ServiceCatalogue() {
+/** Optional photos and video on your profile — never required to join a request. */
+export function ProfileMediaSection() {
   const catalogue = useMyCatalogue();
   const addPhoto = useAddCataloguePhoto();
   const removeMedia = useRemoveCatalogueMedia();
@@ -190,7 +190,7 @@ export function ServiceCatalogue() {
   return (
     <Card className="gap-4">
       <View className="gap-1">
-        <Text className="text-lg font-bold text-ink">Service catalogue</Text>
+        <Text className="text-lg font-bold text-ink">Photos & video (optional)</Text>
         <Text className="text-base text-muted">{catalogueLimitsLabel()}</Text>
       </View>
 
@@ -200,9 +200,7 @@ export function ServiceCatalogue() {
         </Text>
 
         {photos.length === 0 ? (
-          <Text className="text-sm text-muted">
-            No photos yet — add a few examples of your work.
-          </Text>
+          <Text className="text-sm text-muted">No photos yet — add a few if you like.</Text>
         ) : (
           <ScrollView
             horizontal
@@ -249,7 +247,7 @@ export function ServiceCatalogue() {
         ) : (
           <>
             <Text className="text-sm text-muted">
-              Optional — one short clip can help people trust your work.
+              Optional — a short clip can help people recognise you.
             </Text>
             <UploadProgress label="Uploading video…" progress={videoProgress} />
             {setVideo.isError ? <InlineError error={setVideo.error} /> : null}
@@ -276,3 +274,6 @@ export function ServiceCatalogue() {
     </Card>
   );
 }
+
+/** @deprecated Use ProfileMediaSection */
+export const ServiceCatalogue = ProfileMediaSection;

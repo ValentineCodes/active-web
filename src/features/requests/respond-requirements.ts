@@ -1,4 +1,4 @@
-import { hasProviderPhotoReady } from '@/features/profile/api';
+import { hasProfilePhotoReady } from '@/features/profile/api';
 import { requestPosition, type Position, type PositionResult } from '@/lib/location';
 
 export type RespondRequirementsProfile = {
@@ -17,7 +17,7 @@ export function hasRespondProfilePhoto(
   profile:
     Pick<RespondRequirementsProfile, 'avatar_path' | 'avatar_captured_in_app'> | null | undefined,
 ): boolean {
-  return hasProviderPhotoReady(profile);
+  return hasProfilePhotoReady(profile);
 }
 
 /** Profile and verification checks that do not need device permission. */

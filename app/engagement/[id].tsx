@@ -3,7 +3,7 @@ import { Alert, Linking, Platform, RefreshControl, ScrollView, Text, View } from
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
-import { ProviderProfileModal } from '@/components/ProviderProfileModal';
+import { PersonProfileModal } from '@/components/PersonProfileModal';
 import { ReportProblemModal, type ReportProblemPayload } from '@/components/ReportProblemModal';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -165,7 +165,7 @@ export default function EngagementScreen() {
 
   const providerDistance = null;
 
-  const providerFirstName = data.counterparty_display_name?.split(' ')[0] ?? 'Your provider';
+  const providerFirstName = data.counterparty_display_name?.split(' ')[0] ?? 'Your helper';
 
   const submitReport = (payload: ReportProblemPayload) => {
     const onSuccess = () => setReportModal(null);
@@ -399,7 +399,7 @@ export default function EngagementScreen() {
             name={data.counterparty_display_name}
             ratingAverage={data.counterparty_rating_average}
             ratingCount={data.counterparty_rating_count}
-            onPress={data.viewer_is_requester ? () => setProfileOpen(true) : undefined}
+            onPress={() => setProfileOpen(true)}
           />
 
           {data.counterparty_phone ? (
@@ -735,17 +735,17 @@ export default function EngagementScreen() {
         ) : null}
       </ScrollView>
 
-      {data.viewer_is_requester ? (
-        <ProviderProfileModal
-          visible={profileOpen}
-          onClose={() => setProfileOpen(false)}
-          providerId={data.counterparty_id}
-          displayName={data.counterparty_display_name}
-          avatarPath={data.counterparty_avatar_path}
-          ratingAverage={data.counterparty_rating_average}
-          ratingCount={data.counterparty_rating_count}
-        />
-      ) : null}
+      <PersonProfileModal
+        visible={profileOpen}
+        onClose={() => setProfileOpen(false)}
+        userId={data.counterparty_id}
+        displayName={data.counterparty_display_name}
+        avatarPath={data.counterparty_avatar_path}
+        ratingAverage={data.counterparty_rating_average}
+        ratingCount={data.counterparty_rating_count}
+        phoneVerified={Boolean(data.counterparty_phone)}
+        profilePhotoVerified={Boolean(data.counterparty_avatar_path)}
+      />
 
       <ReportProblemModal
         key={reportModal?.kind ?? 'closed'}

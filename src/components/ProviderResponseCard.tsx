@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Text, View } from 'react-native';
 
 import { CatalogueStrip } from '@/components/CatalogueStrip';
-import { ProviderProfileModal } from '@/components/ProviderProfileModal';
+import { PersonProfileModal } from '@/components/PersonProfileModal';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -12,9 +12,8 @@ import { formatAgo, formatMoney, formatProximity } from '@/lib/format';
 import { responderAvailabilityBadge } from '@/features/requests/status';
 
 /**
- * A provider's answer to a request, as the requester sees it before they've accepted
- * anyone: enough to trust the person and judge the offer, nothing that reveals exactly
- * where they are.
+ * Someone's response to a request, as the requester sees it before they choose: enough to
+ * trust the person and judge the offer, without revealing their exact location.
  */
 export function ProviderResponseCard({
   responderId,
@@ -72,7 +71,7 @@ export function ProviderResponseCard({
         name={displayName}
         ratingAverage={ratingAverage}
         ratingCount={ratingCount}
-        meta={`${jobsCompleted} ${jobsCompleted === 1 ? 'job' : 'jobs'} delivered · ${distanceLabel}`}
+        meta={`${jobsCompleted} completed · ${distanceLabel}`}
         onPress={() => setProfileOpen(true)}
       />
 
@@ -162,16 +161,17 @@ export function ProviderResponseCard({
         </Text>
       ) : null}
 
-      <ProviderProfileModal
+      <PersonProfileModal
         visible={profileOpen}
         onClose={() => setProfileOpen(false)}
-        providerId={responderId}
+        userId={responderId}
         displayName={displayName}
         avatarPath={avatarPath}
         bio={bio}
         ratingAverage={ratingAverage}
         ratingCount={ratingCount}
         jobsCompleted={jobsCompleted}
+        phoneVerified={phoneVerified}
         distanceLabel={distanceLabel}
       />
     </Card>

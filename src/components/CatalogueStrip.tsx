@@ -40,7 +40,7 @@ function CatalogueThumb({
       <Pressable
         onPress={onPress}
         accessibilityRole="button"
-        accessibilityLabel="Play provider video sample"
+        accessibilityLabel="Play profile video"
         className="h-24 w-32 items-center justify-center overflow-hidden rounded-2xl bg-ink"
       >
         <Ionicons name="play-circle" size={36} color={colors.canvas} />
@@ -50,7 +50,7 @@ function CatalogueThumb({
   }
 
   return (
-    <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel="View work sample">
+    <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel="View profile photo">
       <Image
         source={{ uri: url.data }}
         style={{ width: 128, height: 96, borderRadius: 16 }}
@@ -61,8 +61,7 @@ function CatalogueThumb({
 }
 
 /**
- * Read-only work samples on a provider card — not a feed, just optional context before
- * the requester accepts someone.
+ * Read-only optional photos and video on someone's profile.
  */
 export function CatalogueStrip({ userId, emptyLabel }: { userId: string; emptyLabel?: string }) {
   const catalogue = useProviderCatalogue(userId);
@@ -94,7 +93,7 @@ export function CatalogueStrip({ userId, emptyLabel }: { userId: string; emptyLa
 
   return (
     <View className="gap-2">
-      <Text className="text-sm font-semibold text-ink">Work samples</Text>
+      <Text className="text-sm font-semibold text-ink">Photos & video</Text>
       <ScrollView
         horizontal
         nestedScrollEnabled

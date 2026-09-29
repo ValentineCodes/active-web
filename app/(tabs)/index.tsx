@@ -151,7 +151,7 @@ export default function HomeScreen() {
           limit={12}
           sectionTitle="Open nearby"
           seeAllLabel="See all on Activity"
-          onSeeAll={() => router.push('/(tabs)/activity')}
+          onSeeAll={() => router.push('/(tabs)/requests')}
         />
 
         {openRequests.length > 0 ? (
@@ -159,7 +159,7 @@ export default function HomeScreen() {
             <SectionHeader
               title="Your requests"
               actionLabel={openRequests.length > 3 ? 'See all' : undefined}
-              onAction={() => router.push('/requests')}
+              onAction={() => router.push('/(tabs)/requests')}
             />
             {openRequests.slice(0, 3).map((request) => {
               const badge = requestStatusBadge(request.status, request.pending_response_count, {

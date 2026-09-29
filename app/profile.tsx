@@ -4,7 +4,8 @@ import { router } from 'expo-router';
 import { useMutation } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 
-import { ServiceCatalogue } from '@/components/ServiceCatalogue';
+import { ProfileMediaSection } from '@/components/ServiceCatalogue';
+import { Badge } from '@/components/ui/Badge';
 import { Avatar } from '@/components/ui/Avatar';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -16,7 +17,7 @@ import { TextField } from '@/components/ui/TextField';
 import { useAttendance } from '@/features/attendance/api';
 import { signOut } from '@/features/auth/api';
 import {
-  hasProviderPhotoReady,
+  hasProfilePhotoReady,
   useCaptureProfilePhoto,
   useProfile,
   useSaveProfile,
@@ -53,6 +54,18 @@ export default function ProfileScreen() {
 
   const { data } = profile;
   const attending = attendance.data?.attending_request_id != null;
+  const completedRequests = data.jobs_completed + data.requests_completed;
+  const photoVerified = hasProfilePhotoReady(data);
+
+  const onCapturePhoto = () =>
+    capturePhoto.mutate(
+      {},
+      {
+        onSuccess: (saved) => {
+          if (saved) setPhotoNotice('Profile photo updated.');
+        },
+      },
+    );
 
   return (
     <Screen>
@@ -72,16 +85,7 @@ export default function ProfileScreen() {
       >
         <View className="items-center gap-3">
           <Pressable
-            onPress={() =>
-              capturePhoto.mutate(
-                {},
-                {
-                  onSuccess: (saved) => {
-                    if (saved) setPhotoNotice('Provider photo updated.');
-                  },
-                },
-              )
-            }
+            onPress={onCapturePhoto}
             disabled={capturePhoto.isPending}
             accessibilityRole="button"
             accessibilityLabel="Take your profile photo"
@@ -94,16 +98,7 @@ export default function ProfileScreen() {
             />
           </Pressable>
           <Pressable
-            onPress={() =>
-              capturePhoto.mutate(
-                {},
-                {
-                  onSuccess: (saved) => {
-                    if (saved) setPhotoNotice('Provider photo updated.');
-                  },
-                },
-              )
-            }
+            onPress={onCapturePhoto}
             disabled={capturePhoto.isPending}
             accessibilityRole="button"
             accessibilityLabel="Take your profile photo"
@@ -112,14 +107,13 @@ export default function ProfileScreen() {
             <Text className="text-base font-medium text-brand">
               {capturePhoto.isPending
                 ? 'Uploading…'
-                : hasProviderPhotoReady(data)
+                : photoVerified
                   ? 'Retake photo'
                   : 'Take profile photo'}
             </Text>
           </Pressable>
           <Text className="max-w-xs text-center text-sm text-muted">
-            Provider photos are captured in-app with your camera so requesters know who they are
-            choosing.
+            Use your camera so people recognise you when you ask for help or offer it.
           </Text>
           {photoNotice ? <SuccessBanner message={photoNotice} /> : null}
           {capturePhoto.isError ? <InlineError error={capturePhoto.error} /> : null}
@@ -184,20 +178,34 @@ export default function ProfileScreen() {
           />
         )}
 
+        <Card className="items-start gap-3">
+          <Text className="text-2xl font-bold text-ink">{completedRequests}</Text>
+          <Text className="text-sm text-muted">
+            {completedRequests === 1 ? 'Completed request' : 'Completed requests'}
+          </Text>
+          <Text className="text-sm text-muted">
+            {data.jobs_completed} helping others · {data.requests_completed} you posted
+          </Text>
+        </Card>
+
+        <Card className="gap-3">
+          <Text className="text-base font-semibold text-ink">Trust on Active</Text>
+          <View className="flex-row flex-wrap gap-2">
+            {data.phone ? <Badge label="Phone verified" tone="info" dot={false} /> : null}
+            {photoVerified ? (
+              <Badge label="Profile photo verified" tone="info" dot={false} />
+            ) : null}
+          </View>
+          {!photoVerified ? (
+            <Text className="text-sm text-muted">
+              A camera profile photo is required before you respond to a request.
+            </Text>
+          ) : null}
+        </Card>
+
         <Button label="Wallet" variant="secondary" onPress={() => router.push('/wallet')} />
 
-        <View className="flex-row gap-3">
-          <Card className="flex-1 items-start gap-1">
-            <Text className="text-2xl font-bold text-ink">{data.jobs_completed}</Text>
-            <Text className="text-sm text-muted">Jobs delivered</Text>
-          </Card>
-          <Card className="flex-1 items-start gap-1">
-            <Text className="text-2xl font-bold text-ink">{data.requests_completed}</Text>
-            <Text className="text-sm text-muted">Requests completed</Text>
-          </Card>
-        </View>
-
-        <ServiceCatalogue />
+        <ProfileMediaSection />
 
         <Card>
           <View className="flex-row items-center gap-2">

@@ -42,7 +42,7 @@ export function useProfile() {
   return useQuery(profileQueryOptions(useUserId()));
 }
 
-export function hasProviderPhotoReady(
+export function hasProfilePhotoReady(
   profile:
     | {
         avatar_path: string | null;
@@ -53,6 +53,9 @@ export function hasProviderPhotoReady(
 ) {
   return Boolean(profile?.avatar_path && profile.avatar_captured_in_app);
 }
+
+/** @deprecated Use hasProfilePhotoReady */
+export const hasProviderPhotoReady = hasProfilePhotoReady;
 
 export function useSaveProfile() {
   const userId = useUserId();
@@ -68,9 +71,8 @@ export function useSaveProfile() {
 }
 
 /**
- * Provider identity photos must be captured in-app (camera only). Storage policies key write
- * access off the `<user_id>/` prefix, and confirm_avatar_capture marks the capture as valid
- * for going Active.
+ * Profile photos for responding must be captured in-app (camera only). Storage policies key write
+ * access off the `<user_id>/` prefix, and confirm_avatar_capture marks the capture as valid.
  *
  * Resolves to `false` when the picker is dismissed, which is not a failure.
  */
