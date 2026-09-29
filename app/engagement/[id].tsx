@@ -10,14 +10,15 @@ import { Card } from '@/components/ui/Card';
 import { Header } from '@/components/ui/Header';
 import { PersonRow } from '@/components/ui/PersonRow';
 import { Screen } from '@/components/ui/Screen';
+import { RequestMoneyLine } from '@/components/RequestMoneyLine';
 import { Badge } from '@/components/ui/Badge';
 import { EmptyState, ErrorState, InlineError, LoadingState } from '@/components/ui/StateView';
 import { requestLifecycleCopy } from '@/features/domain/lifecycle';
 import {
-  paymentStatusBadge,
-  paymentStatusHint,
-  requestEngagementStatusBadge,
-} from '@/features/requests/status';
+  requestMoneyDisplay,
+  resolveAgreedProviderAmount,
+} from '@/features/requests/payment-display';
+import { requestEngagementStatusBadge } from '@/features/requests/status';
 import {
   useCancelService,
   useContestServiceProblem as useProviderContestServiceProblem,
@@ -142,20 +143,25 @@ export default function EngagementScreen() {
   }
 
   const data = engagement.data;
-  const agreedAmount = data.quoted_amount ?? data.offered_amount;
   const stepIndex = statusStepIndex(data.request_status);
   const statusBadge = requestEngagementStatusBadge(data.request_status, {
     viewerIsRequester: data.viewer_is_requester,
   });
   const steps = engagementSteps(data.viewer_is_requester);
-  const escrowBadge =
-    data.payment_status && data.payment_status !== 'not_required'
-      ? paymentStatusBadge(data.payment_status)
-      : null;
-  const escrowHint =
-    data.payment_status && data.payment_status !== 'not_required'
-      ? paymentStatusHint(data.payment_status, data.viewer_is_requester)
-      : null;
+  const moneyDisplay = requestMoneyDisplay({
+    requestStatus: data.request_status,
+    paymentStatus: data.payment_status,
+    offeredAmount: data.offered_amount,
+    agreedProviderAmount: data.agreed_provider_amount,
+    quotedAmount: data.quoted_amount,
+    currency: data.currency,
+    viewerIsRequester: data.viewer_is_requester,
+  });
+  const agreedAmount = resolveAgreedProviderAmount({
+    agreedProviderAmount: data.agreed_provider_amount,
+    quotedAmount: data.quoted_amount,
+    offeredAmount: data.offered_amount,
+  });
 
   const providerDistance = null;
 
@@ -386,12 +392,7 @@ export default function EngagementScreen() {
           <Text className="text-sm text-muted">
             Call or message below — there is no in-app chat in this version.
           </Text>
-          {escrowBadge && data.viewer_is_requester ? (
-            <View className="gap-1">
-              <Badge label={escrowBadge.label} tone={escrowBadge.tone} />
-              {escrowHint ? <Text className="text-sm text-muted">{escrowHint}</Text> : null}
-            </View>
-          ) : null}
+          {moneyDisplay ? <RequestMoneyLine display={moneyDisplay} /> : null}
 
           <PersonRow
             avatarPath={data.counterparty_avatar_path}
@@ -488,8 +489,7 @@ export default function EngagementScreen() {
           <Text className="text-sm text-muted">{formatWhen(data.scheduled_for)}</Text>
           {agreedAmount !== null ? (
             <Text className="text-base font-semibold text-ink">
-              {formatMoney(agreedAmount, data.currency)}
-              {data.quoted_amount !== null ? ' (quoted)' : ' (offered)'}
+              {formatMoney(agreedAmount, data.currency)} agreed in the app
             </Text>
           ) : (
             <Text className="text-base text-muted">
@@ -516,12 +516,12 @@ export default function EngagementScreen() {
             {markServiceComplete.isError ? <InlineError error={markServiceComplete.error} /> : null}
             {reportClientNoShow.isError ? <InlineError error={reportClientNoShow.error} /> : null}
             <Button
-              label="I've completed the service"
+              label="I've completed this"
               size="lg"
               loading={markServiceComplete.isPending}
               onPress={() =>
                 Alert.alert(
-                  'Mark this job complete?',
+                  'Mark this complete?',
                   'The requester will be asked to confirm before payment is released.',
                   [
                     { text: 'Not yet', style: 'cancel' },
@@ -551,7 +551,7 @@ export default function EngagementScreen() {
           <View className="gap-3">
             <Card tone="warning">
               <Text className="text-base font-semibold text-ink">
-                {providerFirstName} says the service is complete.
+                {providerFirstName} says the request is complete.
               </Text>
               <Text className="text-sm text-muted">
                 Confirm only if the work was done as agreed.
@@ -572,8 +572,8 @@ export default function EngagementScreen() {
               loading={completeRequest.isPending}
               onPress={() =>
                 Alert.alert(
-                  'Release payment to your provider?',
-                  'Only confirm if the work was done as agreed. This releases escrow to your provider.',
+                  'Release payment to your helper?',
+                  'Only confirm if the work was done as agreed.',
                   [
                     { text: 'Not yet', style: 'cancel' },
                     {
@@ -691,8 +691,12 @@ export default function EngagementScreen() {
           </Card>
         ) : null}
 
-        {data.request_status === 'completed' && data.viewer_is_requester && !data.rating_stars ? (
-          <Button label="Rate your provider" size="lg" onPress={() => router.push(`/rate/${id}`)} />
+        {data.request_status === 'completed' && !data.rating_stars ? (
+          <Button
+            label={data.viewer_is_requester ? 'Rate your helper' : 'Rate the requester'}
+            size="lg"
+            onPress={() => router.push(`/rate/${id}`)}
+          />
         ) : null}
 
         {data.rating_stars ? (

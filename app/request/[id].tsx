@@ -2,6 +2,7 @@ import { Alert, RefreshControl, ScrollView, Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
+import { RequestMoneyLine } from '@/components/RequestMoneyLine';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -17,11 +18,8 @@ import {
   useMyRequest,
   useRequestResponses,
 } from '@/features/requests/requester-api';
-import {
-  paymentStatusBadge,
-  paymentStatusHint,
-  requestStatusBadge,
-} from '@/features/requests/status';
+import { requestMoneyDisplay } from '@/features/requests/payment-display';
+import { requestStatusBadge } from '@/features/requests/status';
 import {
   chooseResponderDialog,
   chosenResponderMessage,
@@ -32,7 +30,7 @@ import {
   isExpiredRequestView,
   reuseRequestButtonLabelForRequest,
 } from '@/features/requests/reuse';
-import { formatAgo, formatMoney, formatWhen } from '@/lib/format';
+import { formatAgo, formatWhen } from '@/lib/format';
 import { colors } from '@/theme';
 
 export default function RequestDetailScreen() {
@@ -69,14 +67,14 @@ export default function RequestDetailScreen() {
   const badge = requestStatusBadge(data.status, data.pending_response_count, {
     expiresAt: data.expires_at,
   });
-  const paymentBadge =
-    data.payment_status && data.payment_status !== 'not_required'
-      ? paymentStatusBadge(data.payment_status)
-      : null;
-  const paymentHint =
-    data.payment_status && data.payment_status !== 'not_required'
-      ? paymentStatusHint(data.payment_status, true)
-      : null;
+  const moneyDisplay = requestMoneyDisplay({
+    requestStatus: data.status,
+    paymentStatus: data.payment_status,
+    offeredAmount: data.offered_amount,
+    agreedProviderAmount: data.agreed_provider_amount,
+    currency: data.currency,
+    viewerIsRequester: true,
+  });
   const pending = responses.data?.filter((response) => response.status === 'pending') ?? [];
   const isExpiredRequest = isExpiredRequestView(data.status, data.expires_at);
   const isOpen = (data.status === 'posted' || data.status === 'searching') && !isExpiredRequest;
@@ -102,7 +100,7 @@ export default function RequestDetailScreen() {
             onSuccess: () =>
               Alert.alert(
                 'Request cancelled',
-                'Anyone who responded has been notified. Locked funds return to your wallet.',
+                'Anyone who responded has been notified. Your money returns to your wallet.',
               ),
           }),
       },
@@ -135,17 +133,7 @@ export default function RequestDetailScreen() {
           <View className="gap-1">
             <Text className="text-sm text-muted">{formatWhen(data.scheduled_for)}</Text>
             <Text className="text-sm text-muted">{data.location_label}</Text>
-            {data.offered_amount !== null ? (
-              <Text className="text-sm font-semibold text-ink">
-                You offered {formatMoney(data.offered_amount, data.currency)}
-              </Text>
-            ) : null}
-            {paymentBadge ? (
-              <View className="gap-1 pt-1">
-                <Badge label={paymentBadge.label} tone={paymentBadge.tone} />
-                {paymentHint ? <Text className="text-sm text-muted">{paymentHint}</Text> : null}
-              </View>
-            ) : null}
+            {moneyDisplay ? <RequestMoneyLine display={moneyDisplay} /> : null}
           </View>
         </View>
 

@@ -419,6 +419,58 @@ select is(
   'selection moves the request to accepted'
 );
 
+select is(
+  (select agreed_provider_amount from public.requests where id = :'request_id'::uuid),
+  7500::numeric,
+  'selection stores the counter offer as the agreed amount'
+);
+
+select pg_temp.act_as_owner() as _ \gset
+select is(
+  (select provider_amount from public.request_escrow where request_id = :'request_id'::uuid),
+  7500::numeric,
+  'escrow matches the agreed counter offer amount'
+);
+
+select is(
+  (select total from public.request_escrow where request_id = :'request_id'::uuid),
+  8250::numeric,
+  'escrow total includes the service fee on the agreed amount'
+);
+
+select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
+select create_request(
+  'Lower counter',
+  'Accepting a lower counter offer refunds the difference.',
+  6.5000,
+  3.3800,
+  'Yaba, Lagos',
+  null,
+  5000
+) as lower_offer_request_id \gset
+
+select pg_temp.act_as('33333333-3333-3333-3333-333333333333') as _ \gset
+select respond_to_request(
+  :'lower_offer_request_id'::uuid,
+  null,
+  4000,
+  6.5000,
+  3.3800
+) as lower_offer_response_id \gset
+
+select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
+select lives_ok(
+  format('select accept_response(%L)', :'lower_offer_response_id'),
+  'requester can accept a lower counter offer'
+);
+
+select pg_temp.act_as_owner() as _ \gset
+select is(
+  (select total from public.request_escrow where request_id = :'lower_offer_request_id'::uuid),
+  4400::numeric,
+  'a lower counter offer reduces the locked total safely'
+);
+
 select pg_temp.act_as_owner() as _ \gset
 select is(
   (select request_id from public.user_attendance where user_id = '22222222-2222-2222-2222-222222222222'),
@@ -476,6 +528,102 @@ select is(
   (select count(*) from browse_nearby_requests(6.5000::double precision, 3.3800::double precision) where request_id = :'request_id'),
   0::bigint,
   'a request leaves public discovery once someone is selected'
+);
+
+-- Service lifecycle after selection -------------------------------------------------
+
+select pg_temp.act_as('22222222-2222-2222-2222-222222222222') as _ \gset
+select lives_ok(
+  format('select start_request(%L)', :'request_id'),
+  'the selected helper can move the request to in progress'
+);
+
+select is(
+  (select request_status::text from get_engagement(:'request_id')),
+  'in_progress',
+  'start_request writes in_progress on the request'
+);
+
+select lives_ok(
+  format('select mark_service_complete(%L)', :'request_id'),
+  'the selected helper can mark the request completion pending'
+);
+
+select is(
+  (select request_status::text from get_engagement(:'request_id')),
+  'completion_pending',
+  'mark_service_complete moves the request to completion_pending'
+);
+
+select ok(
+  (select completion_confirm_by from get_engagement(:'request_id')) > now(),
+  'mark_service_complete sets a confirmation deadline'
+);
+
+select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
+select lives_ok(
+  format('select complete_request(%L)', :'request_id'),
+  'the requester can confirm completion'
+);
+
+select is(
+  (select status::text from public.requests where id = :'request_id'::uuid),
+  'completed',
+  'confirmation completes the request'
+);
+
+select is(
+  (select payment_status::text from public.requests where id = :'request_id'::uuid),
+  'released',
+  'confirmation releases escrow to the helper wallet'
+);
+
+select pg_temp.act_as_owner() as _ \gset
+select ok(
+  (select request_id from public.user_attendance where user_id = '22222222-2222-2222-2222-222222222222') is null,
+  'completion clears helper attendance'
+);
+
+select pg_temp.act_as('55555555-5555-5555-5555-555555555555') as _ \gset
+select respond_to_request(
+  :'cleaning_request_id'::uuid,
+  'I can mop the hallway.',
+  null,
+  6.5000,
+  3.3800
+) as cleaning_response_id \gset
+
+select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
+select lives_ok(
+  format('select accept_response(%L)', :'cleaning_response_id'),
+  'select a helper on the cleaning request for auto-complete coverage'
+);
+
+select pg_temp.act_as('55555555-5555-5555-5555-555555555555') as _ \gset
+select lives_ok(
+  format('select mark_service_complete(%L)', :'cleaning_request_id'),
+  'helper marks the cleaning request complete'
+);
+
+select pg_temp.act_as_owner() as _ \gset
+update public.requests
+set completion_confirm_by = now() - interval '1 minute'
+where id = :'cleaning_request_id'::uuid;
+
+select ok(
+  public.auto_complete_request(:'cleaning_request_id'::uuid),
+  'auto_complete_request completes after the confirmation window'
+);
+
+select is(
+  (select status::text from public.requests where id = :'cleaning_request_id'::uuid),
+  'completed',
+  'automatic completion writes completed status'
+);
+
+select ok(
+  not public.auto_complete_request(:'cleaning_request_id'::uuid),
+  'auto_complete_request is idempotent once completed'
 );
 
 -- Expiration idempotency and selection race -----------------------------------------

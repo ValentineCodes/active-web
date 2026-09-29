@@ -25,6 +25,7 @@ type Engagement = Nullable<
   RpcRow<Functions['get_engagement']['Returns']>,
   | 'scheduled_for'
   | 'offered_amount'
+  | 'agreed_provider_amount'
   | 'quoted_amount'
   | 'accepted_at'
   | 'started_at'
@@ -44,7 +45,7 @@ type Engagement = Nullable<
 >;
 
 const REQUEST_COLUMNS =
-  'request_id, title, description, scheduled_for, offered_amount, currency, payment_status, location_label, latitude, longitude, status, selected_user_id, source_request_id, pending_response_count, is_rated, created_at, updated_at, expires_at, accepted_at, started_at, completed_at, cancelled_at';
+  'request_id, title, description, scheduled_for, offered_amount, agreed_provider_amount, currency, payment_status, location_label, latitude, longitude, status, selected_user_id, source_request_id, pending_response_count, is_rated, created_at, updated_at, expires_at, accepted_at, started_at, completed_at, cancelled_at';
 
 type MyRequest = Guaranteed<
   Database['public']['Views']['my_requests']['Row'],

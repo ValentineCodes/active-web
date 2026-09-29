@@ -610,6 +610,7 @@ export type Database = {
         Row: {
           accepted_at: string | null
           accepted_response_id: string | null
+          agreed_provider_amount: number | null
           cancelled_at: string | null
           completed_at: string | null
           completion_confirm_by: string | null
@@ -637,6 +638,7 @@ export type Database = {
         Insert: {
           accepted_at?: string | null
           accepted_response_id?: string | null
+          agreed_provider_amount?: number | null
           cancelled_at?: string | null
           completed_at?: string | null
           completion_confirm_by?: string | null
@@ -664,6 +666,7 @@ export type Database = {
         Update: {
           accepted_at?: string | null
           accepted_response_id?: string | null
+          agreed_provider_amount?: number | null
           cancelled_at?: string | null
           completed_at?: string | null
           completion_confirm_by?: string | null
@@ -980,6 +983,7 @@ export type Database = {
       my_requests: {
         Row: {
           accepted_at: string | null
+          agreed_provider_amount: number | null
           cancelled_at: string | null
           completed_at: string | null
           created_at: string | null
@@ -1005,6 +1009,7 @@ export type Database = {
         }
         Insert: {
           accepted_at?: string | null
+          agreed_provider_amount?: number | null
           cancelled_at?: string | null
           completed_at?: string | null
           created_at?: string | null
@@ -1030,6 +1035,7 @@ export type Database = {
         }
         Update: {
           accepted_at?: string | null
+          agreed_provider_amount?: number | null
           cancelled_at?: string | null
           completed_at?: string | null
           created_at?: string | null
@@ -1166,6 +1172,14 @@ export type Database = {
           p_idempotency_key: string
           p_outcome: string
           p_problem_id: string
+        }
+        Returns: undefined
+      }
+      align_request_escrow_to_agreed_amount: {
+        Args: {
+          p_agreed_provider_amount: number
+          p_idempotency_key: string
+          p_request_id: string
         }
         Returns: undefined
       }
@@ -1334,6 +1348,7 @@ export type Database = {
         Args: { p_request_id: string }
         Returns: {
           accepted_at: string
+          agreed_provider_amount: number
           completed_at: string
           completion_confirm_by: string
           counterparty_avatar_path: string
