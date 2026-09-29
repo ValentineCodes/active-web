@@ -45,8 +45,8 @@ export default function ActivityScreen() {
           <Card tone="active" className="gap-3">
             <Badge label="Attending" tone="active" />
             <Text className="text-sm text-muted">
-              You are on a request. You can still withdraw other pending responses, but you cannot
-              take a second job.
+              You&apos;re on a request right now. You can still browse and read details — finish
+              that job before you can be selected for another.
             </Text>
             <Button
               label="Open request"

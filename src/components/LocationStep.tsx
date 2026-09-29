@@ -4,7 +4,12 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { Button } from '@/components/ui/Button';
 import { TextField } from '@/components/ui/TextField';
-import { requestPosition, suggestAreaLabel, type Position } from '@/lib/location';
+import {
+  geocodePlaceQuery,
+  requestPosition,
+  suggestAreaLabel,
+  type Position,
+} from '@/lib/location';
 import { colors } from '@/theme';
 
 const REFUSAL_COPY: Record<'permission-denied' | 'services-disabled' | 'unavailable', string> = {
@@ -15,11 +20,7 @@ const REFUSAL_COPY: Record<'permission-denied' | 'services-disabled' | 'unavaila
 };
 
 /**
- * The one place in the app that asks for location on the request form. It runs when the
- * user presses the button and never on mount, so the system prompt arrives with an action
- * they just chose.
- *
- * `areaLabel` is the coarse, human description shown to others before selection.
+ * Location for a new request: current GPS fix or search by place name.
  */
 export function LocationStep({
   position,
@@ -34,10 +35,14 @@ export function LocationStep({
 }) {
   const [isLocating, setIsLocating] = useState(false);
   const [refusal, setRefusal] = useState<keyof typeof REFUSAL_COPY | null>(null);
+  const [placeQuery, setPlaceQuery] = useState('');
+  const [searchError, setSearchError] = useState<string | null>(null);
+  const [isSearching, setIsSearching] = useState(false);
 
-  const capture = async () => {
+  const captureCurrent = async () => {
     setIsLocating(true);
     setRefusal(null);
+    setSearchError(null);
 
     const result = await requestPosition();
 
@@ -58,15 +63,34 @@ export function LocationStep({
     setIsLocating(false);
   };
 
+  const searchPlace = async () => {
+    setIsSearching(true);
+    setSearchError(null);
+    setRefusal(null);
+
+    const coords = await geocodePlaceQuery(placeQuery);
+    if (!coords) {
+      setSearchError('We could not find that place. Try a nearby landmark or area name.');
+      setIsSearching(false);
+      return;
+    }
+
+    onPositionChange(coords);
+    if (onAreaLabelChange) {
+      onAreaLabelChange(placeQuery.trim());
+    }
+    setIsSearching(false);
+  };
+
   if (!position) {
     return (
-      <View className="gap-3">
+      <View className="gap-4">
         <Button
           label={isLocating ? 'Getting your location…' : 'Use my current location'}
           icon="locate"
           variant="secondary"
           loading={isLocating}
-          onPress={capture}
+          onPress={() => void captureCurrent()}
         />
 
         {refusal ? (
@@ -86,6 +110,29 @@ export function LocationStep({
             you select.
           </Text>
         )}
+
+        <View className="gap-3 border-t border-hairline pt-4">
+          <Text className="text-base font-semibold text-ink">Or search for a place</Text>
+          <TextField
+            label="Area or address"
+            value={placeQuery}
+            onChangeText={(text) => {
+              setPlaceQuery(text);
+              setSearchError(null);
+            }}
+            placeholder="e.g. Yaba, Lagos"
+            returnKeyType="search"
+            onSubmitEditing={() => void searchPlace()}
+          />
+          {searchError ? <Text className="text-sm text-danger">{searchError}</Text> : null}
+          <Button
+            label={isSearching ? 'Finding place…' : 'Use this place'}
+            variant="secondary"
+            loading={isSearching}
+            disabled={placeQuery.trim().length < 3}
+            onPress={() => void searchPlace()}
+          />
+        </View>
       </View>
     );
   }
@@ -95,7 +142,7 @@ export function LocationStep({
       <View className="flex-row items-center gap-2 rounded-xl bg-active-soft p-3">
         <Ionicons name="checkmark-circle" size={18} color={colors.active} />
         <Text className="flex-1 text-sm text-ink">
-          Location captured. It stays hidden until you select someone.
+          Location set. It stays hidden until you select someone.
         </Text>
       </View>
 
@@ -111,9 +158,12 @@ export function LocationStep({
       ) : null}
 
       <Button
-        label="Use a different location"
+        label="Choose a different location"
         variant="ghost"
-        onPress={() => onPositionChange(null)}
+        onPress={() => {
+          onPositionChange(null);
+          setPlaceQuery('');
+        }}
       />
     </View>
   );

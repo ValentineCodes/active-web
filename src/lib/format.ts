@@ -24,6 +24,17 @@ export function formatMoney(amount: number, currency: string): string {
   }).format(amount);
 }
 
+/** When shown on discovery cards — compact, no scheduling jargon. */
+export function formatWhenDiscover(scheduledFor: string | null): string {
+  if (!scheduledFor) return 'Now';
+
+  const date = new Date(scheduledFor);
+  if (isToday(date)) return `Today · ${format(date, 'h:mm a')}`;
+  if (isTomorrow(date)) return `Tomorrow · ${format(date, 'h:mm a')}`;
+  if (isThisYear(date)) return `${format(date, 'EEE d MMM')} · ${format(date, 'h:mm a')}`;
+  return `${format(date, 'd MMM yyyy')} · ${format(date, 'h:mm a')}`;
+}
+
 /** `null` means the requester needs it as soon as possible. */
 export function formatWhen(scheduledFor: string | null): string {
   if (!scheduledFor) return 'As soon as possible';

@@ -50,10 +50,10 @@ function fromPublicRequest(row: PublicRequest): RespondableRequest {
     currency: row.currency,
     location_label: row.location_label,
     distance_m: row.distance_m,
-    requester_display_name: null,
-    requester_avatar_path: null,
-    requester_rating_average: null,
-    requester_rating_count: null,
+    requester_display_name: row.requester_display_name,
+    requester_avatar_path: row.requester_avatar_path,
+    requester_rating_average: row.requester_rating_average,
+    requester_rating_count: row.requester_rating_count,
   };
 }
 
@@ -179,6 +179,25 @@ export function useMyResponses() {
       return data;
     },
   });
+}
+
+export function parseResponseOfferAmount(raw: string): number | null {
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  const parsed = Number(trimmed.replace(/[^\d.]/g, ''));
+  if (Number.isNaN(parsed) || parsed < 0) return null;
+  return parsed;
+}
+
+/** `null` means accept the requester's offer (no counter). */
+export function counterOfferForRpc(
+  requesterOffer: number,
+  yourOfferRaw: string,
+): number | null | 'invalid' {
+  const parsed = parseResponseOfferAmount(yourOfferRaw);
+  if (parsed === null) return 'invalid';
+  if (parsed === requesterOffer) return null;
+  return parsed;
 }
 
 export function useRespondToRequest() {

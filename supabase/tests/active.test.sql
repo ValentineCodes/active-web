@@ -205,9 +205,9 @@ select ok(
     from pg_proc p
     where p.pronamespace = 'public'::regnamespace
       and p.proname in ('browse_nearby_requests', 'browse_request')
-      and pg_get_function_result(p.oid) ~* 'response_count|phone|display_name|avatar|latitude|longitude'
+      and pg_get_function_result(p.oid) ~* 'response_count|phone|latitude|longitude'
   ),
-  'public discovery does not return responders, counts, contact details, or coordinates'
+  'public discovery does not return response counts, phone, or coordinates'
 );
 
 -- Escrow on expiration --------------------------------------------------------------
@@ -300,6 +300,30 @@ select throws_ok(
 );
 
 -- Responding ------------------------------------------------------------------------
+
+select pg_temp.act_as('55555555-5555-5555-5555-555555555555') as _ \gset
+select pg_temp.act_as_owner() as _ \gset
+update public.profiles
+set avatar_path = null,
+    avatar_captured_in_app = false
+where id = '55555555-5555-5555-5555-555555555555'::uuid;
+
+select pg_temp.act_as('55555555-5555-5555-5555-555555555555') as _ \gset
+select throws_ok(
+  format(
+    $$select respond_to_request(%L, null, null, 6.5000, 3.3800)$$,
+    :'request_id'
+  ),
+  '55000',
+  'add a profile photo in the app before responding',
+  'responding requires an in-app profile photo'
+);
+
+select pg_temp.act_as_owner() as _ \gset
+update public.profiles
+set avatar_path = '55555555-5555-5555-5555-555555555555/avatar.jpg',
+    avatar_captured_in_app = true
+where id = '55555555-5555-5555-5555-555555555555'::uuid;
 
 select pg_temp.act_as('22222222-2222-2222-2222-222222222222') as _ \gset
 select respond_to_request(

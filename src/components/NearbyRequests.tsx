@@ -3,13 +3,13 @@ import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
 
 import { Button } from '@/components/ui/Button';
-import { RequestCard } from '@/components/ui/RequestCard';
+import { DiscoverRequestCard } from '@/components/DiscoverRequestCard';
 import { SectionHeader } from '@/components/ui/SectionHeader';
 import { InlineError } from '@/components/ui/StateView';
 import { useBrowseNearbyRequests } from '@/features/requests/browse-api';
 import { useMyResponses } from '@/features/requests/responses-api';
 import { nearbyRequestBadge } from '@/features/requests/status';
-import { formatMoney, formatProximity, formatWhen } from '@/lib/format';
+import { formatMoney, formatProximity, formatWhenDiscover } from '@/lib/format';
 import {
   readForegroundPermission,
   readPositionIfPermitted,
@@ -126,27 +126,29 @@ export function NearbyRequests({
                 (response.request_status === 'posted' || response.request_status === 'searching'),
             );
 
+            const openDetail = (startFlow?: boolean) =>
+              router.push({
+                pathname: '/respond/[id]',
+                params: {
+                  id: request.request_id,
+                  ...(position
+                    ? { lat: String(position.latitude), lng: String(position.longitude) }
+                    : {}),
+                  ...(startFlow ? { start: '1' } : {}),
+                },
+              });
+
             return (
-              <RequestCard
+              <DiscoverRequestCard
                 key={request.request_id}
                 title={request.title ?? 'Request'}
-                description={request.description ?? undefined}
+                description={request.description}
                 badge={nearbyRequestBadge(Boolean(waiting))}
-                when={formatWhen(request.scheduled_for)}
-                proximity={formatProximity(request.distance_m)}
-                meta={[request.location_label]}
                 amount={formatMoney(request.offered_amount!, request.currency)}
-                onPress={() =>
-                  router.push({
-                    pathname: '/respond/[id]',
-                    params: {
-                      id: request.request_id,
-                      ...(position
-                        ? { lat: String(position.latitude), lng: String(position.longitude) }
-                        : {}),
-                    },
-                  })
-                }
+                whenLine={formatWhenDiscover(request.scheduled_for)}
+                proximity={formatProximity(request.distance_m)}
+                onOpen={() => openDetail(false)}
+                onHelp={() => openDetail(true)}
               />
             );
           })}

@@ -10,7 +10,13 @@ type Functions = Database['public']['Functions'];
 
 export type PublicRequest = Nullable<
   RpcRow<Functions['browse_nearby_requests']['Returns']>,
-  'scheduled_for' | 'offered_amount' | 'description'
+  | 'scheduled_for'
+  | 'offered_amount'
+  | 'description'
+  | 'requester_display_name'
+  | 'requester_avatar_path'
+  | 'requester_rating_average'
+  | 'requester_rating_count'
 >;
 
 function roundCoordinate(value: number) {

@@ -102,6 +102,21 @@ export function parsePositionParam(
   return { latitude: lat, longitude: lng };
 }
 
+/** Resolve a place name to coordinates for posting a request away from the user's GPS fix. */
+export async function geocodePlaceQuery(query: string): Promise<Position | null> {
+  const trimmed = query.trim();
+  if (trimmed.length < 3) return null;
+
+  try {
+    const results = await Location.geocodeAsync(trimmed);
+    const first = results[0];
+    if (!first) return null;
+    return { latitude: first.latitude, longitude: first.longitude };
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Suggests the coarse area label shown to others before selection. The requester
  * confirms or edits it, so a wrong guess is harmless and nothing precise is derived

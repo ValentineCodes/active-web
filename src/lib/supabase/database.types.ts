@@ -1210,6 +1210,10 @@ export type Database = {
           location_label: string
           offered_amount: number
           request_id: string
+          requester_avatar_path: string
+          requester_display_name: string
+          requester_rating_average: number
+          requester_rating_count: number
           scheduled_for: string
           title: string
         }[]
@@ -1223,6 +1227,10 @@ export type Database = {
           location_label: string
           offered_amount: number
           request_id: string
+          requester_avatar_path: string
+          requester_display_name: string
+          requester_rating_average: number
+          requester_rating_count: number
           scheduled_for: string
           title: string
         }[]
