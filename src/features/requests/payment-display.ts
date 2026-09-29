@@ -1,14 +1,14 @@
 import type { PaymentStatus, RequestStatus } from '@/features/domain/model';
 import { formatMoney } from '@/lib/format';
 
-/** Agreed payout to the helper (counter offer or original offer). */
-export function resolveAgreedProviderAmount(input: {
-  agreedProviderAmount?: number | null;
+/** Agreed amount for the person helping (their counter or the original offer). */
+export function resolveAgreedAmount(input: {
+  agreedAmount?: number | null;
   quotedAmount?: number | null;
   offeredAmount?: number | null;
 }): number | null {
-  if (input.agreedProviderAmount != null && input.agreedProviderAmount > 0) {
-    return input.agreedProviderAmount;
+  if (input.agreedAmount != null && input.agreedAmount > 0) {
+    return input.agreedAmount;
   }
 
   if (input.quotedAmount != null && input.quotedAmount > 0) {
@@ -28,18 +28,18 @@ export type RequestMoneyDisplay = {
   hint: string | null;
 };
 
-/** Simple requester/helper money copy — no escrow or ledger terminology. */
+/** Simple money copy for people posting or helping on a request. */
 export function requestMoneyDisplay(input: {
   requestStatus: RequestStatus;
   paymentStatus: PaymentStatus | null;
   offeredAmount: number | null;
-  agreedProviderAmount?: number | null;
+  agreedAmount?: number | null;
   quotedAmount?: number | null;
   currency: string;
   viewerIsRequester: boolean;
 }): RequestMoneyDisplay | null {
-  const agreed = resolveAgreedProviderAmount({
-    agreedProviderAmount: input.agreedProviderAmount,
+  const agreed = resolveAgreedAmount({
+    agreedAmount: input.agreedAmount,
     quotedAmount: input.quotedAmount,
     offeredAmount: input.offeredAmount,
   });
@@ -55,7 +55,7 @@ export function requestMoneyDisplay(input: {
     return {
       label: 'Paid',
       amount: formatMoney(agreed, input.currency),
-      hint: input.viewerIsRequester ? 'Sent to the person who helped.' : 'Received in your wallet.',
+      hint: input.viewerIsRequester ? 'Paid to the person who helped.' : 'Paid into your wallet.',
     };
   }
 

@@ -184,7 +184,7 @@ export default function ProfileScreen() {
             {completedRequests === 1 ? 'Completed request' : 'Completed requests'}
           </Text>
           <Text className="text-sm text-muted">
-            {data.jobs_completed} helping others · {data.requests_completed} you posted
+            {data.jobs_completed} helped others · {data.requests_completed} you posted
           </Text>
         </Card>
 
@@ -213,8 +213,8 @@ export default function ProfileScreen() {
             <Text className="text-base font-semibold text-ink">How your location is used</Text>
           </View>
           <Text className="text-base text-muted">
-            Active reads your location when you post a request, browse nearby, or respond, and uses
-            it privately to work out distance. Nobody sees where you are until you select someone.
+            Active uses your location when you post, browse nearby, or respond — only to work out
+            distance. Nobody sees where you are until you select someone.
           </Text>
         </Card>
 

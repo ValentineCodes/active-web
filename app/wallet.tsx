@@ -115,8 +115,8 @@ export default function WalletScreen() {
                 {formatMoney(available, currency)}
               </Text>
               <Text className="text-sm text-muted">
-                Use this balance to fund requests. Active adds a {feePercent}% service fee on top of
-                your offer.
+                Use this balance to pay for requests. Active adds a {feePercent}% fee on top of your
+                offer.
               </Text>
             </Card>
 
@@ -132,7 +132,7 @@ export default function WalletScreen() {
                 label={WALLET.buckets.pending}
                 amount={pending}
                 currency={currency}
-                hint="Held after you accept someone, until the job completes or is refunded"
+                hint="Held after you choose someone, until the request completes or is refunded"
               />
             </Card>
 
@@ -206,7 +206,7 @@ export default function WalletScreen() {
 
             <View className="gap-1">
               <Text className="text-lg font-bold text-ink">Recent activity</Text>
-              <Text className="text-sm text-muted">Immutable ledger entries for your account</Text>
+              <Text className="text-sm text-muted">Money in and out of your wallet</Text>
             </View>
 
             {activity.isError ? <InlineError error={activity.error} /> : null}
@@ -219,7 +219,7 @@ export default function WalletScreen() {
             <EmptyState
               icon="wallet-outline"
               title="No activity yet"
-              message="Deposits, request funding, refunds, and payouts appear here."
+              message="Deposits, payments for requests, refunds, and payouts appear here."
             />
           )
         }

@@ -114,7 +114,7 @@ export function NearbyRequests({
         <InlineError error={nearby.error} />
       ) : rows.length === 0 ? (
         <Text className="text-sm text-muted">
-          Nothing open near you right now. Check back later or ask for help yourself.
+          Nothing open near you right now. Check back later — or ask for help on Home.
         </Text>
       ) : (
         <>

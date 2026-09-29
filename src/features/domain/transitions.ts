@@ -10,11 +10,11 @@ export const REQUEST_STATUS_LABELS: Record<RequestStatus, string> = {
   searching: 'Posted',
   accepted: 'Selected',
   in_progress: 'In progress',
-  completion_pending: 'Completion pending',
+  completion_pending: 'Confirm',
   completed: 'Completed',
   cancelled: 'Cancelled',
   expired: 'Expired',
-  disputed: 'Disputed',
+  disputed: 'Issue open',
   no_show: 'No-show',
 };
 
@@ -31,11 +31,11 @@ export const REQUEST_STATUS_TRANSITIONS: Partial<Record<RequestStatus, RequestSt
 export const PAYMENT_STATUS_LABELS: Record<PaymentStatus, string> = {
   not_required: 'No payment',
   available: 'Available',
-  locked: 'Locked',
-  pending: 'Pending release',
-  released: 'Released',
+  locked: 'Held',
+  pending: 'Held until paid',
+  released: 'Paid',
   refunded: 'Refunded',
-  disputed: 'Disputed',
+  disputed: 'On hold',
 };
 
 export const PAYMENT_TRANSITIONS: Partial<Record<PaymentStatus, PaymentStatus[]>> = {

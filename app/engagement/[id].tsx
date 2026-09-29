@@ -14,14 +14,10 @@ import { RequestMoneyLine } from '@/components/RequestMoneyLine';
 import { Badge } from '@/components/ui/Badge';
 import { EmptyState, ErrorState, InlineError, LoadingState } from '@/components/ui/StateView';
 import { requestLifecycleCopy } from '@/features/domain/lifecycle';
-import {
-  requestMoneyDisplay,
-  resolveAgreedProviderAmount,
-} from '@/features/requests/payment-display';
+import { requestMoneyDisplay, resolveAgreedAmount } from '@/features/requests/payment-display';
 import { requestEngagementStatusBadge } from '@/features/requests/status';
 import {
   useCancelService,
-  useContestServiceProblem as useProviderContestServiceProblem,
   useReportClientNoShow,
   useStartRequest,
   useMarkServiceComplete,
@@ -35,7 +31,7 @@ import {
   useReportServiceProblem,
   type ServiceProblemKind,
 } from '@/features/requests/requester-api';
-import { formatDistance, formatMoney, formatWhen } from '@/lib/format';
+import { formatMoney, formatWhen } from '@/lib/format';
 import { colors } from '@/theme';
 
 function openInMaps(latitude: number, longitude: number, label: string) {
@@ -102,7 +98,6 @@ export default function EngagementScreen() {
   const reportProblem = useReportServiceProblem(id);
   const contestProblem = useContestServiceProblem(id);
   const reportClientNoShow = useReportClientNoShow(id);
-  const providerContestProblem = useProviderContestServiceProblem(id);
   const cancelRequest = useCancelRequest(id);
   const cancelService = useCancelService(id);
   const [profileOpen, setProfileOpen] = useState(false);
@@ -113,7 +108,7 @@ export default function EngagementScreen() {
   if (engagement.isPending) {
     return (
       <Screen>
-        <Header title="Connected" onBack={() => router.back()} />
+        <Header title="Your request" onBack={() => router.back()} />
         <LoadingState />
       </Screen>
     );
@@ -122,7 +117,7 @@ export default function EngagementScreen() {
   if (engagement.isError) {
     return (
       <Screen>
-        <Header title="Connected" onBack={() => router.back()} />
+        <Header title="Your request" onBack={() => router.back()} />
         <ErrorState error={engagement.error} onRetry={() => engagement.refetch()} />
       </Screen>
     );
@@ -131,11 +126,11 @@ export default function EngagementScreen() {
   if (!engagement.data) {
     return (
       <Screen>
-        <Header title="Connected" onBack={() => router.back()} />
+        <Header title="Your request" onBack={() => router.back()} />
         <EmptyState
           icon="lock-closed-outline"
           title="Nothing to show here"
-          message="No one has been chosen yet, so contact details and exact locations stay private."
+          message="Choose someone on your request first. Then you will see contact details and the exact location here."
           action={{ label: 'Go back', onPress: () => router.back() }}
         />
       </Screen>
@@ -152,20 +147,18 @@ export default function EngagementScreen() {
     requestStatus: data.request_status,
     paymentStatus: data.payment_status,
     offeredAmount: data.offered_amount,
-    agreedProviderAmount: data.agreed_provider_amount,
+    agreedAmount: data.agreed_provider_amount,
     quotedAmount: data.quoted_amount,
     currency: data.currency,
     viewerIsRequester: data.viewer_is_requester,
   });
-  const agreedAmount = resolveAgreedProviderAmount({
-    agreedProviderAmount: data.agreed_provider_amount,
+  const agreedAmount = resolveAgreedAmount({
+    agreedAmount: data.agreed_provider_amount,
     quotedAmount: data.quoted_amount,
     offeredAmount: data.offered_amount,
   });
 
-  const providerDistance = null;
-
-  const providerFirstName = data.counterparty_display_name?.split(' ')[0] ?? 'Your helper';
+  const helperFirstName = data.counterparty_display_name?.split(' ')[0] ?? 'They';
 
   const submitReport = (payload: ReportProblemPayload) => {
     const onSuccess = () => setReportModal(null);
@@ -192,30 +185,30 @@ export default function EngagementScreen() {
     Alert.alert('Report a problem', 'What went wrong?', [
       { text: 'Cancel', style: 'cancel' },
       {
-        text: "Provider didn't show up",
+        text: "They didn't show up",
         onPress: () =>
           openReportModal({
             kind: 'provider_no_show',
-            title: 'Report provider no-show',
-            subtitle: `${providerFirstName} will have 24 hours to respond. Your payment stays locked until this is resolved.`,
+            title: 'Report a no-show',
+            subtitle: `${helperFirstName} will have 24 hours to respond. Your payment stays on hold until this is resolved.`,
           }),
       },
       {
-        text: "Can't reach provider",
+        text: "Can't reach them",
         onPress: () =>
           openReportModal({
             kind: 'provider_unreachable',
-            title: "Can't reach your provider?",
-            subtitle: `We'll notify ${providerFirstName}. If they don't respond within 24 hours, you may receive a full refund.`,
+            title: "Can't reach them?",
+            subtitle: `We'll notify ${helperFirstName}. If they don't respond within 24 hours, you may receive a full refund.`,
           }),
       },
       {
-        text: 'Service not completed',
+        text: 'Work not done',
         onPress: () =>
           openReportModal({
             kind: 'service_not_completed',
-            title: 'Service not completed',
-            subtitle: 'Payment stays locked while support reviews your report.',
+            title: 'Work not done',
+            subtitle: 'Your payment stays on hold while we review your report.',
           }),
       },
       {
@@ -224,7 +217,7 @@ export default function EngagementScreen() {
           openReportModal({
             kind: 'service_differs_from_request',
             title: 'Work differed from the request',
-            subtitle: 'Explain how the service differed from what you asked for.',
+            subtitle: 'Explain how the work differed from what you asked for.',
           }),
       },
       {
@@ -233,30 +226,30 @@ export default function EngagementScreen() {
           openReportModal({
             kind: 'other',
             title: 'Report another problem',
-            subtitle: 'Tell us what went wrong. Payment stays locked until support resolves this.',
+            subtitle: 'Tell us what went wrong. Your payment stays on hold until this is resolved.',
           }),
       },
     ]);
 
-  const openProviderProblemMenu = () =>
+  const openHelperProblemMenu = () =>
     Alert.alert('Report a problem', 'What went wrong?', [
       { text: 'Cancel', style: 'cancel' },
       {
-        text: 'Client no-show',
+        text: 'They did not show up',
         onPress: () =>
           openReportModal({
             kind: 'client_no_show',
-            title: 'Report client no-show',
-            subtitle: 'The client will have 24 hours to respond before an automatic outcome.',
+            title: 'Report a no-show',
+            subtitle: 'They will have 24 hours to respond before an automatic outcome.',
           }),
       },
       {
-        text: 'Service not completed',
+        text: 'Work not done',
         onPress: () =>
           openReportModal({
             kind: 'service_not_completed',
-            title: 'Service not completed',
-            subtitle: 'Payment stays locked while support reviews your report.',
+            title: 'Work not done',
+            subtitle: 'Your payment stays on hold while we review your report.',
           }),
       },
       {
@@ -265,7 +258,7 @@ export default function EngagementScreen() {
           openReportModal({
             kind: 'service_differs_from_request',
             title: 'Work differed from the request',
-            subtitle: 'Explain how the job differed from what was agreed.',
+            subtitle: 'Explain how the work differed from what was agreed.',
           }),
       },
       {
@@ -274,30 +267,29 @@ export default function EngagementScreen() {
           openReportModal({
             kind: 'other',
             title: 'Report another problem',
-            subtitle: 'Tell us what went wrong. Payment stays locked until support resolves this.',
+            subtitle: 'Tell us what went wrong. Your payment stays on hold until this is resolved.',
           }),
       },
     ]);
 
-  const confirmReportClientNoShow = () =>
+  const confirmReportRequesterNoShow = () =>
     openReportModal({
       kind: 'client_no_show',
-      title: 'Report client no-show',
+      title: 'Report a no-show',
       subtitle:
-        'The client will have 24 hours to respond. If they do not, you may receive payment for this job.',
+        'They will have 24 hours to respond. If they do not, you may be paid for this request.',
     });
 
   const confirmContestProblem = () =>
     Alert.alert(
       'Dispute this report?',
-      'Tell us you were available and want to continue the job. This pauses any automatic outcome until support reviews it.',
+      'Tell us you were available and want to continue. This pauses any automatic outcome until support reviews it.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'I was there',
           onPress: () => {
-            const contest = data.viewer_is_requester ? contestProblem : providerContestProblem;
-            contest.mutate();
+            contestProblem.mutate();
           },
         },
       ],
@@ -306,15 +298,15 @@ export default function EngagementScreen() {
   const problemKindLabel = (kind: string | null) => {
     switch (kind) {
       case 'provider_no_show':
-        return 'Provider no-show reported';
+        return 'No-show reported';
       case 'provider_unreachable':
-        return 'Provider unreachable';
+        return "Can't reach them";
       case 'client_no_show':
-        return 'Client no-show reported';
+        return 'Requester no-show reported';
       case 'completion_issue':
         return 'Completion disputed';
       case 'service_not_completed':
-        return 'Service not completed';
+        return 'Work not done';
       case 'service_differs_from_request':
         return 'Work differed from request';
       case 'other':
@@ -326,12 +318,12 @@ export default function EngagementScreen() {
 
   const confirmCancelRequest = () =>
     Alert.alert(
-      'Cancel job?',
+      'Cancel request?',
       'You will receive a full refund for any payment held in the app. This cannot be undone.',
       [
         { text: 'Keep it', style: 'cancel' },
         {
-          text: 'Cancel job',
+          text: 'Cancel request',
           style: 'destructive',
           onPress: () =>
             cancelRequest.mutate(undefined, {
@@ -343,12 +335,12 @@ export default function EngagementScreen() {
 
   const confirmCancelService = () =>
     Alert.alert(
-      'Cancel job?',
-      'The requester will be refunded in full and the job will close. You will be available for other requests.',
+      'Cancel request?',
+      'The other person will be refunded in full and this request will close. You can respond to other requests again.',
       [
         { text: 'Keep it', style: 'cancel' },
         {
-          text: 'Cancel job',
+          text: 'Cancel request',
           style: 'destructive',
           onPress: () =>
             cancelService.mutate(undefined, {
@@ -360,10 +352,10 @@ export default function EngagementScreen() {
 
   const canCancelAsRequester =
     data.request_status === 'accepted' || data.request_status === 'in_progress';
-  const canCancelAsProvider = canCancelAsRequester || data.request_status === 'completion_pending';
+  const canCancelAsHelper = canCancelAsRequester || data.request_status === 'completion_pending';
   const canReportActiveProblem =
     data.request_status === 'accepted' || data.request_status === 'in_progress';
-  const canReportProviderProblem =
+  const canReportHelperProblem =
     !data.viewer_is_requester &&
     (canReportActiveProblem || data.request_status === 'completion_pending');
   const openProblem = data.request_status === 'disputed' && data.service_problem_kind;
@@ -475,12 +467,6 @@ export default function EngagementScreen() {
               openInMaps(data.request_latitude, data.request_longitude, data.location_label)
             }
           />
-
-          {data.viewer_is_requester && providerDistance !== null ? (
-            <Text className="text-sm text-muted">
-              {providerFirstName} is about {formatDistance(providerDistance)} from here.
-            </Text>
-          ) : null}
         </Card>
 
         <View className="gap-2">
@@ -522,7 +508,7 @@ export default function EngagementScreen() {
               onPress={() =>
                 Alert.alert(
                   'Mark this complete?',
-                  'The requester will be asked to confirm before payment is released.',
+                  'The person who asked will confirm before you are paid.',
                   [
                     { text: 'Not yet', style: 'cancel' },
                     { text: 'Mark complete', onPress: () => markServiceComplete.mutate() },
@@ -531,10 +517,10 @@ export default function EngagementScreen() {
               }
             />
             <Button
-              label="Client didn't show up"
+              label="They did not show up"
               variant="danger"
               loading={reportClientNoShow.isPending}
-              onPress={confirmReportClientNoShow}
+              onPress={confirmReportRequesterNoShow}
             />
           </View>
         ) : null}
@@ -542,7 +528,7 @@ export default function EngagementScreen() {
         {!data.viewer_is_requester && data.request_status === 'completion_pending' ? (
           <Card>
             <Text className="text-base text-muted">
-              Waiting for the requester to confirm. They&apos;ll be asked to rate you once they do.
+              Waiting for them to confirm. They can rate you once they do.
             </Text>
           </Card>
         ) : null}
@@ -551,15 +537,15 @@ export default function EngagementScreen() {
           <View className="gap-3">
             <Card tone="warning">
               <Text className="text-base font-semibold text-ink">
-                {providerFirstName} says the request is complete.
+                {helperFirstName} says the request is complete.
               </Text>
               <Text className="text-sm text-muted">
                 Confirm only if the work was done as agreed.
               </Text>
               {data.completion_confirm_by ? (
                 <Text className="text-sm text-muted">
-                  If you don&apos;t respond by {formatWhen(data.completion_confirm_by)}, this job
-                  will complete automatically.
+                  If you don&apos;t respond by {formatWhen(data.completion_confirm_by)}, this
+                  request will complete automatically.
                 </Text>
               ) : null}
             </Card>
@@ -572,7 +558,7 @@ export default function EngagementScreen() {
               loading={completeRequest.isPending}
               onPress={() =>
                 Alert.alert(
-                  'Release payment to your helper?',
+                  'Confirm and pay them?',
                   'Only confirm if the work was done as agreed.',
                   [
                     { text: 'Not yet', style: 'cancel' },
@@ -596,7 +582,7 @@ export default function EngagementScreen() {
                   kind: 'completion_issue',
                   title: 'Report a problem',
                   subtitle:
-                    'This flags the job for review and pauses payment release. Only do this if the service was not delivered as agreed.',
+                    'This pauses payment until we review. Only do this if the work was not done as agreed.',
                 })
               }
             />
@@ -615,7 +601,7 @@ export default function EngagementScreen() {
           </View>
         ) : null}
 
-        {canReportProviderProblem ? (
+        {canReportHelperProblem ? (
           <View className="gap-3">
             {reportClientNoShow.isError ? <InlineError error={reportClientNoShow.error} /> : null}
             {reportProblem.isError ? <InlineError error={reportProblem.error} /> : null}
@@ -623,7 +609,7 @@ export default function EngagementScreen() {
               label="Report a problem"
               variant="danger"
               loading={reportClientNoShow.isPending || reportProblem.isPending}
-              onPress={openProviderProblemMenu}
+              onPress={openHelperProblemMenu}
             />
           </View>
         ) : null}
@@ -638,14 +624,14 @@ export default function EngagementScreen() {
             data.service_problem_kind === 'service_differs_from_request' ||
             data.service_problem_kind === 'other' ? (
               <Text className="text-sm text-muted">
-                Support will review this report. Payment stays locked until the dispute is resolved.
+                Support will review this. Your payment stays on hold until this is resolved.
                 {data.service_problem_description ? (
                   <> You reported: “{data.service_problem_description}”</>
                 ) : null}
               </Text>
             ) : data.service_problem_reported_by_me ? (
               <Text className="text-sm text-muted">
-                We notified the other party. Your payment stays locked while they have time to
+                We notified the other person. Your payment stays on hold while they have time to
                 respond.
                 {data.service_problem_respond_by ? (
                   <>
@@ -667,14 +653,12 @@ export default function EngagementScreen() {
                 ) : null}
               </Text>
             )}
-            {contestProblem.isError || providerContestProblem.isError ? (
-              <InlineError error={contestProblem.error ?? providerContestProblem.error} />
-            ) : null}
+            {contestProblem.isError ? <InlineError error={contestProblem.error} /> : null}
             {canContestProblem ? (
               <Button
                 label="I was there / I'm available"
                 variant="secondary"
-                loading={contestProblem.isPending || providerContestProblem.isPending}
+                loading={contestProblem.isPending}
                 onPress={confirmContestProblem}
               />
             ) : null}
@@ -685,15 +669,15 @@ export default function EngagementScreen() {
           <Card tone="danger">
             <Text className="text-base font-semibold text-ink">No-show recorded</Text>
             <Text className="text-sm text-muted">
-              This job closed after a no-show report. Payment followed the outcome recorded on the
-              server.
+              This request closed after a no-show report. Payment followed the outcome recorded on
+              the server.
             </Text>
           </Card>
         ) : null}
 
         {data.request_status === 'completed' && !data.rating_stars ? (
           <Button
-            label={data.viewer_is_requester ? 'Rate your helper' : 'Rate the requester'}
+            label={data.viewer_is_requester ? 'Rate them' : 'Rate the person who asked'}
             size="lg"
             onPress={() => router.push(`/rate/${id}`)}
           />
@@ -714,7 +698,7 @@ export default function EngagementScreen() {
           <View className="gap-3">
             {cancelRequest.isError ? <InlineError error={cancelRequest.error} /> : null}
             <Button
-              label="Cancel this job"
+              label="Cancel this request"
               variant="danger"
               loading={cancelRequest.isPending}
               onPress={confirmCancelRequest}
@@ -722,11 +706,11 @@ export default function EngagementScreen() {
           </View>
         ) : null}
 
-        {canCancelAsProvider && !data.viewer_is_requester ? (
+        {canCancelAsHelper && !data.viewer_is_requester ? (
           <View className="gap-3">
             {cancelService.isError ? <InlineError error={cancelService.error} /> : null}
             <Button
-              label="Cancel this job"
+              label="Cancel this request"
               variant="danger"
               loading={cancelService.isPending}
               onPress={confirmCancelService}

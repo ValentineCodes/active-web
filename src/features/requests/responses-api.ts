@@ -165,11 +165,6 @@ export function useLiveResponseUpdates() {
   }, [userId, queryClient]);
 }
 
-/** @deprecated Inbox RPC removed; browse nearby instead. */
-export function useLiveProviderHandshake() {
-  useLiveResponseUpdates();
-}
-
 export function useMyResponses() {
   return useQuery({
     queryKey: queryKeys.myResponses,
@@ -288,24 +283,6 @@ export function useReportClientNoShow(requestId: string) {
         p_kind: 'client_no_show',
         p_description: input?.description ?? '',
         p_evidence_paths: input?.evidencePaths ?? [],
-      });
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.engagement(requestId) });
-      queryClient.invalidateQueries({ queryKey: queryKeys.myResponses });
-      queryClient.invalidateQueries({ queryKey: queryKeys.myRequests });
-    },
-  });
-}
-
-export function useContestServiceProblem(requestId: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async () => {
-      const { error } = await supabase.rpc('contest_service_problem', {
-        p_request_id: requestId,
       });
       if (error) throw error;
     },

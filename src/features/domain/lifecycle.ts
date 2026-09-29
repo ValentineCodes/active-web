@@ -26,17 +26,17 @@ const REQUESTER_COPY: Record<Exclude<RequestLifecycleStage, 'draft' | 'no_show'>
   responses: { title: 'Responses', hint: 'People have offered to help.' },
   selected: { title: 'Selected', hint: "You've chosen someone." },
   in_progress: { title: 'In progress', hint: "They're helping you now." },
-  completion_pending: { title: 'Completion pending', hint: 'Waiting for confirmation.' },
+  completion_pending: { title: 'Confirm', hint: 'Confirm when the work is done.' },
   completed: { title: 'Completed', hint: 'Done.' },
   cancelled: { title: 'Cancelled', hint: 'This request was cancelled.' },
   expired: { title: 'Expired', hint: 'This request expired before anyone was chosen.' },
-  disputed: { title: 'Disputed', hint: 'There is an open issue on this request.' },
+  disputed: { title: 'Issue open', hint: 'There is an open issue on this request.' },
 };
 
 const HELPER_COPY: Partial<Record<RequestLifecycleStage, LifecycleCopy>> = {
   selected: { title: 'Selected', hint: "You've been chosen." },
   in_progress: { title: 'In progress', hint: "You're helping now." },
-  completion_pending: { title: 'Completion pending', hint: 'Waiting for confirmation.' },
+  completion_pending: { title: 'Confirm', hint: 'Waiting for them to confirm.' },
   completed: { title: 'Completed', hint: 'Done.' },
 };
 
@@ -89,7 +89,7 @@ export function requestLifecycleCopy(
   }
 
   if (stage === 'no_show') {
-    return { title: 'No-show', hint: 'This job was marked as a no-show.' };
+    return { title: 'No-show', hint: 'This request was marked as a no-show.' };
   }
 
   const viewerIsRequester = options?.viewerIsRequester ?? true;

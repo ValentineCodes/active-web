@@ -141,7 +141,7 @@ export function ProfileMediaSection() {
     return (
       <Card className="items-center py-8">
         <ActivityIndicator color={colors.brand} />
-        <Text className="mt-3 text-sm text-muted">Loading your catalogue…</Text>
+        <Text className="mt-3 text-sm text-muted">Loading photos…</Text>
       </Card>
     );
   }

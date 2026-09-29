@@ -49,7 +49,7 @@ export function catalogueQueryOptions(userId: string) {
   };
 }
 
-export function useProviderCatalogue(userId: string | undefined) {
+export function useUserCatalogue(userId: string | undefined) {
   return useQuery({
     ...catalogueQueryOptions(userId ?? ''),
     enabled: Boolean(userId),
@@ -57,7 +57,7 @@ export function useProviderCatalogue(userId: string | undefined) {
 }
 
 export function useMyCatalogue() {
-  return useProviderCatalogue(useUserId());
+  return useUserCatalogue(useUserId());
 }
 
 export function useCatalogueMediaUrl(path: string | null | undefined) {
@@ -107,7 +107,7 @@ async function pickCatalogueVideoSource(): Promise<'camera' | 'library' | null> 
 async function launchCataloguePhotoPicker(source: 'camera' | 'library', slotsLeft: number) {
   if (source === 'camera') {
     const permission = await ImagePicker.requestCameraPermissionsAsync();
-    if (!permission.granted) throw new Error('Camera access is needed to take a catalogue photo.');
+    if (!permission.granted) throw new Error('Camera access is needed to take a profile photo.');
     return ImagePicker.launchCameraAsync({
       mediaTypes: ['images'],
       allowsEditing: true,
@@ -118,7 +118,7 @@ async function launchCataloguePhotoPicker(source: 'camera' | 'library', slotsLef
 
   const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
   if (!permission.granted) {
-    throw new Error('Photo library access is needed to choose a catalogue photo.');
+    throw new Error('Photo library access is needed to choose a profile photo.');
   }
 
   return ImagePicker.launchImageLibraryAsync({
@@ -134,8 +134,7 @@ async function launchCataloguePhotoPicker(source: 'camera' | 'library', slotsLef
 async function launchCatalogueVideoPicker(source: 'camera' | 'library') {
   if (source === 'camera') {
     const permission = await ImagePicker.requestCameraPermissionsAsync();
-    if (!permission.granted)
-      throw new Error('Camera access is needed to record a catalogue video.');
+    if (!permission.granted) throw new Error('Camera access is needed to record a profile video.');
     return ImagePicker.launchCameraAsync({
       mediaTypes: ['videos'],
     });
@@ -143,7 +142,7 @@ async function launchCatalogueVideoPicker(source: 'camera' | 'library') {
 
   const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
   if (!permission.granted) {
-    throw new Error('Photo library access is needed to choose a catalogue video.');
+    throw new Error('Photo library access is needed to choose a profile video.');
   }
 
   return ImagePicker.launchImageLibraryAsync({ mediaTypes: ['videos'] });
@@ -162,7 +161,7 @@ export function useAddCataloguePhoto() {
       const existing = queryClient.getQueryData<CatalogueRow[]>(queryKeys.catalogue(userId)) ?? [];
       const photoCount = existing.filter((row) => row.kind === 'photo').length;
       if (photoCount >= PROFILE_CATALOGUE_PHOTO_LIMIT) {
-        throw new Error(`You can add up to ${PROFILE_CATALOGUE_PHOTO_LIMIT} catalogue photos.`);
+        throw new Error(`You can add up to ${PROFILE_CATALOGUE_PHOTO_LIMIT} profile photos.`);
       }
 
       const slotsLeft = PROFILE_CATALOGUE_PHOTO_LIMIT - photoCount;
@@ -334,7 +333,7 @@ export function useSetCatalogueVideo() {
 
       const bytes = await readUriBytes(asset.uri);
       if (bytes.byteLength > 50 * 1024 * 1024) {
-        throw new Error('Your catalogue video must be 50 MB or smaller.');
+        throw new Error('Your profile video must be 50 MB or smaller.');
       }
 
       const path = `${userId}/catalogue/video-${Date.now()}.${extensionForMime(mimeType)}`;

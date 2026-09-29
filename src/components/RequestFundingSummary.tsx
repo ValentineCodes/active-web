@@ -12,11 +12,11 @@ export function RequestFundingSummary({ offeredAmount }: { offeredAmount: number
       <View className="flex-row justify-between">
         <Text className="text-sm text-muted">Offer</Text>
         <Text className="text-sm text-ink">
-          {formatMoney(funding.providerAmount, funding.currency)}
+          {formatMoney(funding.offerAmount, funding.currency)}
         </Text>
       </View>
       <View className="flex-row justify-between">
-        <Text className="text-sm text-muted">Active fee</Text>
+        <Text className="text-sm text-muted">Fee</Text>
         <Text className="text-sm text-ink">
           {formatMoney(funding.serviceFee, funding.currency)}
         </Text>
@@ -28,7 +28,7 @@ export function RequestFundingSummary({ offeredAmount }: { offeredAmount: number
         </Text>
       </View>
       <Text className="text-xs text-muted">
-        This is secured when your request goes live. People nearby only see your offer amount.
+        Held from your wallet when your request goes live. People nearby only see your offer amount.
       </Text>
     </View>
   );

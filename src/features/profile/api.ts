@@ -54,9 +54,6 @@ export function hasProfilePhotoReady(
   return Boolean(profile?.avatar_path && profile.avatar_captured_in_app);
 }
 
-/** @deprecated Use hasProfilePhotoReady */
-export const hasProviderPhotoReady = hasProfilePhotoReady;
-
 export function useSaveProfile() {
   const userId = useUserId();
   const queryClient = useQueryClient();

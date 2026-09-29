@@ -16,11 +16,11 @@ export function canReuseRequest(status: RequestStatus, expiresAt: string | null)
 
 export function reuseRequestButtonLabel(status: RequestStatus): string | null {
   if (status === 'expired') {
-    return 'Resend Request';
+    return 'Resend request';
   }
 
   if (status === 'completed') {
-    return 'Request Again';
+    return 'Ask again';
   }
 
   return null;
@@ -41,7 +41,7 @@ export function reuseRequestButtonLabelForRequest(
   expiresAt: string | null,
 ): string | null {
   if (isExpiredRequestView(status, expiresAt)) {
-    return 'Resend Request';
+    return 'Resend request';
   }
 
   return reuseRequestButtonLabel(status);

@@ -28,7 +28,7 @@ export function isAttendingAnotherRequest(
   return attendance?.attending_request_id != null && attendance.attending_request_id !== requestId;
 }
 
-/** True when the user is on a selected job (attending), not merely pending responses elsewhere. */
+/** True when the user is attending a selected request, not merely pending responses elsewhere. */
 export function isAttendingAnyRequest(attendance: MyAttendance | undefined): boolean {
   return attendance?.attending_request_id != null;
 }

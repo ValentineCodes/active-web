@@ -1286,7 +1286,7 @@ export type Database = {
       }
       create_request: {
         Args: {
-          p_description: string
+          p_description: string | null
           p_latitude: number
           p_location_label: string
           p_longitude: number
@@ -1302,6 +1302,7 @@ export type Database = {
         Returns: undefined
       }
       discovery_radius_m: { Args: never; Returns: number }
+      display_first_name: { Args: { p_display_name: string }; Returns: string }
       ensure_wallet_account: { Args: { p_user_id: string }; Returns: undefined }
       expire_due_requests: { Args: { p_limit?: number }; Returns: number }
       expire_request: { Args: { p_request_id: string }; Returns: boolean }
@@ -1437,6 +1438,10 @@ export type Database = {
         Returns: number
       }
       notify_expiring_requests: { Args: { p_limit?: number }; Returns: number }
+      notify_responders_not_chosen: {
+        Args: { p_chosen_response_id: string; p_request_id: string }
+        Returns: undefined
+      }
       open_request_statuses: {
         Args: never
         Returns: Database["public"]["Enums"]["request_status"][]
@@ -1572,7 +1577,6 @@ export type Database = {
       withdraw_response: { Args: { p_response_id: string }; Returns: undefined }
     }
     Enums: {
-      availability_status: "offline" | "available" | "busy"
       payment_status:
         | "not_required"
         | "available"
@@ -1735,7 +1739,6 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      availability_status: ["offline", "available", "busy"],
       payment_status: [
         "not_required",
         "available",

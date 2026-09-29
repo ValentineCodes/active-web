@@ -3,7 +3,7 @@ import { Alert } from 'react-native';
 export function confirmWithdrawResponse(onConfirm: () => void) {
   Alert.alert(
     'Withdraw your response?',
-    'The requester will no longer see your offer. You can respond again while the request is still open.',
+    'They will no longer see your offer. You can respond again while the request is still open.',
     [
       { text: 'Keep response', style: 'cancel' },
       { text: 'Withdraw', style: 'destructive', onPress: onConfirm },

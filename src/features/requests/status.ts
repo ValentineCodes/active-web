@@ -74,10 +74,10 @@ export function myResponseLifecycleBadge(
 
 export function responderAvailabilityBadge(available: boolean): { label: string; tone: Tone } {
   if (available) {
-    return { label: 'Available', tone: 'brand' };
+    return { label: 'Can be selected', tone: 'brand' };
   }
 
-  return { label: 'Currently attending another request', tone: 'warning' };
+  return { label: 'Attending another request', tone: 'warning' };
 }
 
 export function nearbyRequestBadge(alreadyResponded: boolean): { label: string; tone: Tone } {
@@ -85,7 +85,7 @@ export function nearbyRequestBadge(alreadyResponded: boolean): { label: string; 
     return { label: 'Responded', tone: 'brand' };
   }
 
-  return { label: 'Available', tone: 'warning' };
+  return { label: 'Open', tone: 'warning' };
 }
 
 export function paymentStatusBadge(status: PaymentStatus): { label: string; tone: Tone } {
@@ -118,11 +118,11 @@ export function paymentStatusHint(
     case 'locked':
       return 'Held from your wallet while your request is open.';
     case 'pending':
-      return 'Held until the job is done, cancelled, or refunded.';
+      return 'Held until the request is done, cancelled, or refunded.';
     case 'disputed':
-      return 'Locked while support reviews a report.';
+      return 'On hold while we review a report.';
     case 'released':
-      return 'Paid to the person who helped after you confirmed completion.';
+      return 'Paid after you confirmed completion.';
     case 'refunded':
       return 'Returned to your available wallet balance.';
     default:

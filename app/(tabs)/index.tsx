@@ -112,8 +112,8 @@ export default function HomeScreen() {
 
         {attendingRequestId && !engagementAsRequester && !engagementAsHelper ? (
           <Card tone="active" className="gap-3">
-            <Badge label="On a request" tone="active" />
-            <Text className="text-sm text-muted">Finish it before taking another.</Text>
+            <Badge label="Attending" tone="active" />
+            <Text className="text-sm text-muted">Finish this one before you take on another.</Text>
             <Button
               label="Open request"
               variant="active"

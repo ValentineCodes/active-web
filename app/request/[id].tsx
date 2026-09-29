@@ -9,7 +9,7 @@ import { Card } from '@/components/ui/Card';
 import { Header } from '@/components/ui/Header';
 import { Screen } from '@/components/ui/Screen';
 import { ErrorState, InlineError, LoadingState } from '@/components/ui/StateView';
-import { ProviderResponseCard } from '@/components/ProviderResponseCard';
+import { ResponseCard } from '@/components/ResponseCard';
 import {
   useAcceptResponse,
   useCancelRequest,
@@ -71,7 +71,7 @@ export default function RequestDetailScreen() {
     requestStatus: data.status,
     paymentStatus: data.payment_status,
     offeredAmount: data.offered_amount,
-    agreedProviderAmount: data.agreed_provider_amount,
+    agreedAmount: data.agreed_provider_amount,
     currency: data.currency,
     viewerIsRequester: true,
   });
@@ -227,7 +227,7 @@ export default function RequestDetailScreen() {
             {acceptResponse.isError ? <InlineError error={acceptResponse.error} /> : null}
 
             {pending.map((response) => (
-              <ProviderResponseCard
+              <ResponseCard
                 key={response.response_id}
                 responderId={response.responder_id}
                 displayName={response.display_name}
@@ -272,7 +272,7 @@ export default function RequestDetailScreen() {
                               chosenResponderMessage(response.display_name),
                               [
                                 {
-                                  text: 'Open job',
+                                  text: 'Open connection',
                                   onPress: () => router.replace(`/engagement/${id}`),
                                 },
                               ],

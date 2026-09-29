@@ -25,7 +25,7 @@ export default function WelcomeScreen() {
           </View>
           <Text className="text-center text-3xl font-bold text-ink">Welcome to Active</Text>
           <Text className="mt-4 text-center text-base leading-6 text-muted">
-            Tell people nearby what you need. Or be the one who helps.
+            Need something? Ask.{'\n'}Can help? Respond.
           </Text>
         </View>
 

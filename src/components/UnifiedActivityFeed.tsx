@@ -82,7 +82,7 @@ export function UnifiedActivityFeed({ showHeader = true }: UnifiedActivityFeedPr
         <View className="gap-1 pb-2">
           <Text className="text-3xl font-bold text-ink">Activity</Text>
           <Text className="text-base text-muted">
-            Requests you posted, responses you sent, and the job you are committed to right now.
+            Requests you posted, responses you sent, and the request you are attending right now.
           </Text>
         </View>
       ) : null}
@@ -91,7 +91,7 @@ export function UnifiedActivityFeed({ showHeader = true }: UnifiedActivityFeedPr
         <View className="gap-2">
           <ActivitySectionHeader
             title="Attending"
-            description="The one request you are committed to helping with."
+            description="The request you are helping with right now."
           />
           <ActivityListRow
             variant="emphasis"
@@ -108,7 +108,7 @@ export function UnifiedActivityFeed({ showHeader = true }: UnifiedActivityFeedPr
           icon="add-circle-outline"
           title="No requests yet"
           message="When you need help, post a request and people nearby can respond."
-          action={{ label: 'Make a request', onPress: () => router.push('/request/new') }}
+          action={{ label: 'Ask for help', onPress: () => router.push('/request/new') }}
         />
       ) : (
         myRequests.map((request) => (
@@ -175,7 +175,7 @@ export function UnifiedActivityFeed({ showHeader = true }: UnifiedActivityFeedPr
       )}
 
       <View className="pt-4">
-        <Button label="Make a request" onPress={() => router.push('/request/new')} />
+        <Button label="Ask for help" onPress={() => router.push('/request/new')} />
       </View>
     </ScrollView>
   );

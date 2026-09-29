@@ -15,7 +15,7 @@ export function assertCataloguePhotoAsset(asset: {
 }) {
   const mime = asset.mimeType ?? 'image/jpeg';
   if (!CATALOGUE_PHOTO_MIME.has(mime)) {
-    throw new Error('Use a JPEG, PNG, or WebP photo for your catalogue.');
+    throw new Error('Use a JPEG, PNG, or WebP photo for your profile.');
   }
 }
 
@@ -25,10 +25,10 @@ export function assertCatalogueVideoAsset(asset: {
 }) {
   const mime = asset.mimeType ?? 'video/mp4';
   if (!CATALOGUE_VIDEO_MIME.has(mime)) {
-    throw new Error('Use an MP4 or MOV video for your catalogue.');
+    throw new Error('Use an MP4 or MOV video for your profile.');
   }
   if (asset.fileSize != null && asset.fileSize > CATALOGUE_VIDEO_MAX_BYTES) {
-    throw new Error('Your catalogue video must be 50 MB or smaller.');
+    throw new Error('Your profile video must be 50 MB or smaller.');
   }
 }
 

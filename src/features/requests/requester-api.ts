@@ -253,7 +253,7 @@ export function useCreateRequest() {
 
       const { data, error } = await supabase.rpc('create_request', {
         p_title: input.title.trim(),
-        p_description: input.description?.trim() || '',
+        p_description: input.description?.trim() || null,
         p_latitude: input.position.latitude,
         p_longitude: input.position.longitude,
         p_location_label: input.locationLabel,
@@ -388,6 +388,7 @@ export function useContestServiceProblem(requestId: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.myRequest(requestId) });
       queryClient.invalidateQueries({ queryKey: queryKeys.myRequests });
+      queryClient.invalidateQueries({ queryKey: queryKeys.myResponses });
       queryClient.invalidateQueries({ queryKey: queryKeys.engagement(requestId) });
     },
   });

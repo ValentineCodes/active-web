@@ -15,7 +15,7 @@ import { responderAvailabilityBadge } from '@/features/requests/status';
  * Someone's response to a request, as the requester sees it before they choose: enough to
  * trust the person and judge the offer, without revealing their exact location.
  */
-export function ProviderResponseCard({
+export function ResponseCard({
   responderId,
   displayName,
   avatarPath,
@@ -156,8 +156,7 @@ export function ProviderResponseCard({
 
       {!responderAvailable ? (
         <Text className="text-sm text-muted">
-          They responded here, but are already attending another request and cannot be selected
-          right now.
+          This person is currently attending to another request.
         </Text>
       ) : null}
 

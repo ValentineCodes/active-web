@@ -406,7 +406,7 @@ function NewRequestForm({ reuseSeed }: { reuseSeed?: ReuseSeed }) {
                     {walletShort ? (
                       <Text className="text-sm text-warning">
                         You need {formatMoney(funding.total, funding.currency)} to fund this request
-                        (including the service fee). Top up before posting.
+                        (including the fee). Top up before posting.
                       </Text>
                     ) : (
                       <Text className="text-sm text-muted">

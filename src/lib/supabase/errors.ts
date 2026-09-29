@@ -1,7 +1,7 @@
 /**
  * The database raises deliberate, user-readable messages for the states a person can
- * actually hit ("this request is no longer available to you", "finish your current job
- * before going offline"). Those are shown as-is. Anything else is either a transport
+ * actually hit ("this request is no longer available to you", "finish your current request
+ * before responding elsewhere"). Those are shown as-is. Anything else is either a transport
  * failure or a bug, and gets a generic message instead of leaking internals.
  */
 

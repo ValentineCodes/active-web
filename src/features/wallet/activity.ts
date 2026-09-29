@@ -9,10 +9,10 @@ const KIND_LABELS: Record<string, string> = {
   escrow_lock: 'Request funded',
   escrow_top_up: 'Offer increased',
   escrow_partial_refund: 'Offer reduced',
-  escrow_pending: 'Offer committed',
-  escrow_relock: 'Offer secured again',
-  escrow_release: 'Payment sent',
-  pay_provider: 'Payment received',
+  escrow_pending: 'Held after you selected someone',
+  escrow_relock: 'Held again',
+  escrow_release: 'Paid',
+  pay_provider: 'Paid to you',
   refund: 'Refund',
 };
 

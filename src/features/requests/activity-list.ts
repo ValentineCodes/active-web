@@ -22,10 +22,9 @@ export function activityDayLabel(iso: string | null | undefined): string | null 
 export function activityAmountLabel(
   offeredAmount: number | null,
   currency: string,
-  agreedProviderAmount?: number | null,
+  agreedAmount?: number | null,
 ): string | null {
-  const amount =
-    agreedProviderAmount != null && agreedProviderAmount > 0 ? agreedProviderAmount : offeredAmount;
+  const amount = agreedAmount != null && agreedAmount > 0 ? agreedAmount : offeredAmount;
 
   if (amount == null || amount <= 0) return null;
   return formatMoney(amount, currency);

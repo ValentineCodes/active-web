@@ -47,7 +47,7 @@ export default function NotificationsScreen() {
       <View className="gap-1 p-5 pb-2">
         <Text className="text-3xl font-bold text-ink">Notifications</Text>
         <Text className="text-base text-muted">
-          Updates about your requests, responses, and when you are helping someone.
+          Updates about your requests, responses, and when you are attending one.
         </Text>
       </View>
 

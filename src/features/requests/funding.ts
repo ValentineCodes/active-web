@@ -1,21 +1,21 @@
 import { MARKET, SERVICE_FEE_RATE } from '@/config';
 
 export type RequestFundingSummary = {
-  providerAmount: number;
+  offerAmount: number;
   serviceFee: number;
   total: number;
   currency: string;
 };
 
 /** What the requester pays and how it splits before the request is submitted.
- *  Server-side public.compute_request_charge uses the same fee rule at escrow lock. */
+ *  Server-side public.compute_request_charge uses the same fee rule when funds are held. */
 export function summarizeRequestFunding(offeredAmount: number): RequestFundingSummary {
-  const providerAmount = offeredAmount;
+  const offerAmount = offeredAmount;
   const serviceFee = Math.round(offeredAmount * SERVICE_FEE_RATE);
   return {
-    providerAmount,
+    offerAmount,
     serviceFee,
-    total: providerAmount + serviceFee,
+    total: offerAmount + serviceFee,
     currency: MARKET.currency,
   };
 }

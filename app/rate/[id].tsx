@@ -58,7 +58,7 @@ export default function RateScreen() {
           <View className="h-16 w-16 items-center justify-center rounded-full bg-brand-soft">
             <Ionicons name="checkmark" size={32} color={colors.brand} />
           </View>
-          <Text className="text-center text-2xl font-bold text-ink">Service completed!</Text>
+          <Text className="text-center text-2xl font-bold text-ink">Request completed!</Text>
           <Text className="text-center text-base text-muted">
             Thanks for using Active. How was your experience?
           </Text>

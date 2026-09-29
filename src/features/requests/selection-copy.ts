@@ -1,4 +1,4 @@
-/** User-facing copy for choosing someone to help (backend still uses handshakes). */
+/** User-facing copy when someone is chosen to help. */
 
 export function chooseResponderDialog(displayName: string | null) {
   const name = displayName?.trim() || 'this person';
@@ -14,10 +14,11 @@ export function chooseResponderDialog(displayName: string | null) {
 
 export function chosenResponderMessage(displayName: string | null) {
   const name = displayName?.trim() || 'them';
-  return `You've chosen ${name}. Open the job for contact details and the exact meeting location.`;
+  return `You've chosen ${name}. Open the connection for contact details and the exact meeting location.`;
 }
 
 export function helpingYouTitle(displayName: string | null) {
-  const name = displayName?.trim() || 'Your helper';
-  return `${name} is helping you`;
+  const name = displayName?.trim();
+  if (name) return `${name} is helping you`;
+  return 'Someone is helping you';
 }

@@ -23,7 +23,7 @@ export const DESCRIPTION_LIMITS = { min: 1, max: 1000 } as const;
  */
 export const REQUEST_REQUIRES_FUNDING = true;
 
-/** Active's service fee as a fraction of the provider amount (10% → 0.1). */
+/** Active's service fee as a fraction of the offer amount (10% → 0.1). */
 export const SERVICE_FEE_RATE = 0.1;
 
 /** Wallet presentation. Balances and ledger writes remain server-authoritative. */
@@ -34,7 +34,7 @@ export const WALLET = {
   activityLimit: 50,
   buckets: {
     available: 'Available',
-    locked: 'Locked',
-    pending: 'Pending',
+    locked: 'Held for open requests',
+    pending: 'Held until completed',
   },
 } as const;

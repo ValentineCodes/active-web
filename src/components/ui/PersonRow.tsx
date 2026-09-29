@@ -6,7 +6,7 @@ import { StarRating } from '@/components/ui/Stars';
 
 /**
  * A person summary row — avatar, name, rating, one line of context. Used anywhere the
- * app introduces "the other person": a nearby requester, a provider who responded, the
+ * app introduces "the other person": a nearby requester, someone who responded, the
  * counterparty on a connected request.
  */
 export function PersonRow({

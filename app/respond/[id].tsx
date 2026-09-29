@@ -139,7 +139,7 @@ export default function RespondScreen() {
 
   const headerTitle = inFlow
     ? flowStep === 0
-      ? 'Your offer'
+      ? 'Counter offer'
       : 'Your message'
     : gateMode === 'open'
       ? 'Before you respond'
@@ -212,7 +212,7 @@ export default function RespondScreen() {
         onSuccess: () => {
           Alert.alert(
             existingResponse ? 'Response updated' : 'Response sent',
-            'The requester can compare your offer with others. You are not committed until they select you.',
+            'The person who posted this can compare your offer with others. You are not selected until they choose you.',
             [{ text: 'OK', onPress: () => router.back() }],
           );
         },
@@ -279,8 +279,8 @@ export default function RespondScreen() {
               You&apos;re attending another request
             </Text>
             <Text className="text-sm text-muted">
-              You can still send responses — that does not commit you. Other requesters cannot
-              select you while you are attending a job elsewhere.
+              You can still respond to other requests. Nobody can select you while you are attending
+              another one.
             </Text>
           </Card>
         ) : null}
@@ -290,8 +290,8 @@ export default function RespondScreen() {
         <View className="flex-row items-start gap-3 rounded-2xl bg-surface p-4">
           <Ionicons name="lock-closed-outline" size={18} color={colors.muted} />
           <Text className="flex-1 text-sm text-muted">
-            They see your name, rating, and a rough sense of how close you are. Exact location and
-            phone open only if they select you.
+            They see your name, rating, and roughly how close you are. Exact location and phone are
+            shared only if you are selected.
           </Text>
         </View>
 

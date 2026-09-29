@@ -121,6 +121,22 @@ select create_request(
   5000
 ) as cancelled_request_id \gset
 
+select create_request(
+  'Title only',
+  null,
+  6.5000,
+  3.3800,
+  'Yaba, Lagos',
+  null,
+  5000
+) as optional_description_request_id \gset
+
+select is(
+  (select description from public.requests where id = :'optional_description_request_id'::uuid),
+  null,
+  'create_request accepts a null description (optional details step)'
+);
+
 select pg_temp.act_as_owner() as _ \gset
 update public.requests
 set expires_at = now() - interval '1 minute'
@@ -738,6 +754,115 @@ select is(
 select lives_ok(
   format('select cancel_request(%L)', :'cancel_funded_request_id'),
   'cancel_request is idempotent after the request is already cancelled'
+);
+
+-- Authorization and privacy hardening ------------------------------------------------
+
+select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
+select throws_ok(
+  format(
+    $$select respond_to_request(%L, null, null, 6.5000, 3.3800)$$,
+    :'second_request_id'
+  ),
+  '55000',
+  null,
+  'the requester cannot respond to their own request'
+);
+
+select pg_temp.act_as('33333333-3333-3333-3333-333333333333') as _ \gset
+select is(
+  (select count(*) from list_request_responses(:'request_id')),
+  0::bigint,
+  'only the requester can list responses on a request'
+);
+
+select pg_temp.act_as('66666666-6666-6666-6666-666666666666') as _ \gset
+select is(
+  (select count(*) from get_engagement(:'request_id')),
+  0::bigint,
+  'bystanders cannot read engagement details'
+);
+
+select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
+select throws_ok(
+  format('select mark_service_complete(%L)', :'second_request_id'),
+  'P0002',
+  null,
+  'the requester cannot mark a request complete for the helper'
+);
+
+select pg_temp.act_as('66666666-6666-6666-6666-666666666666') as _ \gset
+select throws_ok(
+  format('select complete_request(%L)', :'request_id'),
+  'P0002',
+  null,
+  'only the requester can confirm completion on their request'
+);
+
+select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
+select lives_ok(
+  format('select complete_request(%L)', :'request_id'),
+  'confirming completion again is idempotent once completed'
+);
+
+select pg_temp.act_as_owner() as _ \gset
+select is(
+  (select count(*)
+   from public.payment_transitions
+   where request_id = :'request_id'::uuid
+     and idempotency_key = 'complete:' || :'request_id'),
+  1::bigint,
+  'payment release uses a single idempotent completion transition'
+);
+
+select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
+select throws_ok(
+  $$update public.profiles set phone = '+2348000000999' where id = auth.uid()$$,
+  '42501',
+  'profile field is server managed and cannot be set by a client',
+  'clients cannot forge a verified phone number on their profile'
+);
+
+select throws_ok(
+  $$update public.profiles
+    set avatar_captured_in_app = true, avatar_path = 'fake/avatar.jpg'
+    where id = auth.uid()$$,
+  '42501',
+  'profile field is server managed and cannot be set by a client',
+  'clients cannot forge an in-app profile photo'
+);
+
+select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
+select create_request(
+  'Cancel during selection',
+  'Cancelled while a response is still pending.',
+  6.5000,
+  3.3800,
+  'Yaba, Lagos',
+  null,
+  5000
+) as cancel_race_request_id \gset
+
+select pg_temp.act_as('33333333-3333-3333-3333-333333333333') as _ \gset
+select respond_to_request(
+  :'cancel_race_request_id'::uuid,
+  null,
+  null,
+  6.5000,
+  3.3800
+) as cancel_race_response_id \gset
+
+select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
+select lives_ok(
+  format('select cancel_request(%L)', :'cancel_race_request_id'),
+  'requester can cancel before selection completes'
+);
+
+select throws_ok(
+  format('select accept_response(%L)', :'cancel_race_response_id'),
+  '55000',
+  null,
+  'selection fails after the request was cancelled'
 );
 
 select * from finish();

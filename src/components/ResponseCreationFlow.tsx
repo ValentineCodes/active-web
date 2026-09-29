@@ -87,7 +87,7 @@ export function ResponseCreationFlow({
             <View className="gap-2">
               <Text className="text-2xl font-bold text-ink">Counter offer</Text>
               <Text className="text-base text-muted">
-                Keep their offer or change it — no need to negotiate if their price works for you.
+                Optional — keep their amount or enter a different one.
               </Text>
             </View>
 
@@ -134,8 +134,8 @@ export function ResponseCreationFlow({
             <View className="flex-row items-start gap-3 rounded-2xl bg-surface p-4">
               <Ionicons name="information-circle-outline" size={18} color={colors.muted} />
               <Text className="flex-1 text-sm text-muted">
-                Sending a response does not commit you. You can respond to many requests; only being
-                selected starts the job.
+                Sending a response is not a commitment. You can respond to many requests; only being
+                selected means you are attending that one.
               </Text>
             </View>
 

@@ -4,7 +4,7 @@ import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 
 import { CatalogueViewer } from '@/components/CatalogueViewer';
-import { useCatalogueMediaUrl, useProviderCatalogue } from '@/features/profile/catalogue-api';
+import { useCatalogueMediaUrl, useUserCatalogue } from '@/features/profile/catalogue-api';
 import { ErrorState } from '@/components/ui/StateView';
 import { colors } from '@/theme';
 
@@ -64,7 +64,7 @@ function CatalogueThumb({
  * Read-only optional photos and video on someone's profile.
  */
 export function CatalogueStrip({ userId, emptyLabel }: { userId: string; emptyLabel?: string }) {
-  const catalogue = useProviderCatalogue(userId);
+  const catalogue = useUserCatalogue(userId);
   const [viewerIndex, setViewerIndex] = useState<number | null>(null);
 
   if (catalogue.isPending) {

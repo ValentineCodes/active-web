@@ -35,8 +35,8 @@ export function RespondRequirementsGate({
           />
           <Text className="text-center text-2xl font-bold text-ink">Add a profile photo</Text>
           <Text className="max-w-sm text-center text-base text-muted">
-            Requesters see your photo when you respond. Take one now with your camera — it only
-            takes a moment.
+            People see your photo when you respond. Take one now with your camera — it only takes a
+            moment.
           </Text>
         </View>
 
