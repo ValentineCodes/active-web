@@ -594,6 +594,23 @@ select is(
   'confirmation releases escrow to the helper wallet'
 );
 
+select lives_ok(
+  format('select rate_request(%L::uuid, 5::smallint, %L)', :'request_id', 'Great work'),
+  'requester can rate the selected helper after completion'
+);
+
+select is(
+  (select ratee_id from public.ratings where request_id = :'request_id'::uuid),
+  '22222222-2222-2222-2222-222222222222'::uuid,
+  'rating is stored against the selected helper'
+);
+
+select is(
+  (select rating_stars from get_engagement(:'request_id')),
+  5::smallint,
+  'get_engagement returns the submitted rating'
+);
+
 select pg_temp.act_as_owner() as _ \gset
 select ok(
   (select request_id from public.user_attendance where user_id = '22222222-2222-2222-2222-222222222222') is null,
