@@ -1,8 +1,6 @@
 import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 import { Link, router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import { useQueryClient } from '@tanstack/react-query';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { NearbyRequests } from '@/components/NearbyRequests';
 import { Avatar } from '@/components/ui/Avatar';
@@ -10,23 +8,19 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { FloatingActionButton } from '@/components/ui/FloatingActionButton';
-import { RequestCard } from '@/components/ui/RequestCard';
 import { Screen } from '@/components/ui/Screen';
-import { SectionHeader } from '@/components/ui/SectionHeader';
 import { useAttendance } from '@/features/attendance/api';
 import { useProfile } from '@/features/profile/api';
 import { useMyResponses } from '@/features/requests/responses-api';
 import { useMyWallet } from '@/features/wallet/api';
 import { useMyRequests } from '@/features/requests/requester-api';
-import { requestEngagementStatusBadge, requestStatusBadge } from '@/features/requests/status';
-import { formatMoney, formatWhen } from '@/lib/format';
+import { requestEngagementStatusBadge } from '@/features/requests/status';
+import { formatGreeting, formatMoney } from '@/lib/format';
 import { queryKeys } from '@/lib/query/keys';
-import { colors } from '@/theme';
 
 const OPEN_STATUSES = ['posted', 'searching', 'accepted', 'in_progress', 'completion_pending'];
 
 export default function HomeScreen() {
-  const insets = useSafeAreaInsets();
   const profile = useProfile();
   const attendance = useAttendance();
   const requests = useMyRequests();
@@ -47,12 +41,16 @@ export default function HomeScreen() {
   );
 
   const attendingRequestId = attendance.data?.attending_request_id ?? null;
-  const fabBottom = Math.max(insets.bottom, 12) + 72;
+  /** Screen content ends above the tab bar — only a small gap is needed. */
+  const fabGapAboveTabBar = 12;
+  const fabSize = 56;
+  const listBottomPadding = fabGapAboveTabBar + fabSize + 24;
 
   return (
-    <Screen className="bg-surface">
+    <Screen>
       <ScrollView
-        contentContainerClassName="gap-5 px-5 pb-8 pt-4"
+        contentContainerClassName="gap-4 px-5 pb-4 pt-3"
+        contentContainerStyle={{ paddingBottom: listBottomPadding }}
         refreshControl={
           <RefreshControl
             refreshing={requests.isRefetching || attendance.isRefetching}
@@ -66,31 +64,33 @@ export default function HomeScreen() {
           />
         }
       >
-        <View className="flex-row items-start justify-between gap-3">
-          <View className="flex-1 gap-2">
-            <Text className="text-xs font-semibold uppercase tracking-wider text-subtle">
-              Local help
+        <View className="flex-row items-start justify-between gap-3 pb-1">
+          <View className="flex-1 gap-1.5">
+            <Text className="text-2xl font-bold leading-8 text-ink">
+              {formatGreeting(profile.data?.display_name ?? null)}
             </Text>
-            <Text className="text-3xl font-bold text-ink">Near you</Text>
-            <Text className="text-base leading-6 text-muted">
-              Need something? Ask.{'\n'}Can help? Respond.
-            </Text>
+            <Text className="text-base leading-6 text-muted">Get help or Get money</Text>
           </View>
-          <View className="flex-row items-center gap-2">
-            <Pressable
-              onPress={() => router.push('/wallet')}
-              accessibilityRole="button"
-              accessibilityLabel="Open wallet"
-              className="h-11 w-11 items-center justify-center rounded-full bg-canvas"
-            >
-              <Ionicons name="wallet-outline" size={22} color={colors.ink} />
-            </Pressable>
+          <View className="flex-row items-center gap-2.5 pt-0.5">
+            {wallet.data ? (
+              <Pressable
+                onPress={() => router.push('/wallet')}
+                accessibilityRole="button"
+                accessibilityLabel="Open wallet"
+                hitSlop={8}
+              >
+                <Text className="text-sm font-semibold text-ink">
+                  {formatMoney(wallet.data.available, wallet.data.currency)}
+                </Text>
+              </Pressable>
+            ) : null}
             <Pressable
               onPress={() => router.push('/profile')}
               accessibilityRole="button"
               accessibilityLabel="Open your profile"
             >
               <Avatar
+                size="sm"
                 path={profile.data?.avatar_path}
                 name={profile.data?.display_name ?? null}
                 showActiveDot={attendingRequestId != null}
@@ -98,17 +98,6 @@ export default function HomeScreen() {
             </Pressable>
           </View>
         </View>
-
-        {wallet.data ? (
-          <Pressable onPress={() => router.push('/wallet')} accessibilityRole="button">
-            <Text className="text-sm text-muted">
-              Wallet ·{' '}
-              <Text className="font-semibold text-ink">
-                {formatMoney(wallet.data.available, wallet.data.currency)} available
-              </Text>
-            </Text>
-          </Pressable>
-        ) : null}
 
         {attendingRequestId && !engagementAsRequester && !engagementAsHelper ? (
           <Card tone="active" className="gap-3">
@@ -147,50 +136,18 @@ export default function HomeScreen() {
         ) : null}
 
         <NearbyRequests
-          compact
-          limit={12}
-          sectionTitle="Open nearby"
+          variant="home"
+          limit={20}
           seeAllLabel="See all on Activity"
-          onSeeAll={() => router.push('/(tabs)/requests')}
+          onSeeAll={() => router.push('/(tabs)/activity')}
         />
-
-        {openRequests.length > 0 ? (
-          <View className="gap-3">
-            <SectionHeader
-              title="Your requests"
-              actionLabel={openRequests.length > 3 ? 'See all' : undefined}
-              onAction={() => router.push('/(tabs)/requests')}
-            />
-            {openRequests.slice(0, 3).map((request) => {
-              const badge = requestStatusBadge(request.status, request.pending_response_count, {
-                expiresAt: request.expires_at,
-              });
-
-              return (
-                <RequestCard
-                  key={request.request_id}
-                  title={request.title ?? 'Request'}
-                  description={request.description ?? undefined}
-                  badge={badge}
-                  when={formatWhen(request.scheduled_for)}
-                  meta={[badge.hint, request.location_label]}
-                  amount={
-                    request.offered_amount !== null
-                      ? formatMoney(request.offered_amount, request.currency)
-                      : '—'
-                  }
-                  onPress={() => router.push(`/request/${request.request_id}`)}
-                />
-              );
-            })}
-          </View>
-        ) : null}
       </ScrollView>
 
       <FloatingActionButton
+        variant="create"
         accessibilityLabel="Ask for help — create a request"
         onPress={() => router.push('/request/new')}
-        style={{ position: 'absolute', right: 20, bottom: fabBottom }}
+        style={{ position: 'absolute', right: 20, bottom: fabGapAboveTabBar }}
       />
     </Screen>
   );

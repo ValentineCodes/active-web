@@ -1,5 +1,10 @@
-import { Redirect } from 'expo-router';
+import { Screen } from '@/components/ui/Screen';
+import { UnifiedActivityFeed } from '@/components/UnifiedActivityFeed';
 
 export default function ActivityScreen() {
-  return <Redirect href="/(tabs)/requests" />;
+  return (
+    <Screen>
+      <UnifiedActivityFeed showHeader={false} />
+    </Screen>
+  );
 }

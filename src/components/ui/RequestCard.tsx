@@ -61,14 +61,14 @@ export function RequestCard({
       )}
     >
       <View className="flex-row items-start justify-between gap-3">
-        <Text className="flex-1 text-lg font-bold text-ink" numberOfLines={2}>
+        <Text className="flex-1 text-lg font-bold text-ink" numberOfLines={1}>
           {title}
         </Text>
         {badge ? <Badge label={badge.label} tone={badge.tone} dot={false} /> : null}
       </View>
 
       {description ? (
-        <Text className="text-sm leading-5 text-muted" numberOfLines={3}>
+        <Text className="text-sm leading-5 text-muted" numberOfLines={2}>
           {description}
         </Text>
       ) : null}

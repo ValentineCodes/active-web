@@ -10,6 +10,34 @@ export function formatProximity(meters: number): string {
   return 'About 30 minutes away';
 }
 
+/** Home feed — travel-time wording from the mock. */
+export function formatProximityHome(meters: number): string {
+  if (meters <= 2500) return 'Nearby';
+  if (meters <= 5000) return '5 mins away';
+  if (meters <= 8000) return 'A few minutes away';
+  if (meters <= 20_000) return 'About 10 mins away';
+  return 'About 30 mins away';
+}
+
+/** Home feed — when line without a middle dot separator. */
+export function formatWhenHome(scheduledFor: string | null): string {
+  if (!scheduledFor) return 'Today';
+
+  const date = new Date(scheduledFor);
+  const time = format(date, 'h:mm a');
+  if (isToday(date)) return `Today, ${time}`;
+  if (isTomorrow(date)) return `Tomorrow, ${time}`;
+  if (isThisYear(date)) return `${format(date, 'EEEE')}, ${time}`;
+  return `${format(date, 'd MMM yyyy')}, ${time}`;
+}
+
+export function formatGreeting(displayName: string | null): string {
+  const hour = new Date().getHours();
+  const period = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+  const first = displayName?.trim().split(/\s+/)[0];
+  return first ? `${period}, ${first}` : period;
+}
+
 /** Exact distance — only after selection when coordinates are shared. */
 export function formatDistance(meters: number): string {
   if (meters < 1000) return `${meters} m away`;

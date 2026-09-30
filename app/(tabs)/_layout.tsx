@@ -2,10 +2,11 @@ import type { ColorValue } from 'react-native';
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
+import { HomeTabBar } from '@/components/ui/HomeTabBar';
 import { useNotificationUnreadCount } from '@/features/notifications/inbox';
 import { useNotificationBridge } from '@/lib/notifications';
 import { useMyRequests } from '@/features/requests/requester-api';
-import { colors, shadow } from '@/theme';
+import { colors } from '@/theme';
 
 function TabIcon({
   color,
@@ -43,19 +44,13 @@ export default function TabsLayout() {
 
   return (
     <Tabs
+      tabBar={(props) => <HomeTabBar {...props} />}
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: colors.brand,
+        tabBarActiveTintColor: colors.active,
         tabBarInactiveTintColor: colors.subtle,
-        tabBarBadgeStyle: { backgroundColor: colors.brand, color: colors.canvas },
+        tabBarBadgeStyle: { backgroundColor: colors.active, color: colors.canvas },
         tabBarLabelStyle: { fontSize: 12, fontWeight: '600' },
-        tabBarStyle: {
-          borderTopWidth: 0,
-          backgroundColor: colors.canvas,
-          height: 84,
-          paddingTop: 10,
-          ...shadow.raised,
-        },
       }}
     >
       <Tabs.Screen
@@ -68,19 +63,13 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="requests"
+        name="activity"
         options={{
           title: 'Activity',
           tabBarBadge: waitingResponses > 0 ? waitingResponses : undefined,
           tabBarIcon: (props) => (
             <TabIcon {...props} focusedName="list" outlineName="list-outline" />
           ),
-        }}
-      />
-      <Tabs.Screen
-        name="activity"
-        options={{
-          href: null,
         }}
       />
       <Tabs.Screen
@@ -91,6 +80,12 @@ export default function TabsLayout() {
           tabBarIcon: (props) => (
             <TabIcon {...props} focusedName="notifications" outlineName="notifications-outline" />
           ),
+        }}
+      />
+      <Tabs.Screen
+        name="requests"
+        options={{
+          href: null,
         }}
       />
     </Tabs>

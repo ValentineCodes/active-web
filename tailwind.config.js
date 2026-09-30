@@ -4,6 +4,9 @@ module.exports = {
   presets: [require('nativewind/preset')],
   theme: {
     extend: {
+      fontFamily: {
+        serif: ['Georgia', 'Times New Roman', 'serif'],
+      },
       colors: {
         // Text & surfaces
         ink: '#111812',

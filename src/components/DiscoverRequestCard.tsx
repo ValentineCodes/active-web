@@ -51,7 +51,7 @@ export function DiscoverRequestCard({
         <View className="flex-row items-start justify-between gap-3">
           <Text
             className="flex-1 text-base font-bold uppercase tracking-wide text-ink"
-            numberOfLines={3}
+            numberOfLines={1}
           >
             {title}
           </Text>
@@ -59,7 +59,7 @@ export function DiscoverRequestCard({
         </View>
 
         {description ? (
-          <Text className="text-sm leading-5 text-muted" numberOfLines={4}>
+          <Text className="text-sm leading-5 text-muted" numberOfLines={2}>
             &ldquo;{description}&rdquo;
           </Text>
         ) : null}
