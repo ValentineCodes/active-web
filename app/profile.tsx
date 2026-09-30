@@ -1,38 +1,80 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { useMutation } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 
-import { ProfileMediaSection } from '@/components/ServiceCatalogue';
-import { Badge } from '@/components/ui/Badge';
+import { ProfileCatalogueRail } from '@/components/ProfileCatalogueRail';
 import { Avatar } from '@/components/ui/Avatar';
 import { Button } from '@/components/ui/Button';
-import { Card } from '@/components/ui/Card';
 import { Header } from '@/components/ui/Header';
 import { Screen } from '@/components/ui/Screen';
-import { ErrorState, InlineError, LoadingState, SuccessBanner } from '@/components/ui/StateView';
-import { StarRating } from '@/components/ui/Stars';
+import { ErrorState, InlineError, LoadingState } from '@/components/ui/StateView';
 import { TextField } from '@/components/ui/TextField';
 import { useAttendance } from '@/features/attendance/api';
 import { signOut } from '@/features/auth/api';
-import {
-  hasProfilePhotoReady,
-  useCaptureProfilePhoto,
-  useProfile,
-  useSaveProfile,
-} from '@/features/profile/api';
+import { useCaptureProfilePhoto, useProfile, useSaveProfile } from '@/features/profile/api';
+import { useMyResponses } from '@/features/requests/responses-api';
+import { useMyRequests } from '@/features/requests/requester-api';
 import { colors } from '@/theme';
+
+function ProfileStat({ value, label }: { value: number; label: string }) {
+  return (
+    <View className="flex-1 items-center gap-1 py-4">
+      <Text className="text-2xl font-bold text-ink">{value}</Text>
+      <Text className="text-sm text-muted">{label}</Text>
+    </View>
+  );
+}
+
+function SettingsRow({
+  label,
+  onPress,
+  showDivider,
+}: {
+  label: string;
+  onPress: () => void;
+  showDivider?: boolean;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      className="active:opacity-90"
+    >
+      {showDivider ? <View className="mx-4 h-px bg-hairline" /> : null}
+      <View className="flex-row items-center justify-between px-4 py-4">
+        <Text className="text-lg text-ink">{label}</Text>
+        <Ionicons name="chevron-forward" size={20} color={colors.subtle} />
+      </View>
+    </Pressable>
+  );
+}
+
+function SettingsGroup({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <View className="gap-2">
+      <Text className="px-1 text-xs font-semibold uppercase tracking-wide text-subtle">
+        {title}
+      </Text>
+      <View className="overflow-hidden rounded-2xl border border-hairline bg-elevated">
+        {children}
+      </View>
+    </View>
+  );
+}
 
 export default function ProfileScreen() {
   const profile = useProfile();
   const attendance = useAttendance();
+  const myRequests = useMyRequests();
+  const myResponses = useMyResponses();
   const save = useSaveProfile();
   const capturePhoto = useCaptureProfilePhoto();
   const leave = useMutation({ mutationFn: signOut });
 
   const [draft, setDraft] = useState<{ name: string; bio: string } | null>(null);
-  const [photoNotice, setPhotoNotice] = useState<string | null>(null);
 
   if (profile.isPending) {
     return (
@@ -54,41 +96,42 @@ export default function ProfileScreen() {
 
   const { data } = profile;
   const attending = attendance.data?.attending_request_id != null;
-  const completedRequests = data.jobs_completed + data.requests_completed;
-  const photoVerified = hasProfilePhotoReady(data);
+  const completed = data.jobs_completed + data.requests_completed;
+  const activeRequests =
+    myRequests.data?.filter((request) =>
+      ['posted', 'searching', 'accepted', 'in_progress', 'completion_pending'].includes(
+        request.status,
+      ),
+    ).length ?? 0;
+  const responseCount = myResponses.data?.length ?? 0;
 
-  const onCapturePhoto = () =>
-    capturePhoto.mutate(
-      {},
-      {
-        onSuccess: (saved) => {
-          if (saved) setPhotoNotice('Profile photo updated.');
-        },
-      },
-    );
+  const ratingAverage =
+    data.rating_count > 0 && data.rating_average !== null ? data.rating_average : null;
 
   return (
     <Screen>
       <Header title="Profile" onBack={() => router.back()} />
 
       <ScrollView
-        contentContainerClassName="gap-6 p-5 pb-12"
+        contentContainerClassName="gap-6 px-5 pb-12 pt-2"
         refreshControl={
           <RefreshControl
             refreshing={profile.isRefetching || attendance.isRefetching}
             onRefresh={() => {
               profile.refetch();
               attendance.refetch();
+              myRequests.refetch();
+              myResponses.refetch();
             }}
           />
         }
       >
-        <View className="items-center gap-3">
+        <View className="items-center gap-2">
           <Pressable
-            onPress={onCapturePhoto}
+            onPress={() => capturePhoto.mutate({})}
             disabled={capturePhoto.isPending}
             accessibilityRole="button"
-            accessibilityLabel="Take your profile photo"
+            accessibilityLabel="Update profile photo"
           >
             <Avatar
               path={data.avatar_path}
@@ -97,34 +140,20 @@ export default function ProfileScreen() {
               showActiveDot={attending}
             />
           </Pressable>
-          <Pressable
-            onPress={onCapturePhoto}
-            disabled={capturePhoto.isPending}
-            accessibilityRole="button"
-            accessibilityLabel="Take your profile photo"
-            hitSlop={8}
-          >
-            <Text className="text-base font-medium text-brand">
-              {capturePhoto.isPending
-                ? 'Uploading…'
-                : photoVerified
-                  ? 'Retake photo'
-                  : 'Take profile photo'}
-            </Text>
-          </Pressable>
-          <Text className="max-w-xs text-center text-sm text-muted">
-            Use your camera so people recognise you when you ask for help or offer it.
-          </Text>
-          {photoNotice ? <SuccessBanner message={photoNotice} /> : null}
-          {capturePhoto.isError ? <InlineError error={capturePhoto.error} /> : null}
-
           {draft ? null : (
             <>
               <Text className="text-2xl font-bold text-ink">{data.display_name}</Text>
-              {data.bio ? (
-                <Text className="text-center text-base text-muted">{data.bio}</Text>
+              {ratingAverage !== null ? (
+                <View className="flex-row items-center gap-1">
+                  <Ionicons name="star" size={14} color={colors.warning} />
+                  <Text className="text-sm text-muted">{ratingAverage.toFixed(1)}</Text>
+                </View>
               ) : null}
-              <StarRating average={data.rating_average} count={data.rating_count} />
+              {data.bio ? (
+                <Text className="max-w-sm text-center text-base leading-6 text-muted">
+                  {data.bio}
+                </Text>
+              ) : null}
             </>
           )}
         </View>
@@ -146,9 +175,7 @@ export default function ProfileScreen() {
               maxLength={280}
               counterMax={280}
             />
-
             {save.isError ? <InlineError error={save.error} /> : null}
-
             <View className="flex-row gap-3">
               <Button
                 label="Cancel"
@@ -170,63 +197,52 @@ export default function ProfileScreen() {
               />
             </View>
           </View>
-        ) : (
-          <Button
+        ) : null}
+
+        <View className="flex-row overflow-hidden rounded-2xl border border-hairline bg-elevated">
+          <ProfileStat value={activeRequests} label="Requests" />
+          <View className="w-px bg-hairline" />
+          <ProfileStat value={completed} label="Completed" />
+          <View className="w-px bg-hairline" />
+          <ProfileStat value={responseCount} label="Responses" />
+        </View>
+
+        <ProfileCatalogueRail />
+
+        <SettingsGroup title="Account">
+          <SettingsRow
             label="Edit profile"
-            variant="secondary"
             onPress={() => setDraft({ name: data.display_name ?? '', bio: data.bio ?? '' })}
           />
-        )}
+          <SettingsRow label="Payment details" onPress={() => router.push('/wallet')} showDivider />
+          <SettingsRow label="Verify identity" onPress={() => {}} showDivider />
+        </SettingsGroup>
 
-        <Card className="items-start gap-3">
-          <Text className="text-2xl font-bold text-ink">{completedRequests}</Text>
-          <Text className="text-sm text-muted">
-            {completedRequests === 1 ? 'Completed request' : 'Completed requests'}
-          </Text>
-          <Text className="text-sm text-muted">
-            {data.jobs_completed} helped others · {data.requests_completed} you posted
-          </Text>
-        </Card>
+        <SettingsGroup title="Preferences">
+          <SettingsRow label="Notifications" onPress={() => router.push('/(tabs)/notifications')} />
+          <SettingsRow label="Privacy" onPress={() => {}} showDivider />
+          <SettingsRow label="Language" onPress={() => {}} showDivider />
+        </SettingsGroup>
 
-        <Card className="gap-3">
-          <Text className="text-base font-semibold text-ink">Trust on Active</Text>
-          <View className="flex-row flex-wrap gap-2">
-            {data.phone ? <Badge label="Phone verified" tone="info" dot={false} /> : null}
-            {photoVerified ? (
-              <Badge label="Profile photo verified" tone="info" dot={false} />
-            ) : null}
-          </View>
-          {!photoVerified ? (
-            <Text className="text-sm text-muted">
-              A camera profile photo is required before you respond to a request.
-            </Text>
-          ) : null}
-        </Card>
+        <SettingsGroup title="Support">
+          <SettingsRow label="Help & support" onPress={() => {}} />
+          <SettingsRow label="Report a problem" onPress={() => {}} showDivider />
+          <SettingsRow label="About Active" onPress={() => {}} showDivider />
+        </SettingsGroup>
 
-        <Button label="Wallet" variant="secondary" onPress={() => router.push('/wallet')} />
-
-        <ProfileMediaSection />
-
-        <Card>
-          <View className="flex-row items-center gap-2">
-            <Ionicons name="lock-closed-outline" size={18} color={colors.ink} />
-            <Text className="text-base font-semibold text-ink">How your location is used</Text>
-          </View>
-          <Text className="text-base text-muted">
-            Active uses your location when you post, browse nearby, or respond — only to work out
-            distance. Nobody sees where you are until you select someone.
-          </Text>
-        </Card>
-
-        <View className="gap-3">
-          <Text className="text-sm text-muted">Signed in as {data.phone}</Text>
+        <View className="gap-3 pt-2">
           {leave.isError ? <InlineError error={leave.error} /> : null}
-          <Button
-            label="Sign out"
-            variant="danger"
-            loading={leave.isPending}
+          <Pressable
             onPress={() => leave.mutate()}
-          />
+            disabled={leave.isPending}
+            accessibilityRole="button"
+            accessibilityLabel="Sign out"
+            className="items-center justify-center py-3 active:opacity-80"
+          >
+            <Text className="text-lg font-semibold text-danger">
+              {leave.isPending ? 'Signing out…' : 'Sign out'}
+            </Text>
+          </Pressable>
         </View>
       </ScrollView>
     </Screen>
