@@ -1,29 +1,45 @@
-import { useCallback, useState } from 'react';
-import { Platform, ScrollView, Text, View } from 'react-native';
+import { useCallback, useEffect, useRef, useState, type RefObject } from 'react';
+import {
+  ActivityIndicator,
+  Platform,
+  Pressable,
+  ScrollView,
+  Text,
+  TextInput,
+  View,
+  type TextInput as TextInputType,
+} from 'react-native';
 import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { addHours, set, startOfTomorrow } from 'date-fns';
 
-import { LocationStep } from '@/components/LocationStep';
-import { RequestFundingSummary } from '@/components/RequestFundingSummary';
+import { RequestLocationModal } from '@/components/RequestLocationModal';
 import { Button } from '@/components/ui/Button';
-import { Card } from '@/components/ui/Card';
-import { Choice } from '@/components/ui/Choice';
-import { Header } from '@/components/ui/Header';
+import { IconButton } from '@/components/ui/IconButton';
 import { Screen } from '@/components/ui/Screen';
 import { ErrorState, InlineError, LoadingState } from '@/components/ui/StateView';
-import { TextField } from '@/components/ui/TextField';
-import { DESCRIPTION_LIMITS, MARKET, REQUEST_REQUIRES_FUNDING, TITLE_LIMITS } from '@/config';
+import {
+  CREATE_TITLE_LIMITS,
+  DESCRIPTION_LIMITS,
+  MARKET,
+  REQUEST_REQUIRES_FUNDING,
+} from '@/config';
 import { isFundedOffer, summarizeRequestFunding } from '@/features/requests/funding';
 import { useMyWallet } from '@/features/wallet/api';
 import { canReuseRequest } from '@/features/requests/reuse';
 import { useCreateRequest, useMyRequest } from '@/features/requests/requester-api';
 import { cn } from '@/lib/cn';
-import { formatMoney, formatWhen } from '@/lib/format';
-import type { Position } from '@/lib/location';
+import { formatMoney, formatWhen, formatWhenHome } from '@/lib/format';
+import {
+  requestPosition,
+  suggestAreaLabel,
+  type Position,
+  type PositionResult,
+} from '@/lib/location';
 import { syncPushToken } from '@/lib/notifications';
+import { colors } from '@/theme';
 
-const STEP_COUNT = 6;
+const STEP_COUNT = 4;
 
 type WhenMode = 'now' | 'later';
 
@@ -70,8 +86,170 @@ function isFutureSchedule(at: Date) {
 }
 
 function whenSummary(mode: WhenMode, laterAt: Date): string {
-  if (mode === 'now') return 'Now';
-  return formatWhen(laterAt.toISOString());
+  if (mode === 'now') return 'Today';
+  return formatWhenHome(laterAt.toISOString());
+}
+
+function WizardProgress({ step }: { step: number }) {
+  const progress = ((step + 1) / STEP_COUNT) * 100;
+
+  return (
+    <View className="mx-5 h-1 overflow-hidden rounded-full bg-surface">
+      <View className="h-full rounded-full bg-active" style={{ width: `${progress}%` }} />
+    </View>
+  );
+}
+
+function WizardHeader({
+  title,
+  step,
+  onClose,
+  onBack,
+}: {
+  title: string;
+  step: number;
+  onClose: () => void;
+  onBack?: () => void;
+}) {
+  return (
+    <View className="flex-row items-center px-4 pb-2 pt-3">
+      {onBack ? (
+        <IconButton
+          icon="chevron-back"
+          variant="surface"
+          accessibilityLabel="Go back"
+          onPress={onBack}
+        />
+      ) : (
+        <IconButton icon="close" variant="surface" accessibilityLabel="Close" onPress={onClose} />
+      )}
+      <Text className="flex-1 text-center text-base font-semibold text-ink" numberOfLines={1}>
+        {title}
+      </Text>
+      <Text className="min-w-10 text-right text-sm font-medium text-subtle">
+        {step + 1} / {STEP_COUNT}
+      </Text>
+    </View>
+  );
+}
+
+function WizardSkipButton({ onPress }: { onPress: () => void }) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel="Skip"
+      onPress={onPress}
+      className="items-center justify-center rounded-2xl bg-surface px-7 py-4 active:opacity-90"
+    >
+      <Text className="text-base font-semibold text-muted">Skip</Text>
+    </Pressable>
+  );
+}
+
+function WizardPrimaryButton({
+  label,
+  disabled,
+  loading,
+  onPress,
+  className,
+}: {
+  label: string;
+  disabled?: boolean;
+  loading?: boolean;
+  onPress: () => void;
+  className?: string;
+}) {
+  const inert = disabled || loading;
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ disabled: inert, busy: loading }}
+      disabled={inert}
+      onPress={onPress}
+      className={cn(
+        'items-center justify-center rounded-2xl px-6 py-4 active:opacity-90',
+        inert ? 'bg-surface' : 'bg-active',
+        className,
+      )}
+    >
+      {loading ? (
+        <ActivityIndicator color={inert ? colors.subtle : colors.canvas} />
+      ) : (
+        <Text className={cn('text-lg font-bold', inert ? 'text-subtle' : 'text-canvas')}>
+          {label}
+        </Text>
+      )}
+    </Pressable>
+  );
+}
+
+function CreateTextArea({
+  inputRef,
+  value,
+  onChangeText,
+  placeholder,
+  maxLength,
+  minHeight = 160,
+  textSize = 'base',
+}: {
+  inputRef?: RefObject<TextInputType | null>;
+  value: string;
+  onChangeText: (text: string) => void;
+  placeholder: string;
+  maxLength: number;
+  minHeight?: number;
+  textSize?: 'base' | 'lg' | 'xl';
+}) {
+  const textSizeClass =
+    textSize === 'xl'
+      ? 'text-xl leading-8'
+      : textSize === 'lg'
+        ? 'text-lg leading-7'
+        : 'text-base leading-6';
+
+  return (
+    <TextInput
+      ref={inputRef}
+      accessibilityLabel={placeholder}
+      value={value}
+      onChangeText={onChangeText}
+      placeholder={placeholder}
+      placeholderTextColor={colors.subtle}
+      multiline
+      maxLength={maxLength}
+      textAlignVertical="top"
+      className={cn('rounded-2xl bg-surface px-4 py-4 text-ink', textSizeClass)}
+      style={{ minHeight }}
+    />
+  );
+}
+
+function WhenPill({
+  label,
+  selected,
+  onPress,
+}: {
+  label: string;
+  selected: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityState={{ selected }}
+      onPress={onPress}
+      className={cn(
+        'flex-1 items-center justify-center rounded-2xl py-4 active:opacity-90',
+        selected ? 'bg-active' : 'bg-surface',
+      )}
+    >
+      <Text className={cn('text-base font-bold', selected ? 'text-ink' : 'text-muted')}>
+        {label}
+      </Text>
+    </Pressable>
+  );
 }
 
 function NewRequestForm({ reuseSeed }: { reuseSeed?: ReuseSeed }) {
@@ -97,6 +275,13 @@ function NewRequestForm({ reuseSeed }: { reuseSeed?: ReuseSeed }) {
   const [position, setPosition] = useState<Position | null>(seeded.position);
   const [areaLabel, setAreaLabel] = useState(seeded.areaLabel);
   const [laterTimeError, setLaterTimeError] = useState(false);
+  const [locationModalVisible, setLocationModalVisible] = useState(false);
+  const [locationModalLoading, setLocationModalLoading] = useState(false);
+  const [locationModalError, setLocationModalError] = useState<string | null>(null);
+
+  const titleInputRef = useRef<TextInputType>(null);
+  const descriptionInputRef = useRef<TextInputType>(null);
+  const amountInputRef = useRef<TextInputType>(null);
 
   const reusingPrior = Boolean(reuseSeed);
   const trimmedTitle = title.trim();
@@ -106,22 +291,16 @@ function NewRequestForm({ reuseSeed }: { reuseSeed?: ReuseSeed }) {
   const amountError =
     parsedAmount !== null && (Number.isNaN(parsedAmount) || parsedAmount < 0)
       ? 'Enter a valid amount.'
-      : REQUEST_REQUIRES_FUNDING && !isFundedOffer(parsedAmount)
-        ? 'Enter what you are offering so your request can go live.'
-        : null;
+      : null;
 
   const stepValid = [
-    trimmedTitle.length >= TITLE_LIMITS.min,
+    trimmedTitle.length >= CREATE_TITLE_LIMITS.min &&
+      trimmedTitle.length <= CREATE_TITLE_LIMITS.max,
     true,
     REQUEST_REQUIRES_FUNDING ? isFundedOffer(parsedAmount) && !amountError : amountError === null,
-    whenMode === 'now' || whenMode === 'later',
-    Boolean(position) && areaLabel.trim().length >= 2,
-    trimmedTitle.length >= TITLE_LIMITS.min &&
-      (REQUEST_REQUIRES_FUNDING ? isFundedOffer(parsedAmount) : true) &&
-      Boolean(position),
+    whenMode === 'now' || isFutureSchedule(laterAt),
   ];
 
-  const isFirstStep = step === 0;
   const isLastStep = step === STEP_COUNT - 1;
   const funding = isFundedOffer(parsedAmount) ? summarizeRequestFunding(parsedAmount) : null;
   const walletShort =
@@ -130,15 +309,23 @@ function NewRequestForm({ reuseSeed }: { reuseSeed?: ReuseSeed }) {
     wallet.data !== undefined &&
     wallet.data.available < funding.total;
 
+  useEffect(() => {
+    if (step > 2) return;
+
+    const focusTimer = setTimeout(() => {
+      if (step === 0) titleInputRef.current?.focus();
+      else if (step === 1) descriptionInputRef.current?.focus();
+      else if (step === 2) amountInputRef.current?.focus();
+    }, 50);
+
+    return () => clearTimeout(focusTimer);
+  }, [step]);
+
   const goNext = () => {
-    if (step === 3 && whenMode === 'later' && !isFutureSchedule(laterAt)) {
-      setLaterTimeError(true);
-      return;
-    }
+    if (step === STEP_COUNT - 1) return;
     setLaterTimeError(false);
     setStep((current) => Math.min(current + 1, STEP_COUNT - 1));
   };
-  const goBack = () => setStep((current) => Math.max(current - 1, 0));
 
   const onLaterDateChange = (event: DateTimePickerEvent, date?: Date) => {
     if (Platform.OS === 'android') setShowDatePicker(false);
@@ -161,16 +348,26 @@ function NewRequestForm({ reuseSeed }: { reuseSeed?: ReuseSeed }) {
     );
   };
 
-  const submit = () => {
+  function locationErrorMessage(result: Extract<PositionResult, { ok: false }>): string {
+    if (result.reason === 'permission-denied') {
+      return 'Location access is off. Turn it on in Settings to post this request.';
+    }
+    if (result.reason === 'services-disabled') {
+      return 'Location services are switched off on this device.';
+    }
+    return 'We could not get your location. Try again in a moment.';
+  }
+
+  const submit = (postPosition: Position, locationLabel: string) => {
     const scheduledFor: Date | null =
       whenMode === 'now' ? null : isFutureSchedule(laterAt) ? laterAt : null;
 
     if (
-      !position ||
-      trimmedTitle.length < TITLE_LIMITS.min ||
+      trimmedTitle.length < CREATE_TITLE_LIMITS.min ||
       (REQUEST_REQUIRES_FUNDING && !isFundedOffer(parsedAmount)) ||
       (whenMode === 'later' && scheduledFor === null)
     ) {
+      if (whenMode === 'later' && scheduledFor === null) setLaterTimeError(true);
       return;
     }
 
@@ -178,8 +375,8 @@ function NewRequestForm({ reuseSeed }: { reuseSeed?: ReuseSeed }) {
       {
         title: trimmedTitle,
         description: trimmedDescription || null,
-        position,
-        locationLabel: areaLabel.trim(),
+        position: postPosition,
+        locationLabel,
         scheduledFor,
         offeredAmount: parsedAmount!,
         sourceRequestId: reusingPrior ? reuseSeed?.sourceRequestId : undefined,
@@ -193,228 +390,242 @@ function NewRequestForm({ reuseSeed }: { reuseSeed?: ReuseSeed }) {
     );
   };
 
+  const handlePostPress = () => {
+    const scheduledFor: Date | null =
+      whenMode === 'now' ? null : isFutureSchedule(laterAt) ? laterAt : null;
+
+    if (whenMode === 'later' && scheduledFor === null) {
+      setLaterTimeError(true);
+      return;
+    }
+
+    const label = areaLabel.trim();
+    if (position && label.length >= 2) {
+      submit(position, label);
+      return;
+    }
+
+    setLocationModalError(null);
+    setLocationModalVisible(true);
+  };
+
+  const shareLocationForPost = async () => {
+    setLocationModalLoading(true);
+    setLocationModalError(null);
+
+    const result = await requestPosition();
+    if (!result.ok) {
+      setLocationModalError(locationErrorMessage(result));
+      setLocationModalLoading(false);
+      return;
+    }
+
+    setPosition(result.position);
+    const suggestion = await suggestAreaLabel(result.position);
+    setAreaLabel(suggestion?.trim() || 'My location');
+
+    setLocationModalLoading(false);
+    setLocationModalVisible(false);
+  };
+
+  const closeWizard = () => router.back();
+  const goBack = () => setStep((current) => Math.max(current - 1, 0));
+
+  const reviewWhen = whenMode === 'now' ? 'Today' : formatWhen(laterAt.toISOString());
+  const reviewLocation = areaLabel.trim() || 'My location';
+
   return (
     <Screen edges={['top', 'bottom']}>
-      <Header
+      <WizardHeader
         title={reusingPrior ? 'Send request again' : 'New request'}
-        onBack={isFirstStep ? () => router.back() : goBack}
+        step={step}
+        onClose={closeWizard}
+        onBack={step > 0 ? goBack : undefined}
       />
+      <WizardProgress step={step} />
 
-      <View className="flex-row gap-1 px-5 pb-2">
-        {Array.from({ length: STEP_COUNT }, (_, index) => (
-          <View
-            key={index}
-            className={cn('h-1 flex-1 rounded-full', index <= step ? 'bg-brand' : 'bg-surface')}
-          />
-        ))}
-      </View>
-
-      <ScrollView contentContainerClassName="gap-6 p-5 pb-12" keyboardShouldPersistTaps="handled">
+      <ScrollView
+        contentContainerClassName="gap-5 p-5 pb-8"
+        keyboardShouldPersistTaps="handled"
+        className="flex-1"
+      >
         {step === 0 ? (
-          <View className="gap-4">
-            <Text className="text-2xl font-bold text-ink">What do you need?</Text>
-            <Text className="text-base text-muted">
-              A short title so people know what you need.
+          <View className="gap-3">
+            <Text className="font-serif text-3xl font-bold leading-9 text-ink">
+              What do you need?
             </Text>
-            <TextField
-              label="Title"
+            <Text className="text-base text-muted">Describe it in your own words.</Text>
+            <CreateTextArea
+              inputRef={titleInputRef}
               value={title}
               onChangeText={setTitle}
-              placeholder="Help me move a sofa"
-              maxLength={TITLE_LIMITS.max}
-              counterMax={TITLE_LIMITS.max}
-              hint={
-                trimmedTitle.length < TITLE_LIMITS.min
-                  ? `At least ${TITLE_LIMITS.min} characters.`
-                  : undefined
-              }
+              placeholder="e.g. Fix my leaking sink, Need a ride to the airport…"
+              maxLength={CREATE_TITLE_LIMITS.max}
+              textSize="xl"
+              minHeight={120}
             />
+            {trimmedTitle.length > 0 && trimmedTitle.length < CREATE_TITLE_LIMITS.min ? (
+              <Text className="text-sm text-muted">
+                At least {CREATE_TITLE_LIMITS.min} characters to continue.
+              </Text>
+            ) : null}
           </View>
         ) : null}
 
         {step === 1 ? (
-          <View className="gap-4">
-            <Text className="text-2xl font-bold text-ink">Tell us more</Text>
-            <Text className="text-base text-muted">Optional — skip if the title says enough.</Text>
-            <TextField
-              label="Details"
+          <View className="gap-3">
+            <Text className="font-serif text-3xl font-bold leading-9 text-ink">Tell us more</Text>
+            <Text className="text-base text-muted">
+              Optional. Any detail that helps people understand what&apos;s needed.
+            </Text>
+            <CreateTextArea
+              inputRef={descriptionInputRef}
               value={description}
               onChangeText={setDescription}
-              placeholder="It's a 3-seater sofa. I need help moving it from downstairs to the second floor."
-              multiline
-              numberOfLines={6}
+              placeholder="Any extra context, requirements, or things to know…"
               maxLength={DESCRIPTION_LIMITS.max}
-              counterMax={DESCRIPTION_LIMITS.max}
+              textSize="lg"
+              minHeight={200}
             />
           </View>
         ) : null}
 
         {step === 2 ? (
-          <View className="gap-4">
-            <Text className="text-2xl font-bold text-ink">What are you offering?</Text>
-            <Text className="text-base text-muted">
-              Held in your wallet while the request is open ({MARKET.currency}).
+          <View className="gap-3">
+            <Text className="font-serif text-3xl font-bold leading-9 text-ink">
+              What are you offering?
             </Text>
-            <TextField
-              label={`Amount (${MARKET.currency})`}
-              value={amount}
-              onChangeText={setAmount}
-              keyboardType="numeric"
-              placeholder="5000"
-              error={amountError}
-            />
+            <Text className="text-base text-muted">How much you&apos;re willing to pay.</Text>
+            <View className="rounded-2xl bg-surface px-5 py-6">
+              <View className="flex-row items-center gap-2">
+                <Text className="text-3xl font-bold text-active">₦</Text>
+                <TextInput
+                  ref={amountInputRef}
+                  accessibilityLabel="Offer amount"
+                  value={amount}
+                  onChangeText={(text) => setAmount(text.replace(/[^\d]/g, ''))}
+                  keyboardType="number-pad"
+                  placeholder="0"
+                  placeholderTextColor={colors.subtle}
+                  className="flex-1 py-0 text-3xl font-bold text-ink"
+                  maxLength={9}
+                />
+              </View>
+            </View>
+            {amountError ? <Text className="text-sm text-warning">{amountError}</Text> : null}
           </View>
         ) : null}
 
         {step === 3 ? (
-          <View className="gap-4">
-            <Text className="text-2xl font-bold text-ink">When do you need it?</Text>
-            <Choice
-              title="Now"
-              subtitle="As soon as someone can help"
-              selected={whenMode === 'now'}
-              onPress={() => {
-                setWhenMode('now');
-                setLaterTimeError(false);
-              }}
-            />
-            <Choice
-              title="Later"
-              subtitle="Pick a date and time"
-              selected={whenMode === 'later'}
-              onPress={() => {
-                setWhenMode('later');
-                setLaterTimeError(false);
-              }}
-            />
-            {whenMode === 'later' ? (
-              <View className="gap-3 rounded-2xl bg-surface p-4">
-                <Text className="text-base font-semibold text-ink">
-                  {whenSummary('later', laterAt)}
-                </Text>
-                {laterTimeError ? (
-                  <Text className="text-sm text-warning">Choose a time in the future.</Text>
-                ) : null}
-                {Platform.OS === 'ios' ? (
-                  <DateTimePicker
-                    value={laterAt}
-                    mode="datetime"
-                    minimumDate={new Date()}
-                    maximumDate={addHours(new Date(), 24 * 30)}
-                    onChange={(_, date) => {
-                      if (date) setLaterAt(date);
-                    }}
-                  />
-                ) : (
-                  <View className="flex-row flex-wrap gap-2">
-                    <Button
-                      label="Change date"
-                      variant="secondary"
-                      onPress={() => setShowDatePicker(true)}
-                    />
-                    <Button
-                      label="Change time"
-                      variant="secondary"
-                      onPress={() => setShowTimePicker(true)}
-                    />
-                  </View>
-                )}
-                {showDatePicker ? (
-                  <DateTimePicker
-                    value={laterAt}
-                    mode="date"
-                    minimumDate={new Date()}
-                    maximumDate={addHours(new Date(), 24 * 30)}
-                    onChange={onLaterDateChange}
-                  />
-                ) : null}
-                {showTimePicker ? (
-                  <DateTimePicker value={laterAt} mode="time" onChange={onLaterTimeChange} />
-                ) : null}
+          <View className="gap-5">
+            <View className="gap-3">
+              <Text className="font-serif text-3xl font-bold leading-9 text-ink">
+                When do you need it?
+              </Text>
+              <Text className="text-base text-muted">
+                People nearby will see your request straight away.
+              </Text>
+              <View className="flex-row gap-3">
+                <WhenPill
+                  label="Right Now"
+                  selected={whenMode === 'now'}
+                  onPress={() => {
+                    setWhenMode('now');
+                    setLaterTimeError(false);
+                  }}
+                />
+                <WhenPill
+                  label="Later"
+                  selected={whenMode === 'later'}
+                  onPress={() => {
+                    setWhenMode('later');
+                    setLaterTimeError(false);
+                  }}
+                />
               </View>
-            ) : null}
-          </View>
-        ) : null}
-
-        {step === 4 ? (
-          <View className="gap-4">
-            <Text className="text-2xl font-bold text-ink">Where?</Text>
-            <Text className="text-base text-muted">
-              Use where you are or search for another place. Exact location stays private until you
-              select someone.
-            </Text>
-            <LocationStep
-              position={position}
-              onPositionChange={setPosition}
-              areaLabel={areaLabel}
-              onAreaLabelChange={setAreaLabel}
-            />
-          </View>
-        ) : null}
-
-        {step === 5 ? (
-          <View className="gap-4">
-            <Text className="text-2xl font-bold text-ink">Review & post</Text>
-
-            <Card className="gap-3">
-              <View className="gap-1">
-                <Text className="text-xs font-semibold uppercase text-subtle">Title</Text>
-                <Text className="text-lg font-bold text-ink">{trimmedTitle}</Text>
-              </View>
-              {trimmedDescription ? (
-                <View className="gap-1">
-                  <Text className="text-xs font-semibold uppercase text-subtle">Details</Text>
-                  <Text className="text-base text-muted">{trimmedDescription}</Text>
+              {whenMode === 'later' ? (
+                <View className="gap-3 rounded-2xl bg-surface p-4">
+                  <Text className="text-base font-semibold text-ink">{reviewWhen}</Text>
+                  {laterTimeError ? (
+                    <Text className="text-sm text-warning">Choose a time in the future.</Text>
+                  ) : null}
+                  {Platform.OS === 'ios' ? (
+                    <DateTimePicker
+                      value={laterAt}
+                      mode="datetime"
+                      minimumDate={new Date()}
+                      maximumDate={addHours(new Date(), 24 * 30)}
+                      onChange={(_, date) => {
+                        if (date) setLaterAt(date);
+                      }}
+                    />
+                  ) : (
+                    <View className="flex-row flex-wrap gap-2">
+                      <Button
+                        label="Change date"
+                        variant="secondary"
+                        onPress={() => setShowDatePicker(true)}
+                      />
+                      <Button
+                        label="Change time"
+                        variant="secondary"
+                        onPress={() => setShowTimePicker(true)}
+                      />
+                    </View>
+                  )}
+                  {showDatePicker ? (
+                    <DateTimePicker
+                      value={laterAt}
+                      mode="date"
+                      minimumDate={new Date()}
+                      maximumDate={addHours(new Date(), 24 * 30)}
+                      onChange={onLaterDateChange}
+                    />
+                  ) : null}
+                  {showTimePicker ? (
+                    <DateTimePicker value={laterAt} mode="time" onChange={onLaterTimeChange} />
+                  ) : null}
                 </View>
               ) : null}
-              <View className="gap-1">
-                <Text className="text-xs font-semibold uppercase text-subtle">Offer</Text>
-                <Text className="text-base font-semibold text-ink">
-                  {isFundedOffer(parsedAmount)
-                    ? formatMoney(parsedAmount, MARKET.currency)
-                    : 'Not set'}
+            </View>
+
+            <View className="gap-3 rounded-2xl border border-hairline bg-elevated p-4">
+              <Text className="text-xs font-semibold uppercase tracking-wide text-subtle">
+                Review before posting
+              </Text>
+              <Text className="font-serif text-xl font-bold text-ink" numberOfLines={1}>
+                {trimmedTitle}
+              </Text>
+              {trimmedDescription ? (
+                <Text className="text-sm leading-5 text-muted" numberOfLines={2}>
+                  {trimmedDescription}
                 </Text>
-              </View>
-              <View className="gap-1">
-                <Text className="text-xs font-semibold uppercase text-subtle">When</Text>
-                <Text className="text-base text-ink">{whenSummary(whenMode, laterAt)}</Text>
-              </View>
-              <View className="gap-1">
-                <Text className="text-xs font-semibold uppercase text-subtle">Location</Text>
-                <Text className="text-base text-ink">{areaLabel.trim() || '—'}</Text>
-              </View>
-              {isFundedOffer(parsedAmount) ? (
-                <RequestFundingSummary offeredAmount={parsedAmount} />
               ) : null}
-            </Card>
+              <View className="flex-row flex-wrap items-center gap-x-2 gap-y-1 pt-1">
+                {isFundedOffer(parsedAmount) ? (
+                  <Text className="text-base font-bold text-active">
+                    {formatMoney(parsedAmount, MARKET.currency)}
+                  </Text>
+                ) : null}
+                <Text className="text-sm text-muted">·</Text>
+                <Text className="text-sm text-muted">{whenSummary(whenMode, laterAt)}</Text>
+                <Text className="text-sm text-muted">·</Text>
+                <Text className="text-sm text-muted">{reviewLocation}</Text>
+              </View>
+            </View>
 
             {REQUEST_REQUIRES_FUNDING && funding ? (
-              <Card className="gap-2">
-                <Text className="text-sm font-semibold text-ink">Your wallet</Text>
+              <View className="gap-2">
                 {wallet.isPending ? (
-                  <Text className="text-sm text-muted">Checking balance…</Text>
+                  <Text className="text-sm text-muted">Checking wallet…</Text>
                 ) : wallet.isError ? (
                   <InlineError error={wallet.error} />
                 ) : wallet.data ? (
-                  <>
-                    <Text className="text-sm text-muted">
-                      Available:{' '}
-                      {wallet.isFetching
-                        ? '…'
-                        : formatMoney(wallet.data.available, wallet.data.currency)}
-                    </Text>
-                    {walletShort ? (
-                      <Text className="text-sm text-warning">
-                        You need {formatMoney(funding.total, funding.currency)} to fund this request
-                        (including the fee). Top up before posting.
-                      </Text>
-                    ) : (
-                      <Text className="text-sm text-muted">
-                        {formatMoney(funding.total, funding.currency)} will be held when your
-                        request goes live.
-                      </Text>
-                    )}
-                  </>
+                  <Text className="text-sm text-muted">
+                    {walletShort
+                      ? `You need ${formatMoney(funding.total, funding.currency)} available (including fee). Top up before posting.`
+                      : `${formatMoney(funding.total, funding.currency)} will be held from your wallet when this goes live.`}
+                  </Text>
                 ) : null}
                 {walletShort ? (
                   <Button
@@ -423,7 +634,7 @@ function NewRequestForm({ reuseSeed }: { reuseSeed?: ReuseSeed }) {
                     onPress={() => router.push('/wallet')}
                   />
                 ) : null}
-              </Card>
+              </View>
             ) : null}
 
             {create.isError ? <InlineError error={create.error} /> : null}
@@ -432,18 +643,34 @@ function NewRequestForm({ reuseSeed }: { reuseSeed?: ReuseSeed }) {
       </ScrollView>
 
       <View className="gap-3 border-t border-hairline p-5">
-        {isLastStep ? (
-          <Button
+        {step === 1 ? (
+          <View className="flex-row items-stretch gap-3">
+            <WizardSkipButton onPress={goNext} />
+            <WizardPrimaryButton label="Next" onPress={goNext} className="flex-1" />
+          </View>
+        ) : isLastStep ? (
+          <WizardPrimaryButton
             label="Post request"
-            size="lg"
-            loading={create.isPending || wallet.isPending}
+            loading={create.isPending || wallet.isPending || locationModalLoading}
             disabled={!stepValid[step] || walletShort}
-            onPress={submit}
+            onPress={handlePostPress}
           />
         ) : (
-          <Button label="Continue" size="lg" disabled={!stepValid[step]} onPress={goNext} />
+          <WizardPrimaryButton label="Next" disabled={!stepValid[step]} onPress={goNext} />
         )}
       </View>
+
+      <RequestLocationModal
+        visible={locationModalVisible}
+        loading={locationModalLoading}
+        errorMessage={locationModalError}
+        onClose={() => {
+          if (locationModalLoading) return;
+          setLocationModalVisible(false);
+          setLocationModalError(null);
+        }}
+        onShareLocation={() => void shareLocationForPost()}
+      />
     </Screen>
   );
 }
@@ -464,7 +691,7 @@ export default function NewRequestScreen() {
   if (sourceRequestId && sourceRequest.isError) {
     return (
       <Screen edges={['top', 'bottom']}>
-        <Header title="New request" onBack={() => router.back()} />
+        <WizardHeader title="New request" step={0} onClose={() => router.back()} />
         <ErrorState error={sourceRequest.error} onRetry={() => sourceRequest.refetch()} />
       </Screen>
     );
@@ -477,7 +704,7 @@ export default function NewRequestScreen() {
   ) {
     return (
       <Screen edges={['top', 'bottom']}>
-        <Header title="New request" onBack={() => router.back()} />
+        <WizardHeader title="New request" step={0} onClose={() => router.back()} />
         <ErrorState
           error={
             new Error(
