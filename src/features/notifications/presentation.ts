@@ -7,10 +7,6 @@ import { colors } from '@/theme';
 
 const CANONICAL_TYPES = new Set<string>(NOTIFICATION_TYPES);
 
-export function isCanonicalInboxNotification(item: InboxNotification): boolean {
-  return CANONICAL_TYPES.has(item.type);
-}
-
 /** Compact relative time for the notification list (e.g. `2m`, `1h`). */
 export function formatInboxRelativeTime(iso: string): string {
   const raw = formatDistanceToNowStrict(new Date(iso), { addSuffix: false });
@@ -133,11 +129,19 @@ export function notificationVisual(type: NotificationType): NotificationVisual {
   }
 }
 
-/** Deep link target when opening a notification from the inbox. */
-export function resolveNotificationHref(item: InboxNotification): string | null {
-  if (item.url) return item.url;
+export type NotificationNavigationInput = Pick<
+  InboxNotification,
+  'type' | 'requestId' | 'metadata'
+>;
 
+/** Deep link target when opening a notification (inbox row or push payload). */
+export function resolveNotificationHref(item: NotificationNavigationInput): string | null {
   const requestId = item.requestId;
+
+  if (requestId && item.metadata?.link === 'respond') {
+    return `/respond/${requestId}`;
+  }
+
   if (!requestId) {
     if (
       item.type === 'withdrawal_processing' ||
@@ -191,4 +195,22 @@ export function resolveNotificationHref(item: InboxNotification): string | null 
       return _exhaustive;
     }
   }
+}
+
+export function resolveNotificationHrefFromPushData(data: Record<string, unknown>): string | null {
+  const type = data.type;
+  if (typeof type !== 'string' || !CANONICAL_TYPES.has(type)) {
+    return null;
+  }
+
+  const metadata =
+    data.metadata !== null && typeof data.metadata === 'object' && !Array.isArray(data.metadata)
+      ? (data.metadata as Record<string, unknown>)
+      : null;
+
+  return resolveNotificationHref({
+    type: type as NotificationType,
+    requestId: typeof data.request_id === 'string' ? data.request_id : null,
+    metadata,
+  });
 }

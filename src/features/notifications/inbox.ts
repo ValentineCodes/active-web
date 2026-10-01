@@ -1,7 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 import type { InboxNotification } from '@/features/notifications/types';
-import { isCanonicalInboxNotification } from '@/features/notifications/presentation';
 import { queryKeys } from '@/lib/query/keys';
 import { supabase } from '@/lib/supabase/client';
 
@@ -20,24 +19,22 @@ async function fetchInbox(): Promise<InboxNotification[]> {
 
   if (error) throw error;
 
-  return (data ?? [])
-    .map((row) => ({
-      id: row.id,
-      recipientUserId: row.user_id,
-      type: row.type,
-      title: row.title,
-      body: row.body,
-      url: row.url,
-      requestId: row.request_id,
-      responseId: row.response_id,
-      paymentTransitionId: row.payment_transition_id,
-      walletLedgerId: row.wallet_ledger_id,
-      relatedUserId: row.related_user_id,
-      metadata: row.metadata as Record<string, unknown> | null,
-      receivedAt: row.created_at,
-      readAt: row.read_at,
-    }))
-    .filter(isCanonicalInboxNotification);
+  return (data ?? []).map((row) => ({
+    id: row.id,
+    recipientUserId: row.user_id,
+    type: row.type,
+    title: row.title,
+    body: row.body,
+    url: row.url,
+    requestId: row.request_id,
+    responseId: row.response_id,
+    paymentTransitionId: row.payment_transition_id,
+    walletLedgerId: row.wallet_ledger_id,
+    relatedUserId: row.related_user_id,
+    metadata: row.metadata as Record<string, unknown> | null,
+    receivedAt: row.created_at,
+    readAt: row.read_at,
+  }));
 }
 
 async function fetchUnreadCount(): Promise<number> {

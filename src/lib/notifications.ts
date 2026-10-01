@@ -6,6 +6,7 @@ import { useEffect } from 'react';
 import { router } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 
+import { resolveNotificationHrefFromPushData } from '@/features/notifications/presentation';
 import { queryKeys } from '@/lib/query/keys';
 import { supabase } from '@/lib/supabase/client';
 
@@ -119,8 +120,11 @@ export function useNotificationBridge() {
       refreshInbox();
       queryClient.invalidateQueries();
 
-      const url = response.notification.request.content.data?.url;
-      if (typeof url === 'string') router.push(url as never);
+      const data = response.notification.request.content.data;
+      if (data && typeof data === 'object' && !Array.isArray(data)) {
+        const href = resolveNotificationHrefFromPushData(data as Record<string, unknown>);
+        if (href) router.push(href as never);
+      }
     });
 
     return () => {

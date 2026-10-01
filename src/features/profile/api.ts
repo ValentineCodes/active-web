@@ -112,6 +112,3 @@ export function useCaptureProfilePhoto() {
     },
   });
 }
-
-/** @deprecated Use useCaptureProfilePhoto — gallery uploads cannot satisfy Active requirements. */
-export const useUploadAvatar = useCaptureProfilePhoto;

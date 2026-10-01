@@ -95,7 +95,11 @@ export default function NotificationsScreen() {
       invalidateInbox();
     }
 
-    const href = resolveNotificationHref(item);
+    const href = resolveNotificationHref({
+      type: item.type,
+      requestId: item.requestId,
+      metadata: item.metadata,
+    });
     if (href) router.push(href as never);
   };
 

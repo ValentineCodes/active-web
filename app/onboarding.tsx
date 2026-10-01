@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Screen } from '@/components/ui/Screen';
 import { InlineError } from '@/components/ui/StateView';
 import { TextField } from '@/components/ui/TextField';
-import { useProfile, useSaveProfile, useUploadAvatar } from '@/features/profile/api';
+import { useCaptureProfilePhoto, useProfile, useSaveProfile } from '@/features/profile/api';
 
 /**
  * The only thing Active needs before someone can use it is a name to show the person on
@@ -19,7 +19,7 @@ export default function OnboardingScreen() {
   const [bio, setBio] = useState('');
 
   const save = useSaveProfile();
-  const uploadAvatar = useUploadAvatar();
+  const capturePhoto = useCaptureProfilePhoto();
 
   const trimmedName = name.trim();
   const isNameValid = trimmedName.length >= 2 && trimmedName.length <= 60;
@@ -41,14 +41,14 @@ export default function OnboardingScreen() {
           <View className="items-center gap-3">
             <Avatar path={profile?.avatar_path} name={trimmedName || null} size="lg" />
             <Pressable
-              onPress={() => uploadAvatar.mutate({})}
-              disabled={uploadAvatar.isPending}
+              onPress={() => capturePhoto.mutate({})}
+              disabled={capturePhoto.isPending}
               accessibilityRole="button"
               accessibilityLabel="Add a profile photo"
               hitSlop={8}
             >
               <Text className="text-base font-medium text-brand">
-                {uploadAvatar.isPending ? 'Uploading…' : 'Add a photo (optional)'}
+                {capturePhoto.isPending ? 'Uploading…' : 'Add a photo (optional)'}
               </Text>
             </Pressable>
           </View>
@@ -75,7 +75,7 @@ export default function OnboardingScreen() {
             hint="Optional — a sentence about you can help people feel comfortable choosing you."
           />
 
-          {uploadAvatar.isError ? <InlineError error={uploadAvatar.error} /> : null}
+          {capturePhoto.isError ? <InlineError error={capturePhoto.error} /> : null}
           {save.isError ? <InlineError error={save.error} /> : null}
         </View>
 

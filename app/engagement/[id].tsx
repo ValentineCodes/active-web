@@ -472,18 +472,16 @@ export default function EngagementScreen() {
             />
           )}
 
-          {inActiveFlow ? (
-            <View className="gap-3">
-              <RequestConnectionActions
-                chatDisabled={!data.counterparty_phone}
-                callDisabled={!data.counterparty_phone}
-                onChat={() => Linking.openURL(`sms:${data.counterparty_phone}`)}
-                onCall={() => Linking.openURL(`tel:${data.counterparty_phone}`)}
-                onViewMap={openMaps}
-              />
-              <RequestExactLocationCard address={data.location_label} onDirections={openMaps} />
-            </View>
-          ) : null}
+          <View className="gap-3">
+            <RequestConnectionActions
+              chatDisabled={!data.counterparty_phone}
+              callDisabled={!data.counterparty_phone}
+              onChat={() => Linking.openURL(`sms:${data.counterparty_phone}`)}
+              onCall={() => Linking.openURL(`tel:${data.counterparty_phone}`)}
+              onViewMap={openMaps}
+            />
+            <RequestExactLocationCard address={data.location_label} onDirections={openMaps} />
+          </View>
 
           {showPaymentSecured ? (
             <RequestCallout tone="info" title="Payment secured">
@@ -499,28 +497,6 @@ export default function EngagementScreen() {
                 Payment is secured. Mark it done when the work is complete.
               </Text>
             </RequestCallout>
-          ) : null}
-
-          {!inActiveFlow && data.counterparty_phone ? (
-            <View className="flex-row gap-3">
-              <Button
-                label="Call"
-                icon="call"
-                className="flex-1"
-                onPress={() => Linking.openURL(`tel:${data.counterparty_phone}`)}
-              />
-              <Button
-                label="Message"
-                icon="chatbubble"
-                variant="secondary"
-                className="flex-1"
-                onPress={() => Linking.openURL(`sms:${data.counterparty_phone}`)}
-              />
-            </View>
-          ) : null}
-
-          {!inActiveFlow ? (
-            <Button label="Open in Maps" variant="secondary" icon="navigate" onPress={openMaps} />
           ) : null}
 
           {data.viewer_is_requester && data.request_status === 'completion_pending' ? (
