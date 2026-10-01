@@ -17,6 +17,8 @@ AS $$
   ) stats;
 $$;
 
+DROP FUNCTION IF EXISTS public.list_request_responses(uuid);
+
 CREATE OR REPLACE FUNCTION public.list_request_responses(p_request_id uuid)
 RETURNS TABLE(
   response_id uuid,
@@ -69,3 +71,7 @@ AS $$
     AND rr.status IN ('pending', 'accepted')
   ORDER BY rr.created_at ASC;
 $$;
+
+GRANT ALL ON FUNCTION public.list_request_responses(uuid) TO anon;
+GRANT ALL ON FUNCTION public.list_request_responses(uuid) TO authenticated;
+GRANT ALL ON FUNCTION public.list_request_responses(uuid) TO service_role;

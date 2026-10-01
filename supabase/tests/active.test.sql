@@ -370,6 +370,12 @@ select lives_ok(
   'responding twice updates the same pending response idempotently'
 );
 
+select is(
+  (select count(*) from browse_nearby_requests(6.5000::double precision, 3.3800::double precision) where request_id = :'request_id'),
+  0::bigint,
+  'a pending response removes the request from public discovery for that helper'
+);
+
 select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
 select is(
   (select count(*) from list_request_responses(:'request_id')),

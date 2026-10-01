@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
 
@@ -9,7 +9,6 @@ import { SectionHeader } from '@/components/ui/SectionHeader';
 import { InlineError } from '@/components/ui/StateView';
 import { useBrowseNearbyRequests } from '@/features/requests/browse-api';
 import { useMyResponses } from '@/features/requests/responses-api';
-import { useMyRequests } from '@/features/requests/requester-api';
 import { nearbyRequestBadge } from '@/features/requests/status';
 import {
   formatMoney,
@@ -24,6 +23,8 @@ import {
   requestPosition,
   type Position,
 } from '@/lib/location';
+
+const BROWSE_HIDDEN_RESPONSE_STATUSES = new Set(['pending', 'accepted', 'declined']);
 
 type NearbyRequestsProps = {
   /** Cap list length on dense screens (e.g. Home). */
@@ -52,14 +53,17 @@ export function NearbyRequests({
   const [blocked, setBlocked] = useState<'denied' | 'unavailable' | null>(null);
 
   const nearby = useBrowseNearbyRequests(position);
-  const myRequests = useMyRequests();
   const myResponses = useMyResponses();
 
-  const ownOpenOnHome = isHome
-    ? (myRequests.data?.filter(
-        (request) => request.status === 'posted' || request.status === 'searching',
-      ) ?? [])
-    : [];
+  const engagedRequestIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (const response of myResponses.data ?? []) {
+      if (BROWSE_HIDDEN_RESPONSE_STATUSES.has(response.response_status)) {
+        ids.add(response.request_id);
+      }
+    }
+    return ids;
+  }, [myResponses.data]);
 
   useFocusEffect(
     useCallback(() => {
@@ -94,72 +98,35 @@ export function NearbyRequests({
     setBlocked(result.reason === 'permission-denied' ? 'denied' : 'unavailable');
   };
 
-  const rows = nearby.data ?? [];
+  const rows = (nearby.data ?? []).filter((request) => !engagedRequestIds.has(request.request_id));
   const visible = limit !== undefined ? rows.slice(0, limit) : rows;
   const hasMore = limit !== undefined && rows.length > limit;
 
-  const ownOpenCards =
-    isHome &&
-    ownOpenOnHome.map((request) => (
-      <HomeRequestCard
-        key={request.request_id}
-        title={request.title ?? 'Request'}
-        description={request.description}
-        amount={
-          request.offered_amount !== null
-            ? formatMoney(request.offered_amount, request.currency)
-            : '—'
-        }
-        whenLine={formatWhenHome(request.scheduled_for)}
-        proximity="Your post"
-        onPress={() => router.push(`/request/${request.request_id}`)}
-      />
-    ));
-
   const nearbyFeed =
     position === null ? (
-      isHome && ownOpenOnHome.length > 0 ? (
-        <View className="gap-3 rounded-2xl border border-hairline bg-surface p-4">
-          <Text className="text-sm text-muted">
-            Turn on location to see what other people near you posted.
-          </Text>
-          <Button
-            label={locating ? 'Getting location…' : 'Show nearby requests'}
-            loading={locating}
-            onPress={() => void shareLocation()}
-          />
-        </View>
-      ) : (
-        <View className="gap-3 rounded-2xl bg-surface p-4">
-          <Text className="text-base font-medium text-ink">Browse what is open nearby</Text>
-          <Text className="text-sm text-muted">
-            {blocked === 'denied'
-              ? 'Location access is off. Enable it in Settings to see nearby requests.'
-              : 'Location is only used to sort what is relevant near you — not shared on the list.'}
-          </Text>
-          <Button
-            label={locating ? 'Getting location…' : 'Show nearby requests'}
-            loading={locating}
-            onPress={() => void shareLocation()}
-          />
-        </View>
-      )
+      <View className="gap-3 rounded-2xl bg-surface p-4">
+        <Text className="text-base font-medium text-ink">Browse what is open nearby</Text>
+        <Text className="text-sm text-muted">
+          {blocked === 'denied'
+            ? 'Location access is off. Enable it in Settings to see nearby requests.'
+            : 'Location is only used to sort what is relevant near you — not shared on the list.'}
+        </Text>
+        <Button
+          label={locating ? 'Getting location…' : 'Show nearby requests'}
+          loading={locating}
+          onPress={() => void shareLocation()}
+        />
+      </View>
     ) : nearby.isPending ? (
       <ActivityIndicator />
     ) : nearby.isError ? (
       <InlineError error={nearby.error} />
     ) : rows.length === 0 ? (
-      isHome ? (
-        ownOpenOnHome.length > 0 ? null : (
-          <Text className="text-sm text-muted">
-            Nothing open near you right now. Check back later — or post a request.
-          </Text>
-        )
-      ) : (
-        <Text className="text-sm text-muted">
-          Nothing open near you right now. Check back later — or ask for help on Home.
-        </Text>
-      )
+      <Text className="text-sm text-muted">
+        {isHome
+          ? 'Nothing open near you right now. Check back later — or post a request.'
+          : 'Nothing open near you right now. Check back later — or ask for help on Home.'}
+      </Text>
     ) : (
       <>
         {visible.map((request) => {
@@ -241,14 +208,7 @@ export function NearbyRequests({
         </Text>
       ) : null}
 
-      {isHome ? (
-        <>
-          {ownOpenCards}
-          {nearbyFeed}
-        </>
-      ) : (
-        nearbyFeed
-      )}
+      {nearbyFeed}
     </View>
   );
 }

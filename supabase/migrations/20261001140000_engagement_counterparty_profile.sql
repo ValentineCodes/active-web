@@ -17,6 +17,8 @@ AS $$
   ) stats;
 $$;
 
+DROP FUNCTION IF EXISTS public.get_engagement(uuid);
+
 CREATE OR REPLACE FUNCTION public.get_engagement(p_request_id uuid)
 RETURNS TABLE(
   request_id uuid,
@@ -120,3 +122,7 @@ AS $$
   LEFT JOIN public.ratings rating ON rating.request_id = r.id
   LEFT JOIN public.handshakes h ON h.request_id = r.id;
 $$;
+
+GRANT ALL ON FUNCTION public.get_engagement(uuid) TO anon;
+GRANT ALL ON FUNCTION public.get_engagement(uuid) TO authenticated;
+GRANT ALL ON FUNCTION public.get_engagement(uuid) TO service_role;
