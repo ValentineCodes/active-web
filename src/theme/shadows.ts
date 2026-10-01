@@ -12,15 +12,15 @@ function shadowFor(scheme: 'light' | 'dark') {
     ios: {
       card: {
         shadowColor: tint,
-        shadowOpacity: scheme === 'dark' ? 0.12 : 0.06,
-        shadowRadius: 16,
-        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: scheme === 'dark' ? 0.03 : 0.06,
+        shadowRadius: scheme === 'dark' ? 6 : 16,
+        shadowOffset: { width: 0, height: scheme === 'dark' ? 2 : 6 },
       },
       raised: {
         shadowColor: scheme === 'dark' ? darkPalette.active : lightPalette.ink,
-        shadowOpacity: scheme === 'dark' ? 0.35 : 0.1,
-        shadowRadius: 24,
-        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: scheme === 'dark' ? 0.18 : 0.1,
+        shadowRadius: scheme === 'dark' ? 12 : 24,
+        shadowOffset: { width: 0, height: scheme === 'dark' ? 4 : 8 },
       },
     },
     android: {
