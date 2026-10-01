@@ -1,11 +1,6 @@
-import { Screen } from '@/components/ui/Screen';
-import { UnifiedActivityFeed } from '@/components/UnifiedActivityFeed';
+import { Redirect } from 'expo-router';
 
-/** Same unified feed as Activity — requests you created live here too. */
+/** Legacy deep links — activity lives on the Activity tab. */
 export default function RequestsScreen() {
-  return (
-    <Screen>
-      <UnifiedActivityFeed showHeader={false} />
-    </Screen>
-  );
+  return <Redirect href="/(tabs)/activity" />;
 }

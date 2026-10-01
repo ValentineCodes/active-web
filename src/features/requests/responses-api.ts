@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
+import type { RealtimeChannel } from '@supabase/supabase-js';
 
 import { useBrowseRequest, type PublicRequest } from '@/features/requests/browse-api';
 import { useUserId } from '@/features/auth/session';
@@ -128,6 +129,35 @@ export function useRequestForResponse(requestId: string, position: Position | nu
   };
 }
 
+const liveResponseUpdates = {
+  userId: null as string | null,
+  subscribers: 0,
+  channel: null as RealtimeChannel | null,
+  queryClient: null as QueryClient | null,
+};
+
+function teardownLiveResponseChannel() {
+  if (liveResponseUpdates.channel) {
+    void supabase.removeChannel(liveResponseUpdates.channel);
+    liveResponseUpdates.channel = null;
+  }
+  liveResponseUpdates.userId = null;
+}
+
+function invalidateLiveResponseQueries(
+  queryClient: QueryClient,
+  next: { status?: string; request_id?: string },
+) {
+  if (next.status !== 'accepted' && next.status !== 'pending') return;
+
+  queryClient.invalidateQueries({ queryKey: queryKeys.attendance });
+  queryClient.invalidateQueries({ queryKey: queryKeys.myResponses });
+  queryClient.invalidateQueries({ queryKey: queryKeys.browseNearbyAll });
+  if (next.request_id) {
+    queryClient.invalidateQueries({ queryKey: queryKeys.engagement(next.request_id) });
+  }
+}
+
 export function useLiveResponseUpdates() {
   const userId = useUserId();
   const queryClient = useQueryClient();
@@ -135,32 +165,45 @@ export function useLiveResponseUpdates() {
   useEffect(() => {
     if (!userId) return;
 
-    const channel = supabase
-      .channel(`responses:${userId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'request_responses',
-          filter: `responder_id=eq.${userId}`,
-        },
-        (payload) => {
-          const next = payload.new as { status?: string; request_id?: string };
-          if (next.status !== 'accepted' && next.status !== 'pending') return;
+    liveResponseUpdates.queryClient = queryClient;
 
-          queryClient.invalidateQueries({ queryKey: queryKeys.attendance });
-          queryClient.invalidateQueries({ queryKey: queryKeys.myResponses });
-          queryClient.invalidateQueries({ queryKey: queryKeys.browseNearbyAll });
-          if (next.request_id) {
-            queryClient.invalidateQueries({ queryKey: queryKeys.engagement(next.request_id) });
-          }
-        },
-      )
-      .subscribe();
+    if (liveResponseUpdates.userId && liveResponseUpdates.userId !== userId) {
+      teardownLiveResponseChannel();
+      liveResponseUpdates.subscribers = 0;
+    }
+
+    liveResponseUpdates.subscribers += 1;
+
+    if (!liveResponseUpdates.channel) {
+      liveResponseUpdates.userId = userId;
+      liveResponseUpdates.channel = supabase
+        .channel(`responses:${userId}`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'request_responses',
+            filter: `responder_id=eq.${userId}`,
+          },
+          (payload) => {
+            const client = liveResponseUpdates.queryClient;
+            if (!client) return;
+            invalidateLiveResponseQueries(
+              client,
+              payload.new as { status?: string; request_id?: string },
+            );
+          },
+        )
+        .subscribe();
+    }
 
     return () => {
-      void supabase.removeChannel(channel);
+      liveResponseUpdates.subscribers -= 1;
+      if (liveResponseUpdates.subscribers <= 0) {
+        liveResponseUpdates.subscribers = 0;
+        teardownLiveResponseChannel();
+      }
     };
   }, [userId, queryClient]);
 }

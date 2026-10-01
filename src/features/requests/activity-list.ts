@@ -2,7 +2,7 @@ import { format, isThisYear, isToday, isTomorrow } from 'date-fns';
 
 import { requestLifecycleCopy, resolveRequestLifecycleStage } from '@/features/domain/lifecycle';
 import type { Database } from '@/lib/supabase/database.types';
-import { formatMoney } from '@/lib/format';
+import { formatAgo, formatMoney } from '@/lib/format';
 
 import { isExpiredRequestView } from '@/features/requests/reuse';
 
@@ -32,6 +32,154 @@ export function activityAmountLabel(
 
 function joinActivityParts(parts: (string | null | undefined)[]): string {
   return parts.filter((part): part is string => Boolean(part && part.length > 0)).join(' · ');
+}
+
+type ActivityBadgeTone = 'neutral' | 'brand' | 'active' | 'danger' | 'warning' | 'info';
+
+export function myRequestResponseCountLine(pendingResponseCount: number): string {
+  if (pendingResponseCount <= 0) return 'No responses yet';
+  if (pendingResponseCount === 1) return '1 response';
+  return `${pendingResponseCount} responses`;
+}
+
+export function myRequestActivityDetailLine(request: {
+  status: RequestStatus;
+  expires_at: string | null;
+  pending_response_count: number;
+  created_at: string;
+  updated_at: string | null;
+  completed_at: string | null;
+  cancelled_at: string | null;
+}): string {
+  const stage = resolveRequestLifecycleStage({
+    status: request.status,
+    pendingResponseCount: request.pending_response_count,
+    expiresAt: request.expires_at,
+  });
+
+  if (stage === 'posted' || stage === 'responses') {
+    return myRequestResponseCountLine(request.pending_response_count);
+  }
+
+  const iso =
+    (stage === 'completed'
+      ? request.completed_at
+      : stage === 'cancelled'
+        ? request.cancelled_at
+        : stage === 'expired'
+          ? request.expires_at
+          : request.updated_at) ?? request.created_at;
+
+  return formatAgo(iso);
+}
+
+/** Activity tab card badge for requests you posted (matches activity mock labels). */
+export function myRequestActivityBadge(request: {
+  status: RequestStatus;
+  expires_at: string | null;
+  pending_response_count: number;
+}): { label: string; tone: ActivityBadgeTone } {
+  const stage = resolveRequestLifecycleStage({
+    status: request.status,
+    pendingResponseCount: request.pending_response_count,
+    expiresAt: request.expires_at,
+  });
+
+  switch (stage) {
+    case 'posted':
+    case 'responses':
+      return { label: 'Open', tone: 'warning' };
+    case 'selected':
+      return { label: 'Selected', tone: 'brand' };
+    case 'in_progress':
+    case 'completion_pending':
+      return { label: 'In Progress', tone: 'info' };
+    case 'completed':
+      return { label: 'Completed', tone: 'brand' };
+    case 'disputed':
+      return { label: 'Disputed', tone: 'danger' };
+    case 'cancelled':
+      return { label: 'Cancelled', tone: 'neutral' };
+    case 'expired':
+      return { label: 'Expired', tone: 'neutral' };
+    case 'no_show':
+      return { label: 'No-show', tone: 'danger' };
+    default:
+      return {
+        label: requestLifecycleCopy(stage, { viewerIsRequester: true }).title,
+        tone: 'neutral',
+      };
+  }
+}
+
+/** Activity tab card badge for your responses (matches activity mock labels). */
+export function myResponseActivityBadge(response: {
+  response_status: ResponseStatus;
+  request_status: RequestStatus;
+}): { label: string; tone: ActivityBadgeTone } {
+  const requestStatus = isExpiredRequestView(response.request_status, null)
+    ? 'expired'
+    : response.request_status;
+
+  if (response.response_status === 'pending') {
+    if (requestStatus === 'posted' || requestStatus === 'searching') {
+      return { label: 'Waiting', tone: 'warning' };
+    }
+    return { label: 'Closed', tone: 'neutral' };
+  }
+
+  if (response.response_status === 'accepted') {
+    const stage = resolveRequestLifecycleStage({
+      status: requestStatus,
+      pendingResponseCount: 0,
+    });
+
+    if (
+      stage === 'selected' ||
+      stage === 'in_progress' ||
+      stage === 'completion_pending' ||
+      requestStatus === 'accepted'
+    ) {
+      return { label: 'Active', tone: 'info' };
+    }
+    if (stage === 'completed') {
+      return { label: 'Completed', tone: 'brand' };
+    }
+    if (stage === 'disputed' || stage === 'no_show') {
+      return { label: 'Disputed', tone: 'danger' };
+    }
+    if (stage === 'cancelled' || stage === 'expired') {
+      return { label: 'Closed', tone: 'neutral' };
+    }
+    return { label: 'Active', tone: 'info' };
+  }
+
+  if (response.response_status === 'declined') {
+    return { label: 'Not chosen', tone: 'neutral' };
+  }
+  if (response.response_status === 'withdrawn') {
+    return { label: 'Withdrawn', tone: 'neutral' };
+  }
+
+  return { label: 'Closed', tone: 'neutral' };
+}
+
+export function myResponseActivityMetaLine(response: {
+  requester_display_name: string | null;
+  created_at: string;
+}): string {
+  const name = response.requester_display_name?.trim() || 'Requester';
+  return `${name} · ${formatAgo(response.created_at)}`;
+}
+
+export function myResponseActivityOfferLine(
+  offeredAmount: number | null,
+  currency: string,
+  quotedAmount: number | null,
+): string | null {
+  const amount = activityAmountLabel(offeredAmount, currency, quotedAmount);
+  if (!amount) return null;
+  return `You offered ${amount}`;
 }
 
 export function myRequestActivitySubtitle(request: {
