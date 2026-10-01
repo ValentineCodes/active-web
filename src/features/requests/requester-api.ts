@@ -256,9 +256,10 @@ export function useCreateRequest() {
     }) => {
       if (!userId) throw new Error('Sign in to create a request.');
 
+      const trimmedDescription = input.description?.trim();
       const { data, error } = await supabase.rpc('create_request', {
         p_title: input.title.trim(),
-        p_description: input.description?.trim() ?? '',
+        p_description: trimmedDescription ? trimmedDescription : null,
         p_latitude: input.position.latitude,
         p_longitude: input.position.longitude,
         p_location_label: input.locationLabel,

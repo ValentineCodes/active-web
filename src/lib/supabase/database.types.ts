@@ -501,14 +501,14 @@ export type Database = {
           {
             foreignKeyName: "ratings_request_id_fkey"
             columns: ["request_id"]
-            isOneToOne: true
+            isOneToOne: false
             referencedRelation: "my_requests"
             referencedColumns: ["request_id"]
           },
           {
             foreignKeyName: "ratings_request_id_fkey"
             columns: ["request_id"]
-            isOneToOne: true
+            isOneToOne: false
             referencedRelation: "requests"
             referencedColumns: ["id"]
           },
@@ -1088,58 +1088,6 @@ export type Database = {
           title: string | null
           updated_at: string | null
         }
-        Insert: {
-          accepted_at?: string | null
-          agreed_provider_amount?: number | null
-          cancelled_at?: string | null
-          completed_at?: string | null
-          created_at?: string | null
-          currency?: string | null
-          description?: string | null
-          expires_at?: string | null
-          is_rated?: never
-          latitude?: never
-          location_label?: string | null
-          longitude?: never
-          offered_amount?: number | null
-          payment_status?: Database["public"]["Enums"]["payment_status"] | null
-          pending_response_count?: never
-          request_id?: string | null
-          scheduled_for?: string | null
-          selected_user_id?: string | null
-          source_request_id?: string | null
-          started_at?: string | null
-          status?: never
-          submitted_at?: string | null
-          title?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          accepted_at?: string | null
-          agreed_provider_amount?: number | null
-          cancelled_at?: string | null
-          completed_at?: string | null
-          created_at?: string | null
-          currency?: string | null
-          description?: string | null
-          expires_at?: string | null
-          is_rated?: never
-          latitude?: never
-          location_label?: string | null
-          longitude?: never
-          offered_amount?: number | null
-          payment_status?: Database["public"]["Enums"]["payment_status"] | null
-          pending_response_count?: never
-          request_id?: string | null
-          scheduled_for?: string | null
-          selected_user_id?: string | null
-          source_request_id?: string | null
-          started_at?: string | null
-          status?: never
-          submitted_at?: string | null
-          title?: string | null
-          updated_at?: string | null
-        }
         Relationships: [
           {
             foreignKeyName: "requests_provider_id_fkey"
@@ -1385,7 +1333,7 @@ export type Database = {
       }
       create_request: {
         Args: {
-          p_description: string
+          p_description?: string | null
           p_latitude: number
           p_location_label: string
           p_longitude: number
@@ -1403,6 +1351,7 @@ export type Database = {
       deliver_expo_push: {
         Args: {
           p_body: string
+          p_metadata?: Json
           p_payment_transition_id: string
           p_recipient_user_id: string
           p_related_user_id: string
@@ -1482,9 +1431,8 @@ export type Database = {
           offered_amount: number
           payment_status: Database["public"]["Enums"]["payment_status"]
           quoted_amount: number
-          rating_stars: number
           rating_comment: string
-          viewer_has_rated: boolean
+          rating_stars: number
           request_id: string
           request_latitude: number
           request_longitude: number
@@ -1496,6 +1444,7 @@ export type Database = {
           service_problem_respond_by: string
           started_at: string
           title: string
+          viewer_has_rated: boolean
           viewer_is_requester: boolean
         }[]
       }
