@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import {
   Alert,
   Linking,
@@ -9,9 +9,12 @@ import {
   Text,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { format } from 'date-fns';
-import { PersonProfileModal } from '@/components/PersonProfileModal';
+import type { BottomSheetModal } from '@gorhom/bottom-sheet';
+
+import { PersonProfileBottomSheet } from '@/components/PersonProfileBottomSheet';
 import { ReportProblemModal, type ReportProblemPayload } from '@/components/ReportProblemModal';
 import { RequestCallout } from '@/components/request-flow/RequestCallout';
 import { RequestCompletionCard } from '@/components/request-flow/RequestCompletionCard';
@@ -92,8 +95,10 @@ export default function EngagementScreen() {
   const reportClientNoShow = useReportClientNoShow(id);
   const cancelRequest = useCancelRequest(id);
   const cancelService = useCancelService(id);
-  const [profileOpen, setProfileOpen] = useState(false);
+  const profileSheetRef = useRef<BottomSheetModal>(null);
   const [reportModal, setReportModal] = useState<ReportModalState | null>(null);
+  const [footerHeight, setFooterHeight] = useState(0);
+  const insets = useSafeAreaInsets();
 
   useLiveRequest(id);
 
@@ -391,6 +396,13 @@ export default function EngagementScreen() {
     openHelperProblemMenu();
   };
 
+  const showReportFooter =
+    !inActiveFlow &&
+    ((canReportActiveProblem && data.viewer_is_requester) || canReportHelperProblem);
+  const showRateFooter = data.request_status === 'completed' && !data.rating_stars;
+  const hasFloatingFooter = inActiveFlow || showReportFooter || showRateFooter;
+  const openCounterpartyProfile = () => profileSheetRef.current?.present();
+
   return (
     <Screen>
       <RequestFlowHeader
@@ -399,291 +411,317 @@ export default function EngagementScreen() {
         menuActions={menuActions.length ? menuActions : undefined}
       />
 
-      <ScrollView
-        contentContainerClassName="gap-6 p-5 pb-12"
-        refreshControl={
-          <RefreshControl
-            refreshing={engagement.isRefetching}
-            onRefresh={() => engagement.refetch()}
+      <View className="flex-1">
+        <ScrollView
+          className="flex-1"
+          contentContainerClassName="gap-6 p-5"
+          contentContainerStyle={{
+            paddingBottom: hasFloatingFooter ? footerHeight + 16 : 48,
+          }}
+          refreshControl={
+            <RefreshControl
+              refreshing={engagement.isRefetching}
+              onRefresh={() => engagement.refetch()}
+            />
+          }
+        >
+          <RequestMetaRow
+            badgeLabel={statusBadge.label}
+            badgeTone={statusBadge.tone}
+            trailing={metaTime}
           />
-        }
-      >
-        <RequestMetaRow
-          badgeLabel={statusBadge.label}
-          badgeTone={statusBadge.tone}
-          trailing={metaTime}
-        />
 
-        <RequestTitleSection title={data.title} description={data.description} />
+          <RequestTitleSection title={data.title} description={data.description} />
 
-        {offerAmount ? (
-          <RequestOfferWhenCard
-            amount={offerAmount}
-            whenLabel={formatWhenRequestCard(data.scheduled_for)}
-            whenDetail={formatWhenHome(data.scheduled_for)}
-            locationLabel={data.location_label}
-          />
-        ) : null}
+          {offerAmount ? (
+            <RequestOfferWhenCard
+              amount={offerAmount}
+              whenLabel={formatWhenRequestCard(data.scheduled_for)}
+              whenDetail={formatWhenHome(data.scheduled_for)}
+              locationLabel={data.location_label}
+            />
+          ) : null}
 
-        {requesterActive ? (
-          <View className="gap-3">
-            <Text className="text-lg font-bold text-ink">Attending your request</Text>
+          {requesterActive ? (
+            <View className="gap-3">
+              <Text className="text-lg font-bold text-ink">Attending your request</Text>
+              <RequestPersonCard
+                avatarPath={data.counterparty_avatar_path}
+                name={data.counterparty_display_name}
+                ratingAverage={data.counterparty_rating_average}
+                ratingCount={data.counterparty_rating_count}
+                completionPercent={data.counterparty_completion_percent}
+                onPress={openCounterpartyProfile}
+              />
+            </View>
+          ) : (
             <RequestPersonCard
               avatarPath={data.counterparty_avatar_path}
               name={data.counterparty_display_name}
               ratingAverage={data.counterparty_rating_average}
               ratingCount={data.counterparty_rating_count}
-              onPress={() => setProfileOpen(true)}
+              completionPercent={data.counterparty_completion_percent}
+              onPress={openCounterpartyProfile}
             />
-          </View>
-        ) : (
-          <RequestPersonCard
-            avatarPath={data.counterparty_avatar_path}
-            name={data.counterparty_display_name}
-            ratingAverage={data.counterparty_rating_average}
-            ratingCount={data.counterparty_rating_count}
-            onPress={() => setProfileOpen(true)}
-          />
-        )}
+          )}
 
-        {inActiveFlow ? (
-          <View className="gap-3">
-            <RequestConnectionActions
-              chatDisabled={!data.counterparty_phone}
-              callDisabled={!data.counterparty_phone}
-              onChat={() => Linking.openURL(`sms:${data.counterparty_phone}`)}
-              onCall={() => Linking.openURL(`tel:${data.counterparty_phone}`)}
-              onViewMap={openMaps}
-            />
-            <RequestExactLocationCard address={data.location_label} onDirections={openMaps} />
-          </View>
-        ) : null}
+          {inActiveFlow ? (
+            <View className="gap-3">
+              <RequestConnectionActions
+                chatDisabled={!data.counterparty_phone}
+                callDisabled={!data.counterparty_phone}
+                onChat={() => Linking.openURL(`sms:${data.counterparty_phone}`)}
+                onCall={() => Linking.openURL(`tel:${data.counterparty_phone}`)}
+                onViewMap={openMaps}
+              />
+              <RequestExactLocationCard address={data.location_label} onDirections={openMaps} />
+            </View>
+          ) : null}
 
-        {showPaymentSecured ? (
-          <RequestCallout tone="info" title="Payment secured">
-            <Text className="text-sm text-muted">
-              Release payment only after the request is complete.
-            </Text>
-          </RequestCallout>
-        ) : null}
-
-        {helperActive ? (
-          <RequestCallout tone="info" title="You’re attending this request">
-            <Text className="text-sm text-muted">
-              Payment is secured. Mark it done when the work is complete.
-            </Text>
-          </RequestCallout>
-        ) : null}
-
-        {!inActiveFlow && data.counterparty_phone ? (
-          <View className="flex-row gap-3">
-            <Button
-              label="Call"
-              icon="call"
-              className="flex-1"
-              onPress={() => Linking.openURL(`tel:${data.counterparty_phone}`)}
-            />
-            <Button
-              label="Message"
-              icon="chatbubble"
-              variant="secondary"
-              className="flex-1"
-              onPress={() => Linking.openURL(`sms:${data.counterparty_phone}`)}
-            />
-          </View>
-        ) : null}
-
-        {!inActiveFlow ? (
-          <Button label="Open in Maps" variant="secondary" icon="navigate" onPress={openMaps} />
-        ) : null}
-
-        {data.viewer_is_requester && data.request_status === 'completion_pending' ? (
-          <RequestCallout tone="warning" title={`${helperFirstName} says it’s complete`}>
-            <Text className="text-sm text-muted">Confirm only if the work was done as agreed.</Text>
-            {data.completion_confirm_by ? (
+          {showPaymentSecured ? (
+            <RequestCallout tone="info" title="Payment secured">
               <Text className="text-sm text-muted">
-                If you don&apos;t respond by {formatWhen(data.completion_confirm_by)}, this request
-                will complete automatically.
+                Release payment only after the request is complete.
               </Text>
-            ) : null}
-          </RequestCallout>
-        ) : null}
+            </RequestCallout>
+          ) : null}
 
-        {!data.viewer_is_requester && data.request_status === 'completion_pending' ? (
-          <RequestCallout tone="info" title="Waiting for confirmation">
-            <Text className="text-sm text-muted">
-              They can rate you once they confirm the request is complete.
-            </Text>
-          </RequestCallout>
-        ) : null}
+          {helperActive ? (
+            <RequestCallout tone="info" title="You’re attending this request">
+              <Text className="text-sm text-muted">
+                Payment is secured. Mark it done when the work is complete.
+              </Text>
+            </RequestCallout>
+          ) : null}
 
-        {data.request_status === 'disputed' ? (
-          <RequestCallout tone="danger" title={problemKindLabel(data.service_problem_kind)}>
-            {data.service_problem_kind === 'completion_issue' ||
-            data.service_problem_kind === 'service_not_completed' ||
-            data.service_problem_kind === 'service_differs_from_request' ||
-            data.service_problem_kind === 'other' ? (
-              <Text className="text-sm text-muted">
-                Support will review this. Your payment stays on hold until this is resolved.
-                {data.service_problem_description ? (
-                  <> You reported: “{data.service_problem_description}”</>
-                ) : null}
-              </Text>
-            ) : data.service_problem_reported_by_me ? (
-              <Text className="text-sm text-muted">
-                We notified the other person. Your payment stays on hold while they have time to
-                respond.
-                {data.service_problem_respond_by ? (
-                  <>
-                    {' '}
-                    If they do not respond by {formatWhen(data.service_problem_respond_by)}, the app
-                    will resolve this automatically.
-                  </>
-                ) : null}
-              </Text>
-            ) : (
-              <Text className="text-sm text-muted">
-                Respond if this is wrong.
-                {data.service_problem_respond_by ? (
-                  <>
-                    {' '}
-                    You have until {formatWhen(data.service_problem_respond_by)} before an automatic
-                    outcome.
-                  </>
-                ) : null}
-              </Text>
-            )}
-            {contestProblem.isError ? <InlineError error={contestProblem.error} /> : null}
-            {canContestProblem ? (
+          {!inActiveFlow && data.counterparty_phone ? (
+            <View className="flex-row gap-3">
               <Button
-                label="I was there / I'm available"
+                label="Call"
+                icon="call"
+                className="flex-1"
+                onPress={() => Linking.openURL(`tel:${data.counterparty_phone}`)}
+              />
+              <Button
+                label="Message"
+                icon="chatbubble"
                 variant="secondary"
-                loading={contestProblem.isPending}
-                onPress={confirmContestProblem}
+                className="flex-1"
+                onPress={() => Linking.openURL(`sms:${data.counterparty_phone}`)}
               />
-            ) : null}
-          </RequestCallout>
-        ) : null}
+            </View>
+          ) : null}
 
-        {data.request_status === 'no_show' ? (
-          <RequestCallout tone="danger" title="No-show recorded">
-            <Text className="text-sm text-muted">
-              This request closed after a no-show report. Payment followed the outcome recorded on
-              the server.
-            </Text>
-          </RequestCallout>
-        ) : null}
+          {!inActiveFlow ? (
+            <Button label="Open in Maps" variant="secondary" icon="navigate" onPress={openMaps} />
+          ) : null}
 
-        {data.request_status === 'completed' ? (
-          <RequestCompletionCard
-            completedAtLabel={
-              data.completed_at
-                ? format(new Date(data.completed_at), "EEEE, d MMM 'at' h:mm a")
-                : 'Completed'
-            }
-            ratingStars={data.rating_stars}
-          />
-        ) : null}
-
-        {inActiveFlow ? (
-          <View className="gap-3">
-            {markServiceComplete.isError ? <InlineError error={markServiceComplete.error} /> : null}
-            {completeRequest.isError ? <InlineError error={completeRequest.error} /> : null}
-            {reportProblem.isError ? <InlineError error={reportProblem.error} /> : null}
-            {reportClientNoShow.isError ? <InlineError error={reportClientNoShow.error} /> : null}
-
-            {helperActive && ['accepted', 'in_progress'].includes(data.request_status) ? (
-              <Button
-                label="I'm done"
-                variant="active"
-                size="lg"
-                loading={markServiceComplete.isPending}
-                onPress={() =>
-                  Alert.alert(
-                    'Mark this complete?',
-                    'The person who asked will confirm before you are paid.',
-                    [
-                      { text: 'Not yet', style: 'cancel' },
-                      { text: 'Mark complete', onPress: () => markServiceComplete.mutate() },
-                    ],
-                  )
-                }
-              />
-            ) : null}
-
-            {requesterActive ? (
-              <Button
-                label="Confirm completion"
-                variant="active"
-                size="lg"
-                loading={completeRequest.isPending}
-                disabled={data.request_status !== 'completion_pending'}
-                onPress={() =>
-                  Alert.alert(
-                    'Confirm and pay them?',
-                    'Only confirm if the work was done as agreed.',
-                    [
-                      { text: 'Not yet', style: 'cancel' },
-                      {
-                        text: 'Confirm',
-                        onPress: () =>
-                          completeRequest.mutate(undefined, {
-                            onSuccess: () => router.replace(`/rate/${id}`),
-                          }),
-                      },
-                    ],
-                  )
-                }
-              />
-            ) : null}
-
-            <Button
-              label="Report an issue"
-              variant="danger"
-              size="lg"
-              loading={reportProblem.isPending || reportClientNoShow.isPending}
-              onPress={openReportIssue}
-            />
-          </View>
-        ) : (canReportActiveProblem && data.viewer_is_requester) || canReportHelperProblem ? (
-          <View className="gap-3">
-            {reportProblem.isError ? <InlineError error={reportProblem.error} /> : null}
-            {reportClientNoShow.isError ? <InlineError error={reportClientNoShow.error} /> : null}
-            <Pressable
-              accessibilityRole="button"
-              onPress={openReportIssue}
-              disabled={reportProblem.isPending || reportClientNoShow.isPending}
-            >
-              <Text className="text-center text-base font-semibold text-danger">
-                Report an issue
+          {data.viewer_is_requester && data.request_status === 'completion_pending' ? (
+            <RequestCallout tone="warning" title={`${helperFirstName} says it’s complete`}>
+              <Text className="text-sm text-muted">
+                Confirm only if the work was done as agreed.
               </Text>
-            </Pressable>
+              {data.completion_confirm_by ? (
+                <Text className="text-sm text-muted">
+                  If you don&apos;t respond by {formatWhen(data.completion_confirm_by)}, this
+                  request will complete automatically.
+                </Text>
+              ) : null}
+            </RequestCallout>
+          ) : null}
+
+          {!data.viewer_is_requester && data.request_status === 'completion_pending' ? (
+            <RequestCallout tone="info" title="Waiting for confirmation">
+              <Text className="text-sm text-muted">
+                They can rate you once they confirm the request is complete.
+              </Text>
+            </RequestCallout>
+          ) : null}
+
+          {data.request_status === 'disputed' ? (
+            <RequestCallout tone="danger" title={problemKindLabel(data.service_problem_kind)}>
+              {data.service_problem_kind === 'completion_issue' ||
+              data.service_problem_kind === 'service_not_completed' ||
+              data.service_problem_kind === 'service_differs_from_request' ||
+              data.service_problem_kind === 'other' ? (
+                <Text className="text-sm text-muted">
+                  Support will review this. Your payment stays on hold until this is resolved.
+                  {data.service_problem_description ? (
+                    <> You reported: “{data.service_problem_description}”</>
+                  ) : null}
+                </Text>
+              ) : data.service_problem_reported_by_me ? (
+                <Text className="text-sm text-muted">
+                  We notified the other person. Your payment stays on hold while they have time to
+                  respond.
+                  {data.service_problem_respond_by ? (
+                    <>
+                      {' '}
+                      If they do not respond by {formatWhen(data.service_problem_respond_by)}, the
+                      app will resolve this automatically.
+                    </>
+                  ) : null}
+                </Text>
+              ) : (
+                <Text className="text-sm text-muted">
+                  Respond if this is wrong.
+                  {data.service_problem_respond_by ? (
+                    <>
+                      {' '}
+                      You have until {formatWhen(data.service_problem_respond_by)} before an
+                      automatic outcome.
+                    </>
+                  ) : null}
+                </Text>
+              )}
+              {contestProblem.isError ? <InlineError error={contestProblem.error} /> : null}
+              {canContestProblem ? (
+                <Button
+                  label="I was there / I'm available"
+                  variant="secondary"
+                  loading={contestProblem.isPending}
+                  onPress={confirmContestProblem}
+                />
+              ) : null}
+            </RequestCallout>
+          ) : null}
+
+          {data.request_status === 'no_show' ? (
+            <RequestCallout tone="danger" title="No-show recorded">
+              <Text className="text-sm text-muted">
+                This request closed after a no-show report. Payment followed the outcome recorded on
+                the server.
+              </Text>
+            </RequestCallout>
+          ) : null}
+
+          {data.request_status === 'completed' ? (
+            <RequestCompletionCard
+              completedAtLabel={
+                data.completed_at
+                  ? format(new Date(data.completed_at), "EEEE, d MMM 'at' h:mm a")
+                  : 'Completed'
+              }
+              ratingStars={data.rating_stars}
+            />
+          ) : null}
+
+          {cancelRequest.isError ? <InlineError error={cancelRequest.error} /> : null}
+          {cancelService.isError ? <InlineError error={cancelService.error} /> : null}
+        </ScrollView>
+
+        {hasFloatingFooter ? (
+          <View
+            className="absolute bottom-0 left-0 right-0 gap-3 border-t border-hairline bg-canvas px-5 pt-4"
+            style={{ paddingBottom: Math.max(insets.bottom, 16) }}
+            onLayout={(event) => setFooterHeight(event.nativeEvent.layout.height)}
+          >
+            {inActiveFlow ? (
+              <>
+                {markServiceComplete.isError ? (
+                  <InlineError error={markServiceComplete.error} />
+                ) : null}
+                {completeRequest.isError ? <InlineError error={completeRequest.error} /> : null}
+                {reportProblem.isError ? <InlineError error={reportProblem.error} /> : null}
+                {reportClientNoShow.isError ? (
+                  <InlineError error={reportClientNoShow.error} />
+                ) : null}
+
+                {helperActive && ['accepted', 'in_progress'].includes(data.request_status) ? (
+                  <Button
+                    label="I'm done"
+                    variant="active"
+                    size="lg"
+                    loading={markServiceComplete.isPending}
+                    onPress={() =>
+                      Alert.alert(
+                        'Mark this complete?',
+                        'The person who asked will confirm before you are paid.',
+                        [
+                          { text: 'Not yet', style: 'cancel' },
+                          { text: 'Mark complete', onPress: () => markServiceComplete.mutate() },
+                        ],
+                      )
+                    }
+                  />
+                ) : null}
+
+                {requesterActive ? (
+                  <Button
+                    label="Confirm completion"
+                    variant="active"
+                    size="lg"
+                    loading={completeRequest.isPending}
+                    disabled={data.request_status !== 'completion_pending'}
+                    onPress={() =>
+                      Alert.alert(
+                        'Confirm and pay them?',
+                        'Only confirm if the work was done as agreed.',
+                        [
+                          { text: 'Not yet', style: 'cancel' },
+                          {
+                            text: 'Confirm',
+                            onPress: () =>
+                              completeRequest.mutate(undefined, {
+                                onSuccess: () => router.replace(`/rate/${id}`),
+                              }),
+                          },
+                        ],
+                      )
+                    }
+                  />
+                ) : null}
+
+                <Button
+                  label="Report an issue"
+                  variant="danger"
+                  size="lg"
+                  loading={reportProblem.isPending || reportClientNoShow.isPending}
+                  onPress={openReportIssue}
+                />
+              </>
+            ) : null}
+
+            {showReportFooter ? (
+              <>
+                {reportProblem.isError ? <InlineError error={reportProblem.error} /> : null}
+                {reportClientNoShow.isError ? (
+                  <InlineError error={reportClientNoShow.error} />
+                ) : null}
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={openReportIssue}
+                  disabled={reportProblem.isPending || reportClientNoShow.isPending}
+                >
+                  <Text className="text-center text-base font-semibold text-danger">
+                    Report an issue
+                  </Text>
+                </Pressable>
+              </>
+            ) : null}
+
+            {showRateFooter ? (
+              <Button
+                label={data.viewer_is_requester ? 'Rate them' : 'Rate the person who asked'}
+                variant="active"
+                size="lg"
+                onPress={() => router.push(`/rate/${id}`)}
+              />
+            ) : null}
           </View>
         ) : null}
+      </View>
 
-        {data.request_status === 'completed' && !data.rating_stars ? (
-          <Button
-            label={data.viewer_is_requester ? 'Rate them' : 'Rate the person who asked'}
-            variant="active"
-            size="lg"
-            onPress={() => router.push(`/rate/${id}`)}
-          />
-        ) : null}
-
-        {cancelRequest.isError ? <InlineError error={cancelRequest.error} /> : null}
-        {cancelService.isError ? <InlineError error={cancelService.error} /> : null}
-      </ScrollView>
-
-      <PersonProfileModal
-        visible={profileOpen}
-        onClose={() => setProfileOpen(false)}
+      <PersonProfileBottomSheet
+        key={data.counterparty_id}
+        sheetRef={profileSheetRef}
         userId={data.counterparty_id}
         displayName={data.counterparty_display_name}
         avatarPath={data.counterparty_avatar_path}
+        bio={data.counterparty_bio}
         ratingAverage={data.counterparty_rating_average}
         ratingCount={data.counterparty_rating_count}
-        phoneVerified={Boolean(data.counterparty_phone)}
-        profilePhotoVerified={Boolean(data.counterparty_avatar_path)}
+        completionPercent={data.counterparty_completion_percent}
       />
 
       <ReportProblemModal

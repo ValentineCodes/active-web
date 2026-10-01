@@ -1353,6 +1353,8 @@ export type Database = {
           completed_at: string
           completion_confirm_by: string
           counterparty_avatar_path: string
+          counterparty_bio: string
+          counterparty_completion_percent: number
           counterparty_display_name: string
           counterparty_id: string
           counterparty_phone: string
@@ -1404,6 +1406,10 @@ export type Database = {
         }[]
       }
       provider_completion_percent: {
+        Args: { p_user_id: string }
+        Returns: number
+      }
+      requester_completion_percent: {
         Args: { p_user_id: string }
         Returns: number
       }
