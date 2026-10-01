@@ -1,7 +1,7 @@
 import { Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-import { colors, shadow } from '@/theme';
+import { useTheme } from '@/theme';
 
 type RequestOfferWhenCardProps = {
   amount: string;
@@ -17,6 +17,7 @@ export function RequestOfferWhenCard({
   whenDetail,
   locationLabel,
 }: RequestOfferWhenCardProps) {
+  const { colors, shadow } = useTheme();
   const showDetailRow = whenDetail !== undefined || locationLabel !== undefined;
 
   return (

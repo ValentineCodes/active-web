@@ -16,7 +16,7 @@ import {
   syncPushToken,
   type PushPermissionState,
 } from '@/lib/notifications';
-import { colors } from '@/theme';
+import { useColors } from '@/theme';
 
 function SettingsToggleRow({
   label,
@@ -33,6 +33,7 @@ function SettingsToggleRow({
   onValueChange: (next: boolean) => void;
   showDivider?: boolean;
 }) {
+  const colors = useColors();
   return (
     <>
       {showDivider ? <View className="mx-4 h-px bg-hairline" /> : null}
@@ -46,7 +47,7 @@ function SettingsToggleRow({
           disabled={disabled}
           onValueChange={onValueChange}
           trackColor={{ false: colors.hairline, true: colors.activeSoft }}
-          thumbColor={value ? colors.active : colors.canvas}
+          thumbColor={value ? colors.onBrand : colors.canvas}
           ios_backgroundColor={colors.hairline}
         />
       </View>

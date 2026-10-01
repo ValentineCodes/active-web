@@ -3,17 +3,10 @@ import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
 
 import { cn } from '@/lib/cn';
-import { colors } from '@/theme';
+import { useColors } from '@/theme';
 
 type Variant = 'primary' | 'active' | 'secondary' | 'ghost' | 'danger';
 
-/**
- * Every button in the app is one of these five. `primary` and `active` are both solid
- * green — the same visual weight — so a screen never has to choose between two
- * differently-branded "main" actions; `active` exists only to tag the specific moment an
- * action turns availability or a connection on. `secondary` is a quiet, fillable action
- * that never competes with the primary one on the same screen.
- */
 const containers: Record<Variant, string> = {
   primary: 'bg-brand',
   active: 'bg-active',
@@ -23,19 +16,11 @@ const containers: Record<Variant, string> = {
 };
 
 const labelClasses: Record<Variant, string> = {
-  primary: 'text-canvas',
-  active: 'text-canvas',
+  primary: 'text-on-brand',
+  active: 'text-on-brand',
   secondary: 'text-ink',
   ghost: 'text-brand',
   danger: 'text-danger',
-};
-
-const foregrounds: Record<Variant, string> = {
-  primary: colors.canvas,
-  active: colors.canvas,
-  secondary: colors.ink,
-  ghost: colors.brand,
-  danger: colors.danger,
 };
 
 type Props = {
@@ -59,7 +44,16 @@ export function Button({
   disabled = false,
   className,
 }: Props) {
+  const colors = useColors();
   const inert = disabled || loading;
+
+  const foregrounds: Record<Variant, string> = {
+    primary: colors.onBrand,
+    active: colors.onBrand,
+    secondary: colors.ink,
+    ghost: colors.brand,
+    danger: colors.danger,
+  };
 
   return (
     <Pressable

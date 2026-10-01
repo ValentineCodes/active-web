@@ -6,7 +6,7 @@ import { HomeTabBar } from '@/components/ui/HomeTabBar';
 import { useNotificationUnreadCount } from '@/features/notifications/inbox';
 import { useNotificationBridge } from '@/lib/notifications';
 import { useMyRequests } from '@/features/requests/requester-api';
-import { colors } from '@/theme';
+import { useColors } from '@/theme';
 
 function TabIcon({
   color,
@@ -27,6 +27,7 @@ function TabIcon({
 }
 
 export default function TabsLayout() {
+  const colors = useColors();
   const { data: requests } = useMyRequests();
   const unreadNotifications = useNotificationUnreadCount();
   const unreadCount = unreadNotifications.data ?? 0;
@@ -49,7 +50,7 @@ export default function TabsLayout() {
         headerShown: false,
         tabBarActiveTintColor: colors.active,
         tabBarInactiveTintColor: colors.subtle,
-        tabBarBadgeStyle: { backgroundColor: colors.active, color: colors.canvas },
+        tabBarBadgeStyle: { backgroundColor: colors.active, color: colors.onBrand },
         tabBarLabelStyle: { fontSize: 12, fontWeight: '600' },
       }}
     >

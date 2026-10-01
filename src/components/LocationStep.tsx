@@ -10,7 +10,7 @@ import {
   suggestAreaLabel,
   type Position,
 } from '@/lib/location';
-import { colors } from '@/theme';
+import { useColors } from '@/theme';
 
 const REFUSAL_COPY: Record<'permission-denied' | 'services-disabled' | 'unavailable', string> = {
   'permission-denied':
@@ -33,6 +33,7 @@ export function LocationStep({
   areaLabel?: string;
   onAreaLabelChange?: (label: string) => void;
 }) {
+  const colors = useColors();
   const [isLocating, setIsLocating] = useState(false);
   const [refusal, setRefusal] = useState<keyof typeof REFUSAL_COPY | null>(null);
   const [placeQuery, setPlaceQuery] = useState('');

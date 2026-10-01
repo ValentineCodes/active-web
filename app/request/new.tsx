@@ -38,7 +38,7 @@ import {
 } from '@/lib/location';
 import { syncPushToken } from '@/lib/notifications';
 import { showAppToast } from '@/lib/toast';
-import { colors } from '@/theme';
+import { useColors } from '@/theme';
 
 const STEP_COUNT = 4;
 
@@ -160,6 +160,7 @@ function WizardPrimaryButton({
   onPress: () => void;
   className?: string;
 }) {
+  const colors = useColors();
   const inert = disabled || loading;
 
   return (
@@ -176,9 +177,9 @@ function WizardPrimaryButton({
       )}
     >
       {loading ? (
-        <ActivityIndicator color={inert ? colors.subtle : colors.canvas} />
+        <ActivityIndicator color={inert ? colors.subtle : colors.onBrand} />
       ) : (
-        <Text className={cn('text-lg font-bold', inert ? 'text-subtle' : 'text-canvas')}>
+        <Text className={cn('text-lg font-bold', inert ? 'text-subtle' : 'text-on-brand')}>
           {label}
         </Text>
       )}
@@ -203,6 +204,7 @@ function CreateTextArea({
   minHeight?: number;
   textSize?: 'base' | 'lg' | 'xl';
 }) {
+  const colors = useColors();
   const textSizeClass =
     textSize === 'xl'
       ? 'text-xl leading-8'
@@ -246,7 +248,7 @@ function WhenPill({
         selected ? 'bg-active' : 'bg-surface',
       )}
     >
-      <Text className={cn('text-base font-bold', selected ? 'text-canvas' : 'text-muted')}>
+      <Text className={cn('text-base font-bold', selected ? 'text-on-brand' : 'text-muted')}>
         {label}
       </Text>
     </Pressable>
@@ -254,6 +256,7 @@ function WhenPill({
 }
 
 function NewRequestForm({ reuseSeed }: { reuseSeed?: ReuseSeed }) {
+  const colors = useColors();
   const seeded = newRequestFormState(reuseSeed);
   const create = useCreateRequest();
   const wallet = useMyWallet();

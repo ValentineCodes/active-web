@@ -3,7 +3,7 @@ import { Pressable, Text, View } from 'react-native';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { cn } from '@/lib/cn';
-import { shadow } from '@/theme';
+import { useTheme } from '@/theme';
 
 type Tone = 'neutral' | 'brand' | 'active' | 'danger' | 'warning' | 'info';
 
@@ -33,6 +33,7 @@ export function DiscoverRequestCard({
   helpLabel = 'I can help',
   disabled = false,
 }: DiscoverRequestCardProps) {
+  const { shadow } = useTheme();
   return (
     <View
       style={shadow.card}

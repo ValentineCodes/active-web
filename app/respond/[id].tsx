@@ -32,11 +32,12 @@ import {
 } from '@/lib/location';
 import { syncPushToken } from '@/lib/notifications';
 import { showAppToast } from '@/lib/toast';
-import { colors } from '@/theme';
+import { useColors } from '@/theme';
 
 type GateMode = 'off' | 'checking' | 'open';
 
 export default function RespondScreen() {
+  const colors = useColors();
   const { id, lat, lng, start } = useLocalSearchParams<{
     id: string;
     lat?: string;

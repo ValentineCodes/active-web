@@ -1,5 +1,30 @@
 /** @type {import('tailwindcss').Config} */
+const { lightPalette, darkPalette, paletteToCssVarRecord } = require('./src/theme/palette.js');
+
+const semanticColors = {
+  ink: 'rgb(var(--color-ink) / <alpha-value>)',
+  subtle: 'rgb(var(--color-subtle) / <alpha-value>)',
+  muted: 'rgb(var(--color-muted) / <alpha-value>)',
+  canvas: 'rgb(var(--color-canvas) / <alpha-value>)',
+  surface: 'rgb(var(--color-surface) / <alpha-value>)',
+  elevated: 'rgb(var(--color-elevated) / <alpha-value>)',
+  hairline: 'rgb(var(--color-hairline) / <alpha-value>)',
+  brand: 'rgb(var(--color-brand) / <alpha-value>)',
+  'brand-strong': 'rgb(var(--color-brand-strong) / <alpha-value>)',
+  'brand-soft': 'rgb(var(--color-brand-soft) / <alpha-value>)',
+  active: 'rgb(var(--color-active) / <alpha-value>)',
+  'active-soft': 'rgb(var(--color-active-soft) / <alpha-value>)',
+  'on-brand': 'rgb(var(--color-on-brand) / <alpha-value>)',
+  danger: 'rgb(var(--color-danger) / <alpha-value>)',
+  'danger-soft': 'rgb(var(--color-danger-soft) / <alpha-value>)',
+  warning: 'rgb(var(--color-warning) / <alpha-value>)',
+  'warning-soft': 'rgb(var(--color-warning-soft) / <alpha-value>)',
+  info: 'rgb(var(--color-info) / <alpha-value>)',
+  'info-soft': 'rgb(var(--color-info-soft) / <alpha-value>)',
+};
+
 module.exports = {
+  darkMode: 'class',
   content: ['./app/**/*.{ts,tsx}', './src/**/*.{ts,tsx}'],
   presets: [require('nativewind/preset')],
   theme: {
@@ -7,34 +32,15 @@ module.exports = {
       fontFamily: {
         serif: ['Georgia', 'Times New Roman', 'serif'],
       },
-      colors: {
-        // Text & surfaces
-        ink: '#111812',
-        subtle: '#8A948C',
-        muted: '#5C665E',
-        canvas: '#FFFFFF',
-        surface: '#F3F5F2',
-        elevated: '#FFFFFF',
-        hairline: '#E6EAE4',
-
-        // Brand — the one green used for every primary action.
-        brand: '#166A3D',
-        'brand-strong': '#0E4C2A',
-        'brand-soft': '#E7F4EA',
-
-        // Live/availability state.
-        active: '#1FA35A',
-        'active-soft': '#E8F8EC',
-
-        // Status
-        danger: '#DC2626',
-        'danger-soft': '#FDEDEC',
-        warning: '#B45309',
-        'warning-soft': '#FDF3E3',
-        info: '#2563EB',
-        'info-soft': '#EAF1FE',
-      },
+      colors: semanticColors,
     },
   },
-  plugins: [],
+  plugins: [
+    ({ addBase }) => {
+      addBase({
+        ':root': paletteToCssVarRecord(lightPalette),
+        '.dark': paletteToCssVarRecord(darkPalette),
+      });
+    },
+  ],
 };

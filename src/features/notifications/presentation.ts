@@ -4,7 +4,7 @@ import type { Ionicons } from '@expo/vector-icons';
 import type { InboxNotification, NotificationType } from '@/features/notifications/types';
 import { NOTIFICATION_TYPES } from '@/features/notifications/types';
 import { notificationNavigationPath } from '@/features/requests/activity-list';
-import { colors } from '@/theme';
+import { getColors } from '@/theme';
 
 const CANONICAL_TYPES = new Set<string>(NOTIFICATION_TYPES);
 
@@ -38,6 +38,7 @@ type NotificationVisual = {
 };
 
 export function notificationVisual(type: NotificationType): NotificationVisual {
+  const colors = getColors();
   switch (type) {
     case 'response_received':
     case 'new_responses':

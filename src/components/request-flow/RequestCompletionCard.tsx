@@ -1,7 +1,7 @@
 import { Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-import { colors, shadow } from '@/theme';
+import { useTheme } from '@/theme';
 
 export function RequestCompletionCard({
   completedAtLabel,
@@ -12,6 +12,7 @@ export function RequestCompletionCard({
   ratingStars?: number | null;
   ratingComment?: string | null;
 }) {
+  const { colors, shadow } = useTheme();
   return (
     <View
       style={shadow.card}

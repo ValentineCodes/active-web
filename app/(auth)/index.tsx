@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { AuthFooterButton } from '@/components/auth/AuthFooterButton';
 import { Screen } from '@/components/ui/Screen';
-import { colors } from '@/theme';
+import { useColors } from '@/theme';
 
 const PRIVACY_URL = 'https://example.com/privacy';
 const TERMS_URL = 'https://example.com/terms';
@@ -16,6 +16,7 @@ function openUrl(url: string) {
 }
 
 export default function WelcomeScreen() {
+  const colors = useColors();
   return (
     <Screen edges={['top', 'bottom']}>
       <View className="flex-1 justify-between px-8 pb-10 pt-12">

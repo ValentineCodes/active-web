@@ -5,7 +5,6 @@ import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Stack } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
 import { QueryClientProvider, useQuery } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -14,9 +13,11 @@ import { ToastProvider } from '@/components/ui/ToastProvider';
 import { SessionProvider, useSession } from '@/features/auth/session';
 import { profileQueryOptions } from '@/features/profile/api';
 import { queryClient } from '@/lib/query/client';
-import { colors } from '@/theme';
+import { ThemeProvider, useColors } from '@/theme';
+import { ThemeStatusBar } from '@/theme/ThemeStatusBar';
 
 function BootScreen() {
+  const colors = useColors();
   return (
     <View className="flex-1 items-center justify-center gap-4 bg-canvas">
       <View className="h-16 w-16 items-center justify-center rounded-full bg-brand-soft">
@@ -87,14 +88,16 @@ export default function RootLayout() {
     <GestureHandlerRootView className="flex-1">
       <SafeAreaProvider>
         <QueryClientProvider client={queryClient}>
-          <SessionProvider>
-            <ToastProvider>
-              <BottomSheetModalProvider>
-                <StatusBar style="dark" />
-                <RootNavigator />
-              </BottomSheetModalProvider>
-            </ToastProvider>
-          </SessionProvider>
+          <ThemeProvider>
+            <SessionProvider>
+              <ToastProvider>
+                <BottomSheetModalProvider>
+                  <ThemeStatusBar />
+                  <RootNavigator />
+                </BottomSheetModalProvider>
+              </ToastProvider>
+            </SessionProvider>
+          </ThemeProvider>
         </QueryClientProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>

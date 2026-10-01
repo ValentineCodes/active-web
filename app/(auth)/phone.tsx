@@ -18,12 +18,13 @@ import { Screen } from '@/components/ui/Screen';
 import { InlineError } from '@/components/ui/StateView';
 import { MARKET } from '@/config';
 import { isPlausiblePhone, sendPhoneOtp, toE164, verifyPhoneOtp } from '@/features/auth/api';
-import { colors } from '@/theme';
+import { useColors } from '@/theme';
 
 const CODE_LENGTH = 6;
 const RESEND_COOLDOWN_SEC = 30;
 
 export default function PhoneScreen() {
+  const colors = useColors();
   const [phone, setPhone] = useState('');
   const [otpSent, setOtpSent] = useState(false);
   const [otp, setOtp] = useState('');

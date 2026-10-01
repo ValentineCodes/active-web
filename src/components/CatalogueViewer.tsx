@@ -6,7 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useCatalogueMediaUrl } from '@/features/profile/catalogue-api';
-import { colors } from '@/theme';
+import { useColors } from '@/theme';
 
 function CatalogueVideoPlayer({ uri }: { uri: string }) {
   const player = useVideoPlayer(uri, (instance) => {
@@ -38,6 +38,7 @@ function CatalogueViewerBody({
   onPrev: () => void;
   onNext: () => void;
 }) {
+  const colors = useColors();
   const insets = useSafeAreaInsets();
   const url = useCatalogueMediaUrl(item.path);
 

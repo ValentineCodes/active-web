@@ -20,7 +20,7 @@ import {
 import { cn } from '@/lib/cn';
 import { formatMoney } from '@/lib/format';
 import type { Position } from '@/lib/location';
-import { colors } from '@/theme';
+import { useColors } from '@/theme';
 
 const STEP_COUNT = 2;
 const OFFER_STEP = 500;
@@ -83,6 +83,7 @@ function WizardPrimaryButton({
   onPress: () => void;
   className?: string;
 }) {
+  const colors = useColors();
   const inert = disabled || loading;
 
   return (
@@ -99,9 +100,9 @@ function WizardPrimaryButton({
       )}
     >
       {loading ? (
-        <ActivityIndicator color={inert ? colors.subtle : colors.canvas} />
+        <ActivityIndicator color={inert ? colors.subtle : colors.onBrand} />
       ) : (
-        <Text className={cn('text-lg font-bold', inert ? 'text-subtle' : 'text-canvas')}>
+        <Text className={cn('text-lg font-bold', inert ? 'text-subtle' : 'text-on-brand')}>
           {label}
         </Text>
       )}
@@ -139,6 +140,7 @@ function OfferAmountStepper({
   onAdjust: (delta: number) => void;
   error: string | null;
 }) {
+  const colors = useColors();
   const inputRef = useRef<TextInputType>(null);
 
   return (
@@ -199,6 +201,7 @@ export function ResponseCreationFlow({
   submitError,
   onSubmit,
 }: ResponseCreationFlowProps) {
+  const colors = useColors();
   const [yourOffer, setYourOffer] = useState(String(initialYourOffer));
   const [message, setMessage] = useState(initialMessage);
   const messageInputRef = useRef<TextInputType>(null);

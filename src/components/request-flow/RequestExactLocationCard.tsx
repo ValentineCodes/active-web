@@ -1,7 +1,7 @@
 import { Pressable, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-import { colors, shadow } from '@/theme';
+import { useTheme } from '@/theme';
 
 export function RequestExactLocationCard({
   address,
@@ -10,6 +10,7 @@ export function RequestExactLocationCard({
   address: string;
   onDirections: () => void;
 }) {
+  const { colors, shadow } = useTheme();
   return (
     <Pressable
       accessibilityRole="button"

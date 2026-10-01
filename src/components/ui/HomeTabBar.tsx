@@ -4,7 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
-import { colors, shadow } from '@/theme';
+import { useTheme } from '@/theme';
 
 type TabConfig = {
   routeName: string;
@@ -32,6 +32,7 @@ const TABS: TabConfig[] = [
 type HomeTabBarProps = Parameters<NonNullable<ComponentProps<typeof Tabs>['tabBar']>>[0];
 
 export function HomeTabBar({ state, descriptors, navigation }: HomeTabBarProps) {
+  const { colors, shadow } = useTheme();
   const insets = useSafeAreaInsets();
   const paddingBottom = Math.max(insets.bottom, 8);
 
@@ -90,7 +91,7 @@ export function HomeTabBar({ state, descriptors, navigation }: HomeTabBarProps) 
                 />
                 {typeof badge === 'number' || typeof badge === 'string' ? (
                   <View className="absolute -right-2 -top-1 min-w-4 rounded-full bg-active px-1">
-                    <Text className="text-center text-[10px] font-bold text-canvas">
+                    <Text className="text-center text-[10px] font-bold text-on-brand">
                       {String(badge)}
                     </Text>
                   </View>

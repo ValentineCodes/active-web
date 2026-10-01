@@ -15,7 +15,7 @@ import { Avatar } from '@/components/ui/Avatar';
 import { Button } from '@/components/ui/Button';
 import { TextField } from '@/components/ui/TextField';
 import { StarRating } from '@/components/ui/Stars';
-import { colors } from '@/theme';
+import { useColors } from '@/theme';
 
 function ProfileCompletionBadge({ percent }: { percent: number }) {
   return (
@@ -138,6 +138,7 @@ export function PersonProfileBottomSheet({
   completionPercent?: number | null;
   responseActions?: PersonProfileResponseActions;
 }) {
+  const colors = useColors();
   const insets = useSafeAreaInsets();
   const [footerKey, setFooterKey] = useState(0);
 

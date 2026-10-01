@@ -2,7 +2,7 @@ import { Pressable, type ViewStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import { cn } from '@/lib/cn';
-import { colors, shadow } from '@/theme';
+import { useTheme } from '@/theme';
 
 export function FloatingActionButton({
   onPress,
@@ -20,6 +20,7 @@ export function FloatingActionButton({
   className?: string;
   style?: ViewStyle;
 }) {
+  const { colors, shadow } = useTheme();
   const isCreate = variant === 'create';
 
   return (
@@ -34,7 +35,7 @@ export function FloatingActionButton({
         className,
       )}
     >
-      <Ionicons name={icon} size={28} color={colors.canvas} />
+      <Ionicons name={icon} size={28} color={colors.onBrand} />
     </Pressable>
   );
 }

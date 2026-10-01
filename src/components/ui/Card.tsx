@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { View, type ViewProps } from 'react-native';
 
 import { cn } from '@/lib/cn';
-import { shadow } from '@/theme';
+import { useTheme } from '@/theme';
 
 type Tone = 'surface' | 'brand' | 'active' | 'warning' | 'danger';
 
@@ -30,6 +30,7 @@ export function Card({
   className?: string;
   children: ReactNode;
 } & ViewProps) {
+  const { shadow } = useTheme();
   return (
     <View
       className={cn('gap-3 rounded-3xl p-5', toneClasses[tone], className)}

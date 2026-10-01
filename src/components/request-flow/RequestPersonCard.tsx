@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { View } from 'react-native';
 
 import { PersonRow } from '@/components/ui/PersonRow';
-import { colors, shadow } from '@/theme';
+import { useTheme } from '@/theme';
 
 export function RequestPersonCard({
   avatarPath,
@@ -19,6 +19,7 @@ export function RequestPersonCard({
   completionPercent?: number | null;
   onPress?: () => void;
 }) {
+  const { colors, shadow } = useTheme();
   const inlineStat = completionPercent != null ? `${completionPercent}% completion` : undefined;
 
   return (

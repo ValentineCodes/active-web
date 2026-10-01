@@ -2,7 +2,7 @@ import { Pressable, Text, View } from 'react-native';
 
 import { Badge } from '@/components/ui/Badge';
 import { cn } from '@/lib/cn';
-import { shadow } from '@/theme';
+import { useTheme } from '@/theme';
 
 type ActivityTabCardsProps = {
   title: string;
@@ -22,6 +22,7 @@ export function ActivityMyRequestCard({
   amount: string | null;
   badge: { label: string; tone: 'neutral' | 'brand' | 'active' | 'danger' | 'warning' | 'info' };
 }) {
+  const { shadow } = useTheme();
   return (
     <Pressable
       accessibilityRole="button"
@@ -65,6 +66,7 @@ export function ActivityMyResponseCard({
   offerLine: string | null;
   badge: { label: string; tone: 'neutral' | 'brand' | 'active' | 'danger' | 'warning' | 'info' };
 }) {
+  const { shadow } = useTheme();
   return (
     <Pressable
       accessibilityRole="button"
@@ -106,6 +108,7 @@ export function ActivityAttendingCard({
   subtitle: string;
   onPress: () => void;
 }) {
+  const { shadow } = useTheme();
   return (
     <View className="gap-2">
       <Text className="text-xs font-semibold uppercase tracking-wide text-subtle">

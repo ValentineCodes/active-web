@@ -2,7 +2,7 @@ import { Pressable, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import { cn } from '@/lib/cn';
-import { colors, shadow } from '@/theme';
+import { useTheme } from '@/theme';
 
 type HomeRequestCardProps = {
   title: string;
@@ -24,6 +24,7 @@ export function HomeRequestCard({
   onPress,
   disabled = false,
 }: HomeRequestCardProps) {
+  const { colors, shadow } = useTheme();
   return (
     <Pressable
       accessibilityRole="button"

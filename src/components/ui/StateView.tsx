@@ -3,10 +3,11 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { Button } from '@/components/ui/Button';
 import { toUserMessage } from '@/lib/supabase/errors';
-import { colors } from '@/theme';
+import { useColors } from '@/theme';
 
 /** Centred loading placeholder for a whole screen or list. */
 export function LoadingState({ label }: { label?: string }) {
+  const colors = useColors();
   return (
     <View className="flex-1 items-center justify-center gap-3 p-8" accessibilityRole="progressbar">
       <ActivityIndicator color={colors.brand} />
@@ -27,6 +28,7 @@ export function EmptyState({
   message: string;
   action?: { label: string; onPress: () => void };
 }) {
+  const colors = useColors();
   return (
     <View className="flex-1 items-center justify-center gap-3 p-8">
       <View className="h-16 w-16 items-center justify-center rounded-full bg-brand-soft">
@@ -42,6 +44,7 @@ export function EmptyState({
 }
 
 export function ErrorState({ error, onRetry }: { error: unknown; onRetry?: () => void }) {
+  const colors = useColors();
   return (
     <View className="flex-1 items-center justify-center gap-3 p-8">
       <View className="h-16 w-16 items-center justify-center rounded-full bg-danger-soft">
@@ -58,6 +61,7 @@ export function ErrorState({ error, onRetry }: { error: unknown; onRetry?: () =>
 
 /** Short confirmation after a successful action (submit, save, fund, etc.). */
 export function SuccessBanner({ message }: { message: string }) {
+  const colors = useColors();
   return (
     <View
       className="flex-row items-start gap-2 rounded-xl bg-active-soft p-3"
@@ -71,6 +75,7 @@ export function SuccessBanner({ message }: { message: string }) {
 
 /** Inline form/action error, shown next to the control that produced it. */
 export function InlineError({ error }: { error: unknown }) {
+  const colors = useColors();
   return (
     <View
       className="flex-row items-start gap-2 rounded-xl bg-danger-soft p-3"

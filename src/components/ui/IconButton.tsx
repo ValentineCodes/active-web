@@ -3,7 +3,7 @@ import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
 
 import { cn } from '@/lib/cn';
-import { colors } from '@/theme';
+import { useColors } from '@/theme';
 
 type Variant = 'ghost' | 'surface' | 'brand';
 
@@ -13,13 +13,6 @@ const containers: Record<Variant, string> = {
   brand: 'bg-brand-soft',
 };
 
-const foregrounds: Record<Variant, string> = {
-  ghost: colors.ink,
-  surface: colors.ink,
-  brand: colors.brand,
-};
-
-/** A round icon-only tap target — header back/close buttons, quick call/message actions. */
 export function IconButton({
   icon,
   onPress,
@@ -33,6 +26,13 @@ export function IconButton({
   variant?: Variant;
   size?: number;
 }) {
+  const colors = useColors();
+  const foregrounds: Record<Variant, string> = {
+    ghost: colors.ink,
+    surface: colors.ink,
+    brand: colors.brand,
+  };
+
   return (
     <Pressable
       accessibilityRole="button"

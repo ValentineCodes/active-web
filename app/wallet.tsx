@@ -23,7 +23,7 @@ import {
   useWalletWithdraw,
 } from '@/features/wallet/api';
 import { formatAgo, formatMoney } from '@/lib/format';
-import { colors } from '@/theme';
+import { useColors } from '@/theme';
 
 function BalanceRow({
   label,
@@ -48,6 +48,7 @@ function BalanceRow({
 }
 
 export default function WalletScreen() {
+  const colors = useColors();
   const wallet = useMyWallet();
   const activity = useWalletActivity();
   const topUp = useWalletTopUp();

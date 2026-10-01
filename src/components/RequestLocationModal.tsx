@@ -2,7 +2,7 @@ import { Linking, Modal, Pressable, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import { Button } from '@/components/ui/Button';
-import { colors, shadow } from '@/theme';
+import { useTheme } from '@/theme';
 
 type RequestLocationModalProps = {
   visible: boolean;
@@ -19,6 +19,7 @@ export function RequestLocationModal({
   onClose,
   onShareLocation,
 }: RequestLocationModalProps) {
+  const { colors, shadow } = useTheme();
   const permissionBlocked = errorMessage?.includes('Settings');
 
   return (

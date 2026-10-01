@@ -12,7 +12,7 @@ import {
 } from '@/features/profile/catalogue-api';
 import { PROFILE_CATALOGUE_PHOTO_LIMIT } from '@/features/domain/model';
 import { InlineError } from '@/components/ui/StateView';
-import { colors } from '@/theme';
+import { useColors } from '@/theme';
 
 const TILE_SIZE = 132;
 
@@ -27,6 +27,7 @@ function MediaPlaceholder({
   onPress: () => void;
   loading?: boolean;
 }) {
+  const colors = useColors();
   return (
     <Pressable
       onPress={onPress}
@@ -46,6 +47,7 @@ function MediaPlaceholder({
 }
 
 function PhotoTile({ path, onPress }: { path: string; onPress: () => void }) {
+  const colors = useColors();
   const url = useCatalogueMediaUrl(path);
 
   return (
@@ -72,6 +74,7 @@ function PhotoTile({ path, onPress }: { path: string; onPress: () => void }) {
 }
 
 function VideoTile({ path, onPress }: { path: string; onPress: () => void }) {
+  const colors = useColors();
   const url = useCatalogueMediaUrl(path);
 
   return (
@@ -98,6 +101,7 @@ function VideoTile({ path, onPress }: { path: string; onPress: () => void }) {
 
 /** Own-profile catalogue — video first, then photo slots with placeholders. */
 export function ProfileCatalogueRail() {
+  const colors = useColors();
   const catalogue = useMyCatalogue();
   const addPhoto = useAddCataloguePhoto();
   const setVideo = useSetCatalogueVideo();

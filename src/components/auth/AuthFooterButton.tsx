@@ -3,7 +3,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 
 import { cn } from '@/lib/cn';
-import { colors } from '@/theme';
+import { useColors } from '@/theme';
 
 type Props = {
   label: string;
@@ -21,6 +21,7 @@ export function AuthFooterButton({
   loading = false,
   accessibilityLabel,
 }: Props) {
+  const colors = useColors();
   const inert = disabled || loading;
 
   return (
@@ -39,16 +40,16 @@ export function AuthFooterButton({
       )}
     >
       {loading ? (
-        <ActivityIndicator size="small" color={colors.canvas} />
+        <ActivityIndicator size="small" color={inert ? colors.muted : colors.onBrand} />
       ) : (
         <>
-          <Text className={cn('text-lg font-semibold', inert ? 'text-muted' : 'text-canvas')}>
+          <Text className={cn('text-lg font-semibold', inert ? 'text-muted' : 'text-on-brand')}>
             {label}
           </Text>
           <Ionicons
             name="chevron-forward"
             size={22}
-            color={inert ? colors.muted : colors.canvas}
+            color={inert ? colors.muted : colors.onBrand}
             style={{ marginLeft: 4 }}
           />
         </>

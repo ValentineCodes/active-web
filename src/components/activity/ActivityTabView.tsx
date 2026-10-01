@@ -12,7 +12,7 @@ import {
 import { ActivityMyRequestsTab } from '@/components/activity/ActivityMyRequestsTab';
 import { ActivityMyResponsesTab } from '@/components/activity/ActivityMyResponsesTab';
 import { cn } from '@/lib/cn';
-import { colors } from '@/theme';
+import { useColors } from '@/theme';
 
 type ActivityTab = 'requests' | 'responses';
 
@@ -23,6 +23,7 @@ const tabs: { key: ActivityTab; label: string }[] = [
 
 /** Material top tabs with horizontal swipe — no native ViewPager required. */
 export function ActivityTabView() {
+  const colors = useColors();
   const { width } = useWindowDimensions();
   const scrollRef = useRef<ScrollView>(null);
   const [index, setIndex] = useState(0);

@@ -2,7 +2,7 @@ import { Text, View } from 'react-native';
 
 import { RequestPersonCard } from '@/components/request-flow/RequestPersonCard';
 import { formatAgo, formatMoney } from '@/lib/format';
-import { shadow } from '@/theme';
+import { useTheme } from '@/theme';
 
 /**
  * Someone's response to a request, as the requester sees it before they choose.
@@ -32,6 +32,7 @@ export function ResponseCard({
   createdAt: string;
   responderAvailable: boolean;
 }) {
+  const { shadow } = useTheme();
   const offerLabel = quotedAmount !== null ? formatMoney(quotedAmount, currency) : null;
 
   return (

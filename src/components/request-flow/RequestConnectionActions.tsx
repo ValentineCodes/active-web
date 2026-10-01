@@ -3,7 +3,7 @@ import { Ionicons } from '@expo/vector-icons';
 import type { ComponentProps } from 'react';
 
 import { cn } from '@/lib/cn';
-import { colors, shadow } from '@/theme';
+import { useTheme } from '@/theme';
 
 type IoniconName = ComponentProps<typeof Ionicons>['name'];
 
@@ -18,6 +18,8 @@ function ConnectionAction({
   onPress: () => void;
   disabled?: boolean;
 }) {
+  const { colors, shadow } = useTheme();
+
   return (
     <Pressable
       accessibilityRole="button"

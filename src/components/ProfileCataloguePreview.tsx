@@ -6,11 +6,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { CatalogueViewer } from '@/components/CatalogueViewer';
 import { useCatalogueMediaUrl, useUserCatalogue } from '@/features/profile/catalogue-api';
 import { InlineError } from '@/components/ui/StateView';
-import { colors } from '@/theme';
+import { useColors } from '@/theme';
 
 const TILE_SIZE = 132;
 
 function PhotoTile({ path, onPress }: { path: string; onPress: () => void }) {
+  const colors = useColors();
   const url = useCatalogueMediaUrl(path);
 
   return (
@@ -37,6 +38,7 @@ function PhotoTile({ path, onPress }: { path: string; onPress: () => void }) {
 }
 
 function VideoTile({ path, onPress }: { path: string; onPress: () => void }) {
+  const colors = useColors();
   const url = useCatalogueMediaUrl(path);
 
   return (
@@ -63,6 +65,7 @@ function VideoTile({ path, onPress }: { path: string; onPress: () => void }) {
 
 /** Read-only catalogue rail for profile previews (matches request_7 tiles). */
 export function ProfileCataloguePreview({ userId }: { userId: string }) {
+  const colors = useColors();
   const catalogue = useUserCatalogue(userId);
   const [viewerIndex, setViewerIndex] = useState<number | null>(null);
 

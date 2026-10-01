@@ -1,11 +1,12 @@
 import { Pressable, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-import { colors } from '@/theme';
+import { useColors } from '@/theme';
 
 const VALUES = [1, 2, 3, 4, 5] as const;
 
 export function StarRating({ average, count }: { average: number | null; count: number }) {
+  const colors = useColors();
   if (count === 0 || average === null) {
     return <Text className="text-sm text-muted">No ratings yet</Text>;
   }
@@ -28,6 +29,7 @@ export function StarPicker({
   value: number | null;
   onChange: (stars: number) => void;
 }) {
+  const colors = useColors();
   return (
     <View className="flex-row justify-center gap-3" accessibilityRole="radiogroup">
       {VALUES.map((star) => (

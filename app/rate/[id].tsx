@@ -11,7 +11,7 @@ import { ErrorState, InlineError, LoadingState } from '@/components/ui/StateView
 import { StarPicker } from '@/components/ui/Stars';
 import { TextField } from '@/components/ui/TextField';
 import { useEngagement, useRateRequest } from '@/features/requests/requester-api';
-import { colors } from '@/theme';
+import { useColors } from '@/theme';
 
 const PROMPTS = [
   'What went wrong?',
@@ -22,6 +22,7 @@ const PROMPTS = [
 ] as const;
 
 export default function RateScreen() {
+  const colors = useColors();
   const { id } = useLocalSearchParams<{ id: string }>();
 
   const engagement = useEngagement(id);

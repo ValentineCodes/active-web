@@ -16,7 +16,8 @@ import { signOut } from '@/features/auth/api';
 import { useCaptureProfilePhoto, useProfile, useSaveProfile } from '@/features/profile/api';
 import { useMyResponses } from '@/features/requests/responses-api';
 import { useMyRequests } from '@/features/requests/requester-api';
-import { colors } from '@/theme';
+import type { ThemePreference } from '@/features/theme/preferences';
+import { useColors, useTheme } from '@/theme';
 import { showAppToast } from '@/lib/toast';
 
 function ProfileStat({ value, label }: { value: number; label: string }) {
@@ -37,6 +38,7 @@ function SettingsRow({
   onPress: () => void;
   showDivider?: boolean;
 }) {
+  const colors = useColors();
   return (
     <Pressable
       onPress={onPress}
@@ -66,7 +68,47 @@ function SettingsGroup({ title, children }: { title: string; children: ReactNode
   );
 }
 
+const APPEARANCE_OPTIONS: { value: ThemePreference; label: string }[] = [
+  { value: 'light', label: 'Light' },
+  { value: 'dark', label: 'Dark' },
+  { value: 'system', label: 'System' },
+];
+
+function AppearancePreferenceRows() {
+  const colors = useColors();
+  const { preference, setPreference } = useTheme();
+
+  return (
+    <>
+      {APPEARANCE_OPTIONS.map((option, index) => {
+        const selected = preference === option.value;
+        return (
+          <Pressable
+            key={option.value}
+            accessibilityRole="button"
+            accessibilityLabel={`Appearance: ${option.label}`}
+            accessibilityState={{ selected }}
+            onPress={() => void setPreference(option.value)}
+            className="active:opacity-90"
+          >
+            {index > 0 ? <View className="mx-4 h-px bg-hairline" /> : null}
+            <View className="flex-row items-center justify-between px-4 py-4">
+              <Text className="text-lg text-ink">{option.label}</Text>
+              {selected ? (
+                <Ionicons name="checkmark" size={22} color={colors.active} />
+              ) : (
+                <View className="h-[22px] w-[22px]" />
+              )}
+            </View>
+          </Pressable>
+        );
+      })}
+    </>
+  );
+}
+
 export default function ProfileScreen() {
+  const colors = useColors();
   const profile = useProfile();
   const attendance = useAttendance();
   const myRequests = useMyRequests();
@@ -231,6 +273,8 @@ export default function ProfileScreen() {
             label="Notifications"
             onPress={() => router.push('/notification-settings')}
           />
+          <View className="mx-4 h-px bg-hairline" />
+          <AppearancePreferenceRows />
           <SettingsRow label="Privacy" onPress={() => {}} showDivider />
           <SettingsRow label="Language" onPress={() => {}} showDivider />
         </SettingsGroup>

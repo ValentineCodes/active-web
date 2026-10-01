@@ -10,7 +10,7 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { cn } from '@/lib/cn';
-import { colors } from '@/theme';
+import { useColors } from '@/theme';
 
 const CODE_LENGTH = 6;
 
@@ -53,6 +53,7 @@ function DashedSlot(props: SlotProps) {
 }
 
 function FakeCaret() {
+  const colors = useColors();
   const opacity = useSharedValue(1);
 
   useEffect(() => {

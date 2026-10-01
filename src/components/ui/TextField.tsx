@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Text, TextInput, View, type TextInputProps } from 'react-native';
 
 import { cn } from '@/lib/cn';
-import { colors } from '@/theme';
+import { useColors } from '@/theme';
 
 type Props = TextInputProps & {
   label: string;
@@ -22,6 +22,7 @@ export function TextField({
   onBlur,
   ...inputProps
 }: Props) {
+  const colors = useColors();
   const [isFocused, setIsFocused] = useState(false);
   const length = typeof inputProps.value === 'string' ? inputProps.value.length : 0;
 

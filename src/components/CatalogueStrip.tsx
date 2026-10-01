@@ -6,7 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { CatalogueViewer } from '@/components/CatalogueViewer';
 import { useCatalogueMediaUrl, useUserCatalogue } from '@/features/profile/catalogue-api';
 import { ErrorState } from '@/components/ui/StateView';
-import { colors } from '@/theme';
+import { useColors } from '@/theme';
 
 function CatalogueThumb({
   path,
@@ -17,6 +17,7 @@ function CatalogueThumb({
   kind: 'photo' | 'video';
   onPress: () => void;
 }) {
+  const colors = useColors();
   const url = useCatalogueMediaUrl(path);
 
   if (url.isPending) {
@@ -72,6 +73,7 @@ export function CatalogueStrip({
   emptyLabel?: string;
   showHeading?: boolean;
 }) {
+  const colors = useColors();
   const catalogue = useUserCatalogue(userId);
   const [viewerIndex, setViewerIndex] = useState<number | null>(null);
 

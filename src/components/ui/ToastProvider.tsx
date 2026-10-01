@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ToastProvider as Provider, useToast } from 'react-native-toast-notifications';
 
 import { registerAppToast } from '@/lib/toast';
-import { colors, shadow } from '@/theme';
+import { useTheme } from '@/theme';
 
 type Props = {
   children: React.ReactNode;
@@ -13,7 +13,7 @@ type Props = {
 
 type ToastType = 'success' | 'danger' | 'warning' | 'info' | string | undefined;
 
-function borderColor(type: ToastType) {
+function borderColor(type: ToastType, colors: ReturnType<typeof useTheme>['colors']) {
   switch (type) {
     case 'success':
       return colors.active;
@@ -28,7 +28,7 @@ function borderColor(type: ToastType) {
   }
 }
 
-function iconColor(type: ToastType) {
+function iconColor(type: ToastType, colors: ReturnType<typeof useTheme>['colors']) {
   switch (type) {
     case 'success':
       return colors.active;
@@ -59,6 +59,7 @@ function iconName(type: ToastType): keyof typeof Ionicons.glyphMap {
 }
 
 export function ToastProvider({ children }: Props) {
+  const { colors, shadow } = useTheme();
   const insets = useSafeAreaInsets();
 
   return (
@@ -70,7 +71,7 @@ export function ToastProvider({ children }: Props) {
       offset={insets.top + 12}
       swipeEnabled
       renderToast={({ message, type }) => {
-        const accent = borderColor(type);
+        const accent = borderColor(type, colors);
         return (
           <View
             className="max-w-[90%] flex-row items-center gap-2 rounded-3xl border border-hairline bg-elevated p-4"
@@ -84,7 +85,7 @@ export function ToastProvider({ children }: Props) {
               },
             ]}
           >
-            <Ionicons name={iconName(type)} size={22} color={iconColor(type)} />
+            <Ionicons name={iconName(type)} size={22} color={iconColor(type, colors)} />
             <Text className="flex-1 text-base text-ink">{message}</Text>
           </View>
         );
