@@ -112,7 +112,7 @@ function WizardHeader({
   onBack?: () => void;
 }) {
   return (
-    <View className="flex-row items-center px-4 pb-2 pt-3">
+    <View className="flex-row items-center gap-2 px-4 py-3">
       {onBack ? (
         <IconButton
           icon="chevron-back"
@@ -123,7 +123,7 @@ function WizardHeader({
       ) : (
         <IconButton icon="close" variant="surface" accessibilityLabel="Close" onPress={onClose} />
       )}
-      <Text className="flex-1 text-center text-base font-semibold text-ink" numberOfLines={1}>
+      <Text className="flex-1 text-xl font-bold text-ink" numberOfLines={1}>
         {title}
       </Text>
       <Text className="min-w-10 text-right text-sm font-medium text-subtle">
@@ -245,7 +245,7 @@ function WhenPill({
         selected ? 'bg-active' : 'bg-surface',
       )}
     >
-      <Text className={cn('text-base font-bold', selected ? 'text-ink' : 'text-muted')}>
+      <Text className={cn('text-base font-bold', selected ? 'text-canvas' : 'text-muted')}>
         {label}
       </Text>
     </Pressable>
