@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 
-import { useBrowseRequest, type PublicRequest } from '@/features/requests/browse-api';
+import { useBrowseRequest, type BrowseRequestDetail } from '@/features/requests/browse-api';
 import { useUserId } from '@/features/auth/session';
 import type { Position } from '@/lib/location';
 import { queryKeys } from '@/lib/query/keys';
@@ -21,6 +21,10 @@ type MyResponse = Nullable<
   | 'quoted_amount'
   | 'requester_display_name'
   | 'requester_avatar_path'
+  | 'requester_bio'
+  | 'requester_rating_average'
+  | 'requester_rating_count'
+  | 'requester_completion_percent'
   | 'decline_reason'
   | 'message'
   | 'description'
@@ -35,13 +39,16 @@ export type RespondableRequest = {
   currency: string;
   location_label: string;
   distance_m: number;
+  requester_id: string;
   requester_display_name: string | null;
   requester_avatar_path: string | null;
+  requester_bio: string | null;
   requester_rating_average: number | null;
   requester_rating_count: number | null;
+  requester_completion_percent: number | null;
 };
 
-function fromPublicRequest(row: PublicRequest): RespondableRequest {
+function fromBrowseRequest(row: BrowseRequestDetail): RespondableRequest {
   return {
     request_id: row.request_id,
     title: row.title,
@@ -51,10 +58,13 @@ function fromPublicRequest(row: PublicRequest): RespondableRequest {
     currency: row.currency,
     location_label: row.location_label,
     distance_m: row.distance_m,
+    requester_id: row.requester_id,
     requester_display_name: row.requester_display_name,
     requester_avatar_path: row.requester_avatar_path,
+    requester_bio: row.requester_bio,
     requester_rating_average: row.requester_rating_average,
     requester_rating_count: row.requester_rating_count,
+    requester_completion_percent: row.requester_completion_percent,
   };
 }
 
@@ -68,10 +78,13 @@ function fromMyResponse(row: MyResponse): RespondableRequest {
     currency: row.currency,
     location_label: row.location_label,
     distance_m: row.distance_m,
+    requester_id: row.requester_id,
     requester_display_name: row.requester_display_name,
     requester_avatar_path: row.requester_avatar_path,
-    requester_rating_average: null,
-    requester_rating_count: null,
+    requester_bio: row.requester_bio,
+    requester_rating_average: row.requester_rating_average,
+    requester_rating_count: row.requester_rating_count,
+    requester_completion_percent: row.requester_completion_percent,
   };
 }
 
@@ -103,7 +116,7 @@ export function useRequestForResponse(requestId: string, position: Position | nu
   const request: RespondableRequest | null = participationRow
     ? fromMyResponse(participationRow)
     : browse.data
-      ? fromPublicRequest(browse.data)
+      ? fromBrowseRequest(browse.data)
       : null;
 
   const existing: ExistingResponse | null = pendingRow

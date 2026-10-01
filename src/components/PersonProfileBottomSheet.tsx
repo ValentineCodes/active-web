@@ -191,12 +191,6 @@ export function PersonProfileBottomSheet({
               <Text className="text-lg font-bold text-ink">{title}</Text>
               <View className="flex-row flex-wrap items-center gap-1.5">
                 <StarRating average={ratingAverage} count={ratingCount ?? 0} />
-                {completionPercent != null ? (
-                  <>
-                    <Text className="text-sm text-subtle">·</Text>
-                    <Text className="text-sm text-muted">{completionPercent}% completion</Text>
-                  </>
-                ) : null}
               </View>
             </View>
             {completionPercent != null ? (

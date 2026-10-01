@@ -18,6 +18,7 @@ type RequestHelpSummaryProps = {
   request: RespondableRequest;
   postedAt?: string | null;
   existingResponse?: boolean;
+  onRequesterPress?: () => void;
 };
 
 /** Respond / pending-response detail — matches request_1 and request_0 mocks. */
@@ -25,6 +26,7 @@ export function RequestHelpSummary({
   request,
   postedAt,
   existingResponse,
+  onRequesterPress,
 }: RequestHelpSummaryProps) {
   const amount =
     request.offered_amount !== null ? formatMoney(request.offered_amount, request.currency) : null;
@@ -62,6 +64,8 @@ export function RequestHelpSummary({
           name={request.requester_display_name}
           ratingAverage={request.requester_rating_average}
           ratingCount={request.requester_rating_count}
+          completionPercent={request.requester_completion_percent}
+          onPress={onRequesterPress}
         />
       ) : null}
     </View>

@@ -19,6 +19,19 @@ export type PublicRequest = Nullable<
   | 'requester_rating_count'
 >;
 
+export type BrowseRequestDetail = Nullable<
+  RpcRow<Functions['browse_request']['Returns']>,
+  | 'scheduled_for'
+  | 'offered_amount'
+  | 'description'
+  | 'requester_display_name'
+  | 'requester_avatar_path'
+  | 'requester_bio'
+  | 'requester_rating_average'
+  | 'requester_rating_count'
+  | 'requester_completion_percent'
+>;
+
 function roundCoordinate(value: number) {
   return Math.round(value * 1000) / 1000;
 }
@@ -57,7 +70,7 @@ export function useBrowseRequest(
     queryKey: queryKeys.browseRequest(requestId, latitude, longitude),
     enabled,
     staleTime: 15_000,
-    queryFn: async (): Promise<PublicRequest | null> => {
+    queryFn: async (): Promise<BrowseRequestDetail | null> => {
       if (!position) throw new Error('Location is required to open this request.');
 
       const { data, error } = await supabase.rpc('browse_request', {

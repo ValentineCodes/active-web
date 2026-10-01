@@ -1271,7 +1271,10 @@ export type Database = {
           offered_amount: number
           request_id: string
           requester_avatar_path: string
+          requester_bio: string
+          requester_completion_percent: number
           requester_display_name: string
+          requester_id: string
           requester_rating_average: number
           requester_rating_count: number
           scheduled_for: string
@@ -1333,7 +1336,7 @@ export type Database = {
       }
       create_request: {
         Args: {
-          p_description?: string | null
+          p_description: string | null
           p_latitude: number
           p_location_label: string
           p_longitude: number
@@ -1502,7 +1505,12 @@ export type Database = {
           request_id: string
           request_status: Database["public"]["Enums"]["request_status"]
           requester_avatar_path: string
+          requester_bio: string
+          requester_completion_percent: number
           requester_display_name: string
+          requester_id: string
+          requester_rating_average: number
+          requester_rating_count: number
           response_id: string
           response_status: Database["public"]["Enums"]["response_status"]
           scheduled_for: string

@@ -2,7 +2,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, ScrollView, Text, View } from 'react-native';
 import { Redirect, router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import type { BottomSheetModal } from '@gorhom/bottom-sheet';
 
+import { PersonProfileBottomSheet } from '@/components/PersonProfileBottomSheet';
 import { RequestCallout } from '@/components/request-flow/RequestCallout';
 import { RequestFlowHeader } from '@/components/request-flow/RequestFlowHeader';
 import { RequestHelpSummary } from '@/components/RequestHelpSummary';
@@ -59,6 +61,7 @@ export default function RespondScreen() {
   const [gateMode, setGateMode] = useState<GateMode>('off');
   const [gateBlocker, setGateBlocker] = useState<RespondRequirementBlocker | null>(null);
   const autoStartPending = useRef(start === '1');
+  const profileSheetRef = useRef<BottomSheetModal>(null);
 
   const {
     request,
@@ -302,7 +305,11 @@ export default function RespondScreen() {
       <RequestFlowHeader title="Request" onBack={() => router.back()} />
 
       <ScrollView contentContainerClassName="gap-6 p-5 pb-12" keyboardShouldPersistTaps="handled">
-        <RequestHelpSummary request={request} existingResponse={Boolean(existingResponse)} />
+        <RequestHelpSummary
+          request={request}
+          existingResponse={Boolean(existingResponse)}
+          onRequesterPress={() => profileSheetRef.current?.present()}
+        />
 
         {declinedParticipation ? (
           <RequestCallout
@@ -383,6 +390,18 @@ export default function RespondScreen() {
           />
         ) : null}
       </ScrollView>
+
+      <PersonProfileBottomSheet
+        key={request.requester_id}
+        sheetRef={profileSheetRef}
+        userId={request.requester_id}
+        displayName={request.requester_display_name}
+        avatarPath={request.requester_avatar_path}
+        bio={request.requester_bio}
+        ratingAverage={request.requester_rating_average}
+        ratingCount={request.requester_rating_count}
+        completionPercent={request.requester_completion_percent}
+      />
     </Screen>
   );
 }
