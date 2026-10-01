@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, ScrollView, Text, View } from 'react-native';
+import { Alert, InteractionManager, ScrollView, Text, View } from 'react-native';
 import { Redirect, router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import type { BottomSheetModal } from '@gorhom/bottom-sheet';
@@ -8,16 +8,14 @@ import { PersonProfileBottomSheet } from '@/components/PersonProfileBottomSheet'
 import { RequestCallout } from '@/components/request-flow/RequestCallout';
 import { RequestFlowHeader } from '@/components/request-flow/RequestFlowHeader';
 import { RequestHelpSummary } from '@/components/RequestHelpSummary';
-import { RespondRequirementsGate } from '@/components/RespondRequirementsGate';
+import {
+  RequestLocationModal,
+  type RequestLocationSheetHandle,
+} from '@/components/RequestLocationModal';
 import { ResponseCreationFlow } from '@/components/ResponseCreationFlow';
 import { useAttendance, isAttendingAnotherRequest } from '@/features/attendance/api';
-import { useProfile } from '@/features/profile/api';
-import {
-  resolveRespondRequirements,
-  type RespondRequirementBlocker,
-} from '@/features/requests/respond-requirements';
+import { hasProfilePhotoReady, useProfile } from '@/features/profile/api';
 import { Button } from '@/components/ui/Button';
-import { Header } from '@/components/ui/Header';
 import { Screen } from '@/components/ui/Screen';
 import { EmptyState, ErrorState, InlineError, LoadingState } from '@/components/ui/StateView';
 import {
@@ -28,6 +26,7 @@ import {
 } from '@/features/requests/responses-api';
 import {
   parsePositionParam,
+  positionErrorMessage,
   readPositionIfPermitted,
   requestPosition,
   type Position,
@@ -36,7 +35,10 @@ import { syncPushToken } from '@/lib/notifications';
 import { showAppToast } from '@/lib/toast';
 import { useColors } from '@/theme';
 
-type GateMode = 'off' | 'checking' | 'open';
+type PendingSubmit = {
+  message: string | null;
+  quotedAmount: number | null;
+};
 
 export default function RespondScreen() {
   const colors = useColors();
@@ -58,10 +60,13 @@ export default function RespondScreen() {
   const [inFlow, setInFlow] = useState(false);
   const [flowStep, setFlowStep] = useState(0);
   const [flowKey, setFlowKey] = useState(0);
-  const [gateMode, setGateMode] = useState<GateMode>('off');
-  const [gateBlocker, setGateBlocker] = useState<RespondRequirementBlocker | null>(null);
+  const [needsPhotoStep, setNeedsPhotoStep] = useState(false);
+  const [locationModalLoading, setLocationModalLoading] = useState(false);
+  const [locationModalError, setLocationModalError] = useState<string | null>(null);
   const autoStartPending = useRef(start === '1');
   const profileSheetRef = useRef<BottomSheetModal>(null);
+  const locationSheetRef = useRef<RequestLocationSheetHandle>(null);
+  const pendingSubmitRef = useRef<PendingSubmit | null>(null);
 
   const {
     request,
@@ -105,54 +110,22 @@ export default function RespondScreen() {
   const initialMessage = existingResponse?.message ?? '';
 
   const beginFlow = useCallback(() => {
+    setNeedsPhotoStep(!hasProfilePhotoReady(profile.data));
     setFlowStep(0);
     setFlowKey((current) => current + 1);
     setInFlow(true);
-    setGateMode('off');
-    setGateBlocker(null);
-  }, []);
-
-  const tryStartResponse = useCallback(async () => {
-    setGateMode('checking');
-    setGateBlocker(null);
-
-    const result = await resolveRespondRequirements(profile.data);
-    if (!result.ok) {
-      setGateBlocker(result.blocker);
-      setGateMode('open');
-      return;
-    }
-
-    setPosition(result.position);
-    beginFlow();
-  }, [profile.data, beginFlow]);
+  }, [profile.data]);
 
   useEffect(() => {
     if (!autoStartPending.current || isPending || !request) return;
     autoStartPending.current = false;
-    void tryStartResponse();
-  }, [isPending, request, tryStartResponse]);
+    beginFlow();
+  }, [isPending, request, beginFlow]);
 
   const exitFlow = () => {
     setInFlow(false);
     setFlowStep(0);
   };
-
-  const closeGate = () => {
-    setGateMode('off');
-    setGateBlocker(null);
-  };
-
-  const headerBack = inFlow
-    ? () => {
-        if (flowStep === 0) exitFlow();
-        else setFlowStep(0);
-      }
-    : gateMode === 'open'
-      ? closeGate
-      : undefined;
-
-  const headerTitle = gateMode === 'open' ? 'Before you respond' : 'Request';
 
   const activeAsHelper = myResponses.data?.find(
     (row) =>
@@ -160,6 +133,61 @@ export default function RespondScreen() {
       row.response_status === 'accepted' &&
       ['accepted', 'in_progress', 'completion_pending'].includes(row.request_status),
   );
+
+  const mutateResponse = (postPosition: Position, payload: PendingSubmit) => {
+    if (!request) return;
+
+    respond.mutate(
+      {
+        requestId: request.request_id,
+        message: payload.message,
+        quotedAmount: payload.quotedAmount,
+        position: postPosition,
+      },
+      {
+        onSuccess: () => {
+          void syncPushToken({ mode: 'contextual' });
+          showAppToast(existingResponse ? 'Response updated' : 'Response sent');
+          router.back();
+        },
+      },
+    );
+  };
+
+  const submitResponse = (payload: PendingSubmit) => {
+    if (position) {
+      mutateResponse(position, payload);
+      return;
+    }
+
+    pendingSubmitRef.current = payload;
+    setLocationModalError(null);
+    InteractionManager.runAfterInteractions(() => {
+      locationSheetRef.current?.present();
+    });
+  };
+
+  const shareLocationForResponse = async () => {
+    setLocationModalLoading(true);
+    setLocationModalError(null);
+
+    const result = await requestPosition();
+    if (!result.ok) {
+      setLocationModalError(
+        positionErrorMessage(result, 'Turn it on in Settings to send your response.'),
+      );
+      setLocationModalLoading(false);
+      return;
+    }
+
+    setPosition(result.position);
+    setLocationModalLoading(false);
+    locationSheetRef.current?.dismiss();
+
+    const payload = pendingSubmitRef.current;
+    pendingSubmitRef.current = null;
+    if (payload) mutateResponse(result.position, payload);
+  };
 
   if (!locationChecked || isPending || profile.isPending || myResponses.isPending) {
     return (
@@ -218,66 +246,39 @@ export default function RespondScreen() {
     );
   }
 
-  const submitResponse = (payload: { message: string | null; quotedAmount: number | null }) => {
-    if (!position) return;
-
-    respond.mutate(
-      {
-        requestId: request.request_id,
-        message: payload.message,
-        quotedAmount: payload.quotedAmount,
-        position,
-      },
-      {
-        onSuccess: () => {
-          void syncPushToken({ mode: 'contextual' });
-          showAppToast(existingResponse ? 'Response updated' : 'Response sent');
-          router.back();
-        },
-      },
-    );
-  };
-
-  if (gateMode === 'checking') {
+  if (inFlow) {
     return (
-      <Screen edges={['top', 'bottom']}>
-        <Header title="Before you respond" onClose={() => router.back()} />
-        <LoadingState label="Checking a few things" />
-      </Screen>
-    );
-  }
+      <>
+        <Screen edges={['top', 'bottom']}>
+          <ResponseCreationFlow
+            key={flowKey}
+            step={flowStep}
+            onStepChange={setFlowStep}
+            onExit={exitFlow}
+            request={request}
+            initialYourOffer={initialYourOffer}
+            initialMessage={initialMessage}
+            needsPhotoStep={needsPhotoStep}
+            isUpdate={Boolean(existingResponse)}
+            submitting={respond.isPending}
+            submitError={respond.error}
+            onSubmit={submitResponse}
+          />
+        </Screen>
 
-  if (gateMode === 'open' && gateBlocker) {
-    return (
-      <Screen edges={['top', 'bottom']}>
-        <Header title={headerTitle} onBack={headerBack} onClose={() => router.back()} />
-        <RespondRequirementsGate
-          blocker={gateBlocker}
-          checking={false}
-          onRecheck={() => void tryStartResponse()}
+        <RequestLocationModal
+          ref={locationSheetRef}
+          title="Location needed to respond"
+          body="We use your location once to confirm this request is near you. Nobody sees your exact address — only roughly how close you are — until you are selected."
+          loading={locationModalLoading}
+          errorMessage={locationModalError}
+          onDismiss={() => {
+            pendingSubmitRef.current = null;
+            setLocationModalError(null);
+          }}
+          onShareLocation={() => void shareLocationForResponse()}
         />
-      </Screen>
-    );
-  }
-
-  if (inFlow && position) {
-    return (
-      <Screen edges={['top', 'bottom']}>
-        <ResponseCreationFlow
-          key={flowKey}
-          step={flowStep}
-          onStepChange={setFlowStep}
-          onExit={exitFlow}
-          request={request}
-          initialYourOffer={initialYourOffer}
-          initialMessage={initialMessage}
-          position={position}
-          isUpdate={Boolean(existingResponse)}
-          submitting={respond.isPending}
-          submitError={respond.error}
-          onSubmit={submitResponse}
-        />
-      </Screen>
+      </>
     );
   }
 
@@ -373,21 +374,11 @@ export default function RespondScreen() {
             onPress={confirmWithdraw}
           />
         ) : (
-          <Button
-            label="Respond to request"
-            variant="active"
-            size="lg"
-            onPress={() => void tryStartResponse()}
-          />
+          <Button label="Respond to request" variant="active" size="lg" onPress={beginFlow} />
         )}
 
         {declinedParticipation ? null : existingResponse ? (
-          <Button
-            label="Update response"
-            variant="secondary"
-            size="lg"
-            onPress={() => void tryStartResponse()}
-          />
+          <Button label="Update response" variant="secondary" size="lg" onPress={beginFlow} />
         ) : null}
       </ScrollView>
 

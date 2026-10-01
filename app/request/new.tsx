@@ -36,10 +36,10 @@ import { useCreateRequest, useMyRequest } from '@/features/requests/requester-ap
 import { cn } from '@/lib/cn';
 import { formatMoney, formatWhen, formatWhenHome } from '@/lib/format';
 import {
+  positionErrorMessage,
   requestPosition,
   suggestAreaLabel,
   type Position,
-  type PositionResult,
 } from '@/lib/location';
 import { syncPushToken } from '@/lib/notifications';
 import { showAppToast } from '@/lib/toast';
@@ -357,16 +357,6 @@ function NewRequestForm({ reuseSeed }: { reuseSeed?: ReuseSeed }) {
     );
   };
 
-  function locationErrorMessage(result: Extract<PositionResult, { ok: false }>): string {
-    if (result.reason === 'permission-denied') {
-      return 'Location access is off. Turn it on in Settings to post this request.';
-    }
-    if (result.reason === 'services-disabled') {
-      return 'Location services are switched off on this device.';
-    }
-    return 'We could not get your location. Try again in a moment.';
-  }
-
   const submit = (postPosition: Position, locationLabel: string) => {
     const scheduledFor: Date | null =
       whenMode === 'now' ? null : isFutureSchedule(laterAt) ? laterAt : null;
@@ -432,7 +422,9 @@ function NewRequestForm({ reuseSeed }: { reuseSeed?: ReuseSeed }) {
 
     const result = await requestPosition();
     if (!result.ok) {
-      setLocationModalError(locationErrorMessage(result));
+      setLocationModalError(
+        positionErrorMessage(result, 'Turn it on in Settings to post this request.'),
+      );
       setLocationModalLoading(false);
       return;
     }

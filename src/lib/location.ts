@@ -86,6 +86,19 @@ export async function readPositionIfPermitted(): Promise<Position | null> {
   return readCurrentPosition();
 }
 
+export function positionErrorMessage(
+  result: Extract<PositionResult, { ok: false }>,
+  settingsHint: string,
+): string {
+  if (result.reason === 'permission-denied') {
+    return `Location access is off. ${settingsHint}`;
+  }
+  if (result.reason === 'services-disabled') {
+    return 'Location services are switched off on this device.';
+  }
+  return 'We could not get your location. Try again in a moment.';
+}
+
 export function parsePositionParam(
   latitude: string | string[] | undefined,
   longitude: string | string[] | undefined,

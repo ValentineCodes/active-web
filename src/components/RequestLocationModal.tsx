@@ -20,6 +20,8 @@ export type RequestLocationSheetHandle = {
 type RequestLocationModalProps = {
   loading: boolean;
   errorMessage: string | null;
+  title?: string;
+  body?: string;
   onDismiss: () => void;
   onShareLocation: () => void;
 };
@@ -27,7 +29,17 @@ type RequestLocationModalProps = {
 export const RequestLocationModal = forwardRef<
   RequestLocationSheetHandle,
   RequestLocationModalProps
->(function RequestLocationModal({ loading, errorMessage, onDismiss, onShareLocation }, ref) {
+>(function RequestLocationModal(
+  {
+    loading,
+    errorMessage,
+    title = 'Location needed to post',
+    body = 'We use your location to match your request with people nearby. Nobody sees your exact address — only a rough area — until you pick someone to help.',
+    onDismiss,
+    onShareLocation,
+  },
+  ref,
+) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const sheetRef = useRef<BottomSheetModal>(null);
@@ -80,13 +92,8 @@ export const RequestLocationModal = forwardRef<
           </View>
 
           <View className="gap-2">
-            <Text className="font-serif text-2xl font-bold leading-8 text-ink">
-              Location needed to post
-            </Text>
-            <Text className="text-base leading-6 text-muted">
-              We use your location to match your request with people nearby. Nobody sees your exact
-              address — only a rough area — until you pick someone to help.
-            </Text>
+            <Text className="font-serif text-2xl font-bold leading-8 text-ink">{title}</Text>
+            <Text className="text-base leading-6 text-muted">{body}</Text>
           </View>
 
           {errorMessage ? (

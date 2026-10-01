@@ -10,8 +10,11 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
+import { Avatar } from '@/components/ui/Avatar';
+import { Button } from '@/components/ui/Button';
 import { IconButton } from '@/components/ui/IconButton';
 import { InlineError } from '@/components/ui/StateView';
+import { hasProfilePhotoReady, useCaptureProfilePhoto, useProfile } from '@/features/profile/api';
 import {
   counterOfferForRpc,
   parseResponseOfferAmount,
@@ -19,10 +22,9 @@ import {
 } from '@/features/requests/responses-api';
 import { cn } from '@/lib/cn';
 import { formatMoney } from '@/lib/format';
-import type { Position } from '@/lib/location';
+import { showAppToast } from '@/lib/toast';
 import { useColors } from '@/theme';
 
-const STEP_COUNT = 2;
 const OFFER_STEP = 500;
 const MESSAGE_MAX = 500;
 
@@ -33,17 +35,17 @@ type ResponseCreationFlowProps = {
   request: RespondableRequest;
   initialYourOffer: number;
   initialMessage: string;
-  position: Position;
+  needsPhotoStep: boolean;
   isUpdate: boolean;
   submitting: boolean;
   submitError: Error | null;
   onSubmit: (input: { message: string | null; quotedAmount: number | null }) => void;
 };
 
-function StepProgress({ step }: { step: number }) {
+function StepProgress({ step, stepCount }: { step: number; stepCount: number }) {
   return (
     <View className="flex-row gap-1">
-      {Array.from({ length: STEP_COUNT }, (_, index) => (
+      {Array.from({ length: stepCount }, (_, index) => (
         <View
           key={index}
           className={cn('h-1 w-7 rounded-full', index <= step ? 'bg-active' : 'bg-surface')}
@@ -53,7 +55,15 @@ function StepProgress({ step }: { step: number }) {
   );
 }
 
-function ResponseWizardHeader({ step, onBack }: { step: number; onBack: () => void }) {
+function ResponseWizardHeader({
+  step,
+  stepCount,
+  onBack,
+}: {
+  step: number;
+  stepCount: number;
+  onBack: () => void;
+}) {
   return (
     <View className="flex-row items-center gap-2 px-4 py-3">
       <IconButton
@@ -65,7 +75,7 @@ function ResponseWizardHeader({ step, onBack }: { step: number; onBack: () => vo
       <Text className="flex-1 text-xl font-bold text-ink" numberOfLines={1}>
         Your response
       </Text>
-      <StepProgress step={step} />
+      <StepProgress step={step} stepCount={stepCount} />
     </View>
   );
 }
@@ -195,16 +205,23 @@ export function ResponseCreationFlow({
   request,
   initialYourOffer,
   initialMessage,
-  position,
+  needsPhotoStep,
   isUpdate,
   submitting,
   submitError,
   onSubmit,
 }: ResponseCreationFlowProps) {
   const colors = useColors();
+  const profile = useProfile();
+  const capturePhoto = useCaptureProfilePhoto();
   const [yourOffer, setYourOffer] = useState(String(initialYourOffer));
   const [message, setMessage] = useState(initialMessage);
   const messageInputRef = useRef<TextInputType>(null);
+
+  const stepCount = needsPhotoStep ? 3 : 2;
+  const offerStep = needsPhotoStep ? 1 : 0;
+  const messageStep = needsPhotoStep ? 2 : 1;
+  const photoReady = hasProfilePhotoReady(profile.data);
 
   const requesterOffer = request.offered_amount;
   if (requesterOffer === null) {
@@ -224,37 +241,58 @@ export function ResponseCreationFlow({
     setYourOffer(String(next));
   };
 
-  const goNext = () => {
-    if (offerError) return;
-    onStepChange(1);
-  };
-
   const send = () => {
     if (offerError) return;
+    if (needsPhotoStep && !photoReady) {
+      onStepChange(0);
+      return;
+    }
     const quoted = counterOfferForRpc(requesterOffer, yourOffer);
     if (quoted === 'invalid') return;
     onSubmit({ message: message.trim() || null, quotedAmount: quoted });
   };
 
-  const canSend = Boolean(position) && !offerError;
-
   const handleHeaderBack = () => {
     if (step === 0) onExit();
-    else onStepChange(0);
+    else onStepChange(step - 1);
   };
+
+  const offerStepNumber = needsPhotoStep ? 2 : 1;
+  const messageStepNumber = needsPhotoStep ? 3 : 2;
 
   return (
     <View className="flex-1">
-      <ResponseWizardHeader step={step} onBack={handleHeaderBack} />
+      <ResponseWizardHeader step={step} stepCount={stepCount} onBack={handleHeaderBack} />
 
       <ScrollView
         contentContainerClassName="gap-5 p-5 pb-8"
         keyboardShouldPersistTaps="handled"
         className="flex-1"
       >
-        {step === 0 ? (
+        {needsPhotoStep && step === 0 ? (
+          <View className="gap-5">
+            <StepLabel>Step 1 of 3 · Photo</StepLabel>
+            <View className="items-center gap-3">
+              <Avatar
+                path={profile.data?.avatar_path}
+                name={profile.data?.display_name ?? null}
+                size="lg"
+              />
+              <Text className="text-center font-serif text-3xl font-bold leading-9 text-ink">
+                Add a profile photo
+              </Text>
+              <Text className="max-w-sm text-center text-base leading-6 text-muted">
+                People see your photo when you respond. Take one now with your camera — it only
+                takes a moment.
+              </Text>
+            </View>
+            {capturePhoto.isError ? <InlineError error={capturePhoto.error} /> : null}
+          </View>
+        ) : null}
+
+        {step === offerStep ? (
           <View className="gap-3">
-            <StepLabel>Step 1 of 2 · Offer</StepLabel>
+            <StepLabel>{`Step ${offerStepNumber} of ${stepCount} · Offer`}</StepLabel>
             <Text className="font-serif text-3xl font-bold leading-9 text-ink">
               What are you offering?
             </Text>
@@ -273,9 +311,11 @@ export function ResponseCreationFlow({
               Requester is offering {formatMoney(requesterOffer, request.currency)}.
             </Text>
           </View>
-        ) : (
+        ) : null}
+
+        {step === messageStep ? (
           <View className="gap-3">
-            <StepLabel>Step 2 of 2 · Message</StepLabel>
+            <StepLabel>{`Step ${messageStepNumber} of ${stepCount} · Message`}</StepLabel>
             <Text className="font-serif text-3xl font-bold leading-9 text-ink">Say something</Text>
             <Text className="text-base leading-6 text-muted">
               Optional. A short message explaining how you can help.
@@ -300,24 +340,59 @@ export function ResponseCreationFlow({
 
             {submitError ? <InlineError error={submitError} /> : null}
           </View>
-        )}
+        ) : null}
       </ScrollView>
 
       <View className="gap-3 border-t border-hairline p-5">
-        {step === 0 ? (
-          <WizardPrimaryButton label="Next" disabled={Boolean(offerError)} onPress={goNext} />
-        ) : (
+        {needsPhotoStep && step === 0 ? (
+          <Button
+            label={
+              photoReady
+                ? 'Continue'
+                : capturePhoto.isPending
+                  ? 'Opening camera…'
+                  : 'Take profile photo'
+            }
+            size="lg"
+            variant={photoReady ? 'active' : 'secondary'}
+            loading={capturePhoto.isPending}
+            onPress={() => {
+              if (photoReady) {
+                onStepChange(offerStep);
+                return;
+              }
+              capturePhoto.mutate(
+                {},
+                {
+                  onSuccess: (saved) => {
+                    if (saved) showAppToast('Profile updated');
+                  },
+                },
+              );
+            }}
+          />
+        ) : null}
+
+        {step === offerStep ? (
+          <WizardPrimaryButton
+            label="Next"
+            disabled={Boolean(offerError)}
+            onPress={() => onStepChange(messageStep)}
+          />
+        ) : null}
+
+        {step === messageStep ? (
           <View className="flex-row items-stretch gap-3">
-            <WizardSecondaryButton label="Back" onPress={() => onStepChange(0)} />
+            <WizardSecondaryButton label="Back" onPress={() => onStepChange(offerStep)} />
             <WizardPrimaryButton
               label={isUpdate ? 'Update response' : 'Send Response'}
-              disabled={!canSend}
+              disabled={Boolean(offerError)}
               loading={submitting}
               onPress={send}
               className="flex-1"
             />
           </View>
-        )}
+        ) : null}
       </View>
     </View>
   );
