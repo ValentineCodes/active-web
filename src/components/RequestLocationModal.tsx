@@ -1,47 +1,80 @@
-import { Linking, Modal, Pressable, Text, View } from 'react-native';
+import { forwardRef, useCallback, useImperativeHandle, useMemo, useRef } from 'react';
+import { Linking, Text, View } from 'react-native';
+import {
+  BottomSheetBackdrop,
+  BottomSheetModal,
+  BottomSheetView,
+  type BottomSheetBackdropProps,
+} from '@gorhom/bottom-sheet';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/ui/Button';
-import { useTheme } from '@/theme';
+import { useColors } from '@/theme';
+
+export type RequestLocationSheetHandle = {
+  present: () => void;
+  dismiss: () => void;
+};
 
 type RequestLocationModalProps = {
-  visible: boolean;
   loading: boolean;
   errorMessage: string | null;
-  onClose: () => void;
+  onDismiss: () => void;
   onShareLocation: () => void;
 };
 
-export function RequestLocationModal({
-  visible,
-  loading,
-  errorMessage,
-  onClose,
-  onShareLocation,
-}: RequestLocationModalProps) {
-  const { colors, shadow } = useTheme();
+export const RequestLocationModal = forwardRef<
+  RequestLocationSheetHandle,
+  RequestLocationModalProps
+>(function RequestLocationModal({ loading, errorMessage, onDismiss, onShareLocation }, ref) {
+  const colors = useColors();
+  const insets = useSafeAreaInsets();
+  const sheetRef = useRef<BottomSheetModal>(null);
+  const snapPoints = useMemo(() => ['54%'], []);
   const permissionBlocked = errorMessage?.includes('Settings');
 
+  useImperativeHandle(ref, () => ({
+    present: () => {
+      sheetRef.current?.present();
+    },
+    dismiss: () => {
+      sheetRef.current?.dismiss();
+    },
+  }));
+
+  const handleSheetDismiss = useCallback(() => {
+    if (loading) return;
+    onDismiss();
+  }, [loading, onDismiss]);
+
+  const renderBackdrop = useCallback(
+    (props: BottomSheetBackdropProps) => (
+      <BottomSheetBackdrop
+        {...props}
+        disappearsOnIndex={-1}
+        appearsOnIndex={0}
+        opacity={0.45}
+        pressBehavior={loading ? 'none' : 'close'}
+      />
+    ),
+    [loading],
+  );
+
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="fade"
-      onRequestClose={onClose}
-      statusBarTranslucent
+    <BottomSheetModal
+      ref={sheetRef}
+      snapPoints={snapPoints}
+      enablePanDownToClose={!loading}
+      onDismiss={handleSheetDismiss}
+      backdropComponent={renderBackdrop}
+      backgroundStyle={{ backgroundColor: colors.elevated }}
+      handleIndicatorStyle={{ backgroundColor: colors.hairline, width: 48, height: 4 }}
     >
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Dismiss"
-        onPress={onClose}
-        className="flex-1 justify-end bg-ink/40 px-5 pb-10 pt-16"
+      <BottomSheetView
+        style={{ paddingHorizontal: 20, paddingTop: 8, paddingBottom: insets.bottom + 20 }}
       >
-        <Pressable
-          accessibilityRole="none"
-          onPress={(event) => event.stopPropagation()}
-          style={shadow.raised}
-          className="gap-5 rounded-3xl bg-canvas p-6"
-        >
+        <View className="gap-5">
           <View className="h-14 w-14 items-center justify-center rounded-full bg-active-soft">
             <Ionicons name="location-outline" size={28} color={colors.active} />
           </View>
@@ -76,10 +109,15 @@ export function RequestLocationModal({
                 onPress={() => Linking.openSettings()}
               />
             ) : null}
-            <Button label="Not now" variant="ghost" onPress={onClose} />
+            <Button
+              label="Not now"
+              variant="ghost"
+              onPress={() => sheetRef.current?.dismiss()}
+              disabled={loading}
+            />
           </View>
-        </Pressable>
-      </Pressable>
-    </Modal>
+        </View>
+      </BottomSheetView>
+    </BottomSheetModal>
   );
-}
+});
