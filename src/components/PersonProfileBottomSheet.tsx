@@ -36,6 +36,87 @@ export type PersonProfileResponseActions = {
   onDecline: (reason: string | null) => void;
 };
 
+function PersonProfileResponseFooter({
+  footerProps,
+  actions,
+  bottomInset,
+}: {
+  footerProps: BottomSheetFooterProps;
+  actions: PersonProfileResponseActions;
+  bottomInset: number;
+}) {
+  const [declining, setDeclining] = useState(false);
+  const [reason, setReason] = useState('');
+  const reasonError = reason.trim().length > 500 ? 'Keep this to 500 characters.' : null;
+  const { responderAvailable, acceptLoading, declineLoading, onAccept, onDecline } = actions;
+  const canSelect = responderAvailable;
+
+  return (
+    <BottomSheetFooter {...footerProps} bottomInset={bottomInset}>
+      <View className="gap-3 border-t border-hairline bg-elevated px-5 pt-4">
+        {declining ? (
+          <>
+            <TextField
+              label="Reason (optional)"
+              value={reason}
+              onChangeText={setReason}
+              placeholder="e.g. The time doesn't work."
+              multiline
+              numberOfLines={3}
+              maxLength={500}
+              counterMax={500}
+              error={reasonError}
+            />
+            <View className="flex-row gap-3">
+              <Button
+                label="Keep them"
+                variant="secondary"
+                className="flex-1"
+                onPress={() => {
+                  setDeclining(false);
+                  setReason('');
+                }}
+              />
+              <Button
+                label="Decline"
+                variant="danger"
+                className="flex-1"
+                loading={declineLoading}
+                disabled={Boolean(reasonError)}
+                onPress={() => onDecline(reason.trim() || null)}
+              />
+            </View>
+          </>
+        ) : (
+          <View className="flex-row gap-3">
+            <Button
+              label="Not this one"
+              variant="secondary"
+              className="flex-1"
+              size="lg"
+              loading={declineLoading}
+              onPress={() => setDeclining(true)}
+            />
+            <Button
+              label="Accept"
+              className="flex-1"
+              size="lg"
+              loading={acceptLoading}
+              disabled={!canSelect}
+              onPress={onAccept}
+            />
+          </View>
+        )}
+        {!responderAvailable ? (
+          <Text className="text-center text-sm text-muted">
+            This person is currently attending to another request.
+          </Text>
+        ) : null}
+      </View>
+    </BottomSheetFooter>
+  );
+}
+
 export function PersonProfileBottomSheet({
   sheetRef,
   userId,
@@ -58,9 +139,7 @@ export function PersonProfileBottomSheet({
   responseActions?: PersonProfileResponseActions;
 }) {
   const insets = useSafeAreaInsets();
-  const [declining, setDeclining] = useState(false);
-  const [reason, setReason] = useState('');
-  const reasonError = reason.trim().length > 500 ? 'Keep this to 500 characters.' : null;
+  const [footerKey, setFooterKey] = useState(0);
 
   const snapPoints = useMemo(() => ['62%', '94%'], []);
   const title = displayName?.trim() || 'Profile';
@@ -78,76 +157,16 @@ export function PersonProfileBottomSheet({
     (props: BottomSheetFooterProps) => {
       if (!responseActions) return null;
 
-      const { responderAvailable, acceptLoading, declineLoading, onAccept, onDecline } =
-        responseActions;
-      const canSelect = responderAvailable;
-
       return (
-        <BottomSheetFooter {...props} bottomInset={insets.bottom}>
-          <View className="gap-3 border-t border-hairline bg-elevated px-5 pt-4">
-            {declining ? (
-              <>
-                <TextField
-                  label="Reason (optional)"
-                  value={reason}
-                  onChangeText={setReason}
-                  placeholder="e.g. The time doesn't work."
-                  multiline
-                  numberOfLines={3}
-                  maxLength={500}
-                  counterMax={500}
-                  error={reasonError}
-                />
-                <View className="flex-row gap-3">
-                  <Button
-                    label="Keep them"
-                    variant="secondary"
-                    className="flex-1"
-                    onPress={() => {
-                      setDeclining(false);
-                      setReason('');
-                    }}
-                  />
-                  <Button
-                    label="Decline"
-                    variant="danger"
-                    className="flex-1"
-                    loading={declineLoading}
-                    disabled={Boolean(reasonError)}
-                    onPress={() => onDecline(reason.trim() || null)}
-                  />
-                </View>
-              </>
-            ) : (
-              <View className="flex-row gap-3">
-                <Button
-                  label="Not this one"
-                  variant="secondary"
-                  className="flex-1"
-                  size="lg"
-                  loading={declineLoading}
-                  onPress={() => setDeclining(true)}
-                />
-                <Button
-                  label="Accept"
-                  className="flex-1"
-                  size="lg"
-                  loading={acceptLoading}
-                  disabled={!canSelect}
-                  onPress={onAccept}
-                />
-              </View>
-            )}
-            {!responderAvailable ? (
-              <Text className="text-center text-sm text-muted">
-                This person is currently attending to another request.
-              </Text>
-            ) : null}
-          </View>
-        </BottomSheetFooter>
+        <PersonProfileResponseFooter
+          key={footerKey}
+          footerProps={props}
+          actions={responseActions}
+          bottomInset={insets.bottom}
+        />
       );
     },
-    [declining, reason, reasonError, responseActions, insets.bottom],
+    [footerKey, responseActions, insets.bottom],
   );
 
   return (
@@ -159,10 +178,7 @@ export function PersonProfileBottomSheet({
       footerComponent={hasFooter ? renderFooter : undefined}
       backgroundStyle={{ backgroundColor: colors.elevated }}
       handleIndicatorStyle={{ backgroundColor: colors.hairline, width: 48, height: 4 }}
-      onDismiss={() => {
-        setDeclining(false);
-        setReason('');
-      }}
+      onDismiss={() => setFooterKey((key) => key + 1)}
     >
       <BottomSheetScrollView
         contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: scrollBottomPadding }}
