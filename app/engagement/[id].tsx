@@ -15,6 +15,8 @@ import { PersonProfileModal } from '@/components/PersonProfileModal';
 import { ReportProblemModal, type ReportProblemPayload } from '@/components/ReportProblemModal';
 import { RequestCallout } from '@/components/request-flow/RequestCallout';
 import { RequestCompletionCard } from '@/components/request-flow/RequestCompletionCard';
+import { RequestConnectionActions } from '@/components/request-flow/RequestConnectionActions';
+import { RequestExactLocationCard } from '@/components/request-flow/RequestExactLocationCard';
 import { RequestFlowHeader } from '@/components/request-flow/RequestFlowHeader';
 import { RequestMetaRow } from '@/components/request-flow/RequestMetaRow';
 import { RequestOfferWhenCard } from '@/components/request-flow/RequestOfferWhenCard';
@@ -369,6 +371,9 @@ export default function EngagementScreen() {
     ['accepted', 'in_progress', 'completion_pending'].includes(data.request_status);
   const inActiveFlow = helperActive || requesterActive;
 
+  const openMaps = () =>
+    openInMaps(data.request_latitude, data.request_longitude, data.location_label);
+
   const openReportIssue = () => {
     if (data.viewer_is_requester && data.request_status === 'completion_pending') {
       openReportModal({
@@ -441,6 +446,19 @@ export default function EngagementScreen() {
           />
         )}
 
+        {inActiveFlow ? (
+          <View className="gap-3">
+            <RequestConnectionActions
+              chatDisabled={!data.counterparty_phone}
+              callDisabled={!data.counterparty_phone}
+              onChat={() => Linking.openURL(`sms:${data.counterparty_phone}`)}
+              onCall={() => Linking.openURL(`tel:${data.counterparty_phone}`)}
+              onViewMap={openMaps}
+            />
+            <RequestExactLocationCard address={data.location_label} onDirections={openMaps} />
+          </View>
+        ) : null}
+
         {showPaymentSecured ? (
           <RequestCallout tone="info" title="Payment secured">
             <Text className="text-sm text-muted">
@@ -476,14 +494,7 @@ export default function EngagementScreen() {
         ) : null}
 
         {!inActiveFlow ? (
-          <Button
-            label="Open in Maps"
-            variant="secondary"
-            icon="navigate"
-            onPress={() =>
-              openInMaps(data.request_latitude, data.request_longitude, data.location_label)
-            }
-          />
+          <Button label="Open in Maps" variant="secondary" icon="navigate" onPress={openMaps} />
         ) : null}
 
         {data.viewer_is_requester && data.request_status === 'completion_pending' ? (

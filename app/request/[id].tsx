@@ -24,11 +24,7 @@ import {
   useMyRequest,
   useRequestResponses,
 } from '@/features/requests/requester-api';
-import {
-  chooseResponderDialog,
-  chosenResponderMessage,
-  helpingYouTitle,
-} from '@/features/requests/selection-copy';
+import { chooseResponderDialog } from '@/features/requests/selection-copy';
 import {
   canReuseRequest,
   isExpiredRequestView,
@@ -98,10 +94,13 @@ export default function RequestDetailScreen() {
   const pending = responses.data?.filter((response) => response.status === 'pending') ?? [];
   const isExpiredRequest = isExpiredRequestView(data.status, data.expires_at);
   const isOpen = (data.status === 'posted' || data.status === 'searching') && !isExpiredRequest;
-  const isActiveConnection = ['accepted', 'in_progress', 'completion_pending'].includes(
-    data.status,
-  );
-  const isConnected = isActiveConnection || ['disputed', 'no_show'].includes(data.status);
+  const redirectsToEngagement = [
+    'accepted',
+    'in_progress',
+    'completion_pending',
+    'disputed',
+    'no_show',
+  ].includes(data.status);
   const reuseLabel = canReuseRequest(data.status, data.expires_at)
     ? reuseRequestButtonLabelForRequest(data.status, data.expires_at)
     : null;
@@ -133,7 +132,7 @@ export default function RequestDetailScreen() {
     ? [{ label: 'Cancel request', destructive: true, onPress: confirmCancel }]
     : undefined;
 
-  if (isActiveConnection) {
+  if (redirectsToEngagement) {
     return <Redirect href={`/engagement/${id}`} />;
   }
 
@@ -182,20 +181,6 @@ export default function RequestDetailScreen() {
           <RequestCallout tone="danger" title="Issue reported">
             <Text className="text-sm text-muted">Active support is reviewing the issue.</Text>
           </RequestCallout>
-        ) : null}
-
-        {isConnected ? (
-          <View className="gap-3">
-            <Button
-              label="Open your connection"
-              variant="active"
-              size="lg"
-              onPress={() => router.push(`/engagement/${id}`)}
-            />
-            <Text className="text-center text-sm text-muted">
-              Exact location and phone numbers are shared on the connection screen.
-            </Text>
-          </View>
         ) : null}
 
         {data.status === 'completed' && !data.is_rated ? (
@@ -340,16 +325,7 @@ export default function RequestDetailScreen() {
                             onSuccess: () => {
                               profileSheetRef.current?.dismiss();
                               setProfilePreview(null);
-                              Alert.alert(
-                                helpingYouTitle(profilePreview.displayName),
-                                chosenResponderMessage(profilePreview.displayName),
-                                [
-                                  {
-                                    text: 'Open connection',
-                                    onPress: () => router.replace(`/engagement/${id}`),
-                                  },
-                                ],
-                              );
+                              router.replace(`/engagement/${id}`);
                             },
                           }),
                       },
