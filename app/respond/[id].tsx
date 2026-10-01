@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, ScrollView, Text, View } from 'react-native';
-import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { Redirect, router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
+import { RequestCallout } from '@/components/request-flow/RequestCallout';
+import { RequestFlowHeader } from '@/components/request-flow/RequestFlowHeader';
 import { RequestHelpSummary } from '@/components/RequestHelpSummary';
 import { RespondRequirementsGate } from '@/components/RespondRequirementsGate';
 import { ResponseCreationFlow } from '@/components/ResponseCreationFlow';
@@ -13,11 +15,15 @@ import {
   type RespondRequirementBlocker,
 } from '@/features/requests/respond-requirements';
 import { Button } from '@/components/ui/Button';
-import { Card } from '@/components/ui/Card';
 import { Header } from '@/components/ui/Header';
 import { Screen } from '@/components/ui/Screen';
 import { EmptyState, ErrorState, InlineError, LoadingState } from '@/components/ui/StateView';
-import { useRequestForResponse, useRespondToRequest } from '@/features/requests/responses-api';
+import {
+  useMyResponses,
+  useRequestForResponse,
+  useRespondToRequest,
+  useWithdrawResponse,
+} from '@/features/requests/responses-api';
 import {
   parsePositionParam,
   readPositionIfPermitted,
@@ -36,8 +42,10 @@ export default function RespondScreen() {
     start?: string;
   }>();
   const attendance = useAttendance();
+  const myResponses = useMyResponses();
   const profile = useProfile();
   const respond = useRespondToRequest();
+  const withdrawResponse = useWithdrawResponse();
 
   const seedPosition = useMemo(() => parsePositionParam(lat, lng), [lat, lng]);
   const [position, setPosition] = useState<Position | null>(() => seedPosition);
@@ -143,21 +151,32 @@ export default function RespondScreen() {
       : 'Your message'
     : gateMode === 'open'
       ? 'Before you respond'
-      : 'Can you help?';
+      : 'Request';
 
-  if (!locationChecked || isPending || profile.isPending) {
+  const activeAsHelper = myResponses.data?.find(
+    (row) =>
+      row.request_id === id &&
+      row.response_status === 'accepted' &&
+      ['accepted', 'in_progress', 'completion_pending'].includes(row.request_status),
+  );
+
+  if (!locationChecked || isPending || profile.isPending || myResponses.isPending) {
     return (
       <Screen edges={['top', 'bottom']}>
-        <Header title="Can you help?" onClose={() => router.back()} />
+        <RequestFlowHeader title="Request" onBack={() => router.back()} />
         <LoadingState label="Opening this request" />
       </Screen>
     );
   }
 
+  if (activeAsHelper) {
+    return <Redirect href={`/engagement/${id}`} />;
+  }
+
   if (needsLocation) {
     return (
       <Screen edges={['top', 'bottom']}>
-        <Header title="Can you help?" onClose={() => router.back()} />
+        <RequestFlowHeader title="Request" onBack={() => router.back()} />
         <EmptyState
           icon="location-outline"
           title="Location is needed"
@@ -178,7 +197,7 @@ export default function RespondScreen() {
   if (isError || profile.isError) {
     return (
       <Screen edges={['top', 'bottom']}>
-        <Header title="Can you help?" onClose={() => router.back()} />
+        <RequestFlowHeader title="Request" onBack={() => router.back()} />
         <ErrorState error={error ?? profile.error} onRetry={() => refetch()} />
       </Screen>
     );
@@ -187,7 +206,7 @@ export default function RespondScreen() {
   if (!request || requesterOffer === null) {
     return (
       <Screen edges={['top', 'bottom']}>
-        <Header title="Can you help?" onClose={() => router.back()} />
+        <RequestFlowHeader title="Request" onBack={() => router.back()} />
         <EmptyState
           icon="close-circle-outline"
           title="This request has moved on"
@@ -264,50 +283,84 @@ export default function RespondScreen() {
     );
   }
 
+  const confirmWithdraw = () => {
+    if (!existingResponse) return;
+
+    Alert.alert('Cancel response?', 'You can respond again later if the request is still open.', [
+      { text: 'Keep response', style: 'cancel' },
+      {
+        text: 'Cancel response',
+        style: 'destructive',
+        onPress: () =>
+          withdrawResponse.mutate(existingResponse.responseId, {
+            onSuccess: () => router.back(),
+          }),
+      },
+    ]);
+  };
+
   return (
     <Screen edges={['top', 'bottom']}>
-      <Header title={headerTitle} onClose={() => router.back()} />
+      <RequestFlowHeader title="Request" onBack={() => router.back()} />
 
-      <ScrollView contentContainerClassName="gap-8 p-5 pb-12" keyboardShouldPersistTaps="handled">
-        <Card>
-          <RequestHelpSummary request={request} />
-        </Card>
+      <ScrollView contentContainerClassName="gap-6 p-5 pb-12" keyboardShouldPersistTaps="handled">
+        <RequestHelpSummary request={request} existingResponse={Boolean(existingResponse)} />
 
         {attendingElsewhere ? (
-          <Card tone="warning">
-            <Text className="text-base font-semibold text-ink">
-              You&apos;re attending another request
-            </Text>
+          <RequestCallout tone="warning" title="Attending another request">
             <Text className="text-sm text-muted">
               You can still respond to other requests. Nobody can select you while you are attending
               another one.
             </Text>
-          </Card>
+          </RequestCallout>
         ) : null}
 
         {isFetchingMatch ? <LoadingState label="Checking this request" /> : null}
 
-        <View className="flex-row items-start gap-3 rounded-2xl bg-surface p-4">
-          <Ionicons name="lock-closed-outline" size={18} color={colors.muted} />
-          <Text className="flex-1 text-sm text-muted">
-            They see your name, rating, and roughly how close you are. Exact location and phone are
-            shared only if you are selected.
-          </Text>
-        </View>
-
         {existingResponse ? (
-          <Text className="text-center text-sm text-muted">
-            You already sent a response on this request. You can update your offer or message.
-          </Text>
-        ) : null}
+          <RequestCallout tone="warning" title="Response awaiting acceptance">
+            <Text className="text-sm text-muted">
+              You can keep responding to other requests. You only commit when the requester accepts.
+            </Text>
+          </RequestCallout>
+        ) : (
+          <View className="flex-row items-start gap-3 rounded-2xl bg-surface p-4">
+            <Ionicons name="lock-closed-outline" size={18} color={colors.muted} />
+            <Text className="flex-1 text-sm text-muted">
+              They see your name, rating, and roughly how close you are. Exact location and phone
+              are shared only if you are selected.
+            </Text>
+          </View>
+        )}
 
         {respond.isError ? <InlineError error={respond.error} /> : null}
+        {withdrawResponse.isError ? <InlineError error={withdrawResponse.error} /> : null}
 
-        <Button
-          label={existingResponse ? 'Update response' : 'I can help'}
-          size="lg"
-          onPress={() => void tryStartResponse()}
-        />
+        {existingResponse ? (
+          <Button
+            label="Cancel response"
+            variant="danger"
+            size="lg"
+            loading={withdrawResponse.isPending}
+            onPress={confirmWithdraw}
+          />
+        ) : (
+          <Button
+            label="Respond to request"
+            variant="active"
+            size="lg"
+            onPress={() => void tryStartResponse()}
+          />
+        )}
+
+        {existingResponse ? (
+          <Button
+            label="Update response"
+            variant="secondary"
+            size="lg"
+            onPress={() => void tryStartResponse()}
+          />
+        ) : null}
       </ScrollView>
     </Screen>
   );

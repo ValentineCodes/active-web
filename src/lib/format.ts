@@ -63,6 +63,17 @@ export function formatWhenDiscover(scheduledFor: string | null): string {
   return `${format(date, 'd MMM yyyy')} · ${format(date, 'h:mm a')}`;
 }
 
+/** Short when label for request offer cards (Today / Tomorrow / weekday). */
+export function formatWhenRequestCard(scheduledFor: string | null): string {
+  if (!scheduledFor) return 'Today';
+
+  const date = new Date(scheduledFor);
+  if (isToday(date)) return 'Today';
+  if (isTomorrow(date)) return 'Tomorrow';
+  if (isThisYear(date)) return format(date, 'EEEE');
+  return format(date, 'd MMM yyyy');
+}
+
 /** `null` means the requester needs it as soon as possible. */
 export function formatWhen(scheduledFor: string | null): string {
   if (!scheduledFor) return 'As soon as possible';

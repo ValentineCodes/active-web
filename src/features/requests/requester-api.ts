@@ -16,6 +16,7 @@ type RequestResponse = Nullable<
   | 'avatar_path'
   | 'bio'
   | 'rating_average'
+  | 'completion_percent'
   | 'message'
   | 'quoted_amount'
   | 'expires_at'

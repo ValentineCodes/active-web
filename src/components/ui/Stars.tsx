@@ -17,7 +17,6 @@ export function StarRating({ average, count }: { average: number | null; count: 
     >
       <Ionicons name="star" size={14} color={colors.warning} />
       <Text className="text-sm font-semibold text-ink">{average.toFixed(1)}</Text>
-      <Text className="text-sm text-muted">({count})</Text>
     </View>
   );
 }

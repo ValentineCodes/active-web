@@ -63,7 +63,15 @@ function CatalogueThumb({
 /**
  * Read-only optional photos and video on someone's profile.
  */
-export function CatalogueStrip({ userId, emptyLabel }: { userId: string; emptyLabel?: string }) {
+export function CatalogueStrip({
+  userId,
+  emptyLabel,
+  showHeading = true,
+}: {
+  userId: string;
+  emptyLabel?: string;
+  showHeading?: boolean;
+}) {
   const catalogue = useUserCatalogue(userId);
   const [viewerIndex, setViewerIndex] = useState<number | null>(null);
 
@@ -92,8 +100,8 @@ export function CatalogueStrip({ userId, emptyLabel }: { userId: string; emptyLa
   ];
 
   return (
-    <View className="gap-2">
-      <Text className="text-sm font-semibold text-ink">Photos & video</Text>
+    <View className={showHeading ? 'gap-2' : undefined}>
+      {showHeading ? <Text className="text-sm font-semibold text-ink">Photos & video</Text> : null}
       <ScrollView
         horizontal
         nestedScrollEnabled

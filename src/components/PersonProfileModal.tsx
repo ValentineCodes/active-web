@@ -9,14 +9,6 @@ import { Header } from '@/components/ui/Header';
 import { Screen } from '@/components/ui/Screen';
 import { StarRating } from '@/components/ui/Stars';
 
-function completedRequestCount(jobsCompleted?: number, requestsCompleted?: number) {
-  const jobs = jobsCompleted ?? 0;
-  const requests = requestsCompleted ?? 0;
-  if (requestsCompleted !== undefined) return jobs + requests;
-  if (jobsCompleted !== undefined) return jobs;
-  return undefined;
-}
-
 export function PersonProfileModal({
   visible,
   onClose,
@@ -26,8 +18,7 @@ export function PersonProfileModal({
   bio,
   ratingAverage,
   ratingCount,
-  jobsCompleted,
-  requestsCompleted,
+  completionPercent,
   phoneVerified,
   profilePhotoVerified,
   distanceLabel,
@@ -40,14 +31,12 @@ export function PersonProfileModal({
   bio?: string | null;
   ratingAverage: number | null;
   ratingCount: number | null;
-  jobsCompleted?: number;
-  requestsCompleted?: number;
+  completionPercent?: number | null;
   phoneVerified?: boolean;
   profilePhotoVerified?: boolean;
   distanceLabel?: string;
 }) {
   const title = displayName?.trim() || 'Profile';
-  const completed = completedRequestCount(jobsCompleted, requestsCompleted);
 
   return (
     <Modal
@@ -78,12 +67,10 @@ export function PersonProfileModal({
               </View>
             ) : null}
 
-            {completed !== undefined && completed > 0 ? (
-              <Card className="items-start gap-1">
-                <Text className="text-2xl font-bold text-ink">{completed}</Text>
-                <Text className="text-sm text-muted">
-                  {completed === 1 ? 'Completed request' : 'Completed requests'}
-                </Text>
+            {completionPercent != null ? (
+              <Card className="items-center gap-1">
+                <Text className="text-2xl font-bold text-active">{completionPercent}%</Text>
+                <Text className="text-sm text-muted">Completion</Text>
               </Card>
             ) : null}
 

@@ -1,15 +1,21 @@
+import { useEffect, useRef, useState } from 'react';
 import { Alert, RefreshControl, ScrollView, Text, View } from 'react-native';
-import { router, useLocalSearchParams } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { Redirect, router, useLocalSearchParams } from 'expo-router';
+import { format } from 'date-fns';
+import type { BottomSheetModal } from '@gorhom/bottom-sheet';
 
-import { RequestMoneyLine } from '@/components/RequestMoneyLine';
-import { Badge } from '@/components/ui/Badge';
+import { PersonProfileBottomSheet } from '@/components/PersonProfileBottomSheet';
+import { RequestCallout } from '@/components/request-flow/RequestCallout';
+import { RequestCompletionCard } from '@/components/request-flow/RequestCompletionCard';
+import { RequestFlowHeader } from '@/components/request-flow/RequestFlowHeader';
+import { RequestMetaRow } from '@/components/request-flow/RequestMetaRow';
+import { RequestOfferWhenCard } from '@/components/request-flow/RequestOfferWhenCard';
+import { RequestPersonCard } from '@/components/request-flow/RequestPersonCard';
+import { RequestTitleSection } from '@/components/request-flow/RequestTitleSection';
+import { ResponseCard } from '@/components/ResponseCard';
 import { Button } from '@/components/ui/Button';
-import { Card } from '@/components/ui/Card';
-import { Header } from '@/components/ui/Header';
 import { Screen } from '@/components/ui/Screen';
 import { ErrorState, InlineError, LoadingState } from '@/components/ui/StateView';
-import { ResponseCard } from '@/components/ResponseCard';
 import {
   useAcceptResponse,
   useCancelRequest,
@@ -18,8 +24,6 @@ import {
   useMyRequest,
   useRequestResponses,
 } from '@/features/requests/requester-api';
-import { requestMoneyDisplay } from '@/features/requests/payment-display';
-import { requestStatusBadge } from '@/features/requests/status';
 import {
   chooseResponderDialog,
   chosenResponderMessage,
@@ -30,11 +34,27 @@ import {
   isExpiredRequestView,
   reuseRequestButtonLabelForRequest,
 } from '@/features/requests/reuse';
-import { formatAgo, formatWhen } from '@/lib/format';
-import { colors } from '@/theme';
+import { requestStatusBadge } from '@/features/requests/status';
+import { formatAgo, formatMoney, formatWhenRequestCard } from '@/lib/format';
+
+type ResponderProfilePreview = {
+  userId: string;
+  displayName: string | null;
+  avatarPath: string | null;
+  bio: string | null;
+  ratingAverage: number | null;
+  ratingCount: number | null;
+  completionPercent: number | null;
+  pendingResponse?: {
+    responseId: string;
+    responderAvailable: boolean;
+  };
+};
 
 export default function RequestDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const profileSheetRef = useRef<BottomSheetModal>(null);
+  const [profilePreview, setProfilePreview] = useState<ResponderProfilePreview | null>(null);
 
   const request = useMyRequest(id);
   const responses = useRequestResponses(id);
@@ -45,10 +65,18 @@ export default function RequestDetailScreen() {
 
   useLiveRequest(id);
 
+  useEffect(() => {
+    if (profilePreview) profileSheetRef.current?.present();
+  }, [profilePreview]);
+
+  const openResponderProfile = (preview: ResponderProfilePreview) => {
+    setProfilePreview(preview);
+  };
+
   if (request.isPending) {
     return (
       <Screen>
-        <Header title="Request" onBack={() => router.back()} />
+        <RequestFlowHeader title="Your request" onBack={() => router.back()} />
         <LoadingState />
       </Screen>
     );
@@ -57,7 +85,7 @@ export default function RequestDetailScreen() {
   if (request.isError) {
     return (
       <Screen>
-        <Header title="Request" onBack={() => router.back()} />
+        <RequestFlowHeader title="Your request" onBack={() => router.back()} />
         <ErrorState error={request.error} onRetry={() => request.refetch()} />
       </Screen>
     );
@@ -67,27 +95,22 @@ export default function RequestDetailScreen() {
   const badge = requestStatusBadge(data.status, data.pending_response_count, {
     expiresAt: data.expires_at,
   });
-  const moneyDisplay = requestMoneyDisplay({
-    requestStatus: data.status,
-    paymentStatus: data.payment_status,
-    offeredAmount: data.offered_amount,
-    agreedAmount: data.agreed_provider_amount,
-    currency: data.currency,
-    viewerIsRequester: true,
-  });
   const pending = responses.data?.filter((response) => response.status === 'pending') ?? [];
   const isExpiredRequest = isExpiredRequestView(data.status, data.expires_at);
   const isOpen = (data.status === 'posted' || data.status === 'searching') && !isExpiredRequest;
-  const isConnected = [
-    'accepted',
-    'in_progress',
-    'completion_pending',
-    'disputed',
-    'no_show',
-  ].includes(data.status);
+  const isActiveConnection = ['accepted', 'in_progress', 'completion_pending'].includes(
+    data.status,
+  );
+  const isConnected = isActiveConnection || ['disputed', 'no_show'].includes(data.status);
   const reuseLabel = canReuseRequest(data.status, data.expires_at)
     ? reuseRequestButtonLabelForRequest(data.status, data.expires_at)
     : null;
+
+  const amount =
+    data.offered_amount !== null ? formatMoney(data.offered_amount, data.currency) : null;
+  const metaTime = formatAgo(data.updated_at ?? data.created_at);
+  const acceptedProvider =
+    responses.data?.find((response) => response.status === 'accepted') ?? null;
 
   const confirmCancel = () =>
     Alert.alert('Cancel request?', 'Anyone who responded will be told it is no longer open.', [
@@ -106,12 +129,20 @@ export default function RequestDetailScreen() {
       },
     ]);
 
+  const menuActions = isOpen
+    ? [{ label: 'Cancel request', destructive: true, onPress: confirmCancel }]
+    : undefined;
+
+  if (isActiveConnection) {
+    return <Redirect href={`/engagement/${id}`} />;
+  }
+
   return (
     <Screen>
-      <Header
-        title={data.title}
+      <RequestFlowHeader
+        title="Your request"
         onBack={() => router.back()}
-        right={<Badge label={badge.label} tone={badge.tone} />}
+        menuActions={menuActions}
       />
 
       <ScrollView
@@ -126,16 +157,32 @@ export default function RequestDetailScreen() {
           />
         }
       >
-        <View className="gap-3">
-          <Text className="text-base text-muted">{badge.hint}</Text>
-          {data.description ? <Text className="text-base text-ink">{data.description}</Text> : null}
+        <RequestMetaRow badgeLabel={badge.label} badgeTone={badge.tone} trailing={metaTime} />
 
-          <View className="gap-1">
-            <Text className="text-sm text-muted">{formatWhen(data.scheduled_for)}</Text>
-            <Text className="text-sm text-muted">{data.location_label}</Text>
-            {moneyDisplay ? <RequestMoneyLine display={moneyDisplay} /> : null}
-          </View>
-        </View>
+        <RequestTitleSection title={data.title} description={data.description} />
+
+        {amount ? (
+          <RequestOfferWhenCard
+            amount={amount}
+            whenLabel={formatWhenRequestCard(data.scheduled_for)}
+          />
+        ) : null}
+
+        {data.status === 'completed' ? (
+          <RequestCompletionCard
+            completedAtLabel={
+              data.completed_at
+                ? format(new Date(data.completed_at), "EEEE, d MMM 'at' h:mm a")
+                : 'Completed'
+            }
+          />
+        ) : null}
+
+        {data.status === 'disputed' ? (
+          <RequestCallout tone="danger" title="Issue reported">
+            <Text className="text-sm text-muted">Active support is reviewing the issue.</Text>
+          </RequestCallout>
+        ) : null}
 
         {isConnected ? (
           <View className="gap-3">
@@ -151,60 +198,51 @@ export default function RequestDetailScreen() {
           </View>
         ) : null}
 
-        {data.status === 'completed' ? (
-          <View className="gap-3">
-            <Card>
-              <View className="flex-row items-center gap-2">
-                <Ionicons name="checkmark-circle" size={20} color={colors.brand} />
-                <Text className="text-base font-semibold text-ink">This request is finished</Text>
-              </View>
-              <Text className="text-sm text-muted">
-                {data.completed_at ? `Completed ${formatAgo(data.completed_at)}.` : ''}
-              </Text>
-            </Card>
-            {data.is_rated ? (
-              <Button
-                label="See the connection"
-                variant="secondary"
-                onPress={() => router.push(`/engagement/${id}`)}
-              />
-            ) : (
-              <Button label="Rate them" size="lg" onPress={() => router.push(`/rate/${id}`)} />
-            )}
-            {reuseLabel ? (
-              <Button
-                label={reuseLabel}
-                size="lg"
-                onPress={() => router.push(`/request/new?from=${id}`)}
-              />
-            ) : null}
-          </View>
+        {data.status === 'completed' && !data.is_rated ? (
+          <Button label="Rate them" size="lg" onPress={() => router.push(`/rate/${id}`)} />
+        ) : null}
+
+        {data.status === 'completed' && data.is_rated && acceptedProvider ? (
+          <RequestPersonCard
+            avatarPath={acceptedProvider.avatar_path}
+            name={acceptedProvider.display_name}
+            ratingAverage={acceptedProvider.rating_average}
+            ratingCount={acceptedProvider.rating_count}
+            completionPercent={acceptedProvider.completion_percent}
+            onPress={() =>
+              openResponderProfile({
+                userId: acceptedProvider.responder_id,
+                displayName: acceptedProvider.display_name,
+                avatarPath: acceptedProvider.avatar_path,
+                bio: acceptedProvider.bio,
+                ratingAverage: acceptedProvider.rating_average,
+                ratingCount: acceptedProvider.rating_count,
+                completionPercent: acceptedProvider.completion_percent,
+              })
+            }
+          />
+        ) : null}
+
+        {reuseLabel && (data.status === 'completed' || isExpiredRequest) ? (
+          <Button
+            label={reuseLabel}
+            size="lg"
+            onPress={() => router.push(`/request/new?from=${id}`)}
+          />
         ) : null}
 
         {isExpiredRequest ? (
-          <View className="gap-3">
-            <Card>
-              <Text className="text-base font-semibold text-ink">This request expired</Text>
-              <Text className="text-sm text-muted">
-                Nobody was connected in time. Send a new one when you are ready.
-              </Text>
-            </Card>
-            {reuseLabel ? (
-              <Button
-                label={reuseLabel}
-                size="lg"
-                onPress={() => router.push(`/request/new?from=${id}`)}
-              />
-            ) : null}
-          </View>
+          <RequestCallout tone="warning" title="Expired">
+            <Text className="text-base text-muted">
+              Nobody was connected in time. Send a new one when you are ready.
+            </Text>
+          </RequestCallout>
         ) : null}
 
         {isOpen ? (
           <View className="gap-4">
             <Text className="text-lg font-bold text-ink">
-              {pending.length > 0
-                ? `Choose who helps (${pending.length})`
-                : 'Waiting for responses'}
+              {pending.length === 1 ? '1 Response' : `${pending.length} Responses`}
             </Text>
 
             {responses.isPending && !responses.data ? (
@@ -216,12 +254,10 @@ export default function RequestDetailScreen() {
             ) : null}
 
             {responses.isSuccess && pending.length === 0 ? (
-              <Card>
-                <Text className="text-base text-muted">
-                  Your request is visible to people nearby. They see approximate distance, not your
-                  exact location.
-                </Text>
-              </Card>
+              <Text className="text-base text-muted">
+                Your request is visible to people nearby. They see approximate distance, not your
+                exact location.
+              </Text>
             ) : null}
 
             {acceptResponse.isError ? <InlineError error={acceptResponse.error} /> : null}
@@ -229,76 +265,101 @@ export default function RequestDetailScreen() {
             {pending.map((response) => (
               <ResponseCard
                 key={response.response_id}
-                responderId={response.responder_id}
                 displayName={response.display_name}
                 avatarPath={response.avatar_path}
-                bio={response.bio}
                 ratingAverage={response.rating_average}
                 ratingCount={response.rating_count}
-                jobsCompleted={response.jobs_completed}
-                phoneVerified={response.phone_verified}
-                distanceM={response.distance_m}
+                completionPercent={response.completion_percent}
+                onViewProfile={() =>
+                  openResponderProfile({
+                    userId: response.responder_id,
+                    displayName: response.display_name,
+                    avatarPath: response.avatar_path,
+                    bio: response.bio,
+                    ratingAverage: response.rating_average,
+                    ratingCount: response.rating_count,
+                    completionPercent: response.completion_percent,
+                    pendingResponse: {
+                      responseId: response.response_id,
+                      responderAvailable: response.responder_available,
+                    },
+                  })
+                }
                 message={response.message}
                 quotedAmount={response.quoted_amount}
                 currency={data.currency}
                 createdAt={response.created_at}
-                expiresAt={response.expires_at}
                 responderAvailable={response.responder_available}
-                acceptLoading={acceptResponse.isPending}
-                declineLoading={declineResponse.isPending}
-                onDecline={(reason) =>
-                  declineResponse.mutate(
-                    { responseId: response.response_id, reason },
-                    {
-                      onSuccess: () =>
-                        Alert.alert(
-                          'Declined',
-                          'They can respond to other requests. You can select someone else anytime.',
-                        ),
-                    },
-                  )
-                }
-                onAccept={() => {
-                  const dialog = chooseResponderDialog(response.display_name);
-                  Alert.alert(dialog.title, dialog.message, [
-                    { text: dialog.cancel, style: 'cancel' },
-                    {
-                      text: dialog.confirm,
-                      onPress: () =>
-                        acceptResponse.mutate(response.response_id, {
-                          onSuccess: () => {
-                            Alert.alert(
-                              helpingYouTitle(response.display_name),
-                              chosenResponderMessage(response.display_name),
-                              [
-                                {
-                                  text: 'Open connection',
-                                  onPress: () => router.replace(`/engagement/${id}`),
-                                },
-                              ],
-                            );
-                          },
-                        }),
-                    },
-                  ]);
-                }}
               />
             ))}
-          </View>
-        ) : null}
 
-        {isOpen ? (
-          <View className="gap-3">
             {cancelRequest.isError ? <InlineError error={cancelRequest.error} /> : null}
-            <Button
-              label="Cancel request"
-              variant="danger"
-              loading={cancelRequest.isPending}
-              onPress={confirmCancel}
-            />
           </View>
         ) : null}
       </ScrollView>
+
+      {profilePreview ? (
+        <PersonProfileBottomSheet
+          key={profilePreview.userId}
+          sheetRef={profileSheetRef}
+          userId={profilePreview.userId}
+          displayName={profilePreview.displayName}
+          avatarPath={profilePreview.avatarPath}
+          bio={profilePreview.bio}
+          ratingAverage={profilePreview.ratingAverage}
+          ratingCount={profilePreview.ratingCount}
+          completionPercent={profilePreview.completionPercent}
+          responseActions={
+            profilePreview.pendingResponse
+              ? {
+                  responderAvailable: profilePreview.pendingResponse.responderAvailable,
+                  acceptLoading: acceptResponse.isPending,
+                  declineLoading: declineResponse.isPending,
+                  onDecline: (reason) =>
+                    declineResponse.mutate(
+                      { responseId: profilePreview.pendingResponse!.responseId, reason },
+                      {
+                        onSuccess: () => {
+                          profileSheetRef.current?.dismiss();
+                          setProfilePreview(null);
+                          Alert.alert(
+                            'Declined',
+                            'They can respond to other requests. You can select someone else anytime.',
+                          );
+                        },
+                      },
+                    ),
+                  onAccept: () => {
+                    const dialog = chooseResponderDialog(profilePreview.displayName);
+                    Alert.alert(dialog.title, dialog.message, [
+                      { text: dialog.cancel, style: 'cancel' },
+                      {
+                        text: dialog.confirm,
+                        onPress: () =>
+                          acceptResponse.mutate(profilePreview.pendingResponse!.responseId, {
+                            onSuccess: () => {
+                              profileSheetRef.current?.dismiss();
+                              setProfilePreview(null);
+                              Alert.alert(
+                                helpingYouTitle(profilePreview.displayName),
+                                chosenResponderMessage(profilePreview.displayName),
+                                [
+                                  {
+                                    text: 'Open connection',
+                                    onPress: () => router.replace(`/engagement/${id}`),
+                                  },
+                                ],
+                              );
+                            },
+                          }),
+                      },
+                    ]);
+                  },
+                }
+              : undefined
+          }
+        />
+      ) : null}
     </Screen>
   );
 }

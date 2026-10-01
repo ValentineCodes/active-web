@@ -15,6 +15,7 @@ export function PersonRow({
   ratingAverage,
   ratingCount,
   meta,
+  inlineStat,
   size = 'md',
   trailing,
   onPress,
@@ -24,6 +25,8 @@ export function PersonRow({
   ratingAverage?: number | null;
   ratingCount?: number | null;
   meta?: string;
+  /** Shown on the rating line after a dot (e.g. "98% completion"). */
+  inlineStat?: string;
   size?: 'sm' | 'md';
   trailing?: ReactNode;
   onPress?: () => void;
@@ -35,10 +38,20 @@ export function PersonRow({
         <Text className="text-base font-semibold text-ink" numberOfLines={1}>
           {name}
         </Text>
-        {ratingAverage !== undefined ? (
-          <StarRating average={ratingAverage ?? null} count={ratingCount ?? 0} />
+        {ratingAverage !== undefined || inlineStat ? (
+          <View className="flex-row flex-wrap items-center gap-1.5">
+            {ratingAverage !== undefined ? (
+              <StarRating average={ratingAverage ?? null} count={ratingCount ?? 0} />
+            ) : null}
+            {inlineStat ? (
+              <>
+                <Text className="text-sm text-subtle">·</Text>
+                <Text className="text-sm text-muted">{inlineStat}</Text>
+              </>
+            ) : null}
+          </View>
         ) : null}
-        {meta ? <Text className="text-sm text-muted">{meta}</Text> : null}
+        {meta && !inlineStat ? <Text className="text-sm text-muted">{meta}</Text> : null}
       </View>
       {trailing}
     </View>

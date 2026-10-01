@@ -1386,6 +1386,7 @@ export type Database = {
         Returns: {
           avatar_path: string
           bio: string
+          completion_percent: number | null
           created_at: string
           display_name: string
           distance_m: number
@@ -1401,6 +1402,10 @@ export type Database = {
           response_id: string
           status: Database["public"]["Enums"]["response_status"]
         }[]
+      }
+      provider_completion_percent: {
+        Args: { p_user_id: string }
+        Returns: number
       }
       lock_request_escrow: {
         Args: { p_idempotency_key: string; p_request_id: string }

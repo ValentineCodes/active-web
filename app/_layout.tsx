@@ -1,6 +1,7 @@
 import '../global.css';
 
 import { ActivityIndicator, Text, View } from 'react-native';
+import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Stack } from 'expo-router';
@@ -85,8 +86,10 @@ export default function RootLayout() {
       <SafeAreaProvider>
         <QueryClientProvider client={queryClient}>
           <SessionProvider>
-            <StatusBar style="dark" />
-            <RootNavigator />
+            <BottomSheetModalProvider>
+              <StatusBar style="dark" />
+              <RootNavigator />
+            </BottomSheetModalProvider>
           </SessionProvider>
         </QueryClientProvider>
       </SafeAreaProvider>
