@@ -1,6 +1,7 @@
 import { format, isThisYear, isToday, isTomorrow } from 'date-fns';
 
 import { requestLifecycleCopy, resolveRequestLifecycleStage } from '@/features/domain/lifecycle';
+import type { NotificationType } from '@/features/notifications/types';
 import type { Database } from '@/lib/supabase/database.types';
 import { formatAgo, formatMoney } from '@/lib/format';
 
@@ -292,4 +293,28 @@ export function requestNavigationPath(input: {
   }
 
   return `/respond/${input.requestId}`;
+}
+
+/** Inbox / push target for a notification tied to a request (matches Activity tab routing). */
+export function notificationNavigationPath(input: {
+  requestId: string;
+  type: NotificationType;
+  metadata: Record<string, unknown> | null;
+}): `/request/${string}` | `/respond/${string}` | `/engagement/${string}` {
+  if (input.metadata?.link === 'respond' || input.type === 'response_not_selected') {
+    return `/respond/${input.requestId}`;
+  }
+
+  if (
+    input.type === 'response_received' ||
+    input.type === 'new_responses' ||
+    input.type === 'request_expiring' ||
+    input.type === 'request_expired' ||
+    input.type === 'payment_secured' ||
+    input.type === 'rate_experience'
+  ) {
+    return `/request/${input.requestId}`;
+  }
+
+  return `/engagement/${input.requestId}`;
 }

@@ -301,6 +301,8 @@ export default function RespondScreen() {
       <RequestFlowHeader title="Request" onBack={() => router.back()} />
 
       <ScrollView contentContainerClassName="gap-6 p-5 pb-12" keyboardShouldPersistTaps="handled">
+        <RequestHelpSummary request={request} existingResponse={Boolean(existingResponse)} />
+
         {declinedParticipation ? (
           <RequestCallout
             tone="danger"
@@ -323,8 +325,6 @@ export default function RespondScreen() {
             )}
           </RequestCallout>
         ) : null}
-
-        <RequestHelpSummary request={request} existingResponse={Boolean(existingResponse)} />
 
         {attendingElsewhere ? (
           <RequestCallout tone="warning" title="Attending another request">

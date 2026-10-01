@@ -3,6 +3,7 @@ import type { Ionicons } from '@expo/vector-icons';
 
 import type { InboxNotification, NotificationType } from '@/features/notifications/types';
 import { NOTIFICATION_TYPES } from '@/features/notifications/types';
+import { notificationNavigationPath } from '@/features/requests/activity-list';
 import { colors } from '@/theme';
 
 const CANONICAL_TYPES = new Set<string>(NOTIFICATION_TYPES);
@@ -136,65 +137,27 @@ export type NotificationNavigationInput = Pick<
 
 /** Deep link target when opening a notification (inbox row or push payload). */
 export function resolveNotificationHref(item: NotificationNavigationInput): string | null {
-  const requestId = item.requestId;
-
-  if (requestId && item.metadata?.link === 'respond') {
-    return `/respond/${requestId}`;
+  if (item.requestId) {
+    return notificationNavigationPath({
+      requestId: item.requestId,
+      type: item.type,
+      metadata: item.metadata,
+    });
   }
 
-  if (!requestId) {
-    if (
-      item.type === 'withdrawal_processing' ||
-      item.type === 'withdrawal_successful' ||
-      item.type === 'withdrawal_failed' ||
-      item.type === 'payment_received' ||
-      item.type === 'payment_released' ||
-      item.type === 'payment_secured' ||
-      item.type === 'funds_returned'
-    ) {
-      return '/wallet';
-    }
-    return null;
+  if (
+    item.type === 'withdrawal_processing' ||
+    item.type === 'withdrawal_successful' ||
+    item.type === 'withdrawal_failed' ||
+    item.type === 'payment_received' ||
+    item.type === 'payment_released' ||
+    item.type === 'payment_secured' ||
+    item.type === 'funds_returned'
+  ) {
+    return '/wallet';
   }
 
-  switch (item.type) {
-    case 'response_received':
-    case 'new_responses':
-    case 'request_expiring':
-    case 'request_expired':
-      return `/request/${requestId}`;
-    case 'response_accepted':
-      return `/engagement/${requestId}`;
-    case 'response_not_selected':
-      return `/respond/${requestId}`;
-    case 'completion_requested':
-    case 'helper_cancelled':
-    case 'problem_reported':
-    case 'dispute_opened':
-    case 'dispute_resolved':
-    case 'funds_released_after_resolution':
-    case 'request_cancelled':
-    case 'cancellation_confirmed':
-      return `/engagement/${requestId}`;
-    case 'payment_secured':
-    case 'funds_returned':
-    case 'payment_released':
-    case 'payment_received':
-      return '/wallet';
-    case 'withdrawal_processing':
-    case 'withdrawal_successful':
-    case 'withdrawal_failed':
-      return '/wallet';
-    case 'new_message':
-    case 'missed_call':
-      return null;
-    case 'rate_experience':
-      return `/rate/${requestId}`;
-    default: {
-      const _exhaustive: never = item.type;
-      return _exhaustive;
-    }
-  }
+  return null;
 }
 
 export function resolveNotificationHrefFromPushData(data: Record<string, unknown>): string | null {
@@ -210,7 +173,12 @@ export function resolveNotificationHrefFromPushData(data: Record<string, unknown
 
   return resolveNotificationHref({
     type: type as NotificationType,
-    requestId: typeof data.request_id === 'string' ? data.request_id : null,
+    requestId: parsePushRequestId(data.request_id),
     metadata,
   });
+}
+
+function parsePushRequestId(value: unknown): string | null {
+  if (typeof value === 'string' && value.length > 0) return value;
+  return null;
 }
