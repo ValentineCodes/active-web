@@ -89,34 +89,50 @@ function isOpenRequestStatus(status: string | null | undefined): boolean {
 /** Opens a request for responding via browse + the caller's existing response row. */
 export function useRequestForResponse(requestId: string, position: Position | null) {
   const mine = useMyResponses();
-  const existingResponse = mine.data?.find(
+  const pendingRow = mine.data?.find(
     (row) => row.request_id === requestId && row.response_status === 'pending',
   );
-  const browseEnabled = mine.isSuccess && !existingResponse;
+  const declinedRow = mine.data?.find(
+    (row) => row.request_id === requestId && row.response_status === 'declined',
+  );
+  const browseEnabled = mine.isSuccess && !pendingRow && !declinedRow;
   const browse = useBrowseRequest(requestId, position, { enabled: browseEnabled });
 
-  const request: RespondableRequest | null = existingResponse
-    ? fromMyResponse(existingResponse)
+  const participationRow = pendingRow ?? declinedRow ?? null;
+
+  const request: RespondableRequest | null = participationRow
+    ? fromMyResponse(participationRow)
     : browse.data
       ? fromPublicRequest(browse.data)
       : null;
 
-  const existing: ExistingResponse | null = existingResponse
+  const existing: ExistingResponse | null = pendingRow
     ? {
-        responseId: existingResponse.response_id,
-        message: existingResponse.message,
-        quotedAmount: existingResponse.quoted_amount,
+        responseId: pendingRow.response_id,
+        message: pendingRow.message,
+        quotedAmount: pendingRow.quoted_amount,
       }
     : null;
 
+  const declinedParticipation =
+    declinedRow && !pendingRow
+      ? {
+          declineReason: declinedRow.decline_reason,
+          requestStillOpen: isOpenRequestStatus(declinedRow.request_status),
+        }
+      : null;
+
   const open =
-    existingResponse != null
-      ? isOpenRequestStatus(existingResponse.request_status)
-      : browse.data != null;
+    pendingRow != null
+      ? isOpenRequestStatus(pendingRow.request_status)
+      : declinedRow != null
+        ? true
+        : browse.data != null;
 
   return {
     request: open ? request : null,
     existingResponse: existing,
+    declinedParticipation,
     needsLocation: browseEnabled && position === null,
     isFetchingMatch: browse.isFetching,
     isPending: mine.isPending || (browseEnabled && position !== null && browse.isPending),

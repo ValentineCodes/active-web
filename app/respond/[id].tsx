@@ -62,6 +62,7 @@ export default function RespondScreen() {
   const {
     request,
     existingResponse,
+    declinedParticipation,
     needsLocation,
     isFetchingMatch,
     isPending,
@@ -300,6 +301,29 @@ export default function RespondScreen() {
       <RequestFlowHeader title="Request" onBack={() => router.back()} />
 
       <ScrollView contentContainerClassName="gap-6 p-5 pb-12" keyboardShouldPersistTaps="handled">
+        {declinedParticipation ? (
+          <RequestCallout
+            tone="danger"
+            title={
+              declinedParticipation.requestStillOpen
+                ? 'You were rejected for this task'
+                : "You weren't selected for this task"
+            }
+          >
+            {declinedParticipation.declineReason ? (
+              <Text className="text-sm leading-5 text-muted">
+                {declinedParticipation.declineReason}
+              </Text>
+            ) : (
+              <Text className="text-sm text-muted">
+                {declinedParticipation.requestStillOpen
+                  ? 'The requester decided not to move forward with your offer.'
+                  : 'Someone else was chosen for this request.'}
+              </Text>
+            )}
+          </RequestCallout>
+        ) : null}
+
         <RequestHelpSummary request={request} existingResponse={Boolean(existingResponse)} />
 
         {attendingElsewhere ? (
@@ -313,7 +337,7 @@ export default function RespondScreen() {
 
         {isFetchingMatch ? <LoadingState label="Checking this request" /> : null}
 
-        {existingResponse ? (
+        {declinedParticipation ? null : existingResponse ? (
           <RequestCallout tone="warning" title="Response awaiting acceptance">
             <Text className="text-sm text-muted">
               You can keep responding to other requests. You only commit when the requester accepts.
@@ -332,7 +356,7 @@ export default function RespondScreen() {
         {respond.isError ? <InlineError error={respond.error} /> : null}
         {withdrawResponse.isError ? <InlineError error={withdrawResponse.error} /> : null}
 
-        {existingResponse ? (
+        {declinedParticipation ? null : existingResponse ? (
           <Button
             label="Cancel response"
             variant="danger"
@@ -349,7 +373,7 @@ export default function RespondScreen() {
           />
         )}
 
-        {existingResponse ? (
+        {declinedParticipation ? null : existingResponse ? (
           <Button
             label="Update response"
             variant="secondary"

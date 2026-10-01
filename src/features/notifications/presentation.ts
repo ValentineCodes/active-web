@@ -160,8 +160,9 @@ export function resolveNotificationHref(item: InboxNotification): string | null 
     case 'request_expired':
       return `/request/${requestId}`;
     case 'response_accepted':
-    case 'response_not_selected':
       return `/engagement/${requestId}`;
+    case 'response_not_selected':
+      return `/respond/${requestId}`;
     case 'completion_requested':
     case 'helper_cancelled':
     case 'problem_reported':
