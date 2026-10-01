@@ -1,8 +1,10 @@
+import { useEffect } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ToastProvider as Provider } from 'react-native-toast-notifications';
+import { ToastProvider as Provider, useToast } from 'react-native-toast-notifications';
 
+import { registerAppToast } from '@/lib/toast';
 import { colors, shadow } from '@/theme';
 
 type Props = {
@@ -62,7 +64,7 @@ export function ToastProvider({ children }: Props) {
   return (
     <Provider
       placement="top"
-      duration={5000}
+      duration={3500}
       animationType="zoom-in"
       animationDuration={250}
       offset={insets.top + 12}
@@ -88,9 +90,23 @@ export function ToastProvider({ children }: Props) {
         );
       }}
     >
+      <ToastRegistrar />
       {children}
     </Provider>
   );
+}
+
+function ToastRegistrar() {
+  const toast = useToast();
+
+  useEffect(() => {
+    registerAppToast((message, options) => {
+      toast.show(message, options);
+    });
+    return () => registerAppToast(null);
+  }, [toast]);
+
+  return null;
 }
 
 export { useToast } from 'react-native-toast-notifications';

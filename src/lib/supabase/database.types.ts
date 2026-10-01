@@ -237,6 +237,13 @@ export type Database = {
             foreignKeyName: "notification_inbox_request_id_fkey"
             columns: ["request_id"]
             isOneToOne: false
+            referencedRelation: "my_requests"
+            referencedColumns: ["request_id"]
+          },
+          {
+            foreignKeyName: "notification_inbox_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
             referencedRelation: "requests"
             referencedColumns: ["id"]
           },
@@ -252,6 +259,13 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_inbox_wallet_ledger_id_fkey"
+            columns: ["wallet_ledger_id"]
+            isOneToOne: false
+            referencedRelation: "my_wallet_activity"
             referencedColumns: ["id"]
           },
           {
@@ -370,7 +384,9 @@ export type Database = {
           display_name: string | null
           id: string
           jobs_completed: number
+          message_push_enabled: boolean
           phone: string | null
+          push_notifications_enabled: boolean
           rating_average: number | null
           rating_count: number
           requests_completed: number
@@ -384,7 +400,9 @@ export type Database = {
           display_name?: string | null
           id: string
           jobs_completed?: number
+          message_push_enabled?: boolean
           phone?: string | null
+          push_notifications_enabled?: boolean
           rating_average?: number | null
           rating_count?: number
           requests_completed?: number
@@ -398,7 +416,9 @@ export type Database = {
           display_name?: string | null
           id?: string
           jobs_completed?: number
+          message_push_enabled?: boolean
           phone?: string | null
+          push_notifications_enabled?: boolean
           rating_average?: number | null
           rating_count?: number
           requests_completed?: number
@@ -1343,9 +1363,27 @@ export type Database = {
         Args: { p_request_id: string }
         Returns: number
       }
+      create_notification: {
+        Args: {
+          p_body: string
+          p_deliver_push?: boolean
+          p_event_key: string
+          p_metadata?: Json
+          p_payment_transition_id?: string
+          p_recipient_user_id: string
+          p_related_user_id?: string
+          p_request_id?: string
+          p_response_id?: string
+          p_title: string
+          p_type: Database["public"]["Enums"]["notification_type"]
+          p_url?: string
+          p_wallet_ledger_id?: string
+        }
+        Returns: string
+      }
       create_request: {
         Args: {
-          p_description: string | null
+          p_description: string
           p_latitude: number
           p_location_label: string
           p_longitude: number
@@ -1358,6 +1396,21 @@ export type Database = {
       }
       decline_response: {
         Args: { p_reason?: string; p_response_id: string }
+        Returns: undefined
+      }
+      deliver_expo_push: {
+        Args: {
+          p_body: string
+          p_payment_transition_id: string
+          p_recipient_user_id: string
+          p_related_user_id: string
+          p_request_id: string
+          p_response_id: string
+          p_title: string
+          p_type: Database["public"]["Enums"]["notification_type"]
+          p_url: string
+          p_wallet_ledger_id: string
+        }
         Returns: undefined
       }
       discovery_radius_m: { Args: never; Returns: number }
@@ -1447,7 +1500,7 @@ export type Database = {
         Returns: {
           avatar_path: string
           bio: string
-          completion_percent: number | null
+          completion_percent: number
           created_at: string
           display_name: string
           distance_m: number
@@ -1464,16 +1517,12 @@ export type Database = {
           status: Database["public"]["Enums"]["response_status"]
         }[]
       }
-      provider_completion_percent: {
-        Args: { p_user_id: string }
-        Returns: number
-      }
-      requester_completion_percent: {
-        Args: { p_user_id: string }
-        Returns: number
-      }
       lock_request_escrow: {
         Args: { p_idempotency_key: string; p_request_id: string }
+        Returns: undefined
+      }
+      mark_notification_inbox_item_read: {
+        Args: { p_notification_id: string }
         Returns: undefined
       }
       mark_notification_inbox_read: { Args: never; Returns: undefined }
@@ -1507,6 +1556,18 @@ export type Database = {
           title: string
         }[]
       }
+      notification_dedupe_key: {
+        Args: {
+          p_event_key: string
+          p_recipient_user_id: string
+          p_type: Database["public"]["Enums"]["notification_type"]
+        }
+        Returns: string
+      }
+      notification_type_should_push: {
+        Args: { p_type: Database["public"]["Enums"]["notification_type"] }
+        Returns: boolean
+      }
       notify_completion_reminders: {
         Args: { p_limit?: number }
         Returns: number
@@ -1534,6 +1595,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      provider_completion_percent: {
+        Args: { p_user_id: string }
+        Returns: number
+      }
       provider_location_recently_updated: {
         Args: { p_provider_id: string; p_request_id: string }
         Returns: boolean
@@ -1545,6 +1610,10 @@ export type Database = {
           p_request_id: string
         }
         Returns: boolean
+      }
+      prune_invalid_expo_push_tokens: {
+        Args: { p_response: Json; p_tokens: string[] }
+        Returns: undefined
       }
       rate_request: {
         Args: { p_comment?: string; p_request_id: string; p_stars: number }
@@ -1585,6 +1654,14 @@ export type Database = {
         }
         Returns: number
       }
+      request_response_notifications_dedupe_key: {
+        Args: { p_request_id: string; p_requester_id: string }
+        Returns: string
+      }
+      requester_completion_percent: {
+        Args: { p_user_id: string }
+        Returns: number
+      }
       resolve_due_service_problems: {
         Args: { p_limit?: number }
         Returns: number
@@ -1603,29 +1680,18 @@ export type Database = {
         }
         Returns: string
       }
-      create_notification: {
-        Args: {
-          p_body: string
-          p_deliver_push?: boolean
-          p_event_key: string
-          p_metadata?: Json
-          p_payment_transition_id?: string
-          p_recipient_user_id: string
-          p_related_user_id?: string
-          p_request_id?: string
-          p_response_id?: string
-          p_title: string
-          p_type: Database["public"]["Enums"]["notification_type"]
-          p_url?: string
-          p_wallet_ledger_id?: string
-        }
-        Returns: string
-      }
       service_problem_requires_description: {
         Args: { p_kind: Database["public"]["Enums"]["service_problem_kind"] }
         Returns: boolean
       }
       service_problem_response_interval: { Args: never; Returns: string }
+      set_notification_preferences: {
+        Args: {
+          p_message_push_enabled: boolean
+          p_push_notifications_enabled: boolean
+        }
+        Returns: undefined
+      }
       set_user_attendance: {
         Args: { p_request_id: string; p_user_id: string }
         Returns: undefined
@@ -1639,6 +1705,23 @@ export type Database = {
           p_to: Database["public"]["Enums"]["payment_status"]
         }
         Returns: undefined
+      }
+      upsert_request_response_notification: {
+        Args: {
+          p_latest_responder_id: string
+          p_latest_response_id: string
+          p_pending_count: number
+          p_request_id: string
+          p_requester_id: string
+        }
+        Returns: undefined
+      }
+      user_push_delivery_allowed: {
+        Args: {
+          p_type: Database["public"]["Enums"]["notification_type"]
+          p_user_id: string
+        }
+        Returns: boolean
       }
       wallet_record_deposit: {
         Args: {

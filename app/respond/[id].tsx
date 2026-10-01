@@ -30,6 +30,8 @@ import {
   requestPosition,
   type Position,
 } from '@/lib/location';
+import { syncPushToken } from '@/lib/notifications';
+import { showAppToast } from '@/lib/toast';
 import { colors } from '@/theme';
 
 type GateMode = 'off' | 'checking' | 'open';
@@ -223,11 +225,9 @@ export default function RespondScreen() {
       },
       {
         onSuccess: () => {
-          Alert.alert(
-            existingResponse ? 'Response updated' : 'Response sent',
-            'The person who posted this can compare your offer with others. You are not selected until they choose you.',
-            [{ text: 'OK', onPress: () => router.back() }],
-          );
+          void syncPushToken({ mode: 'contextual' });
+          showAppToast(existingResponse ? 'Response updated' : 'Response sent');
+          router.back();
         },
       },
     );
@@ -286,7 +286,10 @@ export default function RespondScreen() {
         style: 'destructive',
         onPress: () =>
           withdrawResponse.mutate(existingResponse.responseId, {
-            onSuccess: () => router.back(),
+            onSuccess: () => {
+              showAppToast('Response withdrawn');
+              router.back();
+            },
           }),
       },
     ]);

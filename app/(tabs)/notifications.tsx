@@ -1,54 +1,136 @@
 import { useCallback, useEffect, useState } from 'react';
 import { FlatList, Pressable, RefreshControl, Text, View } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
-import * as Notifications from 'expo-notifications';
-import { formatDistanceToNowStrict } from 'date-fns';
 
+import { NotificationListItem } from '@/components/notifications/NotificationListItem';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Screen } from '@/components/ui/Screen';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/StateView';
-import { markNotificationInboxRead, useNotificationInbox } from '@/features/notifications/inbox';
+import {
+  markNotificationInboxItemRead,
+  markNotificationInboxRead,
+  useNotificationInbox,
+  useNotificationUnreadCount,
+} from '@/features/notifications/inbox';
+import {
+  readPushBannerDismissed,
+  setPushBannerDismissed,
+} from '@/features/notifications/preferences';
+import { resolveNotificationHref } from '@/features/notifications/presentation';
+import type { InboxNotification } from '@/features/notifications/types';
+import { useProfile } from '@/features/profile/api';
 import { queryKeys } from '@/lib/query/keys';
+import {
+  openNotificationSettings,
+  readPushPermission,
+  syncPushToken,
+  type PushPermissionState,
+} from '@/lib/notifications';
 import { useQueryClient } from '@tanstack/react-query';
-import { syncPushToken } from '@/lib/notifications';
 
 export default function NotificationsScreen() {
   const queryClient = useQueryClient();
+  const profile = useProfile();
   const inbox = useNotificationInbox();
-  const [permission, setPermission] = useState<Notifications.PermissionStatus | null>(null);
+  const unread = useNotificationUnreadCount();
+  const unreadCount = unread.data ?? 0;
+  const [permission, setPermission] = useState<PushPermissionState | null>(null);
+  const [bannerDismissed, setBannerDismissed] = useState(true);
   const [enabling, setEnabling] = useState(false);
+  const [markingAll, setMarkingAll] = useState(false);
+
+  const refreshPermissionState = useCallback(() => {
+    void readPushPermission().then(setPermission);
+    void readPushBannerDismissed().then(setBannerDismissed);
+  }, []);
 
   useFocusEffect(
     useCallback(() => {
-      void markNotificationInboxRead().then(() => {
-        void queryClient.invalidateQueries({ queryKey: queryKeys.notificationUnreadCount });
-        void queryClient.invalidateQueries({ queryKey: queryKeys.notificationInbox });
-      });
-    }, [queryClient]),
+      refreshPermissionState();
+    }, [refreshPermissionState]),
   );
 
   useEffect(() => {
-    void Notifications.getPermissionsAsync().then((result) => setPermission(result.status));
-  }, []);
+    refreshPermissionState();
+  }, [refreshPermissionState]);
 
-  const enableNotifications = async () => {
+  const invalidateInbox = useCallback(() => {
+    void queryClient.invalidateQueries({ queryKey: queryKeys.notificationInbox });
+    void queryClient.invalidateQueries({ queryKey: queryKeys.notificationUnreadCount });
+  }, [queryClient]);
+
+  const pushPrefEnabled = profile.data?.push_notifications_enabled !== false;
+  const osGranted = permission?.granted ?? false;
+  const pushActive = pushPrefEnabled && osGranted;
+  const showPushBanner = pushPrefEnabled && !osGranted && !bannerDismissed && permission !== null;
+
+  const enablePush = async () => {
     setEnabling(true);
-    await syncPushToken({ prompt: true });
-    const result = await Notifications.getPermissionsAsync();
-    setPermission(result.status);
+    const result = await syncPushToken({ mode: 'user' });
+    if (result === 'registered') await setPushBannerDismissed(false);
+    refreshPermissionState();
     setEnabling(false);
   };
 
-  const notificationsEnabled = permission === Notifications.PermissionStatus.GRANTED;
+  const dismissPushBanner = async () => {
+    await setPushBannerDismissed(true);
+    setBannerDismissed(true);
+  };
+
+  const markAllRead = async () => {
+    if (unreadCount === 0) return;
+    setMarkingAll(true);
+    try {
+      await markNotificationInboxRead();
+      invalidateInbox();
+    } finally {
+      setMarkingAll(false);
+    }
+  };
+
+  const openNotification = async (item: InboxNotification) => {
+    if (item.readAt === null) {
+      await markNotificationInboxItemRead(item.id);
+      invalidateInbox();
+    }
+
+    const href = resolveNotificationHref(item);
+    if (href) router.push(href as never);
+  };
 
   return (
     <Screen>
-      <View className="gap-1 p-5 pb-2">
-        <Text className="text-3xl font-bold text-ink">Notifications</Text>
-        <Text className="text-base text-muted">
-          Updates about your requests, responses, and when you are attending one.
-        </Text>
+      <View className="flex-row items-start justify-between gap-3 p-5 pb-2">
+        <View className="min-w-0 flex-1 gap-1">
+          <Text className="text-3xl font-bold text-ink">Notifications</Text>
+          <Text className="text-base text-muted">
+            Updates about your requests, responses, payments, and help in progress.
+          </Text>
+        </View>
+        <View className="items-end gap-2">
+          {unreadCount > 0 ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Mark all notifications as read"
+              disabled={markingAll}
+              onPress={() => void markAllRead()}
+              className="rounded-full px-2 py-1 active:opacity-70"
+            >
+              <Text className="text-sm font-semibold text-brand">
+                {markingAll ? 'Updating…' : 'Mark all read'}
+              </Text>
+            </Pressable>
+          ) : null}
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Notification settings"
+            onPress={() => router.push('/notification-settings')}
+            className="rounded-full px-2 py-1 active:opacity-70"
+          >
+            <Text className="text-sm font-semibold text-brand">Settings</Text>
+          </Pressable>
+        </View>
       </View>
 
       {inbox.isPending ? <LoadingState /> : null}
@@ -71,36 +153,49 @@ export default function NotificationsScreen() {
             />
           }
           renderItem={({ item }) => (
-            <Pressable
-              onPress={() => {
-                if (item.url) router.push(item.url as never);
-              }}
-              accessibilityRole="button"
-              accessibilityLabel={item.title}
-              className="rounded-3xl bg-surface p-4 active:opacity-80"
-            >
-              <View className="flex-row items-start justify-between gap-2">
-                <Text className="flex-1 text-base font-semibold text-ink">{item.title}</Text>
-                <Text className="text-xs text-subtle">
-                  {formatDistanceToNowStrict(new Date(item.receivedAt))} ago
-                </Text>
-              </View>
-              {item.body ? <Text className="text-sm text-muted">{item.body}</Text> : null}
-            </Pressable>
+            <NotificationListItem item={item} onPress={() => void openNotification(item)} />
           )}
           ListFooterComponent={
-            !notificationsEnabled ? (
-              <Card className="mt-2">
+            showPushBanner ? (
+              <Card className="mt-2 gap-3">
                 <Text className="text-base font-semibold text-ink">Get alerts on your phone</Text>
                 <Text className="text-sm text-muted">
-                  Turn on push notifications to hear about new responses and important updates right
-                  away. Everything still appears in this list either way.
+                  Optional lock-screen alerts for new responses and urgent updates. This list always
+                  shows payment, dispute, and other important events.
                 </Text>
-                <Button
-                  label="Enable push notifications"
-                  loading={enabling}
-                  onPress={() => void enableNotifications()}
-                />
+                {permission?.canAskAgain === false ? (
+                  <Button
+                    label="Open Settings"
+                    variant="secondary"
+                    onPress={() => openNotificationSettings()}
+                  />
+                ) : (
+                  <Button
+                    label="Enable push notifications"
+                    loading={enabling}
+                    onPress={() => void enablePush()}
+                  />
+                )}
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => void dismissPushBanner()}
+                  className="self-center active:opacity-70"
+                >
+                  <Text className="text-sm font-semibold text-muted">Not now</Text>
+                </Pressable>
+              </Card>
+            ) : !pushActive && pushPrefEnabled === false ? (
+              <Card className="mt-2 gap-2">
+                <Text className="text-sm text-muted">
+                  Push alerts are off. You still receive all important updates here.
+                </Text>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => router.push('/notification-settings')}
+                  className="self-start active:opacity-80"
+                >
+                  <Text className="text-sm font-semibold text-brand">Manage in settings</Text>
+                </Pressable>
               </Card>
             ) : null
           }

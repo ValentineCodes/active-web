@@ -51,6 +51,7 @@ import {
   formatWhenHome,
   formatWhenRequestCard,
 } from '@/lib/format';
+import { showAppToast } from '@/lib/toast';
 function openInMaps(latitude: number, longitude: number, label: string) {
   const url = Platform.select({
     ios: `maps://?ll=${latitude},${longitude}&q=${encodeURIComponent(label)}`,
@@ -314,7 +315,10 @@ export default function EngagementScreen() {
           style: 'destructive',
           onPress: () =>
             cancelRequest.mutate(undefined, {
-              onSuccess: () => router.replace(`/request/${id}`),
+              onSuccess: () => {
+                showAppToast('Request cancelled');
+                router.replace(`/request/${id}`);
+              },
             }),
         },
       ],
@@ -331,7 +335,10 @@ export default function EngagementScreen() {
           style: 'destructive',
           onPress: () =>
             cancelService.mutate(undefined, {
-              onSuccess: () => router.back(),
+              onSuccess: () => {
+                showAppToast('Request cancelled');
+                router.back();
+              },
             }),
         },
       ],
@@ -639,7 +646,13 @@ export default function EngagementScreen() {
                         'The person who asked will confirm before you are paid.',
                         [
                           { text: 'Not yet', style: 'cancel' },
-                          { text: 'Mark complete', onPress: () => markServiceComplete.mutate() },
+                          {
+                            text: 'Mark complete',
+                            onPress: () =>
+                              markServiceComplete.mutate(undefined, {
+                                onSuccess: () => showAppToast('Waiting for confirmation', 'info'),
+                              }),
+                          },
                         ],
                       )
                     }
@@ -663,7 +676,10 @@ export default function EngagementScreen() {
                             text: 'Confirm',
                             onPress: () =>
                               completeRequest.mutate(undefined, {
-                                onSuccess: () => router.replace(`/rate/${id}`),
+                                onSuccess: () => {
+                                  showAppToast('Request completed');
+                                  router.replace(`/rate/${id}`);
+                                },
                               }),
                           },
                         ],

@@ -8,6 +8,7 @@ import {
   type RespondRequirementBlocker,
 } from '@/features/requests/respond-requirements';
 import { useCaptureProfilePhoto, useProfile } from '@/features/profile/api';
+import { showAppToast } from '@/lib/toast';
 
 type RespondRequirementsGateProps = {
   blocker: RespondRequirementBlocker;
@@ -51,7 +52,10 @@ export function RespondRequirementsGate({
               {},
               {
                 onSuccess: (saved) => {
-                  if (saved) onRecheck();
+                  if (saved) {
+                    showAppToast('Profile updated');
+                    onRecheck();
+                  }
                 },
               },
             )

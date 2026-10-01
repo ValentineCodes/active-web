@@ -33,6 +33,7 @@ import {
 import { requestStatusBadge } from '@/features/requests/status';
 import { formatAgo, formatMoney, formatWhenRequestCard } from '@/lib/format';
 import { markRequestResponseNotificationsRead } from '@/features/notifications/inbox';
+import { showAppToast } from '@/lib/toast';
 import { queryKeys } from '@/lib/query/keys';
 import { useQueryClient } from '@tanstack/react-query';
 
@@ -132,11 +133,7 @@ export default function RequestDetailScreen() {
         style: 'destructive',
         onPress: () =>
           cancelRequest.mutate(undefined, {
-            onSuccess: () =>
-              Alert.alert(
-                'Request cancelled',
-                'Anyone who responded has been notified. Your money returns to your wallet.',
-              ),
+            onSuccess: () => showAppToast('Request cancelled'),
           }),
       },
     ]);
@@ -320,10 +317,7 @@ export default function RequestDetailScreen() {
                         onSuccess: () => {
                           profileSheetRef.current?.dismiss();
                           setProfilePreview(null);
-                          Alert.alert(
-                            'Declined',
-                            'They can respond to other requests. You can select someone else anytime.',
-                          );
+                          showAppToast('Declined');
                         },
                       },
                     ),
@@ -338,6 +332,7 @@ export default function RequestDetailScreen() {
                             onSuccess: () => {
                               profileSheetRef.current?.dismiss();
                               setProfilePreview(null);
+                              showAppToast('Payment is being confirmed', 'info');
                               router.replace(`/engagement/${id}`);
                             },
                           }),

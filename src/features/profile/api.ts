@@ -20,7 +20,7 @@ export function profileQueryOptions(userId: string) {
       const { data, error } = await supabase
         .from('profiles')
         .select(
-          'id, display_name, avatar_path, avatar_captured_in_app, phone, bio, rating_average, rating_count, jobs_completed, requests_completed',
+          'id, display_name, avatar_path, avatar_captured_in_app, phone, bio, rating_average, rating_count, jobs_completed, requests_completed, push_notifications_enabled, message_push_enabled',
         )
         .eq('id', userId)
         .single();

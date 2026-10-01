@@ -17,6 +17,7 @@ import { useCaptureProfilePhoto, useProfile, useSaveProfile } from '@/features/p
 import { useMyResponses } from '@/features/requests/responses-api';
 import { useMyRequests } from '@/features/requests/requester-api';
 import { colors } from '@/theme';
+import { showAppToast } from '@/lib/toast';
 
 function ProfileStat({ value, label }: { value: number; label: string }) {
   return (
@@ -128,7 +129,9 @@ export default function ProfileScreen() {
       >
         <View className="items-center gap-2">
           <Pressable
-            onPress={() => capturePhoto.mutate({})}
+            onPress={() =>
+              capturePhoto.mutate({}, { onSuccess: () => showAppToast('Profile updated') })
+            }
             disabled={capturePhoto.isPending}
             accessibilityRole="button"
             accessibilityLabel="Update profile photo"
@@ -191,7 +194,12 @@ export default function ProfileScreen() {
                 onPress={() =>
                   save.mutate(
                     { display_name: draft.name.trim(), bio: draft.bio.trim() || null },
-                    { onSuccess: () => setDraft(null) },
+                    {
+                      onSuccess: () => {
+                        setDraft(null);
+                        showAppToast('Profile updated');
+                      },
+                    },
                   )
                 }
               />
@@ -219,7 +227,10 @@ export default function ProfileScreen() {
         </SettingsGroup>
 
         <SettingsGroup title="Preferences">
-          <SettingsRow label="Notifications" onPress={() => router.push('/(tabs)/notifications')} />
+          <SettingsRow
+            label="Notifications"
+            onPress={() => router.push('/notification-settings')}
+          />
           <SettingsRow label="Privacy" onPress={() => {}} showDivider />
           <SettingsRow label="Language" onPress={() => {}} showDivider />
         </SettingsGroup>

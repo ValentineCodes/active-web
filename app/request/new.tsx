@@ -37,6 +37,7 @@ import {
   type PositionResult,
 } from '@/lib/location';
 import { syncPushToken } from '@/lib/notifications';
+import { showAppToast } from '@/lib/toast';
 import { colors } from '@/theme';
 
 const STEP_COUNT = 4;
@@ -383,7 +384,12 @@ function NewRequestForm({ reuseSeed }: { reuseSeed?: ReuseSeed }) {
       },
       {
         onSuccess: (requestId) => {
-          syncPushToken({ prompt: true });
+          syncPushToken({ mode: 'contextual' });
+          showAppToast('Request posted');
+          if (parsedAmount !== null) {
+            const funding = summarizeRequestFunding(parsedAmount);
+            showAppToast(`${formatMoney(funding.total, funding.currency)} locked`, 'info');
+          }
           router.replace(`/request/${requestId}`);
         },
       },

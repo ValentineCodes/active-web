@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback } from 'react';
 import { FlatList, Pressable, RefreshControl, Text, View } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -7,14 +7,9 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Header } from '@/components/ui/Header';
 import { Screen } from '@/components/ui/Screen';
-import {
-  EmptyState,
-  ErrorState,
-  InlineError,
-  LoadingState,
-  SuccessBanner,
-} from '@/components/ui/StateView';
+import { EmptyState, ErrorState, InlineError, LoadingState } from '@/components/ui/StateView';
 import { confirmWalletWithdraw } from '@/lib/confirm';
+import { showAppToast } from '@/lib/toast';
 import { SERVICE_FEE_RATE, WALLET } from '@/config';
 import {
   walletActivityAmount,
@@ -57,7 +52,6 @@ export default function WalletScreen() {
   const activity = useWalletActivity();
   const topUp = useWalletTopUp();
   const withdraw = useWalletWithdraw();
-  const [walletNotice, setWalletNotice] = useState<string | null>(null);
 
   const { refetch: refetchWallet } = wallet;
   const { refetch: refetchActivity } = activity;
@@ -157,9 +151,7 @@ export default function WalletScreen() {
                       onPress={() =>
                         topUp.mutate(amount, {
                           onSuccess: () =>
-                            setWalletNotice(
-                              `${formatMoney(amount, currency)} added to your available balance.`,
-                            ),
+                            showAppToast(`${formatMoney(amount, currency)} added to your balance`),
                         })
                       }
                     />
@@ -187,9 +179,7 @@ export default function WalletScreen() {
                         confirmWalletWithdraw(formatMoney(amount, currency), () =>
                           withdraw.mutate(amount, {
                             onSuccess: () =>
-                              setWalletNotice(
-                                `${formatMoney(amount, currency)} withdrawn from your available balance.`,
-                              ),
+                              showAppToast(`${formatMoney(amount, currency)} withdrawn`, 'success'),
                           }),
                         )
                       }
@@ -198,7 +188,6 @@ export default function WalletScreen() {
                 </View>
               </View>
 
-              {walletNotice ? <SuccessBanner message={walletNotice} /> : null}
               {topUp.isError || withdraw.isError ? (
                 <InlineError error={topUp.error ?? withdraw.error} />
               ) : null}

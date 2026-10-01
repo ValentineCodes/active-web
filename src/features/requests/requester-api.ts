@@ -256,7 +256,7 @@ export function useCreateRequest() {
 
       const { data, error } = await supabase.rpc('create_request', {
         p_title: input.title.trim(),
-        p_description: input.description?.trim() || null,
+        p_description: input.description?.trim() ?? '',
         p_latitude: input.position.latitude,
         p_longitude: input.position.longitude,
         p_location_label: input.locationLabel,
