@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, RefreshControl, ScrollView, Text, View } from 'react-native';
-import { Redirect, router, useLocalSearchParams } from 'expo-router';
+import { Redirect, router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { format } from 'date-fns';
 import type { BottomSheetModal } from '@gorhom/bottom-sheet';
 
@@ -32,6 +32,9 @@ import {
 } from '@/features/requests/reuse';
 import { requestStatusBadge } from '@/features/requests/status';
 import { formatAgo, formatMoney, formatWhenRequestCard } from '@/lib/format';
+import { markRequestResponseNotificationsRead } from '@/features/notifications/inbox';
+import { queryKeys } from '@/lib/query/keys';
+import { useQueryClient } from '@tanstack/react-query';
 
 type ResponderProfilePreview = {
   userId: string;
@@ -58,8 +61,18 @@ export default function RequestDetailScreen() {
   const cancelRequest = useCancelRequest(id);
   const acceptResponse = useAcceptResponse(id);
   const declineResponse = useDeclineResponse(id);
+  const queryClient = useQueryClient();
 
   useLiveRequest(id);
+
+  useFocusEffect(
+    useCallback(() => {
+      void markRequestResponseNotificationsRead(id).then(() => {
+        void queryClient.invalidateQueries({ queryKey: queryKeys.notificationUnreadCount });
+        void queryClient.invalidateQueries({ queryKey: queryKeys.notificationInbox });
+      });
+    }, [id, queryClient]),
+  );
 
   useEffect(() => {
     if (profilePreview) profileSheetRef.current?.present();

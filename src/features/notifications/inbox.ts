@@ -1,23 +1,19 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
+import type { InboxNotification } from '@/features/notifications/types';
 import { queryKeys } from '@/lib/query/keys';
 import { supabase } from '@/lib/supabase/client';
 
-const INBOX_LIMIT = 50;
+export type { InboxNotification, NotificationType } from '@/features/notifications/types';
 
-export type InboxNotification = {
-  id: string;
-  title: string;
-  body: string;
-  url: string | null;
-  receivedAt: string;
-  readAt: string | null;
-};
+const INBOX_LIMIT = 50;
 
 async function fetchInbox(): Promise<InboxNotification[]> {
   const { data, error } = await supabase
     .from('notification_inbox')
-    .select('id, title, body, url, created_at, read_at')
+    .select(
+      'id, user_id, type, title, body, url, request_id, response_id, payment_transition_id, wallet_ledger_id, related_user_id, metadata, created_at, read_at',
+    )
     .order('created_at', { ascending: false })
     .limit(INBOX_LIMIT);
 
@@ -25,9 +21,17 @@ async function fetchInbox(): Promise<InboxNotification[]> {
 
   return (data ?? []).map((row) => ({
     id: row.id,
+    recipientUserId: row.user_id,
+    type: row.type,
     title: row.title,
     body: row.body,
     url: row.url,
+    requestId: row.request_id,
+    responseId: row.response_id,
+    paymentTransitionId: row.payment_transition_id,
+    walletLedgerId: row.wallet_ledger_id,
+    relatedUserId: row.related_user_id,
+    metadata: row.metadata as Record<string, unknown> | null,
     receivedAt: row.created_at,
     readAt: row.read_at,
   }));
@@ -45,6 +49,13 @@ async function fetchUnreadCount(): Promise<number> {
 
 export async function markNotificationInboxRead(): Promise<void> {
   const { error } = await supabase.rpc('mark_notification_inbox_read');
+  if (error) throw error;
+}
+
+export async function markRequestResponseNotificationsRead(requestId: string): Promise<void> {
+  const { error } = await supabase.rpc('mark_request_response_notifications_read', {
+    p_request_id: requestId,
+  });
   if (error) throw error;
 }
 

@@ -10,6 +10,7 @@ import { QueryClientProvider, useQuery } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 
 import { ErrorState } from '@/components/ui/StateView';
+import { ToastProvider } from '@/components/ui/ToastProvider';
 import { SessionProvider, useSession } from '@/features/auth/session';
 import { profileQueryOptions } from '@/features/profile/api';
 import { queryClient } from '@/lib/query/client';
@@ -86,10 +87,12 @@ export default function RootLayout() {
       <SafeAreaProvider>
         <QueryClientProvider client={queryClient}>
           <SessionProvider>
-            <BottomSheetModalProvider>
-              <StatusBar style="dark" />
-              <RootNavigator />
-            </BottomSheetModalProvider>
+            <ToastProvider>
+              <BottomSheetModalProvider>
+                <StatusBar style="dark" />
+                <RootNavigator />
+              </BottomSheetModalProvider>
+            </ToastProvider>
           </SessionProvider>
         </QueryClientProvider>
       </SafeAreaProvider>

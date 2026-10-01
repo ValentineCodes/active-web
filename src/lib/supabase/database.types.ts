@@ -170,36 +170,95 @@ export type Database = {
         Row: {
           body: string
           created_at: string
+          dedupe_key: string
           id: string
+          metadata: Json | null
+          payment_transition_id: string | null
           read_at: string | null
+          related_user_id: string | null
+          request_id: string | null
+          response_id: string | null
           title: string
+          type: Database["public"]["Enums"]["notification_type"]
           url: string | null
           user_id: string
+          wallet_ledger_id: string | null
         }
         Insert: {
           body: string
           created_at?: string
+          dedupe_key: string
           id?: string
+          metadata?: Json | null
+          payment_transition_id?: string | null
           read_at?: string | null
+          related_user_id?: string | null
+          request_id?: string | null
+          response_id?: string | null
           title: string
+          type: Database["public"]["Enums"]["notification_type"]
           url?: string | null
           user_id: string
+          wallet_ledger_id?: string | null
         }
         Update: {
           body?: string
           created_at?: string
+          dedupe_key?: string
           id?: string
+          metadata?: Json | null
+          payment_transition_id?: string | null
           read_at?: string | null
+          related_user_id?: string | null
+          request_id?: string | null
+          response_id?: string | null
           title?: string
+          type?: Database["public"]["Enums"]["notification_type"]
           url?: string | null
           user_id?: string
+          wallet_ledger_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "notification_inbox_payment_transition_id_fkey"
+            columns: ["payment_transition_id"]
+            isOneToOne: false
+            referencedRelation: "payment_transitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_inbox_related_user_id_fkey"
+            columns: ["related_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_inbox_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_inbox_response_id_fkey"
+            columns: ["response_id"]
+            isOneToOne: false
+            referencedRelation: "request_responses"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "notification_inbox_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_inbox_wallet_ledger_id_fkey"
+            columns: ["wallet_ledger_id"]
+            isOneToOne: false
+            referencedRelation: "wallet_ledger"
             referencedColumns: ["id"]
           },
         ]
@@ -1418,6 +1477,10 @@ export type Database = {
         Returns: undefined
       }
       mark_notification_inbox_read: { Args: never; Returns: undefined }
+      mark_request_response_notifications_read: {
+        Args: { p_request_id: string }
+        Returns: undefined
+      }
       mark_service_complete: {
         Args: { p_request_id: string }
         Returns: undefined
@@ -1540,14 +1603,23 @@ export type Database = {
         }
         Returns: string
       }
-      send_push: {
+      create_notification: {
         Args: {
           p_body: string
+          p_deliver_push?: boolean
+          p_event_key: string
+          p_metadata?: Json
+          p_payment_transition_id?: string
+          p_recipient_user_id: string
+          p_related_user_id?: string
+          p_request_id?: string
+          p_response_id?: string
           p_title: string
-          p_url: string
-          p_user_ids: string[]
+          p_type: Database["public"]["Enums"]["notification_type"]
+          p_url?: string
+          p_wallet_ledger_id?: string
         }
-        Returns: undefined
+        Returns: string
       }
       service_problem_requires_description: {
         Args: { p_kind: Database["public"]["Enums"]["service_problem_kind"] }
@@ -1588,6 +1660,31 @@ export type Database = {
       withdraw_response: { Args: { p_response_id: string }; Returns: undefined }
     }
     Enums: {
+      notification_type:
+        | "response_received"
+        | "new_responses"
+        | "request_expiring"
+        | "request_expired"
+        | "response_accepted"
+        | "response_not_selected"
+        | "completion_requested"
+        | "payment_secured"
+        | "funds_returned"
+        | "payment_released"
+        | "payment_received"
+        | "withdrawal_processing"
+        | "withdrawal_successful"
+        | "withdrawal_failed"
+        | "new_message"
+        | "missed_call"
+        | "request_cancelled"
+        | "helper_cancelled"
+        | "cancellation_confirmed"
+        | "problem_reported"
+        | "dispute_opened"
+        | "dispute_resolved"
+        | "funds_released_after_resolution"
+        | "rate_experience"
       payment_status:
         | "not_required"
         | "available"
@@ -1750,6 +1847,32 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      notification_type: [
+        "response_received",
+        "new_responses",
+        "request_expiring",
+        "request_expired",
+        "response_accepted",
+        "response_not_selected",
+        "completion_requested",
+        "payment_secured",
+        "funds_returned",
+        "payment_released",
+        "payment_received",
+        "withdrawal_processing",
+        "withdrawal_successful",
+        "withdrawal_failed",
+        "new_message",
+        "missed_call",
+        "request_cancelled",
+        "helper_cancelled",
+        "cancellation_confirmed",
+        "problem_reported",
+        "dispute_opened",
+        "dispute_resolved",
+        "funds_released_after_resolution",
+        "rate_experience",
+      ],
       payment_status: [
         "not_required",
         "available",
