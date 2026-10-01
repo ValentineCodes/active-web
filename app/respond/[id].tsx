@@ -145,13 +145,7 @@ export default function RespondScreen() {
       ? closeGate
       : undefined;
 
-  const headerTitle = inFlow
-    ? flowStep === 0
-      ? 'Counter offer'
-      : 'Your message'
-    : gateMode === 'open'
-      ? 'Before you respond'
-      : 'Request';
+  const headerTitle = gateMode === 'open' ? 'Before you respond' : 'Request';
 
   const activeAsHelper = myResponses.data?.find(
     (row) =>
@@ -264,12 +258,11 @@ export default function RespondScreen() {
   if (inFlow && position) {
     return (
       <Screen edges={['top', 'bottom']}>
-        <Header title={headerTitle} onBack={headerBack} onClose={() => router.back()} />
-
         <ResponseCreationFlow
           key={flowKey}
           step={flowStep}
-          setStep={setFlowStep}
+          onStepChange={setFlowStep}
+          onExit={exitFlow}
           request={request}
           initialYourOffer={initialYourOffer}
           initialMessage={initialMessage}
