@@ -69,7 +69,9 @@ export default function RateScreen() {
             size="lg"
           />
           <Text className="text-center text-lg font-semibold text-ink">
-            How did {firstName} do?
+            {data.viewer_is_requester
+              ? `How did ${firstName} do?`
+              : `How was working with ${firstName}?`}
           </Text>
         </View>
 

@@ -606,15 +606,74 @@ select lives_ok(
 );
 
 select is(
-  (select ratee_id from public.ratings where request_id = :'request_id'::uuid),
+  (
+    select ratee_id
+    from public.ratings
+    where request_id = :'request_id'::uuid
+      and rater_id = '11111111-1111-1111-1111-111111111111'::uuid
+  ),
   '22222222-2222-2222-2222-222222222222'::uuid,
   'rating is stored against the selected helper'
+);
+
+select ok(
+  (select viewer_has_rated from get_engagement(:'request_id')),
+  'requester has submitted a rating'
+);
+
+select is(
+  (select rating_stars from get_engagement(:'request_id')),
+  null::smallint,
+  'requester does not yet see their own rating on the completion card'
+);
+
+select pg_temp.act_as('22222222-2222-2222-2222-222222222222') as _ \gset
+
+select lives_ok(
+  format('select rate_request(%L::uuid, 4::smallint, %L)', :'request_id', 'Clear brief'),
+  'helper can rate the requester after completion'
+);
+
+select is(
+  (
+    select ratee_id
+    from public.ratings
+    where request_id = :'request_id'::uuid
+      and rater_id = '22222222-2222-2222-2222-222222222222'::uuid
+  ),
+  '11111111-1111-1111-1111-111111111111'::uuid,
+  'helper rating is stored against the requester'
+);
+
+select ok(
+  (select viewer_has_rated from get_engagement(:'request_id')),
+  'helper has submitted a rating'
 );
 
 select is(
   (select rating_stars from get_engagement(:'request_id')),
   5::smallint,
-  'get_engagement returns the submitted rating'
+  'helper sees the requester rating on the completion card'
+);
+
+select is(
+  (select rating_comment from get_engagement(:'request_id')),
+  'Great work',
+  'helper sees the requester rating comment'
+);
+
+select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
+
+select is(
+  (select rating_stars from get_engagement(:'request_id')),
+  4::smallint,
+  'requester sees the helper rating on the completion card'
+);
+
+select is(
+  (select rating_comment from get_engagement(:'request_id')),
+  'Clear brief',
+  'requester sees the helper rating comment'
 );
 
 select pg_temp.act_as_owner() as _ \gset

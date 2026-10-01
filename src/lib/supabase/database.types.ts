@@ -1073,6 +1073,8 @@ export type Database = {
           latitude: number | null
           location_label: string | null
           longitude: number | null
+          my_rating_comment: string | null
+          my_rating_stars: number | null
           offered_amount: number | null
           payment_status: Database["public"]["Enums"]["payment_status"] | null
           pending_response_count: number | null
@@ -1481,6 +1483,8 @@ export type Database = {
           payment_status: Database["public"]["Enums"]["payment_status"]
           quoted_amount: number
           rating_stars: number
+          rating_comment: string
+          viewer_has_rated: boolean
           request_id: string
           request_latitude: number
           request_longitude: number

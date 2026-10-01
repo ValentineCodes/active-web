@@ -406,7 +406,7 @@ export default function EngagementScreen() {
   const showReportFooter =
     !inActiveFlow &&
     ((canReportActiveProblem && data.viewer_is_requester) || canReportHelperProblem);
-  const showRateFooter = data.request_status === 'completed' && !data.rating_stars;
+  const showRateFooter = data.request_status === 'completed' && !data.viewer_has_rated;
   const hasFloatingFooter = inActiveFlow || showReportFooter || showRateFooter;
   const openCounterpartyProfile = () => profileSheetRef.current?.present();
 
@@ -586,6 +586,7 @@ export default function EngagementScreen() {
                   : 'Completed'
               }
               ratingStars={data.rating_stars}
+              ratingComment={data.rating_comment}
             />
           ) : null}
 

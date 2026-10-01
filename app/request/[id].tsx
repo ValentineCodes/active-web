@@ -177,16 +177,6 @@ export default function RequestDetailScreen() {
           />
         ) : null}
 
-        {data.status === 'completed' ? (
-          <RequestCompletionCard
-            completedAtLabel={
-              data.completed_at
-                ? format(new Date(data.completed_at), "EEEE, d MMM 'at' h:mm a")
-                : 'Completed'
-            }
-          />
-        ) : null}
-
         {data.status === 'disputed' ? (
           <RequestCallout tone="danger" title="Issue reported">
             <Text className="text-sm text-muted">Active support is reviewing the issue.</Text>
@@ -215,6 +205,18 @@ export default function RequestDetailScreen() {
                 completionPercent: acceptedProvider.completion_percent,
               })
             }
+          />
+        ) : null}
+
+        {data.status === 'completed' ? (
+          <RequestCompletionCard
+            completedAtLabel={
+              data.completed_at
+                ? format(new Date(data.completed_at), "EEEE, d MMM 'at' h:mm a")
+                : 'Completed'
+            }
+            ratingStars={data.my_rating_stars}
+            ratingComment={data.my_rating_comment}
           />
         ) : null}
 
