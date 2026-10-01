@@ -91,7 +91,7 @@ export function myRequestActivityBadge(request: {
     case 'responses':
       return { label: 'Open', tone: 'warning' };
     case 'selected':
-      return { label: 'Selected', tone: 'brand' };
+      return { label: 'Active', tone: 'info' };
     case 'in_progress':
     case 'completion_pending':
       return { label: 'In Progress', tone: 'info' };
@@ -240,13 +240,13 @@ export function myResponseActivitySubtitle(response: {
 
     if (stage === 'in_progress' || stage === 'completion_pending') {
       const helperStage = requestLifecycleCopy(stage, { viewerIsRequester: false }).title;
-      statusLine = `Selected · ${helperStage}`;
+      statusLine = `Active · ${helperStage}`;
     } else if (stage === 'completed') {
       statusLine = 'Completed';
     } else if (stage === 'disputed' || stage === 'no_show' || stage === 'cancelled') {
       statusLine = requestLifecycleCopy(stage, { viewerIsRequester: false }).title;
     } else {
-      statusLine = 'Selected';
+      statusLine = 'Active';
     }
   } else if (response.response_status === 'pending') {
     statusLine =

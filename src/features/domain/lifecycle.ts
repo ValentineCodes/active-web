@@ -24,7 +24,7 @@ type LifecycleCopy = { title: string; hint: string };
 const REQUESTER_COPY: Record<Exclude<RequestLifecycleStage, 'draft' | 'no_show'>, LifecycleCopy> = {
   posted: { title: 'Posted', hint: 'Waiting for someone to respond.' },
   responses: { title: 'Responses', hint: 'People have offered to help.' },
-  selected: { title: 'Selected', hint: "You've chosen someone." },
+  selected: { title: 'Active', hint: "You've chosen someone." },
   in_progress: { title: 'In progress', hint: "They're helping you now." },
   completion_pending: { title: 'Confirm', hint: 'Confirm when the work is done.' },
   completed: { title: 'Completed', hint: 'Done.' },
@@ -34,7 +34,7 @@ const REQUESTER_COPY: Record<Exclude<RequestLifecycleStage, 'draft' | 'no_show'>
 };
 
 const HELPER_COPY: Partial<Record<RequestLifecycleStage, LifecycleCopy>> = {
-  selected: { title: 'Selected', hint: "You've been chosen." },
+  selected: { title: 'Active', hint: "You've been chosen." },
   in_progress: { title: 'In progress', hint: "You're helping now." },
   completion_pending: { title: 'Confirm', hint: 'Waiting for them to confirm.' },
   completed: { title: 'Completed', hint: 'Done.' },

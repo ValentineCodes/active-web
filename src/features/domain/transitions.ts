@@ -8,7 +8,7 @@ export const REQUEST_STATUS_LABELS: Record<RequestStatus, string> = {
   draft: 'Draft',
   posted: 'Posted',
   searching: 'Posted',
-  accepted: 'Selected',
+  accepted: 'Active',
   in_progress: 'In progress',
   completion_pending: 'Confirm',
   completed: 'Completed',
