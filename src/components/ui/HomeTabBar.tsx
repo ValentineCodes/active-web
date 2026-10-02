@@ -23,7 +23,7 @@ const TABS: TabConfig[] = [
   },
   {
     routeName: 'notifications',
-    label: 'Notifications',
+    label: 'Alerts',
     focusedIcon: 'notifications',
     outlineIcon: 'notifications-outline',
   },
@@ -90,8 +90,8 @@ export function HomeTabBar({ state, descriptors, navigation }: HomeTabBarProps) 
                   color={color}
                 />
                 {typeof badge === 'number' || typeof badge === 'string' ? (
-                  <View className="absolute -right-2 -top-1 min-w-4 rounded-full bg-active px-1">
-                    <Text className="text-center text-[10px] font-bold text-on-brand">
+                  <View className="absolute -right-2 -top-1 min-w-4 rounded-full bg-danger px-1">
+                    <Text className="text-center text-[10px] font-bold text-white">
                       {String(badge)}
                     </Text>
                   </View>

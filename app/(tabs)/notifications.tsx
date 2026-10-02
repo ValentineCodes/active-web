@@ -1,10 +1,12 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { FlatList, Pressable, RefreshControl, Text, View } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
+import { useQueryClient } from '@tanstack/react-query';
 
 import { NotificationListItem } from '@/components/notifications/NotificationListItem';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { IconButton } from '@/components/ui/IconButton';
 import { Screen } from '@/components/ui/Screen';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/StateView';
 import {
@@ -20,6 +22,7 @@ import {
 import { resolveNotificationHref } from '@/features/notifications/presentation';
 import type { InboxNotification } from '@/features/notifications/types';
 import { useProfile } from '@/features/profile/api';
+import { cn } from '@/lib/cn';
 import { queryKeys } from '@/lib/query/keys';
 import {
   openNotificationSettings,
@@ -27,7 +30,46 @@ import {
   syncPushToken,
   type PushPermissionState,
 } from '@/lib/notifications';
-import { useQueryClient } from '@tanstack/react-query';
+
+type InboxFilter = 'all' | 'unread';
+
+function InboxFilterTabs({
+  value,
+  onChange,
+}: {
+  value: InboxFilter;
+  onChange: (next: InboxFilter) => void;
+}) {
+  return (
+    <View className="flex-row rounded-full bg-surface p-1">
+      {(['all', 'unread'] as const).map((option) => {
+        const selected = value === option;
+        return (
+          <Pressable
+            key={option}
+            accessibilityRole="button"
+            accessibilityState={{ selected }}
+            accessibilityLabel={option === 'all' ? 'Show all notifications' : 'Show unread only'}
+            onPress={() => onChange(option)}
+            className={cn(
+              'rounded-full px-4 py-2 active:opacity-90',
+              selected ? 'bg-elevated' : 'bg-transparent',
+            )}
+          >
+            <Text
+              className={cn(
+                'text-sm font-semibold capitalize',
+                selected ? 'text-ink' : 'text-muted',
+              )}
+            >
+              {option}
+            </Text>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
 
 export default function NotificationsScreen() {
   const queryClient = useQueryClient();
@@ -35,6 +77,7 @@ export default function NotificationsScreen() {
   const inbox = useNotificationInbox();
   const unread = useNotificationUnreadCount();
   const unreadCount = unread.data ?? 0;
+  const [filter, setFilter] = useState<InboxFilter>('all');
   const [permission, setPermission] = useState<PushPermissionState | null>(null);
   const [bannerDismissed, setBannerDismissed] = useState(true);
   const [enabling, setEnabling] = useState(false);
@@ -103,38 +146,46 @@ export default function NotificationsScreen() {
     if (href) router.push(href as never);
   };
 
+  const filteredItems = useMemo(() => {
+    if (!inbox.data) return [];
+    if (filter === 'unread') return inbox.data.filter((item) => item.readAt === null);
+    return inbox.data;
+  }, [filter, inbox.data]);
+
+  const unreadLabel = unreadCount === 1 ? '1 unread update' : `${unreadCount} unread updates`;
+
   return (
     <Screen>
-      <View className="flex-row items-start justify-between gap-3 p-5 pb-2">
+      <View className="flex-row items-start justify-between gap-3 px-5 pb-3 pt-2">
         <View className="min-w-0 flex-1 gap-1">
-          <Text className="text-3xl font-bold text-ink">Notifications</Text>
-          <Text className="text-base text-muted">
-            Updates about your requests, responses, payments, and help in progress.
-          </Text>
+          <Text className="font-serif text-3xl font-bold text-ink">Notifications</Text>
+          <Text className="text-sm text-muted">{unreadLabel}</Text>
         </View>
-        <View className="items-end gap-2">
-          {unreadCount > 0 ? (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Mark all notifications as read"
-              disabled={markingAll}
-              onPress={() => void markAllRead()}
-              className="rounded-full px-2 py-1 active:opacity-70"
-            >
-              <Text className="text-sm font-semibold text-brand">
-                {markingAll ? 'Updating…' : 'Mark all read'}
-              </Text>
-            </Pressable>
-          ) : null}
+        <IconButton
+          icon="settings-outline"
+          variant="surface"
+          accessibilityLabel="Notification settings"
+          onPress={() => router.push('/notification-settings')}
+        />
+      </View>
+
+      <View className="flex-row items-center justify-between gap-3 px-5 pb-2">
+        <InboxFilterTabs value={filter} onChange={setFilter} />
+        {unreadCount > 0 ? (
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Notification settings"
-            onPress={() => router.push('/notification-settings')}
-            className="rounded-full px-2 py-1 active:opacity-70"
+            accessibilityLabel="Mark all notifications as read"
+            disabled={markingAll}
+            onPress={() => void markAllRead()}
+            className="shrink active:opacity-70"
           >
-            <Text className="text-sm font-semibold text-brand">Settings</Text>
+            <Text className="text-sm font-semibold text-active">
+              {markingAll ? 'Updating…' : 'Mark all as read'}
+            </Text>
           </Pressable>
-        </View>
+        ) : (
+          <View className="w-28" />
+        )}
       </View>
 
       {inbox.isPending ? <LoadingState /> : null}
@@ -143,25 +194,34 @@ export default function NotificationsScreen() {
 
       {inbox.isSuccess ? (
         <FlatList
-          data={inbox.data}
+          data={filteredItems}
           keyExtractor={(item) => item.id}
-          contentContainerClassName="gap-3 p-5 pt-2 pb-12"
+          contentContainerClassName="px-5 pb-12 pt-1"
           refreshControl={
             <RefreshControl refreshing={inbox.isRefetching} onRefresh={() => inbox.refetch()} />
           }
+          ItemSeparatorComponent={() => <View className="h-px bg-hairline" />}
           ListEmptyComponent={
-            <EmptyState
-              icon="notifications-outline"
-              title="Nothing yet"
-              message="When something needs your attention, it will show up here."
-            />
+            filter === 'unread' && (inbox.data?.length ?? 0) > 0 ? (
+              <EmptyState
+                icon="checkmark-circle-outline"
+                title="You're all caught up"
+                message="No unread notifications right now."
+              />
+            ) : (
+              <EmptyState
+                icon="notifications-outline"
+                title="Nothing yet"
+                message="When something needs your attention, it will show up here."
+              />
+            )
           }
           renderItem={({ item }) => (
             <NotificationListItem item={item} onPress={() => void openNotification(item)} />
           )}
           ListFooterComponent={
             showPushBanner ? (
-              <Card className="mt-2 gap-3">
+              <Card className="mt-6 gap-3">
                 <Text className="text-base font-semibold text-ink">Get alerts on your phone</Text>
                 <Text className="text-sm text-muted">
                   Optional lock-screen alerts for new responses and urgent updates. This list always
@@ -189,7 +249,7 @@ export default function NotificationsScreen() {
                 </Pressable>
               </Card>
             ) : !pushActive && pushPrefEnabled === false ? (
-              <Card className="mt-2 gap-2">
+              <Card className="mt-6 gap-2">
                 <Text className="text-sm text-muted">
                   Push alerts are off. You still receive all important updates here.
                 </Text>
@@ -198,7 +258,7 @@ export default function NotificationsScreen() {
                   onPress={() => router.push('/notification-settings')}
                   className="self-start active:opacity-80"
                 >
-                  <Text className="text-sm font-semibold text-brand">Manage in settings</Text>
+                  <Text className="text-sm font-semibold text-active">Manage in settings</Text>
                 </Pressable>
               </Card>
             ) : null

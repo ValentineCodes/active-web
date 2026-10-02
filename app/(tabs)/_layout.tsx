@@ -50,7 +50,7 @@ export default function TabsLayout() {
         headerShown: false,
         tabBarActiveTintColor: colors.active,
         tabBarInactiveTintColor: colors.subtle,
-        tabBarBadgeStyle: { backgroundColor: colors.active, color: colors.onBrand },
+        tabBarBadgeStyle: { backgroundColor: colors.danger, color: '#FFFFFF' },
         tabBarLabelStyle: { fontSize: 12, fontWeight: '600' },
       }}
     >
@@ -76,7 +76,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="notifications"
         options={{
-          title: 'Notifications',
+          title: 'Alerts',
           tabBarBadge: unreadCount > 0 ? unreadCount : undefined,
           tabBarIcon: (props) => (
             <TabIcon {...props} focusedName="notifications" outlineName="notifications-outline" />

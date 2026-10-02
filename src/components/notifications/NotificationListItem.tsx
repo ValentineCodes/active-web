@@ -20,41 +20,39 @@ export function NotificationListItem({ item, onPress }: Props) {
       accessibilityRole="button"
       accessibilityLabel={`${item.title}. ${item.body}`}
       accessibilityState={{ selected: unread }}
-      className={cn(
-        'flex-row gap-3 rounded-3xl p-4 active:opacity-80',
-        unread ? 'bg-brandSoft' : 'bg-surface',
-      )}
+      className="flex-row gap-3 py-4 active:opacity-80"
     >
       <View
-        className={cn(
-          'h-11 w-11 items-center justify-center rounded-2xl',
-          visual.iconBackgroundClassName,
-        )}
+        className="h-11 w-11 items-center justify-center rounded-full"
+        style={{ backgroundColor: visual.iconBackground }}
       >
-        <Ionicons name={visual.icon} size={22} color={visual.iconColor} />
+        {visual.useNairaSymbol ? (
+          <Text className="text-lg font-bold" style={{ color: visual.iconColor }}>
+            ₦
+          </Text>
+        ) : (
+          <Ionicons name={visual.icon} size={22} color={visual.iconColor} />
+        )}
       </View>
 
-      <View className="min-w-0 flex-1 gap-1">
-        <View className="flex-row items-start gap-2">
-          <Text
-            className={cn(
-              'min-w-0 flex-1 text-base text-ink',
-              unread ? 'font-bold' : 'font-semibold',
-            )}
-            numberOfLines={2}
-          >
-            {item.title}
-          </Text>
-          <View className="flex-row items-center gap-1.5 pt-0.5">
-            {unread ? <View className="h-2 w-2 rounded-full bg-active" /> : null}
-            <Text className="text-xs text-subtle">{formatInboxRelativeTime(item.receivedAt)}</Text>
-          </View>
-        </View>
+      <View className="min-w-0 flex-1 gap-1 pr-2">
+        <Text className={cn('text-base text-ink', unread ? 'font-bold' : 'font-semibold')}>
+          {item.title}
+        </Text>
         {item.body ? (
-          <Text className="text-sm leading-5 text-muted" numberOfLines={3}>
+          <Text className="text-sm leading-5 text-muted" numberOfLines={2}>
             {item.body}
           </Text>
         ) : null}
+      </View>
+
+      <View className="w-14 items-end gap-1.5 pt-0.5">
+        <Text className="text-xs text-subtle">{formatInboxRelativeTime(item.receivedAt)}</Text>
+        {unread ? (
+          <View className="h-2 w-2 rounded-full bg-active" />
+        ) : (
+          <View className="h-2 w-2" />
+        )}
       </View>
     </Pressable>
   );

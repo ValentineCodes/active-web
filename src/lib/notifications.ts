@@ -79,11 +79,20 @@ export async function syncPushToken({
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('push_notifications_enabled')
+    .select(
+      'push_notifications_enabled, message_push_enabled, push_payments_wallet_enabled, push_calls_enabled, push_tips_reminders_enabled',
+    )
     .eq('id', auth.user.id)
     .single();
 
-  if (profile?.push_notifications_enabled === false) return 'skipped';
+  const pushEnabled =
+    profile?.push_notifications_enabled !== false ||
+    profile?.message_push_enabled !== false ||
+    profile?.push_payments_wallet_enabled !== false ||
+    profile?.push_calls_enabled !== false ||
+    profile?.push_tips_reminders_enabled !== false;
+
+  if (!pushEnabled) return 'skipped';
 
   const { data: token } = await Notifications.getExpoPushTokenAsync({ projectId });
 

@@ -21,6 +21,19 @@ const lightPalette = {
   warningSoft: '#FDF3E3',
   info: '#2563EB',
   infoSoft: '#EAF1FE',
+  notificationChipBlueBg: '#DBEAFE',
+  notificationChipBlueFg: '#2563EB',
+  notificationChipPurpleBg: '#EDE9FE',
+  notificationChipPurpleFg: '#5B21B6',
+  notificationChipGreenBg: '#BBF7D0',
+  notificationChipGreenFg: '#15803D',
+  notificationChipAmberBg: '#FEF3C7',
+  notificationChipAmberFg: '#B45309',
+  notificationChipRedBg: '#FEE2E2',
+  notificationChipRedFg: '#DC2626',
+  switchTrackOn: '#1FA35A',
+  switchTrackOff: '#D1D5DB',
+  switchThumb: '#FFFFFF',
 };
 
 /**
@@ -47,6 +60,21 @@ const darkPalette = {
   warningSoft: '#2A2410',
   info: '#0A84FF',
   infoSoft: '#152438',
+  /** Inbox row icon circles — sampled from `design/notifications_*.png`. */
+  notificationChipBlueBg: '#1E293B',
+  notificationChipBlueFg: '#60A5FA',
+  notificationChipPurpleBg: '#2E1065',
+  notificationChipPurpleFg: '#DDD6FE',
+  notificationChipGreenBg: '#1B2E1E',
+  notificationChipGreenFg: '#4ADE80',
+  notificationChipAmberBg: '#422006',
+  notificationChipAmberFg: '#F5BC1E',
+  notificationChipRedBg: '#3B1212',
+  notificationChipRedFg: '#FF453A',
+  /** iOS-style toggles — `design/notifications_settings.png`. */
+  switchTrackOn: '#4ADE80',
+  switchTrackOff: '#424242',
+  switchThumb: '#FFFFFF',
 };
 
 function hexToRgbChannels(hex) {
@@ -79,6 +107,19 @@ function paletteToCssVarRecord(palette) {
     '--color-warning-soft': hexToRgbChannels(palette.warningSoft),
     '--color-info': hexToRgbChannels(palette.info),
     '--color-info-soft': hexToRgbChannels(palette.infoSoft),
+    '--color-notification-chip-blue-bg': hexToRgbChannels(palette.notificationChipBlueBg),
+    '--color-notification-chip-blue-fg': hexToRgbChannels(palette.notificationChipBlueFg),
+    '--color-notification-chip-purple-bg': hexToRgbChannels(palette.notificationChipPurpleBg),
+    '--color-notification-chip-purple-fg': hexToRgbChannels(palette.notificationChipPurpleFg),
+    '--color-notification-chip-green-bg': hexToRgbChannels(palette.notificationChipGreenBg),
+    '--color-notification-chip-green-fg': hexToRgbChannels(palette.notificationChipGreenFg),
+    '--color-notification-chip-amber-bg': hexToRgbChannels(palette.notificationChipAmberBg),
+    '--color-notification-chip-amber-fg': hexToRgbChannels(palette.notificationChipAmberFg),
+    '--color-notification-chip-red-bg': hexToRgbChannels(palette.notificationChipRedBg),
+    '--color-notification-chip-red-fg': hexToRgbChannels(palette.notificationChipRedFg),
+    '--color-switch-track-on': hexToRgbChannels(palette.switchTrackOn),
+    '--color-switch-track-off': hexToRgbChannels(palette.switchTrackOff),
+    '--color-switch-thumb': hexToRgbChannels(palette.switchThumb),
   };
 }
 

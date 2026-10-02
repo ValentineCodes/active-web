@@ -1,4 +1,4 @@
-import { formatDistanceToNowStrict } from 'date-fns';
+import { format, formatDistanceToNowStrict, isToday, isYesterday, subDays } from 'date-fns';
 import type { Ionicons } from '@expo/vector-icons';
 
 import type { InboxNotification, NotificationType } from '@/features/notifications/types';
@@ -8,121 +8,138 @@ import { getColors } from '@/theme';
 
 const CANONICAL_TYPES = new Set<string>(NOTIFICATION_TYPES);
 
-/** Compact relative time for the notification list (e.g. `2m`, `1h`). */
+/** Relative time for notification rows (e.g. `2m`, `Yesterday`, `Mon`). */
 export function formatInboxRelativeTime(iso: string): string {
-  const raw = formatDistanceToNowStrict(new Date(iso), { addSuffix: false });
-  if (raw === 'less than a minute') return 'now';
+  const date = new Date(iso);
+  const now = new Date();
 
-  const match = /^(\d+) (second|minute|hour|day|month|year)s?$/.exec(raw);
-  if (!match) return raw;
+  if (isToday(date)) {
+    const raw = formatDistanceToNowStrict(date, { addSuffix: false });
+    if (raw === 'less than a minute') return 'now';
 
-  const value = match[1];
-  switch (match[2]) {
-    case 'second':
-      return `${value}s`;
-    case 'minute':
-      return `${value}m`;
-    case 'hour':
-      return `${value}h`;
-    case 'day':
-      return `${value}d`;
-    default:
-      return raw;
+    const match = /^(\d+) (second|minute|hour)s?$/.exec(raw);
+    if (!match) return raw;
+
+    const value = match[1];
+    switch (match[2]) {
+      case 'second':
+        return `${value}s`;
+      case 'minute':
+        return `${value}m`;
+      case 'hour':
+        return `${value}h`;
+      default:
+        return raw;
+    }
   }
+
+  if (isYesterday(date)) return 'Yesterday';
+
+  if (date >= subDays(now, 6)) return format(date, 'EEE');
+
+  return format(date, 'EEE');
 }
 
 type NotificationVisual = {
   icon: keyof typeof Ionicons.glyphMap;
   iconColor: string;
-  iconBackgroundClassName: string;
+  iconBackground: string;
+  useNairaSymbol?: boolean;
 };
 
 export function notificationVisual(type: NotificationType): NotificationVisual {
   const colors = getColors();
+  const blue = {
+    iconBackground: colors.notificationChipBlueBg,
+    iconColor: colors.notificationChipBlueFg,
+  };
+  const purple = {
+    iconBackground: colors.notificationChipPurpleBg,
+    iconColor: colors.notificationChipPurpleFg,
+  };
+  const green = {
+    iconBackground: colors.notificationChipGreenBg,
+    iconColor: colors.notificationChipGreenFg,
+  };
+  const amber = {
+    iconBackground: colors.notificationChipAmberBg,
+    iconColor: colors.notificationChipAmberFg,
+  };
+  const red = {
+    iconBackground: colors.notificationChipRedBg,
+    iconColor: colors.notificationChipRedFg,
+  };
+
   switch (type) {
     case 'response_received':
     case 'new_responses':
       return {
         icon: 'chatbubble-ellipses-outline',
-        iconColor: colors.brand,
-        iconBackgroundClassName: 'bg-brandSoft',
+        ...blue,
       };
     case 'request_expiring':
     case 'request_expired':
       return {
         icon: 'time-outline',
-        iconColor: colors.warning,
-        iconBackgroundClassName: 'bg-warningSoft',
+        ...amber,
       };
     case 'response_accepted':
       return {
         icon: 'checkmark-circle-outline',
-        iconColor: colors.active,
-        iconBackgroundClassName: 'bg-activeSoft',
+        ...blue,
       };
     case 'response_not_selected':
       return {
         icon: 'close-circle-outline',
-        iconColor: colors.muted,
-        iconBackgroundClassName: 'bg-surface',
+        ...blue,
       };
     case 'completion_requested':
       return {
-        icon: 'clipboard-outline',
-        iconColor: colors.info,
-        iconBackgroundClassName: 'bg-infoSoft',
+        icon: 'checkmark',
+        ...purple,
       };
     case 'payment_secured':
     case 'funds_returned':
     case 'payment_released':
     case 'payment_received':
-    case 'funds_released_after_resolution':
-      return {
-        icon: 'wallet-outline',
-        iconColor: colors.brand,
-        iconBackgroundClassName: 'bg-brandSoft',
-      };
     case 'withdrawal_processing':
     case 'withdrawal_successful':
     case 'withdrawal_failed':
+    case 'funds_released_after_resolution':
       return {
-        icon: 'arrow-down-circle-outline',
-        iconColor: colors.brand,
-        iconBackgroundClassName: 'bg-brandSoft',
+        icon: 'wallet-outline',
+        ...green,
+        useNairaSymbol: true,
       };
     case 'new_message':
       return {
         icon: 'mail-outline',
-        iconColor: colors.info,
-        iconBackgroundClassName: 'bg-infoSoft',
+        ...blue,
       };
     case 'missed_call':
       return {
         icon: 'call-outline',
-        iconColor: colors.danger,
-        iconBackgroundClassName: 'bg-dangerSoft',
+        ...blue,
       };
     case 'request_cancelled':
     case 'helper_cancelled':
     case 'cancellation_confirmed':
       return {
-        icon: 'ban-outline',
-        iconColor: colors.muted,
-        iconBackgroundClassName: 'bg-surface',
+        icon: 'checkmark',
+        ...amber,
       };
     case 'problem_reported':
     case 'dispute_opened':
     case 'dispute_resolved':
       return {
-        icon: 'alert-circle-outline',
-        iconColor: colors.warning,
-        iconBackgroundClassName: 'bg-warningSoft',
+        icon: 'alert',
+        ...red,
       };
     case 'rate_experience':
       return {
         icon: 'star-outline',
         iconColor: colors.warning,
-        iconBackgroundClassName: 'bg-warningSoft',
+        iconBackground: colors.warningSoft,
       };
     default: {
       const _exhaustive: never = type;

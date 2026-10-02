@@ -386,7 +386,10 @@ export type Database = {
           jobs_completed: number
           message_push_enabled: boolean
           phone: string | null
+          push_calls_enabled: boolean
           push_notifications_enabled: boolean
+          push_payments_wallet_enabled: boolean
+          push_tips_reminders_enabled: boolean
           rating_average: number | null
           rating_count: number
           requests_completed: number
@@ -402,7 +405,10 @@ export type Database = {
           jobs_completed?: number
           message_push_enabled?: boolean
           phone?: string | null
+          push_calls_enabled?: boolean
           push_notifications_enabled?: boolean
+          push_payments_wallet_enabled?: boolean
+          push_tips_reminders_enabled?: boolean
           rating_average?: number | null
           rating_count?: number
           requests_completed?: number
@@ -418,7 +424,10 @@ export type Database = {
           jobs_completed?: number
           message_push_enabled?: boolean
           phone?: string | null
+          push_calls_enabled?: boolean
           push_notifications_enabled?: boolean
+          push_payments_wallet_enabled?: boolean
+          push_tips_reminders_enabled?: boolean
           rating_average?: number | null
           rating_count?: number
           requests_completed?: number
@@ -1649,7 +1658,10 @@ export type Database = {
       set_notification_preferences: {
         Args: {
           p_message_push_enabled: boolean
+          p_push_calls_enabled: boolean
           p_push_notifications_enabled: boolean
+          p_push_payments_wallet_enabled: boolean
+          p_push_tips_reminders_enabled: boolean
         }
         Returns: undefined
       }

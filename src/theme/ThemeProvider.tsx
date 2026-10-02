@@ -46,6 +46,19 @@ export type ThemePalette = {
   warningSoft: string;
   info: string;
   infoSoft: string;
+  notificationChipBlueBg: string;
+  notificationChipBlueFg: string;
+  notificationChipPurpleBg: string;
+  notificationChipPurpleFg: string;
+  notificationChipGreenBg: string;
+  notificationChipGreenFg: string;
+  notificationChipAmberBg: string;
+  notificationChipAmberFg: string;
+  notificationChipRedBg: string;
+  notificationChipRedFg: string;
+  switchTrackOn: string;
+  switchTrackOff: string;
+  switchThumb: string;
 };
 
 type ThemeContextValue = {
