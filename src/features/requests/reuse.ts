@@ -20,7 +20,7 @@ export function reuseRequestButtonLabel(status: RequestStatus): string | null {
   }
 
   if (status === 'completed') {
-    return 'Ask again';
+    return 'Request again';
   }
 
   return null;

@@ -25,12 +25,12 @@ import {
   useRequestResponses,
 } from '@/features/requests/requester-api';
 import { chooseResponderDialog } from '@/features/requests/selection-copy';
+import { myRequestActivityBadge } from '@/features/requests/activity-list';
 import {
   canReuseRequest,
   isExpiredRequestView,
   reuseRequestButtonLabelForRequest,
 } from '@/features/requests/reuse';
-import { requestStatusBadge } from '@/features/requests/status';
 import { formatAgo, formatMoney, formatWhenRequestCard } from '@/lib/format';
 import { markRequestResponseNotificationsRead } from '@/features/notifications/inbox';
 import { showAppToast } from '@/lib/toast';
@@ -102,8 +102,10 @@ export default function RequestDetailScreen() {
   }
 
   const { data } = request;
-  const badge = requestStatusBadge(data.status, data.pending_response_count, {
-    expiresAt: data.expires_at,
+  const badge = myRequestActivityBadge({
+    status: data.status,
+    expires_at: data.expires_at,
+    pending_response_count: data.pending_response_count,
   });
   const pending = responses.data?.filter((response) => response.status === 'pending') ?? [];
   const isExpiredRequest = isExpiredRequestView(data.status, data.expires_at);
@@ -224,6 +226,7 @@ export default function RequestDetailScreen() {
           <Button
             label={reuseLabel}
             size="lg"
+            variant={data.status === 'completed' ? 'secondary' : 'primary'}
             onPress={() => router.push(`/request/new?from=${id}`)}
           />
         ) : null}
