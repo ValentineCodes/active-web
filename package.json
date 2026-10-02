@@ -8,6 +8,7 @@
     "start": "expo start --clear",
     "android": "expo run:android",
     "ios": "expo run:ios",
+    "prebuild": "expo prebuild --clean",
     "build:android:dev": "npx eas-cli@latest build --platform android --profile development",
     "build:android:preview": "npx eas-cli@latest build --platform android --profile preview",
     "build:android:prod": "npx eas-cli@latest build --platform android --profile production",
