@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { type ReactNode } from 'react';
 import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { useMutation } from '@tanstack/react-query';
@@ -6,19 +6,16 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { ProfileCatalogueRail } from '@/components/ProfileCatalogueRail';
 import { Avatar } from '@/components/ui/Avatar';
-import { Button } from '@/components/ui/Button';
 import { Header } from '@/components/ui/Header';
 import { Screen } from '@/components/ui/Screen';
 import { ErrorState, InlineError, LoadingState } from '@/components/ui/StateView';
-import { TextField } from '@/components/ui/TextField';
 import { useAttendance } from '@/features/attendance/api';
 import { signOut } from '@/features/auth/api';
-import { useCaptureProfilePhoto, useProfile, useSaveProfile } from '@/features/profile/api';
+import { useProfile } from '@/features/profile/api';
 import { useMyResponses } from '@/features/requests/responses-api';
 import { useMyRequests } from '@/features/requests/requester-api';
 import type { ThemePreference } from '@/features/theme/preferences';
 import { useColors, useTheme } from '@/theme';
-import { showAppToast } from '@/lib/toast';
 
 function ProfileStat({ value, label }: { value: number; label: string }) {
   return (
@@ -113,11 +110,7 @@ export default function ProfileScreen() {
   const attendance = useAttendance();
   const myRequests = useMyRequests();
   const myResponses = useMyResponses();
-  const save = useSaveProfile();
-  const capturePhoto = useCaptureProfilePhoto();
   const leave = useMutation({ mutationFn: signOut });
-
-  const [draft, setDraft] = useState<{ name: string; bio: string } | null>(null);
 
   if (profile.isPending) {
     return (
@@ -170,96 +163,35 @@ export default function ProfileScreen() {
         }
       >
         <View className="items-center gap-2">
-          <Pressable
-            onPress={() =>
-              capturePhoto.mutate({}, { onSuccess: () => showAppToast('Profile updated') })
-            }
-            disabled={capturePhoto.isPending}
-            accessibilityRole="button"
-            accessibilityLabel="Update profile photo"
-          >
-            <Avatar
-              path={data.avatar_path}
-              name={data.display_name}
-              size="lg"
-              showActiveDot={attending}
-            />
-          </Pressable>
-          {draft ? null : (
-            <>
-              <Text className="text-2xl font-bold text-ink">{data.display_name}</Text>
-              {ratingAverage !== null || completed > 0 ? (
-                <View className="flex-row flex-wrap items-center justify-center gap-x-1.5">
-                  {ratingAverage !== null ? (
-                    <>
-                      <Ionicons name="star" size={16} color={colors.warning} />
-                      <Text className="text-base font-medium text-warning">
-                        {ratingAverage.toFixed(1)}
-                      </Text>
-                    </>
-                  ) : null}
-                  {ratingAverage !== null && completed > 0 ? (
-                    <Text className="text-base text-muted">·</Text>
-                  ) : null}
-                  {completed > 0 ? (
-                    <Text className="text-base font-medium text-muted">{completed} completed</Text>
-                  ) : null}
-                </View>
+          <Avatar
+            path={data.avatar_path}
+            name={data.display_name}
+            size="lg"
+            showActiveDot={attending}
+          />
+          <Text className="text-2xl font-bold text-ink">{data.display_name}</Text>
+          {ratingAverage !== null || completed > 0 ? (
+            <View className="flex-row flex-wrap items-center justify-center gap-x-1.5">
+              {ratingAverage !== null ? (
+                <>
+                  <Ionicons name="star" size={16} color={colors.warning} />
+                  <Text className="text-base font-medium text-warning">
+                    {ratingAverage.toFixed(1)}
+                  </Text>
+                </>
               ) : null}
-              {data.bio ? (
-                <Text className="max-w-sm text-center text-base leading-6 text-muted">
-                  {data.bio}
-                </Text>
+              {ratingAverage !== null && completed > 0 ? (
+                <Text className="text-base text-muted">·</Text>
               ) : null}
-            </>
-          )}
-        </View>
-
-        {draft ? (
-          <View className="gap-4">
-            <TextField
-              label="Your name"
-              value={draft.name}
-              onChangeText={(name) => setDraft({ ...draft, name })}
-              autoCapitalize="words"
-            />
-            <TextField
-              label="A line about you"
-              value={draft.bio}
-              onChangeText={(bio) => setDraft({ ...draft, bio })}
-              multiline
-              numberOfLines={3}
-              maxLength={280}
-              counterMax={280}
-            />
-            {save.isError ? <InlineError error={save.error} /> : null}
-            <View className="flex-row gap-3">
-              <Button
-                label="Cancel"
-                variant="secondary"
-                className="flex-1"
-                onPress={() => setDraft(null)}
-              />
-              <Button
-                label="Save"
-                className="flex-1"
-                loading={save.isPending}
-                disabled={draft.name.trim().length < 2}
-                onPress={() =>
-                  save.mutate(
-                    { display_name: draft.name.trim(), bio: draft.bio.trim() || null },
-                    {
-                      onSuccess: () => {
-                        setDraft(null);
-                        showAppToast('Profile updated');
-                      },
-                    },
-                  )
-                }
-              />
+              {completed > 0 ? (
+                <Text className="text-base font-medium text-muted">{completed} completed</Text>
+              ) : null}
             </View>
-          </View>
-        ) : null}
+          ) : null}
+          {data.bio ? (
+            <Text className="max-w-sm text-center text-base leading-6 text-muted">{data.bio}</Text>
+          ) : null}
+        </View>
 
         <View className="flex-row overflow-hidden rounded-2xl border border-hairline bg-elevated">
           <ProfileStat value={activeRequests} label="Requests" />
@@ -272,10 +204,7 @@ export default function ProfileScreen() {
         <ProfileCatalogueRail />
 
         <SettingsGroup title="Account">
-          <SettingsRow
-            label="Edit profile"
-            onPress={() => setDraft({ name: data.display_name ?? '', bio: data.bio ?? '' })}
-          />
+          <SettingsRow label="Edit profile" onPress={() => router.push('/profile/edit')} />
           <SettingsRow label="Payment details" onPress={() => router.push('/wallet')} showDivider />
           <SettingsRow label="Verify identity" onPress={() => {}} showDivider />
         </SettingsGroup>

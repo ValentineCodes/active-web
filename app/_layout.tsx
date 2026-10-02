@@ -71,6 +71,7 @@ function RootNavigator() {
       <Stack.Protected guard={isSignedIn && !needsProfile}>
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="profile" />
+        <Stack.Screen name="profile/edit" />
         <Stack.Screen name="wallet" />
         <Stack.Screen name="request/new" options={{ presentation: 'modal' }} />
         <Stack.Screen name="request/[id]" />
