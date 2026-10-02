@@ -188,10 +188,22 @@ export default function ProfileScreen() {
           {draft ? null : (
             <>
               <Text className="text-2xl font-bold text-ink">{data.display_name}</Text>
-              {ratingAverage !== null ? (
-                <View className="flex-row items-center gap-1">
-                  <Ionicons name="star" size={14} color={colors.warning} />
-                  <Text className="text-sm text-muted">{ratingAverage.toFixed(1)}</Text>
+              {ratingAverage !== null || completed > 0 ? (
+                <View className="flex-row flex-wrap items-center justify-center gap-x-1.5">
+                  {ratingAverage !== null ? (
+                    <>
+                      <Ionicons name="star" size={16} color={colors.warning} />
+                      <Text className="text-base font-medium text-warning">
+                        {ratingAverage.toFixed(1)}
+                      </Text>
+                    </>
+                  ) : null}
+                  {ratingAverage !== null && completed > 0 ? (
+                    <Text className="text-base text-muted">·</Text>
+                  ) : null}
+                  {completed > 0 ? (
+                    <Text className="text-base font-medium text-muted">{completed} completed</Text>
+                  ) : null}
                 </View>
               ) : null}
               {data.bio ? (

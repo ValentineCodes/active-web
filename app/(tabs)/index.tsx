@@ -1,12 +1,10 @@
 import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
-import { Link, router } from 'expo-router';
+import { router } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 
+import { HomeActiveRequestBanner } from '@/components/HomeActiveRequestBanner';
 import { NearbyRequests } from '@/components/NearbyRequests';
 import { Avatar } from '@/components/ui/Avatar';
-import { Badge } from '@/components/ui/Badge';
-import { Button } from '@/components/ui/Button';
-import { Card } from '@/components/ui/Card';
 import { FloatingActionButton } from '@/components/ui/FloatingActionButton';
 import { Screen } from '@/components/ui/Screen';
 import { useAttendance } from '@/features/attendance/api';
@@ -14,7 +12,6 @@ import { useProfile } from '@/features/profile/api';
 import { useMyResponses } from '@/features/requests/responses-api';
 import { useMyWallet } from '@/features/wallet/api';
 import { useMyRequests } from '@/features/requests/requester-api';
-import { requestEngagementStatusBadge } from '@/features/requests/status';
 import { formatGreeting, formatMoney } from '@/lib/format';
 import { queryKeys } from '@/lib/query/keys';
 
@@ -41,7 +38,31 @@ export default function HomeScreen() {
   );
 
   const attendingRequestId = attendance.data?.attending_request_id ?? null;
-  /** Screen content ends above the tab bar — only a small gap is needed. */
+
+  const activeRequest = (() => {
+    if (engagementAsRequester) {
+      return {
+        id: engagementAsRequester.request_id,
+        title: engagementAsRequester.title ?? 'Request',
+      };
+    }
+    if (engagementAsHelper) {
+      return {
+        id: engagementAsHelper.request_id,
+        title: engagementAsHelper.title ?? 'Request',
+      };
+    }
+    if (attendingRequestId) {
+      const fromRequest = requests.data?.find((row) => row.request_id === attendingRequestId);
+      const fromResponse = responses.data?.find((row) => row.request_id === attendingRequestId);
+      return {
+        id: attendingRequestId,
+        title: fromRequest?.title ?? fromResponse?.title ?? 'Active request',
+      };
+    }
+    return null;
+  })();
+
   const fabGapAboveTabBar = 12;
   const fabSize = 56;
   const listBottomPadding = fabGapAboveTabBar + fabSize + 24;
@@ -99,40 +120,11 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        {attendingRequestId && !engagementAsRequester && !engagementAsHelper ? (
-          <Card tone="active" className="gap-3">
-            <Badge label="Attending" tone="active" />
-            <Text className="text-sm text-muted">Finish this one before you take on another.</Text>
-            <Button
-              label="Open request"
-              variant="active"
-              onPress={() => router.push(`/engagement/${attendingRequestId}`)}
-            />
-          </Card>
-        ) : null}
-
-        {engagementAsRequester || engagementAsHelper ? (
-          <Link
-            href={`/engagement/${engagementAsRequester?.request_id ?? engagementAsHelper?.request_id}`}
-            asChild
-          >
-            <Pressable accessibilityRole="button" accessibilityLabel="Open your active request">
-              <Card tone="active" className="gap-2">
-                {(() => {
-                  const status =
-                    engagementAsRequester?.status ?? engagementAsHelper?.request_status;
-                  const badge = status ? requestEngagementStatusBadge(status) : null;
-                  return badge ? <Badge label={badge.label} tone={badge.tone} /> : null;
-                })()}
-                <Text className="text-lg font-semibold text-ink">
-                  {engagementAsRequester
-                    ? 'Your request is in progress'
-                    : 'You are helping someone'}
-                </Text>
-                <Text className="text-sm text-muted">Tap for location and contact details.</Text>
-              </Card>
-            </Pressable>
-          </Link>
+        {activeRequest ? (
+          <HomeActiveRequestBanner
+            title={activeRequest.title}
+            onPress={() => router.push(`/engagement/${activeRequest.id}`)}
+          />
         ) : null}
 
         <NearbyRequests variant="home" limit={20} />

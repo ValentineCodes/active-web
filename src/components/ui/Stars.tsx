@@ -17,7 +17,7 @@ export function StarRating({ average, count }: { average: number | null; count: 
       accessibilityLabel={`Rated ${average.toFixed(1)} out of 5 from ${count} ratings`}
     >
       <Ionicons name="star" size={14} color={colors.warning} />
-      <Text className="text-sm font-semibold text-ink">{average.toFixed(1)}</Text>
+      <Text className="text-sm font-semibold text-warning">{average.toFixed(1)}</Text>
     </View>
   );
 }
