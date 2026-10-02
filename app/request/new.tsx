@@ -385,7 +385,7 @@ function NewRequestForm({ reuseSeed }: { reuseSeed?: ReuseSeed }) {
       {
         onSuccess: (requestId) => {
           syncPushToken({ mode: 'contextual' });
-          showAppToast('Request posted');
+          showAppToast('Your request is now live');
           if (parsedAmount !== null) {
             const funding = summarizeRequestFunding(parsedAmount);
             showAppToast(`${formatMoney(funding.total, funding.currency)} locked`, 'info');
