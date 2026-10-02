@@ -21,6 +21,7 @@ import {
 } from '@/components/RequestLocationModal';
 import { Button } from '@/components/ui/Button';
 import { IconButton } from '@/components/ui/IconButton';
+import { KeyboardStickyFooter } from '@/components/ui/KeyboardStickyFooter';
 import { Screen } from '@/components/ui/Screen';
 import { ErrorState, InlineError, LoadingState } from '@/components/ui/StateView';
 import {
@@ -448,229 +449,235 @@ function NewRequestForm({ reuseSeed }: { reuseSeed?: ReuseSeed }) {
   return (
     <BottomSheetModalProvider>
       <Screen edges={['top', 'bottom']}>
-        <WizardHeader
-          title={reusingPrior ? 'Send request again' : 'New request'}
-          step={step}
-          onClose={closeWizard}
-          onBack={step > 0 ? goBack : undefined}
-        />
-        <WizardProgress step={step} />
-
-        <ScrollView
-          contentContainerClassName="gap-5 p-5 pb-8"
-          keyboardShouldPersistTaps="handled"
-          className="flex-1"
-        >
-          {step === 0 ? (
-            <View className="gap-3">
-              <Text className="font-serif text-3xl font-bold leading-9 text-ink">
-                What do you need?
-              </Text>
-              <Text className="text-base text-muted">Describe it in your own words.</Text>
-              <CreateTextArea
-                inputRef={titleInputRef}
-                value={title}
-                onChangeText={setTitle}
-                placeholder="e.g. Fix my leaking sink, Need a ride to the airport…"
-                maxLength={CREATE_TITLE_LIMITS.max}
-                textSize="xl"
-                minHeight={120}
-              />
-              {trimmedTitle.length > 0 && trimmedTitle.length < CREATE_TITLE_LIMITS.min ? (
-                <Text className="text-sm text-muted">
-                  At least {CREATE_TITLE_LIMITS.min} characters to continue.
-                </Text>
-              ) : null}
-            </View>
-          ) : null}
-
-          {step === 1 ? (
-            <View className="gap-3">
-              <Text className="font-serif text-3xl font-bold leading-9 text-ink">Tell us more</Text>
-              <Text className="text-base text-muted">
-                Optional. Any detail that helps people understand what&apos;s needed.
-              </Text>
-              <CreateTextArea
-                inputRef={descriptionInputRef}
-                value={description}
-                onChangeText={setDescription}
-                placeholder="Any extra context, requirements, or things to know…"
-                maxLength={DESCRIPTION_LIMITS.max}
-                textSize="lg"
-                minHeight={200}
-              />
-            </View>
-          ) : null}
-
-          {step === 2 ? (
-            <View className="gap-3">
-              <Text className="font-serif text-3xl font-bold leading-9 text-ink">
-                What are you offering?
-              </Text>
-              <Text className="text-base text-muted">How much you&apos;re willing to pay.</Text>
-              <View className="rounded-2xl bg-surface px-5 py-6">
-                <View className="flex-row items-center gap-2">
-                  <Text className="text-3xl font-bold text-active">₦</Text>
-                  <TextInput
-                    ref={amountInputRef}
-                    accessibilityLabel="Offer amount"
-                    value={amount}
-                    onChangeText={(text) => setAmount(text.replace(/[^\d]/g, ''))}
-                    keyboardType="number-pad"
-                    placeholder="0"
-                    placeholderTextColor={colors.subtle}
-                    className="flex-1 py-0 text-3xl font-bold text-ink"
-                    maxLength={9}
-                  />
+        <KeyboardStickyFooter
+          footer={
+            <View className="gap-3 border-t border-hairline p-5">
+              {step === 1 ? (
+                <View className="flex-row items-stretch gap-3">
+                  <WizardSkipButton onPress={goNext} />
+                  <WizardPrimaryButton label="Next" onPress={goNext} className="flex-1" />
                 </View>
-              </View>
-              {amountError ? <Text className="text-sm text-warning">{amountError}</Text> : null}
+              ) : isLastStep ? (
+                <WizardPrimaryButton
+                  label="Post request"
+                  loading={create.isPending || wallet.isPending || locationModalLoading}
+                  disabled={!stepValid[step] || walletShort}
+                  onPress={handlePostPress}
+                />
+              ) : (
+                <WizardPrimaryButton label="Next" disabled={!stepValid[step]} onPress={goNext} />
+              )}
             </View>
-          ) : null}
+          }
+        >
+          <WizardHeader
+            title={reusingPrior ? 'Send request again' : 'New request'}
+            step={step}
+            onClose={closeWizard}
+            onBack={step > 0 ? goBack : undefined}
+          />
+          <WizardProgress step={step} />
 
-          {step === 3 ? (
-            <View className="gap-5">
+          <ScrollView
+            contentContainerClassName="gap-5 p-5 pb-8"
+            keyboardShouldPersistTaps="handled"
+            className="flex-1"
+          >
+            {step === 0 ? (
               <View className="gap-3">
                 <Text className="font-serif text-3xl font-bold leading-9 text-ink">
-                  When do you need it?
+                  What do you need?
+                </Text>
+                <Text className="text-base text-muted">Describe it in your own words.</Text>
+                <CreateTextArea
+                  inputRef={titleInputRef}
+                  value={title}
+                  onChangeText={setTitle}
+                  placeholder="e.g. Fix my leaking sink, Need a ride to the airport…"
+                  maxLength={CREATE_TITLE_LIMITS.max}
+                  textSize="xl"
+                  minHeight={120}
+                />
+                {trimmedTitle.length > 0 && trimmedTitle.length < CREATE_TITLE_LIMITS.min ? (
+                  <Text className="text-sm text-muted">
+                    At least {CREATE_TITLE_LIMITS.min} characters to continue.
+                  </Text>
+                ) : null}
+              </View>
+            ) : null}
+
+            {step === 1 ? (
+              <View className="gap-3">
+                <Text className="font-serif text-3xl font-bold leading-9 text-ink">
+                  Tell us more
                 </Text>
                 <Text className="text-base text-muted">
-                  People nearby will see your request straight away.
+                  Optional. Any detail that helps people understand what&apos;s needed.
                 </Text>
-                <View className="flex-row gap-3">
-                  <WhenPill
-                    label="Right Now"
-                    selected={whenMode === 'now'}
-                    onPress={() => {
-                      setWhenMode('now');
-                      setLaterTimeError(false);
-                    }}
-                  />
-                  <WhenPill
-                    label="Later"
-                    selected={whenMode === 'later'}
-                    onPress={() => {
-                      setWhenMode('later');
-                      setLaterTimeError(false);
-                    }}
-                  />
+                <CreateTextArea
+                  inputRef={descriptionInputRef}
+                  value={description}
+                  onChangeText={setDescription}
+                  placeholder="Any extra context, requirements, or things to know…"
+                  maxLength={DESCRIPTION_LIMITS.max}
+                  textSize="lg"
+                  minHeight={200}
+                />
+              </View>
+            ) : null}
+
+            {step === 2 ? (
+              <View className="gap-3">
+                <Text className="font-serif text-3xl font-bold leading-9 text-ink">
+                  What are you offering?
+                </Text>
+                <Text className="text-base text-muted">How much you&apos;re willing to pay.</Text>
+                <View className="rounded-2xl bg-surface px-5 py-6">
+                  <View className="flex-row items-center gap-2">
+                    <Text className="text-3xl font-bold text-active">₦</Text>
+                    <TextInput
+                      ref={amountInputRef}
+                      accessibilityLabel="Offer amount"
+                      value={amount}
+                      onChangeText={(text) => setAmount(text.replace(/[^\d]/g, ''))}
+                      keyboardType="number-pad"
+                      placeholder="0"
+                      placeholderTextColor={colors.subtle}
+                      className="flex-1 py-0 text-3xl font-bold text-ink"
+                      maxLength={9}
+                    />
+                  </View>
                 </View>
-                {whenMode === 'later' ? (
-                  <View className="gap-3 rounded-2xl bg-surface p-4">
-                    <Text className="text-base font-semibold text-ink">{reviewWhen}</Text>
-                    {laterTimeError ? (
-                      <Text className="text-sm text-warning">Choose a time in the future.</Text>
-                    ) : null}
-                    {Platform.OS === 'ios' ? (
-                      <DateTimePicker
-                        value={laterAt}
-                        mode="datetime"
-                        minimumDate={new Date()}
-                        maximumDate={addHours(new Date(), 24 * 30)}
-                        onChange={(_, date) => {
-                          if (date) setLaterAt(date);
-                        }}
-                      />
-                    ) : (
-                      <View className="flex-row flex-wrap gap-2">
-                        <Button
-                          label="Change date"
-                          variant="secondary"
-                          onPress={() => setShowDatePicker(true)}
+                {amountError ? <Text className="text-sm text-warning">{amountError}</Text> : null}
+              </View>
+            ) : null}
+
+            {step === 3 ? (
+              <View className="gap-5">
+                <View className="gap-3">
+                  <Text className="font-serif text-3xl font-bold leading-9 text-ink">
+                    When do you need it?
+                  </Text>
+                  <Text className="text-base text-muted">
+                    People nearby will see your request straight away.
+                  </Text>
+                  <View className="flex-row gap-3">
+                    <WhenPill
+                      label="Right Now"
+                      selected={whenMode === 'now'}
+                      onPress={() => {
+                        setWhenMode('now');
+                        setLaterTimeError(false);
+                      }}
+                    />
+                    <WhenPill
+                      label="Later"
+                      selected={whenMode === 'later'}
+                      onPress={() => {
+                        setWhenMode('later');
+                        setLaterTimeError(false);
+                      }}
+                    />
+                  </View>
+                  {whenMode === 'later' ? (
+                    <View className="gap-3 rounded-2xl bg-surface p-4">
+                      <Text className="text-base font-semibold text-ink">{reviewWhen}</Text>
+                      {laterTimeError ? (
+                        <Text className="text-sm text-warning">Choose a time in the future.</Text>
+                      ) : null}
+                      {Platform.OS === 'ios' ? (
+                        <DateTimePicker
+                          value={laterAt}
+                          mode="datetime"
+                          minimumDate={new Date()}
+                          maximumDate={addHours(new Date(), 24 * 30)}
+                          onChange={(_, date) => {
+                            if (date) setLaterAt(date);
+                          }}
                         />
-                        <Button
-                          label="Change time"
-                          variant="secondary"
-                          onPress={() => setShowTimePicker(true)}
+                      ) : (
+                        <View className="flex-row flex-wrap gap-2">
+                          <Button
+                            label="Change date"
+                            variant="secondary"
+                            onPress={() => setShowDatePicker(true)}
+                          />
+                          <Button
+                            label="Change time"
+                            variant="secondary"
+                            onPress={() => setShowTimePicker(true)}
+                          />
+                        </View>
+                      )}
+                      {showDatePicker ? (
+                        <DateTimePicker
+                          value={laterAt}
+                          mode="date"
+                          minimumDate={new Date()}
+                          maximumDate={addHours(new Date(), 24 * 30)}
+                          onChange={onLaterDateChange}
                         />
-                      </View>
-                    )}
-                    {showDatePicker ? (
-                      <DateTimePicker
-                        value={laterAt}
-                        mode="date"
-                        minimumDate={new Date()}
-                        maximumDate={addHours(new Date(), 24 * 30)}
-                        onChange={onLaterDateChange}
-                      />
+                      ) : null}
+                      {showTimePicker ? (
+                        <DateTimePicker value={laterAt} mode="time" onChange={onLaterTimeChange} />
+                      ) : null}
+                    </View>
+                  ) : null}
+                </View>
+
+                <View className="gap-3 rounded-2xl border border-hairline bg-elevated p-4">
+                  <Text className="text-xs font-semibold uppercase tracking-wide text-subtle">
+                    Review before posting
+                  </Text>
+                  <Text className="font-serif text-xl font-bold text-ink" numberOfLines={1}>
+                    {trimmedTitle}
+                  </Text>
+                  {trimmedDescription ? (
+                    <Text className="text-sm leading-5 text-muted" numberOfLines={2}>
+                      {trimmedDescription}
+                    </Text>
+                  ) : null}
+                  <View className="flex-row flex-wrap items-center gap-x-2 gap-y-1 pt-1">
+                    {isFundedOffer(parsedAmount) ? (
+                      <Text className="text-base font-bold text-active">
+                        {formatMoney(parsedAmount, MARKET.currency)}
+                      </Text>
                     ) : null}
-                    {showTimePicker ? (
-                      <DateTimePicker value={laterAt} mode="time" onChange={onLaterTimeChange} />
+                    <Text className="text-sm text-muted">·</Text>
+                    <Text className="text-sm text-muted">{whenSummary(whenMode, laterAt)}</Text>
+                    <Text className="text-sm text-muted">·</Text>
+                    <Text className="text-sm text-muted">{reviewLocation}</Text>
+                  </View>
+                </View>
+
+                {REQUEST_REQUIRES_FUNDING && funding ? (
+                  <View className="gap-2">
+                    {wallet.isPending ? (
+                      <Text className="text-sm text-muted">Checking wallet…</Text>
+                    ) : wallet.isError ? (
+                      <InlineError error={wallet.error} />
+                    ) : wallet.data ? (
+                      <Text className="text-sm text-muted">
+                        {walletShort
+                          ? `You need ${formatMoney(funding.total, funding.currency)} available (including fee). Top up before posting.`
+                          : `${formatMoney(funding.total, funding.currency)} will be held from your wallet when this goes live.`}
+                      </Text>
+                    ) : null}
+                    {walletShort ? (
+                      <Button
+                        label="Top up wallet"
+                        variant="secondary"
+                        onPress={() => router.push('/wallet')}
+                      />
                     ) : null}
                   </View>
                 ) : null}
+
+                {create.isError ? <InlineError error={create.error} /> : null}
               </View>
-
-              <View className="gap-3 rounded-2xl border border-hairline bg-elevated p-4">
-                <Text className="text-xs font-semibold uppercase tracking-wide text-subtle">
-                  Review before posting
-                </Text>
-                <Text className="font-serif text-xl font-bold text-ink" numberOfLines={1}>
-                  {trimmedTitle}
-                </Text>
-                {trimmedDescription ? (
-                  <Text className="text-sm leading-5 text-muted" numberOfLines={2}>
-                    {trimmedDescription}
-                  </Text>
-                ) : null}
-                <View className="flex-row flex-wrap items-center gap-x-2 gap-y-1 pt-1">
-                  {isFundedOffer(parsedAmount) ? (
-                    <Text className="text-base font-bold text-active">
-                      {formatMoney(parsedAmount, MARKET.currency)}
-                    </Text>
-                  ) : null}
-                  <Text className="text-sm text-muted">·</Text>
-                  <Text className="text-sm text-muted">{whenSummary(whenMode, laterAt)}</Text>
-                  <Text className="text-sm text-muted">·</Text>
-                  <Text className="text-sm text-muted">{reviewLocation}</Text>
-                </View>
-              </View>
-
-              {REQUEST_REQUIRES_FUNDING && funding ? (
-                <View className="gap-2">
-                  {wallet.isPending ? (
-                    <Text className="text-sm text-muted">Checking wallet…</Text>
-                  ) : wallet.isError ? (
-                    <InlineError error={wallet.error} />
-                  ) : wallet.data ? (
-                    <Text className="text-sm text-muted">
-                      {walletShort
-                        ? `You need ${formatMoney(funding.total, funding.currency)} available (including fee). Top up before posting.`
-                        : `${formatMoney(funding.total, funding.currency)} will be held from your wallet when this goes live.`}
-                    </Text>
-                  ) : null}
-                  {walletShort ? (
-                    <Button
-                      label="Top up wallet"
-                      variant="secondary"
-                      onPress={() => router.push('/wallet')}
-                    />
-                  ) : null}
-                </View>
-              ) : null}
-
-              {create.isError ? <InlineError error={create.error} /> : null}
-            </View>
-          ) : null}
-        </ScrollView>
-
-        <View className="gap-3 border-t border-hairline p-5">
-          {step === 1 ? (
-            <View className="flex-row items-stretch gap-3">
-              <WizardSkipButton onPress={goNext} />
-              <WizardPrimaryButton label="Next" onPress={goNext} className="flex-1" />
-            </View>
-          ) : isLastStep ? (
-            <WizardPrimaryButton
-              label="Post request"
-              loading={create.isPending || wallet.isPending || locationModalLoading}
-              disabled={!stepValid[step] || walletShort}
-              onPress={handlePostPress}
-            />
-          ) : (
-            <WizardPrimaryButton label="Next" disabled={!stepValid[step]} onPress={goNext} />
-          )}
-        </View>
+            ) : null}
+          </ScrollView>
+        </KeyboardStickyFooter>
       </Screen>
 
       <RequestLocationModal

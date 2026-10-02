@@ -135,12 +135,7 @@ export default function HomeScreen() {
           </Link>
         ) : null}
 
-        <NearbyRequests
-          variant="home"
-          limit={20}
-          seeAllLabel="See all on Activity"
-          onSeeAll={() => router.push('/(tabs)/activity')}
-        />
+        <NearbyRequests variant="home" limit={20} />
       </ScrollView>
 
       <FloatingActionButton

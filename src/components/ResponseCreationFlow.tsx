@@ -13,6 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Avatar } from '@/components/ui/Avatar';
 import { Button } from '@/components/ui/Button';
 import { IconButton } from '@/components/ui/IconButton';
+import { KeyboardStickyFooter } from '@/components/ui/KeyboardStickyFooter';
 import { InlineError } from '@/components/ui/StateView';
 import { hasProfilePhotoReady, useCaptureProfilePhoto, useProfile } from '@/features/profile/api';
 import {
@@ -261,7 +262,61 @@ export function ResponseCreationFlow({
   const messageStepNumber = needsPhotoStep ? 3 : 2;
 
   return (
-    <View className="flex-1">
+    <KeyboardStickyFooter
+      footer={
+        <View className="gap-3 border-t border-hairline p-5">
+          {needsPhotoStep && step === 0 ? (
+            <Button
+              label={
+                photoReady
+                  ? 'Continue'
+                  : capturePhoto.isPending
+                    ? 'Opening camera…'
+                    : 'Take profile photo'
+              }
+              size="lg"
+              variant={photoReady ? 'active' : 'secondary'}
+              loading={capturePhoto.isPending}
+              onPress={() => {
+                if (photoReady) {
+                  onStepChange(offerStep);
+                  return;
+                }
+                capturePhoto.mutate(
+                  {},
+                  {
+                    onSuccess: (saved) => {
+                      if (saved) showAppToast('Profile updated');
+                    },
+                  },
+                );
+              }}
+            />
+          ) : null}
+
+          {step === offerStep ? (
+            <WizardPrimaryButton
+              label="Next"
+              disabled={Boolean(offerError)}
+              onPress={() => onStepChange(messageStep)}
+            />
+          ) : null}
+
+          {step === messageStep ? (
+            <View className="flex-row items-stretch gap-3">
+              <WizardSecondaryButton label="Back" onPress={() => onStepChange(offerStep)} />
+              <WizardPrimaryButton
+                label={isUpdate ? 'Update response' : 'Send Response'}
+                disabled={Boolean(offerError)}
+                loading={submitting}
+                onPress={send}
+                className="flex-1"
+              />
+            </View>
+          ) : null}
+        </View>
+      }
+    >
       <ResponseWizardHeader step={step} stepCount={stepCount} onBack={handleHeaderBack} />
 
       <ScrollView
@@ -342,58 +397,6 @@ export function ResponseCreationFlow({
           </View>
         ) : null}
       </ScrollView>
-
-      <View className="gap-3 border-t border-hairline p-5">
-        {needsPhotoStep && step === 0 ? (
-          <Button
-            label={
-              photoReady
-                ? 'Continue'
-                : capturePhoto.isPending
-                  ? 'Opening camera…'
-                  : 'Take profile photo'
-            }
-            size="lg"
-            variant={photoReady ? 'active' : 'secondary'}
-            loading={capturePhoto.isPending}
-            onPress={() => {
-              if (photoReady) {
-                onStepChange(offerStep);
-                return;
-              }
-              capturePhoto.mutate(
-                {},
-                {
-                  onSuccess: (saved) => {
-                    if (saved) showAppToast('Profile updated');
-                  },
-                },
-              );
-            }}
-          />
-        ) : null}
-
-        {step === offerStep ? (
-          <WizardPrimaryButton
-            label="Next"
-            disabled={Boolean(offerError)}
-            onPress={() => onStepChange(messageStep)}
-          />
-        ) : null}
-
-        {step === messageStep ? (
-          <View className="flex-row items-stretch gap-3">
-            <WizardSecondaryButton label="Back" onPress={() => onStepChange(offerStep)} />
-            <WizardPrimaryButton
-              label={isUpdate ? 'Update response' : 'Send Response'}
-              disabled={Boolean(offerError)}
-              loading={submitting}
-              onPress={send}
-              className="flex-1"
-            />
-          </View>
-        ) : null}
-      </View>
-    </View>
+    </KeyboardStickyFooter>
   );
 }

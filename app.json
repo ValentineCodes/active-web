@@ -17,6 +17,7 @@
     "android": {
       "usesCleartextTraffic": true,
       "package": "com.active.app",
+      "softwareKeyboardLayoutMode": "resize",
       "edgeToEdgeEnabled": true,
       "adaptiveIcon": {
         "backgroundColor": "#0B0F14"
