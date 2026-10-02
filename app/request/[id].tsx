@@ -5,6 +5,7 @@ import { format } from 'date-fns';
 import type { BottomSheetModal } from '@gorhom/bottom-sheet';
 
 import { PersonProfileBottomSheet } from '@/components/PersonProfileBottomSheet';
+import { RequestAttachmentSection } from '@/components/request-flow/RequestAttachmentSection';
 import { RequestCallout } from '@/components/request-flow/RequestCallout';
 import { RequestCompletionCard } from '@/components/request-flow/RequestCompletionCard';
 import { RequestFlowHeader } from '@/components/request-flow/RequestFlowHeader';
@@ -31,7 +32,7 @@ import {
   isExpiredRequestView,
   reuseRequestButtonLabelForRequest,
 } from '@/features/requests/reuse';
-import { formatAgo, formatMoney, formatWhenRequestCard } from '@/lib/format';
+import { formatAgo, formatMoney, formatWhenHome, formatWhenRequestCard } from '@/lib/format';
 import { markRequestResponseNotificationsRead } from '@/features/notifications/inbox';
 import { showAppToast } from '@/lib/toast';
 import { queryKeys } from '@/lib/query/keys';
@@ -172,10 +173,14 @@ export default function RequestDetailScreen() {
 
         <RequestTitleSection title={data.title} description={data.description} />
 
+        <RequestAttachmentSection attachmentPath={data.attachment_path} />
+
         {amount ? (
           <RequestOfferWhenCard
             amount={amount}
             whenLabel={formatWhenRequestCard(data.scheduled_for)}
+            whenDetail={formatWhenHome(data.scheduled_for)}
+            locationLabel={data.location_label}
           />
         ) : null}
 

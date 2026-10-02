@@ -25,6 +25,7 @@ type MyResponse = Nullable<
   | 'requester_rating_average'
   | 'requester_rating_count'
   | 'requester_completion_percent'
+  | 'attachment_path'
   | 'decline_reason'
   | 'message'
   | 'description'
@@ -46,6 +47,7 @@ export type RespondableRequest = {
   requester_rating_average: number | null;
   requester_rating_count: number | null;
   requester_completion_percent: number | null;
+  attachment_path: string | null;
 };
 
 function fromBrowseRequest(row: BrowseRequestDetail): RespondableRequest {
@@ -65,6 +67,7 @@ function fromBrowseRequest(row: BrowseRequestDetail): RespondableRequest {
     requester_rating_average: row.requester_rating_average,
     requester_rating_count: row.requester_rating_count,
     requester_completion_percent: row.requester_completion_percent,
+    attachment_path: row.attachment_path,
   };
 }
 
@@ -85,6 +88,7 @@ function fromMyResponse(row: MyResponse): RespondableRequest {
     requester_rating_average: row.requester_rating_average,
     requester_rating_count: row.requester_rating_count,
     requester_completion_percent: row.requester_completion_percent,
+    attachment_path: row.attachment_path,
   };
 }
 

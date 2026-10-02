@@ -30,6 +30,7 @@ export type BrowseRequestDetail = Nullable<
   | 'requester_rating_average'
   | 'requester_rating_count'
   | 'requester_completion_percent'
+  | 'attachment_path'
 >;
 
 function roundCoordinate(value: number) {

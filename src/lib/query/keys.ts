@@ -12,6 +12,7 @@ export const queryKeys = {
   myResponses: ['my-responses'] as const,
   engagement: (requestId: string) => ['engagement', requestId] as const,
   avatarUrl: (path: string) => ['avatar-url', path] as const,
+  requestAttachmentUrl: (path: string) => ['request-attachment-url', path] as const,
   catalogue: (userId: string) => ['catalogue', userId] as const,
   catalogueMediaUrl: (path: string) => ['catalogue-media-url', path] as const,
   notificationInbox: ['notification-inbox'] as const,

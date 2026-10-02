@@ -699,6 +699,7 @@ export type Database = {
           accepted_at: string | null
           accepted_response_id: string | null
           agreed_provider_amount: number | null
+          attachment_path: string | null
           cancelled_at: string | null
           completed_at: string | null
           completion_confirm_by: string | null
@@ -727,6 +728,7 @@ export type Database = {
           accepted_at?: string | null
           accepted_response_id?: string | null
           agreed_provider_amount?: number | null
+          attachment_path?: string | null
           cancelled_at?: string | null
           completed_at?: string | null
           completion_confirm_by?: string | null
@@ -755,6 +757,7 @@ export type Database = {
           accepted_at?: string | null
           accepted_response_id?: string | null
           agreed_provider_amount?: number | null
+          attachment_path?: string | null
           cancelled_at?: string | null
           completed_at?: string | null
           completion_confirm_by?: string | null
@@ -1072,6 +1075,7 @@ export type Database = {
         Row: {
           accepted_at: string | null
           agreed_provider_amount: number | null
+          attachment_path: string | null
           cancelled_at: string | null
           completed_at: string | null
           created_at: string | null
@@ -1273,6 +1277,7 @@ export type Database = {
       browse_request: {
         Args: { p_latitude: number; p_longitude: number; p_request_id: string }
         Returns: {
+          attachment_path: string
           currency: string
           description: string
           distance_m: number
@@ -1345,7 +1350,8 @@ export type Database = {
       }
       create_request: {
         Args: {
-          p_description: string | null
+          p_attachment_path?: string
+          p_description: string
           p_latitude: number
           p_location_label: string
           p_longitude: number
@@ -1502,6 +1508,7 @@ export type Database = {
       my_responses: {
         Args: never
         Returns: {
+          attachment_path: string
           created_at: string
           currency: string
           decline_reason: string
@@ -1655,16 +1662,24 @@ export type Database = {
         Returns: boolean
       }
       service_problem_response_interval: { Args: never; Returns: string }
-      set_notification_preferences: {
-        Args: {
-          p_message_push_enabled: boolean
-          p_push_calls_enabled: boolean
-          p_push_notifications_enabled: boolean
-          p_push_payments_wallet_enabled: boolean
-          p_push_tips_reminders_enabled: boolean
-        }
-        Returns: undefined
-      }
+      set_notification_preferences:
+        | {
+            Args: {
+              p_message_push_enabled: boolean
+              p_push_notifications_enabled: boolean
+            }
+            Returns: undefined
+          }
+        | {
+            Args: {
+              p_message_push_enabled: boolean
+              p_push_calls_enabled: boolean
+              p_push_notifications_enabled: boolean
+              p_push_payments_wallet_enabled: boolean
+              p_push_tips_reminders_enabled: boolean
+            }
+            Returns: undefined
+          }
       set_user_attendance: {
         Args: { p_request_id: string; p_user_id: string }
         Returns: undefined

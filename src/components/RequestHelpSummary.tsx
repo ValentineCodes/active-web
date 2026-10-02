@@ -1,5 +1,6 @@
 import { View } from 'react-native';
 
+import { RequestAttachmentSection } from '@/components/request-flow/RequestAttachmentSection';
 import { RequestMetaRow } from '@/components/request-flow/RequestMetaRow';
 import { RequestOfferWhenCard } from '@/components/request-flow/RequestOfferWhenCard';
 import { RequestPersonCard } from '@/components/request-flow/RequestPersonCard';
@@ -48,6 +49,8 @@ export function RequestHelpSummary({
       )}
 
       <RequestTitleSection title={request.title} description={request.description} />
+
+      <RequestAttachmentSection attachmentPath={request.attachment_path} />
 
       {amount ? (
         <RequestOfferWhenCard

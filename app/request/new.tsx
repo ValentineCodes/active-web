@@ -13,6 +13,8 @@ import {
 import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import { addHours, set, startOfTomorrow } from 'date-fns';
 
 import {
@@ -33,9 +35,15 @@ import {
 import { isFundedOffer, summarizeRequestFunding } from '@/features/requests/funding';
 import { useMyWallet } from '@/features/wallet/api';
 import { canReuseRequest } from '@/features/requests/reuse';
+import { useUserId } from '@/features/auth/session';
+import {
+  chooseRequestPhotoFromLibrary,
+  takeRequestPhoto,
+  uploadRequestPhoto,
+} from '@/features/requests/request-media';
 import { useCreateRequest, useMyRequest } from '@/features/requests/requester-api';
 import { cn } from '@/lib/cn';
-import { formatMoney, formatWhen, formatWhenHome } from '@/lib/format';
+import { formatMoney, formatWhenHome } from '@/lib/format';
 import {
   positionErrorMessage,
   requestPosition,
@@ -46,7 +54,7 @@ import { syncPushToken } from '@/lib/notifications';
 import { showAppToast } from '@/lib/toast';
 import { useColors } from '@/theme';
 
-const STEP_COUNT = 4;
+const STEP_COUNT = 5;
 
 type WhenMode = 'now' | 'later';
 
@@ -235,6 +243,85 @@ function CreateTextArea({
   );
 }
 
+function NewRequestReviewCard({
+  title,
+  description,
+  amountLabel,
+  whenLabel,
+  locationLabel,
+  previewUri,
+}: {
+  title: string;
+  description: string;
+  amountLabel: string | null;
+  whenLabel: string;
+  locationLabel: string;
+  previewUri?: string | null;
+}) {
+  return (
+    <View className="gap-3 rounded-2xl border border-hairline bg-elevated p-4">
+      <Text className="text-xs font-semibold uppercase tracking-wide text-subtle">
+        Review before posting
+      </Text>
+      {previewUri ? (
+        <Image
+          source={{ uri: previewUri }}
+          accessibilityLabel="Selected request photo"
+          contentFit="cover"
+          className="w-full overflow-hidden rounded-xl bg-surface"
+          style={{ aspectRatio: 4 / 3 }}
+        />
+      ) : null}
+      <Text className="font-serif text-xl font-bold text-ink" numberOfLines={1}>
+        {title}
+      </Text>
+      {description ? (
+        <Text className="text-sm leading-5 text-muted" numberOfLines={2}>
+          {description}
+        </Text>
+      ) : null}
+      <View className="flex-row flex-wrap items-center gap-x-2 gap-y-1 pt-1">
+        {amountLabel ? (
+          <Text className="text-base font-bold text-active">{amountLabel}</Text>
+        ) : null}
+        <Text className="text-sm text-muted">·</Text>
+        <Text className="text-sm text-muted">{whenLabel}</Text>
+        <Text className="text-sm text-muted">·</Text>
+        <Text className="text-sm text-muted">{locationLabel}</Text>
+      </View>
+    </View>
+  );
+}
+
+function PhotoSourceButton({
+  icon,
+  label,
+  onPress,
+  disabled,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  label: string;
+  onPress: () => void;
+  disabled?: boolean;
+}) {
+  const colors = useColors();
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      disabled={disabled}
+      onPress={onPress}
+      className="flex-1 items-center gap-3 rounded-2xl bg-surface px-4 py-6 active:opacity-90"
+    >
+      <View className="h-12 w-12 items-center justify-center rounded-full bg-active/15">
+        <Ionicons name={icon} size={24} color={colors.active} />
+      </View>
+      <Text className="text-base font-semibold text-ink">{label}</Text>
+    </Pressable>
+  );
+}
+
 function WhenPill({
   label,
   selected,
@@ -263,6 +350,7 @@ function WhenPill({
 
 function NewRequestForm({ reuseSeed }: { reuseSeed?: ReuseSeed }) {
   const colors = useColors();
+  const userId = useUserId();
   const seeded = newRequestFormState(reuseSeed);
   const create = useCreateRequest();
   const wallet = useMyWallet();
@@ -287,6 +375,9 @@ function NewRequestForm({ reuseSeed }: { reuseSeed?: ReuseSeed }) {
   const [laterTimeError, setLaterTimeError] = useState(false);
   const [locationModalLoading, setLocationModalLoading] = useState(false);
   const [locationModalError, setLocationModalError] = useState<string | null>(null);
+  const [attachmentUri, setAttachmentUri] = useState<string | null>(null);
+  const [attachmentMimeType, setAttachmentMimeType] = useState<string | null>(null);
+  const [attachmentUploading, setAttachmentUploading] = useState(false);
   const locationSheetRef = useRef<RequestLocationSheetHandle>(null);
 
   const titleInputRef = useRef<TextInputType>(null);
@@ -309,6 +400,7 @@ function NewRequestForm({ reuseSeed }: { reuseSeed?: ReuseSeed }) {
     true,
     REQUEST_REQUIRES_FUNDING ? isFundedOffer(parsedAmount) && !amountError : amountError === null,
     whenMode === 'now' || isFutureSchedule(laterAt),
+    true,
   ];
 
   const isLastStep = step === STEP_COUNT - 1;
@@ -358,7 +450,7 @@ function NewRequestForm({ reuseSeed }: { reuseSeed?: ReuseSeed }) {
     );
   };
 
-  const submit = (postPosition: Position, locationLabel: string) => {
+  const submit = (postPosition: Position, locationLabel: string, attachmentPath: string | null) => {
     const scheduledFor: Date | null =
       whenMode === 'now' ? null : isFutureSchedule(laterAt) ? laterAt : null;
 
@@ -381,19 +473,51 @@ function NewRequestForm({ reuseSeed }: { reuseSeed?: ReuseSeed }) {
         scheduledFor,
         offeredAmount: parsedAmount!,
         sourceRequestId: reusingPrior ? reuseSeed?.sourceRequestId : undefined,
+        attachmentPath,
       },
       {
         onSuccess: (requestId) => {
           syncPushToken({ mode: 'contextual' });
-          showAppToast('Your request is now live');
-          if (parsedAmount !== null) {
-            const funding = summarizeRequestFunding(parsedAmount);
-            showAppToast(`${formatMoney(funding.total, funding.currency)} locked`, 'info');
-          }
+          const funding =
+            parsedAmount !== null && isFundedOffer(parsedAmount)
+              ? summarizeRequestFunding(parsedAmount)
+              : null;
+          showAppToast(
+            funding
+              ? `${formatMoney(funding.total, funding.currency)} locked`
+              : 'Your request is live',
+            { type: 'success', title: 'Request posted' },
+          );
           router.replace(`/request/${requestId}`);
         },
       },
     );
+  };
+
+  const uploadAttachmentIfNeeded = async (): Promise<string | null> => {
+    if (!attachmentUri) return null;
+    if (!userId) throw new Error('Sign in to create a request.');
+    setAttachmentUploading(true);
+    try {
+      return await uploadRequestPhoto(userId, {
+        uri: attachmentUri,
+        mimeType: attachmentMimeType,
+      });
+    } finally {
+      setAttachmentUploading(false);
+    }
+  };
+
+  const postWithLocation = async (postPosition: Position, locationLabel: string) => {
+    try {
+      const attachmentPath = await uploadAttachmentIfNeeded();
+      submit(postPosition, locationLabel, attachmentPath);
+    } catch (error) {
+      showAppToast(
+        error instanceof Error ? error.message : 'Could not upload the photo. Try again.',
+        'warning',
+      );
+    }
   };
 
   const handlePostPress = () => {
@@ -407,7 +531,7 @@ function NewRequestForm({ reuseSeed }: { reuseSeed?: ReuseSeed }) {
 
     const label = areaLabel.trim();
     if (position && label.length >= 2) {
-      submit(position, label);
+      void postWithLocation(position, label);
       return;
     }
 
@@ -437,14 +561,32 @@ function NewRequestForm({ reuseSeed }: { reuseSeed?: ReuseSeed }) {
 
     setLocationModalLoading(false);
     locationSheetRef.current?.dismiss();
-    submit(result.position, locationLabel);
+    await postWithLocation(result.position, locationLabel);
+  };
+
+  const pickAttachment = async (source: 'camera' | 'library') => {
+    try {
+      const result =
+        source === 'camera' ? await takeRequestPhoto() : await chooseRequestPhotoFromLibrary();
+      if (result.canceled || !result.assets?.[0]) return;
+      const asset = result.assets[0];
+      setAttachmentUri(asset.uri);
+      setAttachmentMimeType(asset.mimeType ?? null);
+    } catch (error) {
+      showAppToast(error instanceof Error ? error.message : 'Could not add a photo.', 'warning');
+    }
   };
 
   const closeWizard = () => router.back();
   const goBack = () => setStep((current) => Math.max(current - 1, 0));
 
-  const reviewWhen = whenMode === 'now' ? 'Today' : formatWhen(laterAt.toISOString());
+  const reviewWhen = whenSummary(whenMode, laterAt);
   const reviewLocation = areaLabel.trim() || 'My location';
+  const reviewAmount = isFundedOffer(parsedAmount)
+    ? formatMoney(parsedAmount, MARKET.currency)
+    : null;
+  const posting =
+    create.isPending || wallet.isPending || locationModalLoading || attachmentUploading;
 
   return (
     <BottomSheetModalProvider>
@@ -460,7 +602,7 @@ function NewRequestForm({ reuseSeed }: { reuseSeed?: ReuseSeed }) {
               ) : isLastStep ? (
                 <WizardPrimaryButton
                   label="Post request"
-                  loading={create.isPending || wallet.isPending || locationModalLoading}
+                  loading={posting}
                   disabled={!stepValid[step] || walletShort}
                   onPress={handlePostPress}
                 />
@@ -553,102 +695,111 @@ function NewRequestForm({ reuseSeed }: { reuseSeed?: ReuseSeed }) {
             ) : null}
 
             {step === 3 ? (
+              <View className="gap-3">
+                <Text className="font-serif text-3xl font-bold leading-9 text-ink">
+                  When do you need it?
+                </Text>
+                <Text className="text-base text-muted">
+                  People nearby will see your request straight away.
+                </Text>
+                <View className="flex-row gap-3">
+                  <WhenPill
+                    label="Right Now"
+                    selected={whenMode === 'now'}
+                    onPress={() => {
+                      setWhenMode('now');
+                      setLaterTimeError(false);
+                    }}
+                  />
+                  <WhenPill
+                    label="Later"
+                    selected={whenMode === 'later'}
+                    onPress={() => {
+                      setWhenMode('later');
+                      setLaterTimeError(false);
+                    }}
+                  />
+                </View>
+                {whenMode === 'later' ? (
+                  <View className="gap-3 rounded-2xl bg-surface p-4">
+                    <Text className="text-base font-semibold text-ink">{reviewWhen}</Text>
+                    {laterTimeError ? (
+                      <Text className="text-sm text-warning">Choose a time in the future.</Text>
+                    ) : null}
+                    {Platform.OS === 'ios' ? (
+                      <DateTimePicker
+                        value={laterAt}
+                        mode="datetime"
+                        minimumDate={new Date()}
+                        maximumDate={addHours(new Date(), 24 * 30)}
+                        onChange={(_, date) => {
+                          if (date) setLaterAt(date);
+                        }}
+                      />
+                    ) : (
+                      <View className="flex-row flex-wrap gap-2">
+                        <Button
+                          label="Change date"
+                          variant="secondary"
+                          onPress={() => setShowDatePicker(true)}
+                        />
+                        <Button
+                          label="Change time"
+                          variant="secondary"
+                          onPress={() => setShowTimePicker(true)}
+                        />
+                      </View>
+                    )}
+                    {showDatePicker ? (
+                      <DateTimePicker
+                        value={laterAt}
+                        mode="date"
+                        minimumDate={new Date()}
+                        maximumDate={addHours(new Date(), 24 * 30)}
+                        onChange={onLaterDateChange}
+                      />
+                    ) : null}
+                    {showTimePicker ? (
+                      <DateTimePicker value={laterAt} mode="time" onChange={onLaterTimeChange} />
+                    ) : null}
+                  </View>
+                ) : null}
+              </View>
+            ) : null}
+
+            {step === 4 ? (
               <View className="gap-5">
                 <View className="gap-3">
                   <Text className="font-serif text-3xl font-bold leading-9 text-ink">
-                    When do you need it?
+                    Add a photo?
                   </Text>
                   <Text className="text-base text-muted">
-                    People nearby will see your request straight away.
+                    You don&apos;t have to but this will help people better understand your request
                   </Text>
                   <View className="flex-row gap-3">
-                    <WhenPill
-                      label="Right Now"
-                      selected={whenMode === 'now'}
-                      onPress={() => {
-                        setWhenMode('now');
-                        setLaterTimeError(false);
-                      }}
+                    <PhotoSourceButton
+                      icon="camera-outline"
+                      label="Take photo"
+                      disabled={posting}
+                      onPress={() => void pickAttachment('camera')}
                     />
-                    <WhenPill
-                      label="Later"
-                      selected={whenMode === 'later'}
-                      onPress={() => {
-                        setWhenMode('later');
-                        setLaterTimeError(false);
-                      }}
+                    <PhotoSourceButton
+                      icon="images-outline"
+                      label="Choose gallery"
+                      disabled={posting}
+                      onPress={() => void pickAttachment('library')}
                     />
                   </View>
-                  {whenMode === 'later' ? (
-                    <View className="gap-3 rounded-2xl bg-surface p-4">
-                      <Text className="text-base font-semibold text-ink">{reviewWhen}</Text>
-                      {laterTimeError ? (
-                        <Text className="text-sm text-warning">Choose a time in the future.</Text>
-                      ) : null}
-                      {Platform.OS === 'ios' ? (
-                        <DateTimePicker
-                          value={laterAt}
-                          mode="datetime"
-                          minimumDate={new Date()}
-                          maximumDate={addHours(new Date(), 24 * 30)}
-                          onChange={(_, date) => {
-                            if (date) setLaterAt(date);
-                          }}
-                        />
-                      ) : (
-                        <View className="flex-row flex-wrap gap-2">
-                          <Button
-                            label="Change date"
-                            variant="secondary"
-                            onPress={() => setShowDatePicker(true)}
-                          />
-                          <Button
-                            label="Change time"
-                            variant="secondary"
-                            onPress={() => setShowTimePicker(true)}
-                          />
-                        </View>
-                      )}
-                      {showDatePicker ? (
-                        <DateTimePicker
-                          value={laterAt}
-                          mode="date"
-                          minimumDate={new Date()}
-                          maximumDate={addHours(new Date(), 24 * 30)}
-                          onChange={onLaterDateChange}
-                        />
-                      ) : null}
-                      {showTimePicker ? (
-                        <DateTimePicker value={laterAt} mode="time" onChange={onLaterTimeChange} />
-                      ) : null}
-                    </View>
-                  ) : null}
                 </View>
 
-                <View className="gap-3 rounded-2xl border border-hairline bg-elevated p-4">
-                  <Text className="text-xs font-semibold uppercase tracking-wide text-subtle">
-                    Review before posting
-                  </Text>
-                  <Text className="font-serif text-xl font-bold text-ink" numberOfLines={1}>
-                    {trimmedTitle}
-                  </Text>
-                  {trimmedDescription ? (
-                    <Text className="text-sm leading-5 text-muted" numberOfLines={2}>
-                      {trimmedDescription}
-                    </Text>
-                  ) : null}
-                  <View className="flex-row flex-wrap items-center gap-x-2 gap-y-1 pt-1">
-                    {isFundedOffer(parsedAmount) ? (
-                      <Text className="text-base font-bold text-active">
-                        {formatMoney(parsedAmount, MARKET.currency)}
-                      </Text>
-                    ) : null}
-                    <Text className="text-sm text-muted">·</Text>
-                    <Text className="text-sm text-muted">{whenSummary(whenMode, laterAt)}</Text>
-                    <Text className="text-sm text-muted">·</Text>
-                    <Text className="text-sm text-muted">{reviewLocation}</Text>
-                  </View>
-                </View>
+                <NewRequestReviewCard
+                  title={trimmedTitle}
+                  description={trimmedDescription}
+                  amountLabel={reviewAmount}
+                  whenLabel={reviewWhen}
+                  locationLabel={reviewLocation}
+                  previewUri={attachmentUri}
+                />
 
                 {REQUEST_REQUIRES_FUNDING && funding ? (
                   <View className="gap-2">

@@ -45,6 +45,14 @@ export function formatDistance(meters: number): string {
 }
 
 export function formatMoney(amount: number, currency: string): string {
+  const amountLabel = new Intl.NumberFormat(undefined, {
+    maximumFractionDigits: 0,
+  }).format(amount);
+
+  if (currency === 'NGN') {
+    return `₦${amountLabel}`;
+  }
+
   return new Intl.NumberFormat(undefined, {
     style: 'currency',
     currency,
