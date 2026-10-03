@@ -15,7 +15,7 @@ type TabConfig = {
 const TABS: TabConfig[] = [
   { routeName: 'index', label: 'Home', icon: 'home-outline' },
   { routeName: 'activity', label: 'Activity', icon: 'list-outline' },
-  { routeName: 'notifications', label: 'Alerts', icon: 'notifications-outline' },
+  { routeName: 'notifications', label: 'Notifications', icon: 'notifications-outline' },
 ];
 
 type HomeTabBarProps = Parameters<NonNullable<ComponentProps<typeof Tabs>['tabBar']>>[0];

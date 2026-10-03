@@ -66,7 +66,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="notifications"
         options={{
-          title: 'Alerts',
+          title: 'Notifications',
           tabBarBadge: unreadCount > 0 ? unreadCount : undefined,
           tabBarIcon: (props) => <TabIcon {...props} name="notifications-outline" />,
         }}
