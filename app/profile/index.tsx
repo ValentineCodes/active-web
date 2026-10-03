@@ -15,6 +15,7 @@ import { useProfile } from '@/features/profile/api';
 import { useMyResponses } from '@/features/requests/responses-api';
 import { useMyRequests } from '@/features/requests/requester-api';
 import type { ThemePreference } from '@/features/theme/preferences';
+import { cn } from '@/lib/cn';
 import { useColors, useTheme } from '@/theme';
 
 function ProfileStat({ value, label }: { value: number; label: string }) {
@@ -68,39 +69,44 @@ function SettingsGroup({ title, children }: { title: string; children: ReactNode
 const APPEARANCE_OPTIONS: { value: ThemePreference; label: string }[] = [
   { value: 'light', label: 'Light' },
   { value: 'dark', label: 'Dark' },
-  { value: 'system', label: 'System' },
+  { value: 'system', label: 'System Default' },
 ];
 
-function AppearancePreferenceRows() {
-  const colors = useColors();
+function AppearancePreferenceSection() {
   const { preference, setPreference } = useTheme();
 
   return (
-    <>
-      {APPEARANCE_OPTIONS.map((option, index) => {
-        const selected = preference === option.value;
-        return (
-          <Pressable
-            key={option.value}
-            accessibilityRole="button"
-            accessibilityLabel={`Appearance: ${option.label}`}
-            accessibilityState={{ selected }}
-            onPress={() => void setPreference(option.value)}
-            className="active:opacity-90"
-          >
-            {index > 0 ? <View className="mx-4 h-px bg-hairline" /> : null}
-            <View className="flex-row items-center justify-between px-4 py-4">
-              <Text className="text-lg text-ink">{option.label}</Text>
-              {selected ? (
-                <Ionicons name="checkmark" size={22} color={colors.active} />
-              ) : (
-                <View className="h-[22px] w-[22px]" />
+    <View className="gap-3 px-4 py-4">
+      <Text className="text-lg text-ink">Appearance</Text>
+      <View className="flex-row gap-2">
+        {APPEARANCE_OPTIONS.map((option) => {
+          const selected = preference === option.value;
+          return (
+            <Pressable
+              key={option.value}
+              accessibilityRole="button"
+              accessibilityLabel={`Appearance: ${option.label}`}
+              accessibilityState={{ selected }}
+              onPress={() => void setPreference(option.value)}
+              className={cn(
+                'flex-1 items-center justify-center rounded-xl px-2 py-3 active:opacity-90',
+                selected ? 'bg-active' : 'bg-surface',
               )}
-            </View>
-          </Pressable>
-        );
-      })}
-    </>
+            >
+              <Text
+                className={cn(
+                  'text-center text-sm font-semibold',
+                  selected ? 'text-on-brand' : 'text-muted',
+                )}
+                numberOfLines={2}
+              >
+                {option.label}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+    </View>
   );
 }
 
@@ -232,7 +238,7 @@ export default function ProfileScreen() {
             onPress={() => router.push('/notification-settings')}
           />
           <View className="mx-4 h-px bg-hairline" />
-          <AppearancePreferenceRows />
+          <AppearancePreferenceSection />
           <SettingsRow label="Privacy" onPress={() => {}} showDivider />
           <SettingsRow label="Language" onPress={() => {}} showDivider />
         </SettingsGroup>

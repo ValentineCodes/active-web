@@ -6,7 +6,11 @@ import { HomeActiveRequestBanner } from '@/components/HomeActiveRequestBanner';
 import { NearbyRequests } from '@/components/NearbyRequests';
 import { Avatar } from '@/components/ui/Avatar';
 import { FloatingActionButton } from '@/components/ui/FloatingActionButton';
-import { useFabBottomOffset, useTabBarScrollPadding } from '@/components/ui/tab-bar-insets';
+import {
+  FAB_EDGE_INSET,
+  useFabBottomOffset,
+  useTabBarScrollPadding,
+} from '@/components/ui/tab-bar-insets';
 import { Screen } from '@/components/ui/Screen';
 import { useAttendance } from '@/features/attendance/api';
 import { useProfile } from '@/features/profile/api';
@@ -142,7 +146,7 @@ export default function HomeScreen() {
         variant="create"
         accessibilityLabel="Ask for help — create a request"
         onPress={() => router.push('/request/new')}
-        style={{ position: 'absolute', right: 20, bottom: fabBottom }}
+        style={{ position: 'absolute', right: FAB_EDGE_INSET, bottom: fabBottom }}
       />
     </Screen>
   );

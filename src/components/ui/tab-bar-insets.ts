@@ -14,7 +14,10 @@ const WEB_TAB_BAR_HEIGHT = 56;
  * Distance from the screen bottom to the FAB’s bottom edge on iOS — clears the floating
  * tab pill, which sits in the home-indicator region rather than a full 49pt bar stack.
  */
-const IOS_FAB_BOTTOM_CLEARANCE = 24;
+const IOS_FAB_BOTTOM_CLEARANCE = 10;
+
+/** Home create FAB inset from the screen edge (matches horizontal placement). */
+export const FAB_EDGE_INSET = 20;
 
 export function useTabBarScrollPadding(extra = 8) {
   const insets = useSafeAreaInsets();
@@ -42,5 +45,5 @@ export function useFabBottomOffset(gap = 4) {
     return insets.bottom + WEB_TAB_BAR_HEIGHT + gap;
   }
 
-  return gap;
+  return FAB_EDGE_INSET;
 }
