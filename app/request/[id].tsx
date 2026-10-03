@@ -32,7 +32,13 @@ import {
   isExpiredRequestView,
   reuseRequestButtonLabelForRequest,
 } from '@/features/requests/reuse';
-import { formatAgo, formatMoney, formatWhenHome, formatWhenRequestCard } from '@/lib/format';
+import {
+  formatAgo,
+  formatMoney,
+  formatRequestOfferLocationLabel,
+  formatWhenHome,
+  formatWhenRequestCard,
+} from '@/lib/format';
 import { markRequestResponseNotificationsRead } from '@/features/notifications/inbox';
 import { showAppToast } from '@/lib/toast';
 import { queryKeys } from '@/lib/query/keys';
@@ -180,7 +186,7 @@ export default function RequestDetailScreen() {
             amount={amount}
             whenLabel={formatWhenRequestCard(data.scheduled_for)}
             whenDetail={formatWhenHome(data.scheduled_for)}
-            locationLabel={data.location_label}
+            locationLabel={formatRequestOfferLocationLabel(data.location_label, null)}
           />
         ) : null}
 

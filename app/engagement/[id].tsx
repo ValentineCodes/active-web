@@ -19,6 +19,7 @@ import { ReportProblemModal, type ReportProblemPayload } from '@/components/Repo
 import { RequestCallout } from '@/components/request-flow/RequestCallout';
 import { RequestCompletionCard } from '@/components/request-flow/RequestCompletionCard';
 import { RequestConnectionActions } from '@/components/request-flow/RequestConnectionActions';
+import { RequestExactLocationCard } from '@/components/request-flow/RequestExactLocationCard';
 import { RequestFlowHeader } from '@/components/request-flow/RequestFlowHeader';
 import { RequestMetaRow } from '@/components/request-flow/RequestMetaRow';
 import { RequestOfferWhenCard } from '@/components/request-flow/RequestOfferWhenCard';
@@ -33,6 +34,7 @@ import {
   useCancelService,
   useReportClientNoShow,
   useMarkServiceComplete,
+  useMyResponses,
 } from '@/features/requests/responses-api';
 import {
   useCancelRequest,
@@ -46,6 +48,7 @@ import {
 import {
   formatAgo,
   formatMoney,
+  formatRequestOfferLocationLabel,
   formatWhen,
   formatWhenHome,
   formatWhenRequestCard,
@@ -88,6 +91,7 @@ export default function EngagementScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
 
   const engagement = useEngagement(id);
+  const myResponses = useMyResponses();
   const markServiceComplete = useMarkServiceComplete(id);
   const completeRequest = useCompleteRequest(id);
   const reportProblem = useReportServiceProblem(id);
@@ -149,6 +153,11 @@ export default function EngagementScreen() {
     offeredAmount: data.offered_amount,
   });
   const offerAmount = agreedAmount !== null ? formatMoney(agreedAmount, data.currency) : null;
+  const helperDistanceM = data.viewer_is_requester
+    ? null
+    : myResponses.data?.find((row) => row.request_id === id && row.response_status === 'accepted')
+        ?.distance_m;
+  const offerLocationLabel = formatRequestOfferLocationLabel(data.location_label, helperDistanceM);
   const metaTime = formatAgo(
     data.started_at ?? data.accepted_at ?? data.handshake_at ?? new Date().toISOString(),
   );
@@ -449,7 +458,7 @@ export default function EngagementScreen() {
               amount={offerAmount}
               whenLabel={formatWhenRequestCard(data.scheduled_for)}
               whenDetail={formatWhenHome(data.scheduled_for)}
-              locationLabel={data.location_label}
+              locationLabel={offerLocationLabel}
             />
           ) : null}
 
@@ -484,6 +493,7 @@ export default function EngagementScreen() {
               onCall={() => Linking.openURL(`tel:${data.counterparty_phone}`)}
               onViewMap={openMaps}
             />
+            <RequestExactLocationCard address={data.location_label} onDirections={openMaps} />
           </View>
 
           {showPaymentSecured ? (

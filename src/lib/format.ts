@@ -19,6 +19,25 @@ export function formatProximityHome(meters: number): string {
   return 'About 30 mins away';
 }
 
+/** Area line for offer/when cards — not the full street address. */
+export function formatCoarseLocationLabel(locationLabel: string): string {
+  const parts = locationLabel
+    .split(',')
+    .map((part) => part.trim())
+    .filter(Boolean);
+  if (parts.length <= 2) return locationLabel;
+  return parts.slice(-2).join(', ');
+}
+
+/** Location column beside “When” on request-flow cards (proximity when known). */
+export function formatRequestOfferLocationLabel(
+  locationLabel: string,
+  distanceM: number | null | undefined,
+): string {
+  if (distanceM != null) return formatProximityHome(distanceM);
+  return formatCoarseLocationLabel(locationLabel);
+}
+
 /** Home feed — when line without a middle dot separator. */
 export function formatWhenHome(scheduledFor: string | null): string {
   if (!scheduledFor) return 'Today';

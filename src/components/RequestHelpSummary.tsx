@@ -10,7 +10,7 @@ import { nearbyRequestBadge } from '@/features/requests/status';
 import {
   formatAgo,
   formatMoney,
-  formatProximityHome,
+  formatRequestOfferLocationLabel,
   formatWhenHome,
   formatWhenRequestCard,
 } from '@/lib/format';
@@ -57,7 +57,10 @@ export function RequestHelpSummary({
           amount={amount}
           whenLabel={formatWhenRequestCard(request.scheduled_for)}
           whenDetail={formatWhenHome(request.scheduled_for)}
-          locationLabel={formatProximityHome(request.distance_m)}
+          locationLabel={formatRequestOfferLocationLabel(
+            request.location_label,
+            request.distance_m,
+          )}
         />
       ) : null}
 
