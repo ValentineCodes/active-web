@@ -86,8 +86,12 @@ export default function HomeScreen() {
         }
       >
         <View className="flex-row items-start justify-between gap-3 pb-1">
-          <View className="flex-1 gap-1.5">
-            <Text className="text-2xl font-bold leading-8 text-ink">
+          <View className="min-w-0 flex-1 gap-1.5">
+            <Text
+              className="text-2xl font-bold leading-8 text-ink"
+              numberOfLines={1}
+              ellipsizeMode="tail"
+            >
               {formatGreeting(profile.data?.display_name ?? null)}
             </Text>
             <Text className="text-base leading-6 text-muted">Get help or Get money</Text>
