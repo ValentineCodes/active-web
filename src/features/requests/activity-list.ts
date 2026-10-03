@@ -295,6 +295,37 @@ export function requestNavigationPath(input: {
   return `/respond/${input.requestId}`;
 }
 
+const REQUEST_STATUSES = new Set<RequestStatus>([
+  'posted',
+  'searching',
+  'accepted',
+  'in_progress',
+  'completion_pending',
+  'completed',
+  'cancelled',
+  'expired',
+  'disputed',
+  'no_show',
+]);
+
+const RESPONSE_STATUSES = new Set<ResponseStatus>(['pending', 'accepted', 'declined', 'withdrawn']);
+
+function metadataRequestStatus(metadata: Record<string, unknown> | null): RequestStatus | null {
+  const raw = metadata?.request_status;
+  if (typeof raw !== 'string' || !REQUEST_STATUSES.has(raw as RequestStatus)) return null;
+  return raw as RequestStatus;
+}
+
+function metadataResponseStatus(metadata: Record<string, unknown> | null): ResponseStatus | null {
+  const raw = metadata?.response_status;
+  if (typeof raw !== 'string' || !RESPONSE_STATUSES.has(raw as ResponseStatus)) return null;
+  return raw as ResponseStatus;
+}
+
+function metadataRole(metadata: Record<string, unknown> | null): 'requester' | 'helper' {
+  return metadata?.role === 'helper' ? 'helper' : 'requester';
+}
+
 /** Inbox / push target for a notification tied to a request (matches Activity tab routing). */
 export function notificationNavigationPath(input: {
   requestId: string;
@@ -305,13 +336,29 @@ export function notificationNavigationPath(input: {
     return `/respond/${input.requestId}`;
   }
 
+  const requestStatus = metadataRequestStatus(input.metadata);
+  if (requestStatus) {
+    return requestNavigationPath({
+      role: metadataRole(input.metadata),
+      requestId: input.requestId,
+      requestStatus,
+      responseStatus: metadataResponseStatus(input.metadata) ?? undefined,
+    });
+  }
+
   if (
     input.type === 'response_received' ||
     input.type === 'new_responses' ||
     input.type === 'request_expiring' ||
     input.type === 'request_expired' ||
     input.type === 'payment_secured' ||
-    input.type === 'rate_experience'
+    input.type === 'rate_experience' ||
+    input.type === 'payment_released' ||
+    input.type === 'funds_released_after_resolution' ||
+    input.type === 'request_cancelled' ||
+    input.type === 'cancellation_confirmed' ||
+    input.type === 'helper_cancelled' ||
+    input.type === 'funds_returned'
   ) {
     return `/request/${input.requestId}`;
   }

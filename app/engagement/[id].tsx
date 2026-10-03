@@ -10,7 +10,7 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { router, useLocalSearchParams } from 'expo-router';
+import { Redirect, router, useLocalSearchParams } from 'expo-router';
 import { format } from 'date-fns';
 import type { BottomSheetModal } from '@gorhom/bottom-sheet';
 
@@ -136,6 +136,11 @@ export default function EngagementScreen() {
   }
 
   const data = engagement.data;
+
+  if (data.request_status === 'completed' && data.viewer_is_requester) {
+    return <Redirect href={`/request/${id}`} />;
+  }
+
   const statusBadge = requestEngagementStatusBadge(data.request_status, {
     viewerIsRequester: data.viewer_is_requester,
   });
