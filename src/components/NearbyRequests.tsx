@@ -2,7 +2,6 @@ import { useCallback, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
 
-import { Button } from '@/components/ui/Button';
 import { DiscoverRequestCard } from '@/components/DiscoverRequestCard';
 import { HomeRequestCard } from '@/components/HomeRequestCard';
 import { SectionHeader } from '@/components/ui/SectionHeader';
@@ -69,14 +68,43 @@ export function NearbyRequests({
     useCallback(() => {
       let cancelled = false;
 
-      readForegroundPermission().then(async (permission) => {
-        if (cancelled || permission !== 'granted') return;
-        const next = await readPositionIfPermitted();
-        if (!cancelled && next) {
-          setPosition(next);
-          setBlocked(null);
+      async function ensurePosition() {
+        setLocating(true);
+        setBlocked(null);
+
+        const permission = await readForegroundPermission();
+        if (cancelled) return;
+
+        if (permission === 'granted') {
+          const next = await readPositionIfPermitted();
+          if (cancelled) return;
+          setLocating(false);
+          if (next) {
+            setPosition(next);
+          } else {
+            setBlocked('unavailable');
+          }
+          return;
         }
-      });
+
+        if (permission === 'denied') {
+          setLocating(false);
+          setBlocked('denied');
+          return;
+        }
+
+        const result = await requestPosition();
+        if (cancelled) return;
+        setLocating(false);
+        if (result.ok) {
+          setPosition(result.position);
+          return;
+        }
+
+        setBlocked(result.reason === 'permission-denied' ? 'denied' : 'unavailable');
+      }
+
+      void ensurePosition();
 
       return () => {
         cancelled = true;
@@ -84,39 +112,21 @@ export function NearbyRequests({
     }, []),
   );
 
-  const shareLocation = async () => {
-    setLocating(true);
-    setBlocked(null);
-    const result = await requestPosition();
-    setLocating(false);
-
-    if (result.ok) {
-      setPosition(result.position);
-      return;
-    }
-
-    setBlocked(result.reason === 'permission-denied' ? 'denied' : 'unavailable');
-  };
-
   const rows = (nearby.data ?? []).filter((request) => !engagedRequestIds.has(request.request_id));
   const visible = limit !== undefined ? rows.slice(0, limit) : rows;
   const hasMore = limit !== undefined && rows.length > limit;
 
   const nearbyFeed =
     position === null ? (
-      <View className="gap-3 rounded-2xl bg-surface p-4">
-        <Text className="text-base font-medium text-ink">Browse what is open nearby</Text>
+      locating ? (
+        <ActivityIndicator />
+      ) : (
         <Text className="text-sm text-muted">
           {blocked === 'denied'
             ? 'Location access is off. Enable it in Settings to see nearby requests.'
-            : 'Location is only used to sort what is relevant near you — not shared on the list.'}
+            : 'We could not get your location. Pull to refresh and try again.'}
         </Text>
-        <Button
-          label={locating ? 'Getting location…' : 'Show nearby requests'}
-          loading={locating}
-          onPress={() => void shareLocation()}
-        />
-      </View>
+      )
     ) : nearby.isPending ? (
       <ActivityIndicator />
     ) : nearby.isError ? (

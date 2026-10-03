@@ -10,10 +10,13 @@ import {
   requestNavigationPath,
 } from '@/features/requests/activity-list';
 
+import { useTabBarScrollPadding } from '@/components/ui/tab-bar-insets';
+
 import { useActivityFeed } from './useActivityFeed';
 
 export function ActivityMyResponsesTab() {
   const { myResponses, isLoading, isError, error, isRefetching, refetchAll } = useActivityFeed();
+  const tabBarScrollPadding = useTabBarScrollPadding();
 
   if (isLoading) {
     return (
@@ -34,7 +37,9 @@ export function ActivityMyResponsesTab() {
   return (
     <ScrollView
       className="flex-1"
-      contentContainerClassName="gap-3 px-5 pb-28 pt-4"
+      contentContainerClassName="gap-3 px-5 pt-4"
+      contentContainerStyle={{ paddingBottom: tabBarScrollPadding }}
+      scrollIndicatorInsets={{ bottom: tabBarScrollPadding }}
       refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetchAll} />}
     >
       {myResponses.length === 0 ? (

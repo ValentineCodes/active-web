@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { IconButton } from '@/components/ui/IconButton';
 import { Screen } from '@/components/ui/Screen';
+import { useTabBarScrollPadding } from '@/components/ui/tab-bar-insets';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/StateView';
 import {
   markNotificationInboxItemRead,
@@ -159,8 +160,10 @@ export default function NotificationsScreen() {
         ? '1 unread update'
         : `${unreadCount} unread updates`;
 
+  const tabBarScrollPadding = useTabBarScrollPadding();
+
   return (
-    <Screen>
+    <Screen className="flex-1">
       <View className="flex-row items-start justify-between gap-3 px-5 pb-3 pt-2">
         <View className="min-w-0 flex-1 gap-1">
           <Text className="font-serif text-3xl font-bold text-ink">Notifications</Text>
@@ -199,9 +202,12 @@ export default function NotificationsScreen() {
 
       {inbox.isSuccess ? (
         <FlatList
+          className="flex-1"
           data={filteredItems}
           keyExtractor={(item) => item.id}
-          contentContainerClassName="px-5 pb-12 pt-1"
+          contentContainerClassName="px-5 pt-1"
+          contentContainerStyle={{ paddingBottom: tabBarScrollPadding }}
+          scrollIndicatorInsets={{ bottom: tabBarScrollPadding }}
           refreshControl={
             <RefreshControl
               refreshing={inbox.isRefetching}

@@ -1,9 +1,12 @@
+import { Ionicons } from '@expo/vector-icons';
 import { NativeTabs } from 'expo-router/native-tabs';
 
 import { useNotificationUnreadCount } from '@/features/notifications/inbox';
 import { useNotificationBridge } from '@/lib/notifications';
 import { useMyRequests } from '@/features/requests/requester-api';
 import { useColors } from '@/theme';
+
+const VectorIcon = NativeTabs.Trigger.VectorIcon;
 
 export default function TabsLayout() {
   const colors = useColors();
@@ -31,14 +34,17 @@ export default function TabsLayout() {
         <NativeTabs.Trigger.Label>Home</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
           sf={{ default: 'house', selected: 'house.fill' }}
-          md={{ default: 'home', selected: 'home' }}
+          src={{
+            default: <VectorIcon family={Ionicons} name="home-outline" />,
+            selected: <VectorIcon family={Ionicons} name="home" />,
+          }}
         />
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="activity">
         <NativeTabs.Trigger.Label>Activity</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
           sf={{ default: 'list.bullet', selected: 'list.bullet' }}
-          md={{ default: 'format_list_bulleted', selected: 'format_list_bulleted' }}
+          src={<VectorIcon family={Ionicons} name="list-outline" />}
         />
         {activityBadge ? (
           <NativeTabs.Trigger.Badge>{activityBadge}</NativeTabs.Trigger.Badge>
@@ -48,7 +54,10 @@ export default function TabsLayout() {
         <NativeTabs.Trigger.Label>Notifications</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
           sf={{ default: 'bell', selected: 'bell.fill' }}
-          md={{ default: 'notifications', selected: 'notifications' }}
+          src={{
+            default: <VectorIcon family={Ionicons} name="notifications-outline" />,
+            selected: <VectorIcon family={Ionicons} name="notifications" />,
+          }}
         />
         {notificationBadge ? (
           <NativeTabs.Trigger.Badge>{notificationBadge}</NativeTabs.Trigger.Badge>

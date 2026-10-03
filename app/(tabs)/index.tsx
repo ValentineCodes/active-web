@@ -5,7 +5,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { HomeActiveRequestBanner } from '@/components/HomeActiveRequestBanner';
 import { NearbyRequests } from '@/components/NearbyRequests';
 import { Avatar } from '@/components/ui/Avatar';
-import { FloatingActionButton, useFabBottomOffset } from '@/components/ui/FloatingActionButton';
+import { FloatingActionButton } from '@/components/ui/FloatingActionButton';
+import { useFabBottomOffset, useTabBarScrollPadding } from '@/components/ui/tab-bar-insets';
 import { Screen } from '@/components/ui/Screen';
 import { useAttendance } from '@/features/attendance/api';
 import { useProfile } from '@/features/profile/api';
@@ -63,15 +64,18 @@ export default function HomeScreen() {
     return null;
   })();
 
-  const fabBottom = useFabBottomOffset(0);
+  const fabBottom = useFabBottomOffset();
   const fabSize = 56;
+  const tabBarScrollPadding = useTabBarScrollPadding();
   const listBottomPadding = fabBottom + fabSize + 12;
 
   return (
     <Screen>
       <ScrollView
-        contentContainerClassName="gap-4 px-5 pb-4 pt-3"
+        className="flex-1"
+        contentContainerClassName="gap-4 px-5 pt-3"
         contentContainerStyle={{ paddingBottom: listBottomPadding }}
+        scrollIndicatorInsets={{ bottom: tabBarScrollPadding }}
         refreshControl={
           <RefreshControl
             refreshing={requests.isRefetching || attendance.isRefetching}

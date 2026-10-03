@@ -2,7 +2,7 @@ import * as Location from 'expo-location';
 
 /**
  * Location is never read at launch or during onboarding. These helpers are called when
- * the user posts a request, responds to one, or chooses to browse nearby.
+ * the user posts a request, responds to one, or opens Home to browse nearby.
  * Each is a moment they have just chosen, which is what makes the permission prompt
  * legible.
  */
