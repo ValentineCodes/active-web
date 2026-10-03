@@ -11,6 +11,8 @@ const CANONICAL_TYPES = new Set<string>(NOTIFICATION_TYPES);
 /** Relative time for notification rows (e.g. `2m`, `Yesterday`, `Mon`). */
 export function formatInboxRelativeTime(iso: string): string {
   const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return '';
+
   const now = new Date();
 
   if (isToday(date)) {
@@ -18,18 +20,18 @@ export function formatInboxRelativeTime(iso: string): string {
     if (raw === 'less than a minute') return 'now';
 
     const match = /^(\d+) (second|minute|hour)s?$/.exec(raw);
-    if (!match) return raw;
+    if (!match) return 'now';
 
-    const value = match[1];
+    const value = Number(match[1]);
     switch (match[2]) {
       case 'second':
-        return `${value}s`;
+        return value <= 1 ? 'now' : `${value}s`;
       case 'minute':
         return `${value}m`;
       case 'hour':
         return `${value}h`;
       default:
-        return raw;
+        return 'now';
     }
   }
 
@@ -37,7 +39,7 @@ export function formatInboxRelativeTime(iso: string): string {
 
   if (date >= subDays(now, 6)) return format(date, 'EEE');
 
-  return format(date, 'EEE');
+  return format(date, 'd MMM');
 }
 
 type NotificationVisual = {

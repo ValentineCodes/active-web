@@ -11,19 +11,13 @@ import { useColors } from '@/theme';
 function TabIcon({
   color,
   size,
-  focused,
-  focusedName,
-  outlineName,
+  name,
 }: {
   color: ColorValue;
   size: number;
-  focused: boolean;
-  focusedName: keyof typeof Ionicons.glyphMap;
-  outlineName: keyof typeof Ionicons.glyphMap;
+  name: keyof typeof Ionicons.glyphMap;
 }) {
-  return (
-    <Ionicons name={focused ? focusedName : outlineName} size={size} color={color as string} />
-  );
+  return <Ionicons name={name} size={size} color={color as string} />;
 }
 
 export default function TabsLayout() {
@@ -58,9 +52,7 @@ export default function TabsLayout() {
         name="index"
         options={{
           title: 'Home',
-          tabBarIcon: (props) => (
-            <TabIcon {...props} focusedName="home" outlineName="home-outline" />
-          ),
+          tabBarIcon: (props) => <TabIcon {...props} name="home-outline" />,
         }}
       />
       <Tabs.Screen
@@ -68,9 +60,7 @@ export default function TabsLayout() {
         options={{
           title: 'Activity',
           tabBarBadge: waitingResponses > 0 ? waitingResponses : undefined,
-          tabBarIcon: (props) => (
-            <TabIcon {...props} focusedName="list" outlineName="list-outline" />
-          ),
+          tabBarIcon: (props) => <TabIcon {...props} name="list-outline" />,
         }}
       />
       <Tabs.Screen
@@ -78,9 +68,7 @@ export default function TabsLayout() {
         options={{
           title: 'Alerts',
           tabBarBadge: unreadCount > 0 ? unreadCount : undefined,
-          tabBarIcon: (props) => (
-            <TabIcon {...props} focusedName="notifications" outlineName="notifications-outline" />
-          ),
+          tabBarIcon: (props) => <TabIcon {...props} name="notifications-outline" />,
         }}
       />
     </Tabs>

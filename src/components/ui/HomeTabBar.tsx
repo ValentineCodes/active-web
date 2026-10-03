@@ -9,24 +9,13 @@ import { useTheme } from '@/theme';
 type TabConfig = {
   routeName: string;
   label: string;
-  focusedIcon: keyof typeof Ionicons.glyphMap;
-  outlineIcon: keyof typeof Ionicons.glyphMap;
+  icon: keyof typeof Ionicons.glyphMap;
 };
 
 const TABS: TabConfig[] = [
-  { routeName: 'index', label: 'Home', focusedIcon: 'home', outlineIcon: 'home-outline' },
-  {
-    routeName: 'activity',
-    label: 'Activity',
-    focusedIcon: 'list',
-    outlineIcon: 'list-outline',
-  },
-  {
-    routeName: 'notifications',
-    label: 'Alerts',
-    focusedIcon: 'notifications',
-    outlineIcon: 'notifications-outline',
-  },
+  { routeName: 'index', label: 'Home', icon: 'home-outline' },
+  { routeName: 'activity', label: 'Activity', icon: 'list-outline' },
+  { routeName: 'notifications', label: 'Alerts', icon: 'notifications-outline' },
 ];
 
 type HomeTabBarProps = Parameters<NonNullable<ComponentProps<typeof Tabs>['tabBar']>>[0];
@@ -84,11 +73,7 @@ export function HomeTabBar({ state, descriptors, navigation }: HomeTabBarProps) 
               className="min-h-12 flex-1 items-center justify-center gap-0.5 py-1"
             >
               <View>
-                <Ionicons
-                  name={focused ? tab.focusedIcon : tab.outlineIcon}
-                  size={24}
-                  color={color}
-                />
+                <Ionicons name={tab.icon} size={24} color={color} />
                 {typeof badge === 'number' || typeof badge === 'string' ? (
                   <View className="absolute -right-2 -top-1 min-w-4 rounded-full bg-danger px-1">
                     <Text className="text-center text-[10px] font-bold text-white">

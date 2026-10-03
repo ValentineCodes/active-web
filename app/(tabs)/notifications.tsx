@@ -152,7 +152,12 @@ export default function NotificationsScreen() {
     return inbox.data;
   }, [filter, inbox.data]);
 
-  const unreadLabel = unreadCount === 1 ? '1 unread update' : `${unreadCount} unread updates`;
+  const unreadLabel =
+    unreadCount === 0
+      ? 'No new updates'
+      : unreadCount === 1
+        ? '1 unread update'
+        : `${unreadCount} unread updates`;
 
   return (
     <Screen>

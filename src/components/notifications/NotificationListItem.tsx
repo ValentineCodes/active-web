@@ -46,13 +46,11 @@ export function NotificationListItem({ item, onPress }: Props) {
         ) : null}
       </View>
 
-      <View className="w-14 items-end gap-1.5 pt-0.5">
-        <Text className="text-xs text-subtle">{formatInboxRelativeTime(item.receivedAt)}</Text>
-        {unread ? (
-          <View className="h-2 w-2 rounded-full bg-active" />
-        ) : (
-          <View className="h-2 w-2" />
-        )}
+      <View className="shrink-0 flex-row items-center gap-1.5 self-start pl-1 pt-0.5">
+        <Text className="text-xs text-subtle" numberOfLines={1}>
+          {formatInboxRelativeTime(item.receivedAt)}
+        </Text>
+        {unread ? <View className="h-2 w-2 rounded-full bg-active" /> : null}
       </View>
     </Pressable>
   );
