@@ -3,6 +3,10 @@ import { FlatList, Pressable, RefreshControl, Text, View } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 
+import {
+  NotificationInboxFilter,
+  type InboxFilter,
+} from '@/components/notifications/NotificationInboxFilter';
 import { NotificationListItem } from '@/components/notifications/NotificationListItem';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -23,7 +27,6 @@ import {
 import { resolveNotificationHref } from '@/features/notifications/presentation';
 import type { InboxNotification } from '@/features/notifications/types';
 import { useProfile } from '@/features/profile/api';
-import { cn } from '@/lib/cn';
 import { queryKeys } from '@/lib/query/keys';
 import {
   openNotificationSettings,
@@ -31,46 +34,6 @@ import {
   syncPushToken,
   type PushPermissionState,
 } from '@/lib/notifications';
-
-type InboxFilter = 'all' | 'unread';
-
-function InboxFilterTabs({
-  value,
-  onChange,
-}: {
-  value: InboxFilter;
-  onChange: (next: InboxFilter) => void;
-}) {
-  return (
-    <View className="flex-row rounded-full bg-surface p-1">
-      {(['all', 'unread'] as const).map((option) => {
-        const selected = value === option;
-        return (
-          <Pressable
-            key={option}
-            accessibilityRole="button"
-            accessibilityState={{ selected }}
-            accessibilityLabel={option === 'all' ? 'Show all notifications' : 'Show unread only'}
-            onPress={() => onChange(option)}
-            className={cn(
-              'rounded-full px-4 py-2 active:opacity-90',
-              selected ? 'bg-elevated' : 'bg-transparent',
-            )}
-          >
-            <Text
-              className={cn(
-                'text-sm font-semibold capitalize',
-                selected ? 'text-ink' : 'text-muted',
-              )}
-            >
-              {option}
-            </Text>
-          </Pressable>
-        );
-      })}
-    </View>
-  );
-}
 
 export default function NotificationsScreen() {
   const queryClient = useQueryClient();
@@ -178,7 +141,7 @@ export default function NotificationsScreen() {
       </View>
 
       <View className="flex-row items-center justify-between gap-3 px-5 pb-2">
-        <InboxFilterTabs value={filter} onChange={setFilter} />
+        <NotificationInboxFilter value={filter} onChange={setFilter} />
         {unreadCount > 0 ? (
           <Pressable
             accessibilityRole="button"
