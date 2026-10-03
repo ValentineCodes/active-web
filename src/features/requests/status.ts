@@ -9,7 +9,7 @@ import type { Database } from '@/lib/supabase/database.types';
 
 type RequestStatus = Database['public']['Enums']['request_status'];
 type ResponseStatus = Database['public']['Enums']['response_status'];
-type Tone = 'neutral' | 'brand' | 'active' | 'danger' | 'warning';
+type Tone = 'neutral' | 'brand' | 'active' | 'danger' | 'warning' | 'info';
 
 export function requestStatusBadge(
   status: RequestStatus,

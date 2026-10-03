@@ -19,7 +19,6 @@ import { ReportProblemModal, type ReportProblemPayload } from '@/components/Repo
 import { RequestCallout } from '@/components/request-flow/RequestCallout';
 import { RequestCompletionCard } from '@/components/request-flow/RequestCompletionCard';
 import { RequestConnectionActions } from '@/components/request-flow/RequestConnectionActions';
-import { RequestExactLocationCard } from '@/components/request-flow/RequestExactLocationCard';
 import { RequestFlowHeader } from '@/components/request-flow/RequestFlowHeader';
 import { RequestMetaRow } from '@/components/request-flow/RequestMetaRow';
 import { RequestOfferWhenCard } from '@/components/request-flow/RequestOfferWhenCard';
@@ -485,7 +484,6 @@ export default function EngagementScreen() {
               onCall={() => Linking.openURL(`tel:${data.counterparty_phone}`)}
               onViewMap={openMaps}
             />
-            <RequestExactLocationCard address={data.location_label} onDirections={openMaps} />
           </View>
 
           {showPaymentSecured ? (

@@ -42,7 +42,7 @@ export function HomeRequestCard({
       </Text>
 
       {description ? (
-        <Text className="text-sm leading-5 text-muted" numberOfLines={2}>
+        <Text className="text-base leading-6 text-muted" numberOfLines={2}>
           {description}
         </Text>
       ) : null}

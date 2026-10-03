@@ -100,7 +100,7 @@ export function requestLifecycleCopy(
   return REQUESTER_COPY[stage];
 }
 
-export type LifecycleBadgeTone = 'neutral' | 'brand' | 'active' | 'danger' | 'warning';
+export type LifecycleBadgeTone = 'neutral' | 'brand' | 'active' | 'danger' | 'warning' | 'info';
 
 export function requestLifecycleBadge(
   stage: RequestLifecycleStage,
@@ -116,9 +116,8 @@ export function requestLifecycleBadge(
         return 'brand';
       case 'selected':
       case 'in_progress':
-        return 'active';
       case 'completion_pending':
-        return 'warning';
+        return 'info';
       case 'disputed':
       case 'cancelled':
       case 'no_show':
