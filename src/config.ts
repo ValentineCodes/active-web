@@ -31,10 +31,12 @@ export const SERVICE_FEE_RATE = 0.1;
 
 /** Wallet presentation. Balances and ledger writes remain server-authoritative. */
 export const WALLET = {
-  /** Amount chips for temporary manual top-up / withdraw until a wallet service is integrated. */
-  adjustAmounts: [5000, 10_000, 25_000, 50_000] as const,
+  /** Preset amounts on the add-money screen until a payment provider is integrated. */
+  addMoneyAmounts: [1000, 5000, 10_000, 20_000] as const,
   /** Max ledger rows loaded on the wallet screen. */
   activityLimit: 50,
+  /** Recent activity rows shown on the wallet home screen. */
+  previewActivityCount: 4,
   buckets: {
     available: 'Available',
     locked: 'Held for open requests',

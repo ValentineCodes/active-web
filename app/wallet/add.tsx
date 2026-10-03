@@ -1,0 +1,123 @@
+import { type ComponentRef, useRef, useState } from 'react';
+import { Pressable, Text, TextInput, View } from 'react-native';
+import { router } from 'expo-router';
+
+import { Button } from '@/components/ui/Button';
+import { Header } from '@/components/ui/Header';
+import { Screen } from '@/components/ui/Screen';
+import { InlineError } from '@/components/ui/StateView';
+import { WALLET } from '@/config';
+import { useWalletTopUp } from '@/features/wallet/api';
+import { formatMoney } from '@/lib/format';
+import { showAppToast } from '@/lib/toast';
+import { cn } from '@/lib/cn';
+import { useColors } from '@/theme';
+
+export default function WalletAddMoneyScreen() {
+  const colors = useColors();
+  const inputRef = useRef<ComponentRef<typeof TextInput>>(null);
+  const topUp = useWalletTopUp();
+  const [amount, setAmount] = useState('');
+
+  const parsedAmount = Number(amount.replace(/[^\d]/g, ''));
+  const hasAmount = parsedAmount > 0;
+  const currency = 'NGN';
+
+  const submit = () => {
+    if (!hasAmount) return;
+    topUp.mutate(parsedAmount, {
+      onSuccess: () => {
+        showAppToast(`${formatMoney(parsedAmount, currency)} added to your balance`);
+        router.back();
+      },
+    });
+  };
+
+  return (
+    <Screen>
+      <Header title="Add money" onBack={() => router.back()} />
+
+      <View className="flex-1 gap-6 px-5 pb-8 pt-2">
+        <View className="gap-2">
+          <Text className="font-serif text-3xl font-bold leading-9 text-ink">
+            How much would you like to add?
+          </Text>
+          <Text className="text-base text-muted">
+            This money will be available to fund requests.
+          </Text>
+        </View>
+
+        <Pressable
+          accessibilityRole="none"
+          onPress={() => inputRef.current?.focus()}
+          className={cn(
+            'flex-row items-center rounded-2xl border bg-surface px-5 py-6',
+            hasAmount ? 'border-active' : 'border-hairline',
+          )}
+        >
+          <Text className="text-3xl font-bold text-active">₦</Text>
+          <TextInput
+            ref={inputRef}
+            accessibilityLabel="Amount to add"
+            value={amount}
+            onChangeText={(text) => setAmount(text.replace(/[^\d]/g, ''))}
+            keyboardType="number-pad"
+            placeholder="0"
+            placeholderTextColor={colors.subtle}
+            className="min-w-0 flex-1 px-2 py-0 text-3xl font-bold text-ink"
+            maxLength={9}
+          />
+        </Pressable>
+
+        <View className="flex-row flex-wrap gap-2">
+          {WALLET.addMoneyAmounts.map((preset) => {
+            const selected = parsedAmount === preset;
+            return (
+              <Pressable
+                key={preset}
+                accessibilityRole="button"
+                accessibilityState={{ selected }}
+                onPress={() => setAmount(String(preset))}
+                className={cn(
+                  'rounded-xl px-4 py-2.5 active:opacity-90',
+                  selected ? 'border border-active bg-surface' : 'bg-surface',
+                )}
+              >
+                <Text
+                  className={cn('text-base font-semibold', selected ? 'text-active' : 'text-muted')}
+                >
+                  {formatMoney(preset, currency)}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+
+        {hasAmount ? (
+          <View className="rounded-2xl bg-surface px-4 py-4">
+            <Text className="text-base leading-6 text-muted">
+              You&apos;ll be adding{' '}
+              <Text className="font-semibold text-ink">{formatMoney(parsedAmount, currency)}</Text>{' '}
+              to your Active wallet.
+            </Text>
+          </View>
+        ) : null}
+
+        {topUp.isError ? <InlineError error={topUp.error} /> : null}
+      </View>
+
+      <View className="px-5 pb-8">
+        <Button
+          label="Continue"
+          variant="active"
+          size="lg"
+          corner="2xl"
+          className="w-full"
+          disabled={!hasAmount}
+          loading={topUp.isPending}
+          onPress={submit}
+        />
+      </View>
+    </Screen>
+  );
+}

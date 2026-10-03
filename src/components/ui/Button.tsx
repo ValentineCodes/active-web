@@ -23,12 +23,18 @@ const labelClasses: Record<Variant, string> = {
   danger: 'text-danger',
 };
 
+const cornerClasses = {
+  full: 'rounded-full',
+  '2xl': 'rounded-2xl',
+} as const;
+
 type Props = {
   label: string;
   onPress: () => void;
   variant?: Variant;
   icon?: keyof typeof Ionicons.glyphMap;
   size?: 'md' | 'lg';
+  corner?: keyof typeof cornerClasses;
   loading?: boolean;
   disabled?: boolean;
   className?: string;
@@ -40,6 +46,7 @@ export function Button({
   variant = 'primary',
   icon,
   size = 'md',
+  corner = 'full',
   loading = false,
   disabled = false,
   className,
@@ -66,7 +73,8 @@ export function Button({
         onPress();
       }}
       className={cn(
-        'items-center justify-center rounded-full active:opacity-80',
+        'items-center justify-center active:opacity-80',
+        cornerClasses[corner],
         size === 'lg' ? 'px-6 py-4' : 'px-5 py-3.5',
         containers[variant],
         inert && 'opacity-40',

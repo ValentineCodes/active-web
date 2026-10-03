@@ -374,7 +374,13 @@ export default function RespondScreen() {
             onPress={confirmWithdraw}
           />
         ) : (
-          <Button label="Respond to request" variant="active" size="lg" onPress={beginFlow} />
+          <Button
+            label="Respond to request"
+            variant="active"
+            size="lg"
+            corner="2xl"
+            onPress={beginFlow}
+          />
         )}
 
         {declinedParticipation ? null : existingResponse ? (

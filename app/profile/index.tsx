@@ -203,6 +203,23 @@ export default function ProfileScreen() {
 
         <ProfileCatalogueRail />
 
+        <Pressable
+          onPress={() => router.push('/wallet')}
+          accessibilityRole="button"
+          accessibilityLabel="Wallet"
+          accessibilityHint="Balance, locked money, and activity"
+          className="flex-row items-center gap-3 rounded-2xl border border-hairline bg-elevated px-4 py-4 active:opacity-90"
+        >
+          <View className="h-11 w-11 items-center justify-center rounded-xl bg-active-soft">
+            <Text className="text-lg font-bold text-active">₦</Text>
+          </View>
+          <View className="min-w-0 flex-1 gap-0.5">
+            <Text className="text-lg font-semibold text-ink">Wallet</Text>
+            <Text className="text-sm text-muted">Balance, locked money, and activity</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color={colors.subtle} />
+        </Pressable>
+
         <SettingsGroup title="Account">
           <SettingsRow label="Edit profile" onPress={() => router.push('/profile/edit')} />
           <SettingsRow label="Payment details" onPress={() => router.push('/wallet')} showDivider />

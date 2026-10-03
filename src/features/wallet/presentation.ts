@@ -1,0 +1,153 @@
+import { format, formatDistanceToNowStrict, isThisYear, isToday, isYesterday } from 'date-fns';
+
+import { formatMoney } from '@/lib/format';
+
+import type { WalletActivityRow } from './activity';
+import { walletActivityAmount, walletActivityTitle } from './activity';
+
+export type WalletActivityStatusTag = 'locked' | 'returned' | 'completed';
+
+export type WalletActivityVisual = {
+  incoming: boolean;
+  statusTag: WalletActivityStatusTag | null;
+};
+
+const INCOMING_KINDS = new Set([
+  'external_deposit',
+  'manual_top_up',
+  'pay_provider',
+  'refund',
+  'escrow_partial_refund',
+]);
+
+export function walletActivityVisual(kind: string, amount: number | null): WalletActivityVisual {
+  const incoming = amount !== null ? amount > 0 : INCOMING_KINDS.has(kind);
+
+  let statusTag: WalletActivityStatusTag | null = null;
+  if (kind === 'escrow_lock') statusTag = 'locked';
+  else if (kind === 'refund' || kind === 'escrow_partial_refund') statusTag = 'returned';
+  else if (
+    [
+      'external_deposit',
+      'manual_top_up',
+      'pay_provider',
+      'escrow_release',
+      'manual_withdraw',
+    ].includes(kind)
+  ) {
+    statusTag = 'completed';
+  }
+
+  return { incoming, statusTag };
+}
+
+export function formatWalletActivitySignedAmount(amount: number, currency: string): string {
+  const label = formatMoney(Math.abs(amount), currency);
+  return amount > 0 ? `+ ${label}` : `− ${label}`;
+}
+
+export function formatWalletActivityWhen(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return '';
+
+  const time = format(date, 'h:mm a');
+  if (isToday(date)) {
+    const relative = formatDistanceToNowStrict(date, { addSuffix: false });
+    if (relative === 'less than a minute') return 'Just now';
+    return `Today, ${time}`;
+  }
+  if (isYesterday(date)) return `Yesterday, ${time}`;
+  if (isThisYear(date)) return format(date, 'MMM d, h:mm a');
+  return format(date, 'MMM d, yyyy, h:mm a');
+}
+
+export function formatWalletTransactionWhen(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return '';
+
+  const datePart = format(date, 'MMM d, yyyy');
+  const relative = formatDistanceToNowStrict(date, { addSuffix: false });
+  if (isToday(date) && relative === 'less than a minute') {
+    return `${datePart} · Just now`;
+  }
+  return `${datePart} · ${format(date, 'h:mm a')}`;
+}
+
+export function walletActivityReference(id: string): string {
+  const compact = id.replace(/-/g, '').toUpperCase();
+  if (compact.length <= 4) return `ACT-${compact}`;
+  return `ACT-${compact.slice(0, 4)}-${compact.slice(4, 6)}`;
+}
+
+export function walletActivityDetailBadge(kind: string): WalletActivityStatusTag | null {
+  return walletActivityVisual(kind, null).statusTag;
+}
+
+export function walletActivityWhatHappened(kind: string): string {
+  switch (kind) {
+    case 'external_deposit':
+    case 'manual_top_up':
+      return 'Money was added to your Active wallet and is ready to use.';
+    case 'escrow_lock':
+      return 'This money is committed to your active request. It will be released when the request is completed or returned if it is cancelled.';
+    case 'pay_provider':
+      return 'You received this payment after completing a request.';
+    case 'refund':
+    case 'escrow_partial_refund':
+      return 'The request did not go ahead, so the committed money was returned to your available balance.';
+    case 'escrow_release':
+      return 'Payment was released after you confirmed the request was complete.';
+    case 'manual_withdraw':
+      return 'Money was withdrawn from your available balance.';
+    case 'escrow_pending':
+    case 'escrow_relock':
+      return 'This money is held while your request is in progress.';
+    case 'escrow_top_up':
+      return 'Your offer increased, so more money was set aside for this request.';
+    default:
+      return 'This transaction updated your wallet balance.';
+  }
+}
+
+export function groupWalletActivityByMonth(rows: WalletActivityRow[]) {
+  const map = new Map<string, WalletActivityRow[]>();
+
+  for (const row of rows) {
+    if (!row.created_at) continue;
+    const key = format(new Date(row.created_at), 'yyyy-MM');
+    const list = map.get(key) ?? [];
+    list.push(row);
+    map.set(key, list);
+  }
+
+  return [...map.entries()]
+    .sort(([a], [b]) => b.localeCompare(a))
+    .map(([key, items]) => ({
+      key,
+      title: format(new Date(`${key}-01T12:00:00`), 'MMMM yyyy').toUpperCase(),
+      items,
+    }));
+}
+
+export function walletActivityListMeta(
+  row: WalletActivityRow,
+  currency: string,
+): {
+  title: string;
+  amount: number | null;
+  signedAmount: string | null;
+  when: string;
+  visual: WalletActivityVisual;
+} {
+  const kind = row.kind ?? 'activity';
+  const amount = walletActivityAmount(row);
+  const visual = walletActivityVisual(kind, amount);
+
+  return {
+    title: walletActivityTitle(kind),
+    amount,
+    signedAmount: amount !== null ? formatWalletActivitySignedAmount(amount, currency) : null,
+    when: row.created_at ? formatWalletActivityWhen(row.created_at) : '',
+    visual,
+  };
+}
