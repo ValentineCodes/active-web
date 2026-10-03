@@ -60,7 +60,7 @@ const darkPalette = {
   warningSoft: '#2A2410',
   info: '#0A84FF',
   infoSoft: '#152438',
-  /** Inbox row icon circles — sampled from `design/notifications_*.png`. */
+  /** Inbox row icon circles — sampled from `design/notifications/inbox/*.png`. */
   notificationChipBlueBg: '#1E293B',
   notificationChipBlueFg: '#60A5FA',
   notificationChipPurpleBg: '#2E1065',
@@ -71,7 +71,7 @@ const darkPalette = {
   notificationChipAmberFg: '#F5BC1E',
   notificationChipRedBg: '#3B1212',
   notificationChipRedFg: '#FF453A',
-  /** iOS-style toggles — `design/notifications_settings.png`. */
+  /** iOS-style toggles — `design/notifications/settings.png`. */
   switchTrackOn: '#4ADE80',
   switchTrackOff: '#424242',
   switchThumb: '#FFFFFF',
