@@ -1,24 +1,9 @@
-import type { ColorValue } from 'react-native';
-import { Tabs } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { NativeTabs } from 'expo-router/native-tabs';
 
-import { HomeTabBar } from '@/components/ui/HomeTabBar';
 import { useNotificationUnreadCount } from '@/features/notifications/inbox';
 import { useNotificationBridge } from '@/lib/notifications';
 import { useMyRequests } from '@/features/requests/requester-api';
 import { useColors } from '@/theme';
-
-function TabIcon({
-  color,
-  size,
-  name,
-}: {
-  color: ColorValue;
-  size: number;
-  name: keyof typeof Ionicons.glyphMap;
-}) {
-  return <Ionicons name={name} size={size} color={color as string} />;
-}
 
 export default function TabsLayout() {
   const colors = useColors();
@@ -37,40 +22,38 @@ export default function TabsLayout() {
       0,
     ) ?? 0;
 
+  const activityBadge = waitingResponses > 0 ? String(waitingResponses) : null;
+  const notificationBadge = unreadCount > 0 ? String(unreadCount) : null;
+
   return (
-    <Tabs
-      tabBar={(props) => <HomeTabBar {...props} />}
-      screenOptions={{
-        headerShown: false,
-        tabBarActiveTintColor: colors.active,
-        tabBarInactiveTintColor: colors.subtle,
-        tabBarBadgeStyle: { backgroundColor: colors.danger, color: '#FFFFFF' },
-        tabBarLabelStyle: { fontSize: 12, fontWeight: '600' },
-      }}
-    >
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: 'Home',
-          tabBarIcon: (props) => <TabIcon {...props} name="home-outline" />,
-        }}
-      />
-      <Tabs.Screen
-        name="activity"
-        options={{
-          title: 'Activity',
-          tabBarBadge: waitingResponses > 0 ? waitingResponses : undefined,
-          tabBarIcon: (props) => <TabIcon {...props} name="list-outline" />,
-        }}
-      />
-      <Tabs.Screen
-        name="notifications"
-        options={{
-          title: 'Notifications',
-          tabBarBadge: unreadCount > 0 ? unreadCount : undefined,
-          tabBarIcon: (props) => <TabIcon {...props} name="notifications-outline" />,
-        }}
-      />
-    </Tabs>
+    <NativeTabs tintColor={colors.active}>
+      <NativeTabs.Trigger name="index">
+        <NativeTabs.Trigger.Label>Home</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon
+          sf={{ default: 'house', selected: 'house.fill' }}
+          md={{ default: 'home', selected: 'home' }}
+        />
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="activity">
+        <NativeTabs.Trigger.Label>Activity</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon
+          sf={{ default: 'list.bullet', selected: 'list.bullet' }}
+          md={{ default: 'format_list_bulleted', selected: 'format_list_bulleted' }}
+        />
+        {activityBadge ? (
+          <NativeTabs.Trigger.Badge>{activityBadge}</NativeTabs.Trigger.Badge>
+        ) : null}
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="notifications">
+        <NativeTabs.Trigger.Label>Notifications</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon
+          sf={{ default: 'bell', selected: 'bell.fill' }}
+          md={{ default: 'notifications', selected: 'notifications' }}
+        />
+        {notificationBadge ? (
+          <NativeTabs.Trigger.Badge>{notificationBadge}</NativeTabs.Trigger.Badge>
+        ) : null}
+      </NativeTabs.Trigger>
+    </NativeTabs>
   );
 }

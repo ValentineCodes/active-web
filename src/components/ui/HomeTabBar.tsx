@@ -18,9 +18,12 @@ const TABS: TabConfig[] = [
   { routeName: 'notifications', label: 'Notifications', icon: 'notifications-outline' },
 ];
 
-type HomeTabBarProps = Parameters<NonNullable<ComponentProps<typeof Tabs>['tabBar']>>[0];
+type HomeTabBarProps = Pick<
+  Parameters<NonNullable<ComponentProps<typeof Tabs>['tabBar']>>[0],
+  'state' | 'descriptors'
+>;
 
-export function HomeTabBar({ state, descriptors, navigation }: HomeTabBarProps) {
+export function HomeTabBar({ state, descriptors }: HomeTabBarProps) {
   const { colors, shadow } = useTheme();
   const insets = useSafeAreaInsets();
   const paddingBottom = Math.max(insets.bottom, 8);
@@ -46,18 +49,13 @@ export function HomeTabBar({ state, descriptors, navigation }: HomeTabBarProps) 
           const descriptor = descriptors[route.key];
           if (!descriptor) return null;
 
-          const { options } = descriptor;
+          const { navigation, options } = descriptor;
           const focused = state.index === routeIndex;
           const color = focused ? colors.active : colors.subtle;
           const badge = options.tabBarBadge;
 
           const onPress = () => {
-            const event = navigation.emit({
-              type: 'tabPress',
-              target: route.key,
-              canPreventDefault: true,
-            });
-            if (!focused && !event.defaultPrevented) {
+            if (!focused) {
               navigation.navigate(route.name, route.params);
             }
           };
@@ -69,7 +67,7 @@ export function HomeTabBar({ state, descriptors, navigation }: HomeTabBarProps) 
               accessibilityState={{ selected: focused }}
               accessibilityLabel={options.tabBarAccessibilityLabel ?? tab.label}
               onPress={onPress}
-              onLongPress={() => navigation.emit({ type: 'tabLongPress', target: route.key })}
+              onLongPress={() => navigation.navigate(route.name, route.params)}
               className="min-h-12 flex-1 items-center justify-center gap-0.5 py-1"
             >
               <View>

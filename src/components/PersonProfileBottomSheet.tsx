@@ -10,6 +10,7 @@ import {
 } from '@gorhom/bottom-sheet';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { BottomSheetWindow } from '@/components/ui/BottomSheetWindow';
 import { ProfileCataloguePreview } from '@/components/ProfileCataloguePreview';
 import { Avatar } from '@/components/ui/Avatar';
 import { Button } from '@/components/ui/Button';
@@ -173,6 +174,7 @@ export function PersonProfileBottomSheet({
   return (
     <BottomSheetModal
       ref={sheetRef}
+      containerComponent={BottomSheetWindow}
       snapPoints={snapPoints}
       enablePanDownToClose
       backdropComponent={renderBackdrop}

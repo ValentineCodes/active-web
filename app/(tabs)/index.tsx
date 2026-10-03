@@ -5,7 +5,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { HomeActiveRequestBanner } from '@/components/HomeActiveRequestBanner';
 import { NearbyRequests } from '@/components/NearbyRequests';
 import { Avatar } from '@/components/ui/Avatar';
-import { FloatingActionButton } from '@/components/ui/FloatingActionButton';
+import { FloatingActionButton, useFabBottomOffset } from '@/components/ui/FloatingActionButton';
 import { Screen } from '@/components/ui/Screen';
 import { useAttendance } from '@/features/attendance/api';
 import { useProfile } from '@/features/profile/api';
@@ -63,9 +63,9 @@ export default function HomeScreen() {
     return null;
   })();
 
-  const fabGapAboveTabBar = 12;
+  const fabBottom = useFabBottomOffset(0);
   const fabSize = 56;
-  const listBottomPadding = fabGapAboveTabBar + fabSize + 24;
+  const listBottomPadding = fabBottom + fabSize + 12;
 
   return (
     <Screen>
@@ -138,7 +138,7 @@ export default function HomeScreen() {
         variant="create"
         accessibilityLabel="Ask for help — create a request"
         onPress={() => router.push('/request/new')}
-        style={{ position: 'absolute', right: 20, bottom: fabGapAboveTabBar }}
+        style={{ position: 'absolute', right: 20, bottom: fabBottom }}
       />
     </Screen>
   );

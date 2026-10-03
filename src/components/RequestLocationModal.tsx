@@ -10,6 +10,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/ui/Button';
+import { BottomSheetWindow } from '@/components/ui/BottomSheetWindow';
 import { useColors } from '@/theme';
 
 export type RequestLocationSheetHandle = {
@@ -76,6 +77,7 @@ export const RequestLocationModal = forwardRef<
   return (
     <BottomSheetModal
       ref={sheetRef}
+      containerComponent={BottomSheetWindow}
       snapPoints={snapPoints}
       enablePanDownToClose={!loading}
       onDismiss={handleSheetDismiss}

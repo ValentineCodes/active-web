@@ -1,17 +1,14 @@
-import { useCallback, useEffect, useRef, useState, type RefObject } from 'react';
+import { useCallback, useEffect, useRef, useState, type ComponentRef, type RefObject } from 'react';
 import {
   ActivityIndicator,
-  InteractionManager,
   Platform,
   Pressable,
   ScrollView,
   Text,
   TextInput,
   View,
-  type TextInput as TextInputType,
 } from 'react-native';
 import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker';
-import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
@@ -210,7 +207,7 @@ function CreateTextArea({
   minHeight = 160,
   textSize = 'base',
 }: {
-  inputRef?: RefObject<TextInputType | null>;
+  inputRef?: RefObject<ComponentRef<typeof TextInput> | null>;
   value: string;
   onChangeText: (text: string) => void;
   placeholder: string;
@@ -380,9 +377,9 @@ function NewRequestForm({ reuseSeed }: { reuseSeed?: ReuseSeed }) {
   const [attachmentUploading, setAttachmentUploading] = useState(false);
   const locationSheetRef = useRef<RequestLocationSheetHandle>(null);
 
-  const titleInputRef = useRef<TextInputType>(null);
-  const descriptionInputRef = useRef<TextInputType>(null);
-  const amountInputRef = useRef<TextInputType>(null);
+  const titleInputRef = useRef<ComponentRef<typeof TextInput>>(null);
+  const descriptionInputRef = useRef<ComponentRef<typeof TextInput>>(null);
+  const amountInputRef = useRef<ComponentRef<typeof TextInput>>(null);
 
   const reusingPrior = Boolean(reuseSeed);
   const trimmedTitle = title.trim();
@@ -536,9 +533,9 @@ function NewRequestForm({ reuseSeed }: { reuseSeed?: ReuseSeed }) {
     }
 
     setLocationModalError(null);
-    InteractionManager.runAfterInteractions(() => {
+    setTimeout(() => {
       locationSheetRef.current?.present();
-    });
+    }, 0);
   };
 
   const shareLocationForPost = async () => {
@@ -589,7 +586,7 @@ function NewRequestForm({ reuseSeed }: { reuseSeed?: ReuseSeed }) {
     create.isPending || wallet.isPending || locationModalLoading || attachmentUploading;
 
   return (
-    <BottomSheetModalProvider>
+    <>
       <Screen edges={['top', 'bottom']}>
         <KeyboardStickyFooter
           footer={
@@ -838,7 +835,7 @@ function NewRequestForm({ reuseSeed }: { reuseSeed?: ReuseSeed }) {
         onDismiss={() => setLocationModalError(null)}
         onShareLocation={() => void shareLocationForPost()}
       />
-    </BottomSheetModalProvider>
+    </>
   );
 }
 

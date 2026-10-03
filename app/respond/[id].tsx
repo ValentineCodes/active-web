@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, InteractionManager, ScrollView, Text, View } from 'react-native';
+import { Alert, ScrollView, Text, View } from 'react-native';
 import { Redirect, router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import type { BottomSheetModal } from '@gorhom/bottom-sheet';
@@ -162,9 +162,9 @@ export default function RespondScreen() {
 
     pendingSubmitRef.current = payload;
     setLocationModalError(null);
-    InteractionManager.runAfterInteractions(() => {
+    setTimeout(() => {
       locationSheetRef.current?.present();
-    });
+    }, 0);
   };
 
   const shareLocationForResponse = async () => {

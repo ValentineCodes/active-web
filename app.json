@@ -53,7 +53,8 @@
           "color": "#10B981"
         }
       ],
-      "expo-video"
+      "expo-video",
+      "expo-image"
     ],
     "experiments": {
       "typedRoutes": true,

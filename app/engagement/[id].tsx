@@ -441,7 +441,9 @@ export default function EngagementScreen() {
           refreshControl={
             <RefreshControl
               refreshing={engagement.isRefetching}
-              onRefresh={() => engagement.refetch()}
+              onRefresh={() => {
+                void engagement.refetch();
+              }}
             />
           }
         >

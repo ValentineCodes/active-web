@@ -1,13 +1,5 @@
-import { useRef, useState } from 'react';
-import {
-  ActivityIndicator,
-  Pressable,
-  ScrollView,
-  Text,
-  TextInput,
-  View,
-  type TextInput as TextInputType,
-} from 'react-native';
+import { useRef, useState, type ComponentRef } from 'react';
+import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import { Avatar } from '@/components/ui/Avatar';
@@ -152,7 +144,7 @@ function OfferAmountStepper({
   error: string | null;
 }) {
   const colors = useColors();
-  const inputRef = useRef<TextInputType>(null);
+  const inputRef = useRef<ComponentRef<typeof TextInput>>(null);
 
   return (
     <View className="gap-2">
@@ -217,7 +209,7 @@ export function ResponseCreationFlow({
   const capturePhoto = useCaptureProfilePhoto();
   const [yourOffer, setYourOffer] = useState(String(initialYourOffer));
   const [message, setMessage] = useState(initialMessage);
-  const messageInputRef = useRef<TextInputType>(null);
+  const messageInputRef = useRef<ComponentRef<typeof TextInput>>(null);
 
   const stepCount = needsPhotoStep ? 3 : 2;
   const offerStep = needsPhotoStep ? 1 : 0;

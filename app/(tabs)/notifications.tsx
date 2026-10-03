@@ -203,7 +203,12 @@ export default function NotificationsScreen() {
           keyExtractor={(item) => item.id}
           contentContainerClassName="px-5 pb-12 pt-1"
           refreshControl={
-            <RefreshControl refreshing={inbox.isRefetching} onRefresh={() => inbox.refetch()} />
+            <RefreshControl
+              refreshing={inbox.isRefetching}
+              onRefresh={() => {
+                void inbox.refetch();
+              }}
+            />
           }
           ItemSeparatorComponent={() => <View className="h-px bg-hairline" />}
           ListEmptyComponent={
@@ -266,7 +271,7 @@ export default function NotificationsScreen() {
                   <Text className="text-sm font-semibold text-active">Manage in settings</Text>
                 </Pressable>
               </Card>
-            ) : null
+            ) : undefined
           }
         />
       ) : null}
