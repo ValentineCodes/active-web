@@ -161,18 +161,22 @@ function WizardSkipButton({ onPress }: { onPress: () => void }) {
 function WizardPrimaryButton({
   label,
   disabled,
+  inactive,
   loading,
   onPress,
   className,
 }: {
   label: string;
   disabled?: boolean;
+  /** Grey styling while still accepting presses (validation feedback in onPress). */
+  inactive?: boolean;
   loading?: boolean;
   onPress: () => void;
   className?: string;
 }) {
   const colors = useColors();
   const inert = disabled || loading;
+  const muted = inert || inactive;
 
   return (
     <Pressable
@@ -181,16 +185,17 @@ function WizardPrimaryButton({
       accessibilityState={{ disabled: inert, busy: loading }}
       disabled={inert}
       onPress={onPress}
+      hitSlop={8}
       className={cn(
-        'items-center justify-center rounded-2xl px-6 py-4 active:opacity-90',
-        inert ? 'bg-surface' : 'bg-active',
+        'min-h-12 items-center justify-center rounded-2xl px-6 py-4 active:opacity-90',
+        muted ? 'bg-surface' : 'bg-active',
         className,
       )}
     >
       {loading ? (
-        <ActivityIndicator color={inert ? colors.subtle : colors.onBrand} />
+        <ActivityIndicator color={muted ? colors.subtle : colors.onBrand} />
       ) : (
-        <Text className={cn('text-lg font-bold', inert ? 'text-subtle' : 'text-on-brand')}>
+        <Text className={cn('text-lg font-bold', muted ? 'text-subtle' : 'text-on-brand')}>
           {label}
         </Text>
       )}
@@ -422,6 +427,24 @@ function NewRequestForm({ reuseSeed }: { reuseSeed?: ReuseSeed }) {
 
   const goNext = () => {
     if (step === STEP_COUNT - 1) return;
+
+    if (!stepValid[step]) {
+      if (step === 0) {
+        showAppToast(`Use at least ${CREATE_TITLE_LIMITS.min} characters in the title.`, 'warning');
+        return;
+      }
+      if (step === 2) {
+        showAppToast(amountError ?? 'Enter a valid offer amount to continue.', 'warning');
+        return;
+      }
+      if (step === 3) {
+        setLaterTimeError(true);
+        showAppToast('Choose a date and time in the future.', 'warning');
+        return;
+      }
+      return;
+    }
+
     setLaterTimeError(false);
     setStep((current) => Math.min(current + 1, STEP_COUNT - 1));
   };
@@ -587,7 +610,7 @@ function NewRequestForm({ reuseSeed }: { reuseSeed?: ReuseSeed }) {
 
   return (
     <>
-      <Screen edges={['top', 'bottom']}>
+      <Screen edges={['top']}>
         <KeyboardStickyFooter
           footer={
             <View className="gap-3 border-t border-hairline p-5">
@@ -604,7 +627,7 @@ function NewRequestForm({ reuseSeed }: { reuseSeed?: ReuseSeed }) {
                   onPress={handlePostPress}
                 />
               ) : (
-                <WizardPrimaryButton label="Next" disabled={!stepValid[step]} onPress={goNext} />
+                <WizardPrimaryButton label="Next" inactive={!stepValid[step]} onPress={goNext} />
               )}
             </View>
           }
@@ -846,7 +869,7 @@ export default function NewRequestScreen() {
 
   if (sourceRequestId && sourceRequest.isPending) {
     return (
-      <Screen edges={['top', 'bottom']}>
+      <Screen edges={['top']}>
         <LoadingState />
       </Screen>
     );
@@ -854,7 +877,7 @@ export default function NewRequestScreen() {
 
   if (sourceRequestId && sourceRequest.isError) {
     return (
-      <Screen edges={['top', 'bottom']}>
+      <Screen edges={['top']}>
         <WizardHeader title="New request" step={0} onClose={() => router.back()} />
         <ErrorState error={sourceRequest.error} onRetry={() => sourceRequest.refetch()} />
       </Screen>
@@ -867,7 +890,7 @@ export default function NewRequestScreen() {
     !canReuseRequest(sourceRequest.data.status, sourceRequest.data.expires_at)
   ) {
     return (
-      <Screen edges={['top', 'bottom']}>
+      <Screen edges={['top']}>
         <WizardHeader title="New request" step={0} onClose={() => router.back()} />
         <ErrorState
           error={
