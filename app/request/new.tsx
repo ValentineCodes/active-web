@@ -610,10 +610,10 @@ function NewRequestForm({ reuseSeed }: { reuseSeed?: ReuseSeed }) {
 
   return (
     <>
-      <Screen edges={['top']}>
+      <Screen edges={['top', 'bottom']}>
         <KeyboardStickyFooter
           footer={
-            <View className="gap-3 border-t border-hairline p-5">
+            <View className="gap-3 p-5">
               {step === 1 ? (
                 <View className="flex-row items-stretch gap-3">
                   <WizardSkipButton onPress={goNext} />

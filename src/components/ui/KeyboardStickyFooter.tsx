@@ -27,7 +27,7 @@ export function KeyboardStickyFooter({
         style={{
           flexShrink: 0,
           paddingBottom: Platform.OS === 'android' ? insets.bottom : 0,
-          ...(Platform.OS === 'android' ? { elevation: 12, zIndex: 1 } : null),
+          ...(Platform.OS === 'android' ? { zIndex: 1 } : null),
         }}
       >
         {footer}

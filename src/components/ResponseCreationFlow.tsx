@@ -256,7 +256,7 @@ export function ResponseCreationFlow({
   return (
     <KeyboardStickyFooter
       footer={
-        <View className="gap-3 border-t border-hairline p-5">
+        <View className="gap-3 p-5">
           {needsPhotoStep && step === 0 ? (
             <Button
               label={
