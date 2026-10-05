@@ -18,8 +18,7 @@ import { formatPhoneDisplay } from '@/lib/format';
 import { showAppToast } from '@/lib/toast';
 import { useMyResponses } from '@/features/requests/responses-api';
 import { useMyRequests } from '@/features/requests/requester-api';
-import type { ThemePreference } from '@/features/theme/preferences';
-import { cn } from '@/lib/cn';
+import { ThemePreferenceSegment } from '@/components/settings/ThemePreferenceSegment';
 import { useColors, useTheme } from '@/theme';
 
 function ProfileStat({ value, label }: { value: number; label: string }) {
@@ -70,46 +69,13 @@ function SettingsGroup({ title, children }: { title: string; children: ReactNode
   );
 }
 
-const APPEARANCE_OPTIONS: { value: ThemePreference; label: string }[] = [
-  { value: 'light', label: 'Light' },
-  { value: 'dark', label: 'Dark' },
-  { value: 'system', label: 'System Default' },
-];
-
 function AppearancePreferenceSection() {
   const { preference, setPreference } = useTheme();
 
   return (
-    <View className="gap-3 px-4 py-4">
-      <Text className="text-lg text-ink">Appearance</Text>
-      <View className="flex-row gap-2">
-        {APPEARANCE_OPTIONS.map((option) => {
-          const selected = preference === option.value;
-          return (
-            <Pressable
-              key={option.value}
-              accessibilityRole="button"
-              accessibilityLabel={`Appearance: ${option.label}`}
-              accessibilityState={{ selected }}
-              onPress={() => void setPreference(option.value)}
-              className={cn(
-                'flex-1 items-center justify-center rounded-xl px-2 py-3 active:opacity-90',
-                selected ? 'bg-active' : 'bg-surface',
-              )}
-            >
-              <Text
-                className={cn(
-                  'text-center text-sm font-semibold',
-                  selected ? 'text-on-brand' : 'text-muted',
-                )}
-                numberOfLines={2}
-              >
-                {option.label}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
+    <View className="gap-2 px-4 py-4">
+      <Text className="text-base text-muted">Appearance</Text>
+      <ThemePreferenceSegment value={preference} onChange={(next) => void setPreference(next)} />
     </View>
   );
 }
