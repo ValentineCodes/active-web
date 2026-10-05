@@ -12,6 +12,11 @@ import type { WalletTransactionStatus } from './types';
 
 export type WalletActivityStatusTag = 'locked' | 'returned' | 'completed';
 
+export type WalletTransactionDetailBadge = {
+  label: string;
+  variant: 'completed' | 'locked' | 'returned' | 'pending' | 'failed';
+};
+
 export type WalletActivityVisual = {
   incoming: boolean;
   statusTag: WalletActivityStatusTag | null;
@@ -35,6 +40,7 @@ export function walletActivityVisual(kind: string, amount: number | null): Walle
   else if (kind === 'refund' || kind === 'escrow_partial_refund') statusTag = 'returned';
   else if (
     [
+      'deposit',
       'external_deposit',
       'manual_top_up',
       'pay_provider',
@@ -89,8 +95,22 @@ export function walletActivityDetailBadge(kind: string): WalletActivityStatusTag
   return walletActivityVisual(kind, null).statusTag;
 }
 
+export function walletTransactionDetailBadge(
+  kind: string,
+  status: WalletTransactionStatus,
+): WalletTransactionDetailBadge {
+  const tag = walletActivityVisual(kind, null).statusTag;
+  if (tag === 'locked') return { label: 'Locked', variant: 'locked' };
+  if (tag === 'returned') return { label: 'Returned', variant: 'returned' };
+  if (status === 'pending') return { label: 'Pending', variant: 'pending' };
+  if (status === 'failed') return { label: 'Failed', variant: 'failed' };
+  if (status === 'reversed') return { label: 'Reversed', variant: 'failed' };
+  return { label: 'Completed', variant: 'completed' };
+}
+
 export function walletActivityWhatHappened(kind: string): string {
   switch (kind) {
+    case 'deposit':
     case 'external_deposit':
     case 'manual_top_up':
       return 'Money was added to your Active wallet and is ready to use.';

@@ -1,4 +1,4 @@
-import { Text, View } from 'react-native';
+import { ScrollView, Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -13,9 +13,10 @@ import {
   formatWalletTransactionWhen,
   walletActivityReference,
   walletActivityVisual,
-  walletHistoryDescription,
+  walletActivityWhatHappened,
   walletHistoryDirection,
-  walletTransactionStatusDisplay,
+  walletTransactionDetailBadge,
+  type WalletTransactionDetailBadge,
 } from '@/features/wallet/presentation';
 import { cn } from '@/lib/cn';
 import { useColors } from '@/theme';
@@ -25,6 +26,32 @@ function DetailRow({ label, value }: { label: string; value: string }) {
     <View className="flex-row items-start justify-between gap-4 px-4 py-4">
       <Text className="text-base text-muted">{label}</Text>
       <Text className="max-w-[58%] text-right text-base font-medium text-ink">{value}</Text>
+    </View>
+  );
+}
+
+function TransactionStatusBadge({ badge }: { badge: WalletTransactionDetailBadge }) {
+  return (
+    <View
+      className={cn(
+        'rounded-full px-3 py-1',
+        badge.variant === 'locked' && 'bg-warning-soft',
+        (badge.variant === 'completed' || badge.variant === 'returned') && 'bg-active-soft',
+        badge.variant === 'pending' && 'bg-surface',
+        badge.variant === 'failed' && 'bg-danger-soft',
+      )}
+    >
+      <Text
+        className={cn(
+          'text-sm font-semibold',
+          badge.variant === 'locked' && 'text-warning',
+          (badge.variant === 'completed' || badge.variant === 'returned') && 'text-active',
+          badge.variant === 'pending' && 'text-muted',
+          badge.variant === 'failed' && 'text-danger',
+        )}
+      >
+        {badge.label}
+      </Text>
     </View>
   );
 }
@@ -79,12 +106,32 @@ export default function WalletTransactionScreen() {
   const visual = walletActivityVisual(kind, amount);
   const direction = walletHistoryDirection(item.available_delta);
   const requestTitle = engagement.data?.title ?? null;
+  const badge = walletTransactionDetailBadge(kind, item.status);
+
+  const detailRows: { label: string; value: string }[] = [];
+  if (item.created_at) {
+    detailRows.push({
+      label: 'Date and time',
+      value: formatWalletTransactionWhen(item.created_at),
+    });
+  }
+  detailRows.push({
+    label: 'Reference',
+    value: walletActivityReference(item.id),
+  });
+  if (requestTitle) {
+    detailRows.push({ label: 'Request', value: `“${requestTitle}”` });
+  }
 
   return (
     <Screen>
       <Header title="Transaction" onBack={() => router.back()} />
 
-      <View className="flex-1 gap-6 px-5 pb-8 pt-2">
+      <ScrollView
+        className="flex-1"
+        contentContainerClassName="gap-5 px-5 pb-10 pt-2"
+        showsVerticalScrollIndicator={false}
+      >
         <View className="items-center px-4">
           <View
             className={cn(
@@ -107,35 +154,28 @@ export default function WalletTransactionScreen() {
             </Text>
           ) : null}
 
-          <View className="mt-3 items-center gap-2">
-            <Text className="text-lg font-semibold text-ink">{walletActivityTitle(kind)}</Text>
-            <Text className="text-center text-base leading-6 text-muted">
-              {walletHistoryDescription(item)}
-            </Text>
+          <Text className="mt-3 text-lg font-semibold text-ink">{walletActivityTitle(kind)}</Text>
+          <View className="mt-3">
+            <TransactionStatusBadge badge={badge} />
           </View>
         </View>
 
-        <View className="overflow-hidden rounded-2xl border border-hairline bg-elevated">
-          <DetailRow label="Status" value={walletTransactionStatusDisplay(item.status)} />
-          <View className="mx-4 h-px bg-hairline" />
-          {item.created_at ? (
-            <>
-              <DetailRow
-                label="Date and time"
-                value={formatWalletTransactionWhen(item.created_at)}
-              />
-              <View className="mx-4 h-px bg-hairline" />
-            </>
-          ) : null}
-          {requestTitle ? (
-            <>
-              <DetailRow label="Request" value={`“${requestTitle}”`} />
-              <View className="mx-4 h-px bg-hairline" />
-            </>
-          ) : null}
-          <DetailRow label="Support reference" value={walletActivityReference(item.id)} />
+        <View className="overflow-hidden rounded-2xl bg-elevated">
+          {detailRows.map((row, index) => (
+            <View key={row.label}>
+              {index > 0 ? <View className="mx-4 h-px bg-hairline" /> : null}
+              <DetailRow label={row.label} value={row.value} />
+            </View>
+          ))}
         </View>
-      </View>
+
+        <View className="gap-2 rounded-2xl bg-elevated px-4 py-4">
+          <Text className="text-xs font-semibold uppercase tracking-wide text-subtle">
+            What happened
+          </Text>
+          <Text className="text-base leading-6 text-muted">{walletActivityWhatHappened(kind)}</Text>
+        </View>
+      </ScrollView>
     </Screen>
   );
 }
