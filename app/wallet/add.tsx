@@ -3,6 +3,7 @@ import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { router } from 'expo-router';
 
 import { Button } from '@/components/ui/Button';
+import { MoneyAmountInput } from '@/components/ui/MoneyAmountInput';
 import { Header } from '@/components/ui/Header';
 import { KeyboardStickyFooter } from '@/components/ui/KeyboardStickyFooter';
 import { Screen } from '@/components/ui/Screen';
@@ -12,10 +13,8 @@ import { useWalletTopUp } from '@/features/wallet/api';
 import { formatMoney } from '@/lib/format';
 import { showAppToast } from '@/lib/toast';
 import { cn } from '@/lib/cn';
-import { useColors } from '@/theme';
 
 export default function WalletAddMoneyScreen() {
-  const colors = useColors();
   const inputRef = useRef<ComponentRef<typeof TextInput>>(null);
   const topUp = useWalletTopUp();
   const [amount, setAmount] = useState('');
@@ -77,17 +76,11 @@ export default function WalletAddMoneyScreen() {
               hasAmount ? 'border-active' : 'border-hairline',
             )}
           >
-            <Text className="text-3xl font-bold text-active">{MARKET.currencySymbol}</Text>
-            <TextInput
-              ref={inputRef}
+            <MoneyAmountInput
+              inputRef={inputRef}
               accessibilityLabel="Amount to add"
               value={amount}
               onChangeText={(text) => setAmount(text.replace(/[^\d]/g, ''))}
-              keyboardType="number-pad"
-              placeholder="0"
-              placeholderTextColor={colors.subtle}
-              className="min-w-0 flex-1 px-2 py-0 text-3xl font-bold text-ink"
-              maxLength={9}
             />
           </Pressable>
 

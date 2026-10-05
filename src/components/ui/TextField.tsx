@@ -2,7 +2,10 @@ import { useState } from 'react';
 import { Text, TextInput, View, type TextInputProps } from 'react-native';
 
 import { cn } from '@/lib/cn';
+import { poppinsInputTypography } from '@/theme/fonts';
 import { useColors } from '@/theme';
+
+const fieldTypography = poppinsInputTypography('regular', 'base');
 
 type Props = TextInputProps & {
   label: string;
@@ -18,6 +21,7 @@ export function TextField({
   error,
   counterMax,
   className,
+  style,
   onFocus,
   onBlur,
   ...inputProps
@@ -42,7 +46,7 @@ export function TextField({
           onBlur?.(event);
         }}
         className={cn(
-          'rounded-2xl border-2 px-4 py-4 text-base text-ink',
+          'rounded-2xl border-2 px-4 py-4 text-ink',
           error
             ? 'border-danger bg-danger-soft'
             : isFocused
@@ -50,6 +54,7 @@ export function TextField({
               : 'border-transparent bg-surface',
           className,
         )}
+        style={[fieldTypography, style]}
         {...inputProps}
       />
 

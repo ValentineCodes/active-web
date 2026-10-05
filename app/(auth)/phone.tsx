@@ -18,7 +18,10 @@ import { Screen } from '@/components/ui/Screen';
 import { InlineError } from '@/components/ui/StateView';
 import { MARKET } from '@/config';
 import { isPlausiblePhone, sendPhoneOtp, toE164, verifyPhoneOtp } from '@/features/auth/api';
+import { poppinsInputTypography } from '@/theme/fonts';
 import { useColors } from '@/theme';
+
+const phoneFieldTypography = poppinsInputTypography('regular', 'xl');
 
 const CODE_LENGTH = 6;
 const RESEND_COOLDOWN_SEC = 30;
@@ -154,14 +157,16 @@ export default function PhoneScreen() {
               accessibilityLabel="Your phone number"
               autoFocus
               underlineColorAndroid="transparent"
-              className="w-full bg-transparent text-xl text-ink"
-              style={{
-                paddingVertical: 8,
-                margin: 0,
-                borderWidth: 0,
-                backgroundColor: 'transparent',
-                includeFontPadding: false,
-              }}
+              className="w-full bg-transparent text-ink"
+              style={[
+                phoneFieldTypography,
+                {
+                  paddingVertical: 8,
+                  margin: 0,
+                  borderWidth: 0,
+                  backgroundColor: 'transparent',
+                },
+              ]}
             />
           </View>
         ) : (

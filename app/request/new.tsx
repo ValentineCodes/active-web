@@ -19,6 +19,7 @@ import {
   type RequestLocationSheetHandle,
 } from '@/components/RequestLocationModal';
 import { Button } from '@/components/ui/Button';
+import { MoneyAmountInput } from '@/components/ui/MoneyAmountInput';
 import { IconButton } from '@/components/ui/IconButton';
 import { KeyboardStickyFooter } from '@/components/ui/KeyboardStickyFooter';
 import { Screen } from '@/components/ui/Screen';
@@ -49,7 +50,13 @@ import {
 } from '@/lib/location';
 import { syncPushToken } from '@/lib/notifications';
 import { showAppToast } from '@/lib/toast';
+import { poppinsInputTypography, type PoppinsInputSize } from '@/theme/fonts';
 import { useColors } from '@/theme';
+
+function createTextAreaTypography(textSize: 'base' | 'lg' | 'xl') {
+  const size: PoppinsInputSize = textSize === 'xl' ? 'xl' : textSize === 'lg' ? 'lg' : 'base';
+  return poppinsInputTypography('regular', size, { multiline: true });
+}
 
 const STEP_COUNT = 5;
 
@@ -221,12 +228,7 @@ function CreateTextArea({
   textSize?: 'base' | 'lg' | 'xl';
 }) {
   const colors = useColors();
-  const textSizeClass =
-    textSize === 'xl'
-      ? 'text-xl leading-8'
-      : textSize === 'lg'
-        ? 'text-lg leading-7'
-        : 'text-base leading-6';
+  const typography = createTextAreaTypography(textSize);
 
   return (
     <TextInput
@@ -239,8 +241,8 @@ function CreateTextArea({
       multiline
       maxLength={maxLength}
       textAlignVertical="top"
-      className={cn('rounded-2xl bg-surface px-4 py-4 text-ink', textSizeClass)}
-      style={{ minHeight }}
+      className="rounded-2xl bg-surface px-4 py-4 text-ink"
+      style={[typography, { minHeight }]}
     />
   );
 }
@@ -351,7 +353,6 @@ function WhenPill({
 }
 
 function NewRequestForm({ reuseSeed }: { reuseSeed?: ReuseSeed }) {
-  const colors = useColors();
   const userId = useUserId();
   const seeded = newRequestFormState(reuseSeed);
   const create = useCreateRequest();
@@ -691,20 +692,12 @@ function NewRequestForm({ reuseSeed }: { reuseSeed?: ReuseSeed }) {
                 </Text>
                 <Text className="text-base text-muted">How much you&apos;re willing to pay.</Text>
                 <View className="rounded-2xl bg-surface px-5 py-6">
-                  <View className="flex-row items-center gap-2">
-                    <Text className="text-3xl font-bold text-active">{MARKET.currencySymbol}</Text>
-                    <TextInput
-                      ref={amountInputRef}
-                      accessibilityLabel="Offer amount"
-                      value={amount}
-                      onChangeText={(text) => setAmount(text.replace(/[^\d]/g, ''))}
-                      keyboardType="number-pad"
-                      placeholder="0"
-                      placeholderTextColor={colors.subtle}
-                      className="flex-1 py-0 text-3xl font-bold text-ink"
-                      maxLength={9}
-                    />
-                  </View>
+                  <MoneyAmountInput
+                    inputRef={amountInputRef}
+                    accessibilityLabel="Offer amount"
+                    value={amount}
+                    onChangeText={(text) => setAmount(text.replace(/[^\d]/g, ''))}
+                  />
                 </View>
                 {amountError ? <Text className="text-sm text-warning">{amountError}</Text> : null}
               </View>

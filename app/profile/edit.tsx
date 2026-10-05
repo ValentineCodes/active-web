@@ -10,11 +10,15 @@ import { ErrorState, InlineError, LoadingState } from '@/components/ui/StateView
 import { useCaptureProfilePhoto, useProfile, useSaveProfile } from '@/features/profile/api';
 import { cn } from '@/lib/cn';
 import { showAppToast } from '@/lib/toast';
+import { poppinsInputTypography } from '@/theme/fonts';
 import { useColors } from '@/theme';
+
+const editFieldTypography = poppinsInputTypography('regular', 'base');
 
 function EditField({
   label,
   className,
+  style,
   ...inputProps
 }: { label: string } & ComponentProps<typeof TextInput>) {
   const colors = useColors();
@@ -27,7 +31,8 @@ function EditField({
       <TextInput
         accessibilityLabel={label}
         placeholderTextColor={colors.subtle}
-        className={cn('rounded-2xl bg-surface px-4 py-4 text-base text-ink', className)}
+        className={cn('rounded-2xl bg-surface px-4 py-4 text-ink', className)}
+        style={[editFieldTypography, style]}
         {...inputProps}
       />
     </View>

@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { Avatar } from '@/components/ui/Avatar';
 import { Button } from '@/components/ui/Button';
+import { MoneyAmountInput } from '@/components/ui/MoneyAmountInput';
 import { IconButton } from '@/components/ui/IconButton';
 import { KeyboardStickyFooter } from '@/components/ui/KeyboardStickyFooter';
 import { InlineError } from '@/components/ui/StateView';
@@ -13,11 +14,13 @@ import {
   parseResponseOfferAmount,
   type RespondableRequest,
 } from '@/features/requests/responses-api';
-import { MARKET } from '@/config';
 import { cn } from '@/lib/cn';
 import { formatMoney } from '@/lib/format';
 import { showAppToast } from '@/lib/toast';
+import { poppinsInputTypography } from '@/theme/fonts';
 import { useColors } from '@/theme';
+
+const responseMessageTypography = poppinsInputTypography('regular', 'base', { multiline: true });
 
 const OFFER_STEP = 500;
 const MESSAGE_MAX = 500;
@@ -152,40 +155,36 @@ function OfferAmountStepper({
       <Pressable
         accessibilityRole="none"
         onPress={() => inputRef.current?.focus()}
-        className="flex-row items-center rounded-2xl bg-surface px-5 py-6"
+        className="rounded-2xl bg-surface px-5 py-6"
       >
-        <Text className="text-3xl font-bold text-active">{MARKET.currencySymbol}</Text>
-        <TextInput
-          ref={inputRef}
+        <MoneyAmountInput
+          inputRef={inputRef}
           accessibilityLabel="Your offer amount"
           value={value}
           onChangeText={(text) => onChangeText(text.replace(/[^\d]/g, ''))}
-          keyboardType="number-pad"
-          placeholder="0"
-          placeholderTextColor={colors.subtle}
-          className="min-w-0 flex-1 px-2 py-0 text-3xl font-bold text-ink"
-          maxLength={9}
+          trailing={
+            <View className="gap-1">
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Increase offer"
+                hitSlop={8}
+                onPress={() => onAdjust(OFFER_STEP)}
+                className="items-center justify-center rounded-lg bg-elevated p-1"
+              >
+                <Ionicons name="chevron-up" size={18} color={colors.muted} />
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Decrease offer"
+                hitSlop={8}
+                onPress={() => onAdjust(-OFFER_STEP)}
+                className="items-center justify-center rounded-lg bg-elevated p-1"
+              >
+                <Ionicons name="chevron-down" size={18} color={colors.muted} />
+              </Pressable>
+            </View>
+          }
         />
-        <View className="gap-1">
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Increase offer"
-            hitSlop={8}
-            onPress={() => onAdjust(OFFER_STEP)}
-            className="items-center justify-center rounded-lg bg-elevated p-1"
-          >
-            <Ionicons name="chevron-up" size={18} color={colors.muted} />
-          </Pressable>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Decrease offer"
-            hitSlop={8}
-            onPress={() => onAdjust(-OFFER_STEP)}
-            className="items-center justify-center rounded-lg bg-elevated p-1"
-          >
-            <Ionicons name="chevron-down" size={18} color={colors.muted} />
-          </Pressable>
-        </View>
       </Pressable>
       {error ? <Text className="text-sm text-warning">{error}</Text> : null}
     </View>
@@ -377,7 +376,8 @@ export function ResponseCreationFlow({
               multiline
               maxLength={MESSAGE_MAX}
               textAlignVertical="top"
-              className="min-h-44 rounded-2xl bg-surface px-4 py-4 text-base leading-6 text-ink"
+              className="min-h-44 rounded-2xl bg-surface px-4 py-4 text-ink"
+              style={responseMessageTypography}
             />
 
             <Text className="text-sm text-muted">
