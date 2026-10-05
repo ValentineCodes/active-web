@@ -68,7 +68,7 @@ export function HomeTabBar({ state, descriptors }: HomeTabBarProps) {
               accessibilityLabel={options.tabBarAccessibilityLabel ?? tab.label}
               onPress={onPress}
               onLongPress={() => navigation.navigate(route.name, route.params)}
-              className="min-h-12 flex-1 items-center justify-center gap-0.5 py-1"
+              className="min-h-11 flex-1 items-center justify-center py-1"
             >
               <View>
                 <Ionicons name={tab.icon} size={24} color={color} />
@@ -80,9 +80,6 @@ export function HomeTabBar({ state, descriptors }: HomeTabBarProps) {
                   </View>
                 ) : null}
               </View>
-              <Text className="text-xs font-semibold" style={{ color }}>
-                {tab.label}
-              </Text>
             </Pressable>
           );
         })}

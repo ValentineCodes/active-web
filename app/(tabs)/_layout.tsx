@@ -29,9 +29,9 @@ export default function TabsLayout() {
   const notificationBadge = unreadCount > 0 ? String(unreadCount) : null;
 
   return (
-    <NativeTabs tintColor={colors.active}>
-      <NativeTabs.Trigger name="index">
-        <NativeTabs.Trigger.Label>Home</NativeTabs.Trigger.Label>
+    <NativeTabs tintColor={colors.active} labelVisibilityMode="unlabeled">
+      <NativeTabs.Trigger name="index" accessibilityLabel="Home">
+        <NativeTabs.Trigger.Label hidden />
         <NativeTabs.Trigger.Icon
           sf={{ default: 'house', selected: 'house.fill' }}
           src={{
@@ -40,8 +40,8 @@ export default function TabsLayout() {
           }}
         />
       </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="activity">
-        <NativeTabs.Trigger.Label>Activity</NativeTabs.Trigger.Label>
+      <NativeTabs.Trigger name="activity" accessibilityLabel="Activity">
+        <NativeTabs.Trigger.Label hidden />
         <NativeTabs.Trigger.Icon
           sf={{ default: 'list.bullet', selected: 'list.bullet' }}
           src={<VectorIcon family={Ionicons} name="list-outline" />}
@@ -50,8 +50,8 @@ export default function TabsLayout() {
           <NativeTabs.Trigger.Badge>{activityBadge}</NativeTabs.Trigger.Badge>
         ) : null}
       </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="notifications">
-        <NativeTabs.Trigger.Label>Notifications</NativeTabs.Trigger.Label>
+      <NativeTabs.Trigger name="notifications" accessibilityLabel="Notifications">
+        <NativeTabs.Trigger.Label hidden />
         <NativeTabs.Trigger.Icon
           sf={{ default: 'bell', selected: 'bell.fill' }}
           src={{

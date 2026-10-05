@@ -7,8 +7,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
  */
 const IOS_TAB_BAR_SCROLL_CLEARANCE = 40;
 
-/** JS tab bar on web (`HomeTabBar` icon row + labels). */
-const WEB_TAB_BAR_HEIGHT = 56;
+/** JS tab bar on web (`HomeTabBar` icon row). */
+const WEB_TAB_BAR_HEIGHT = 48;
 
 /**
  * Distance from the screen bottom to the FAB’s bottom edge on iOS — clears the floating

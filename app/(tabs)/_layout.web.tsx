@@ -43,10 +43,10 @@ export default function TabsLayout() {
       tabBar={(props) => <HomeTabBar {...props} />}
       screenOptions={{
         headerShown: false,
+        tabBarShowLabel: false,
         tabBarActiveTintColor: colors.active,
         tabBarInactiveTintColor: colors.subtle,
         tabBarBadgeStyle: { backgroundColor: colors.danger, color: '#FFFFFF' },
-        tabBarLabelStyle: { fontSize: 12, fontWeight: '600' },
       }}
     >
       <Tabs.Screen
