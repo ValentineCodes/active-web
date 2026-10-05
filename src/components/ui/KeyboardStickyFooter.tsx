@@ -1,8 +1,16 @@
-import { type ReactNode } from 'react';
-import { KeyboardAvoidingView, Platform, View } from 'react-native';
+import { type ReactNode, useEffect, useState } from 'react';
+import { Keyboard, Platform, View, type KeyboardEvent } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { cn } from '@/lib/cn';
+
+function keyboardOverlap(event: KeyboardEvent, bottomSafeInset: number) {
+  const height = event.endCoordinates.height;
+  if (Platform.OS === 'ios') {
+    return Math.max(0, height - bottomSafeInset);
+  }
+  return height;
+}
 
 /** Wizard-style layout: main content scrolls; footer stays above the software keyboard. */
 export function KeyboardStickyFooter({
@@ -15,23 +23,39 @@ export function KeyboardStickyFooter({
   className?: string;
 }) {
   const insets = useSafeAreaInsets();
+  const [keyboardInset, setKeyboardInset] = useState(0);
+
+  useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+
+    const showSub = Keyboard.addListener(showEvent, (event) => {
+      setKeyboardInset(keyboardOverlap(event, insets.bottom));
+    });
+    const hideSub = Keyboard.addListener(hideEvent, () => {
+      setKeyboardInset(0);
+    });
+
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, [insets.bottom]);
+
+  const footerSafePadding = keyboardInset > 0 ? 0 : Platform.OS === 'android' ? insets.bottom : 0;
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      className={cn('flex-1', className)}
-    >
+    <View className={cn('flex-1', className)} style={{ paddingBottom: keyboardInset }}>
       <View className="min-h-0 flex-1">{children}</View>
       <View
         className="bg-canvas"
         style={{
           flexShrink: 0,
-          paddingBottom: Platform.OS === 'android' ? insets.bottom : 0,
-          ...(Platform.OS === 'android' ? { zIndex: 1 } : null),
+          paddingBottom: footerSafePadding,
         }}
       >
         {footer}
       </View>
-    </KeyboardAvoidingView>
+    </View>
   );
 }
