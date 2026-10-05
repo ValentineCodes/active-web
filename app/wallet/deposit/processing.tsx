@@ -151,7 +151,7 @@ export default function WalletDepositProcessingScreen() {
   if (phase === 'still_processing') {
     return (
       <Screen edges={['top', 'bottom']}>
-        <Header title="Processing" onBack={() => router.replace('/wallet')} />
+        <Header title="Processing" onBack={() => router.dismissTo('/wallet')} />
         <View className="flex-1 items-center justify-center gap-4 px-8">
           <ActivityIndicator size="large" color={colors.brand} />
           <Text className="text-center text-lg font-semibold text-ink">Still confirming</Text>
@@ -176,7 +176,7 @@ export default function WalletDepositProcessingScreen() {
             size="lg"
             corner="2xl"
             className="w-full"
-            onPress={() => router.replace('/wallet')}
+            onPress={() => router.dismissTo('/wallet')}
           />
         </View>
       </Screen>
@@ -186,7 +186,7 @@ export default function WalletDepositProcessingScreen() {
   if (phase === 'failed') {
     return (
       <Screen>
-        <Header title="Payment" onBack={() => router.replace('/wallet')} />
+        <Header title="Payment" onBack={() => router.dismissTo('/wallet')} />
         <ErrorState
           error={error ?? new Error('Payment could not be confirmed')}
           onRetry={() => void retryConfirmation()}
@@ -216,7 +216,7 @@ export default function WalletDepositProcessingScreen() {
           size="lg"
           corner="2xl"
           className="w-full"
-          onPress={() => router.replace('/wallet')}
+          onPress={() => router.dismissTo('/wallet')}
         />
       </View>
     </Screen>
