@@ -30,9 +30,16 @@ type CheckoutSession = {
 };
 
 let checkoutSession: CheckoutSession | null = null;
+/** Last initialized deposit reference (survives checkout session consume) for status recovery. */
+let pendingDepositReference: string | null = null;
 
 export function setCheckoutSession(session: CheckoutSession): void {
   checkoutSession = session;
+  pendingDepositReference = session.reference;
+}
+
+export function readPendingDepositReference(): string | null {
+  return pendingDepositReference;
 }
 
 export function consumeCheckoutSession(): CheckoutSession | null {

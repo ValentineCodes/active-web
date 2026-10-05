@@ -61,11 +61,9 @@ export default function WalletAddMoneyScreen() {
           className="flex-1"
         >
           <View className="gap-2">
-            <Text className="text-3xl font-bold leading-9 text-ink">
-              How much would you like to add?
-            </Text>
+            <Text className="text-3xl font-bold leading-9 text-ink">How much?</Text>
             <Text className="text-base text-muted">
-              This money will be available to fund requests after payment is confirmed.
+              This money will be available to fund requests.
             </Text>
           </View>
 
