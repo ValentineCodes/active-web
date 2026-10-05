@@ -257,8 +257,8 @@ select is(
 
 select is(
   (select total from public.request_escrow where request_id = :'funded_expired_request_id'::uuid),
-  8250::numeric,
-  'escrow total includes the 10% service fee on a 7500 offer'
+  7500::numeric,
+  'escrow total equals the offer; fee is taken at payout'
 );
 
 -- Privacy before selection ----------------------------------------------------------
@@ -450,14 +450,14 @@ select is(
 select pg_temp.act_as_owner() as _ \gset
 select is(
   (select provider_amount from public.request_escrow where request_id = :'request_id'::uuid),
-  7500::numeric,
-  'escrow matches the agreed counter offer amount'
+  6750::numeric,
+  'escrow stores the helper net payout (90% of agreed offer)'
 );
 
 select is(
   (select total from public.request_escrow where request_id = :'request_id'::uuid),
-  8250::numeric,
-  'escrow total includes the service fee on the agreed amount'
+  7500::numeric,
+  'escrow total equals the agreed offer amount'
 );
 
 select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
@@ -489,8 +489,8 @@ select lives_ok(
 select pg_temp.act_as_owner() as _ \gset
 select is(
   (select total from public.request_escrow where request_id = :'lower_offer_request_id'::uuid),
-  4400::numeric,
-  'a lower counter offer reduces the locked total safely'
+  4000::numeric,
+  'a lower counter offer reduces the locked total to the new offer'
 );
 
 select pg_temp.act_as_owner() as _ \gset

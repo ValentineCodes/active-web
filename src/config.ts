@@ -28,7 +28,7 @@ export const DESCRIPTION_LIMITS = { min: 1, max: 1000 } as const;
  */
 export const REQUEST_REQUIRES_FUNDING = true;
 
-/** Active's service fee as a fraction of the offer amount (10% → 0.1). */
+/** Active's service fee as a fraction of the offer (10% → 0.1), deducted at payout. */
 export const SERVICE_FEE_RATE = 0.1;
 
 /** Wallet presentation. Balances and ledger writes remain server-authoritative. */

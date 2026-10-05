@@ -815,7 +815,7 @@ function NewRequestForm({ reuseSeed }: { reuseSeed?: ReuseSeed }) {
                     ) : wallet.data ? (
                       <Text className="text-sm text-muted">
                         {walletShort
-                          ? `You need ${formatMoney(funding.total, funding.currency)} available (including fee). Top up before posting.`
+                          ? `You need ${formatMoney(funding.total, funding.currency)} available to fund this offer. Top up before posting.`
                           : `${formatMoney(funding.total, funding.currency)} will be held from your wallet when this goes live.`}
                       </Text>
                     ) : null}

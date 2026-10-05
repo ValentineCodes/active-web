@@ -1,21 +1,25 @@
 import { MARKET, SERVICE_FEE_RATE } from '@/config';
 
 export type RequestFundingSummary = {
+  /** Whole naira the requester offers (and locks from wallet). */
   offerAmount: number;
+  /** Platform fee taken from the offer when paying the helper. */
   serviceFee: number;
+  /** Whole naira the helper receives after the fee. */
+  providerReceives: number;
+  /** Same as offerAmount — held from the requester's available balance. */
   total: number;
   currency: string;
 };
 
-/** What the requester pays and how it splits before the request is submitted.
- *  Server-side public.compute_request_charge uses the same fee rule when funds are held. */
+/** Matches server-side public.compute_request_charge (offer in → lock total = offer). */
 export function summarizeRequestFunding(offeredAmount: number): RequestFundingSummary {
-  const offerAmount = offeredAmount;
   const serviceFee = Math.round(offeredAmount * SERVICE_FEE_RATE);
   return {
-    offerAmount,
+    offerAmount: offeredAmount,
     serviceFee,
-    total: offerAmount + serviceFee,
+    providerReceives: offeredAmount - serviceFee,
+    total: offeredAmount,
     currency: MARKET.currency,
   };
 }

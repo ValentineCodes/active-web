@@ -86,8 +86,8 @@ select is(
     from public.wallets
     where user_id = '88888888-8888-8888-8888-888888888888'::uuid
   ),
-  450000::bigint,
-  'available balance decreases by total charge (₦5,500)'
+  500000::bigint,
+  'available balance decreases by the offer amount (₦5,000)'
 );
 
 select is(
@@ -99,8 +99,8 @@ select is(
       and pl.status = 'active'::public.payment_lock_status
       and r.payment_status = 'locked'::public.payment_status
   ),
-  550000::bigint,
-  'locked amount matches offer plus service fee'
+  500000::bigint,
+  'locked amount matches the offer (fee taken at payout)'
 );
 
 select is(
@@ -160,8 +160,8 @@ select is(
     from public.payment_locks pl
     where pl.request_id = :'funded_request_id'::uuid
   ),
-  public.ngn_major_to_kobo(6600),
-  'lock total updates to new offer plus fee (₦6,600)'
+  public.ngn_major_to_kobo(6000),
+  'lock total updates to the new offer (₦6,000)'
 );
 
 select is(
@@ -170,8 +170,8 @@ select is(
     from public.wallets
     where user_id = '88888888-8888-8888-8888-888888888888'::uuid
   ),
-  340000::bigint,
-  'available balance reflects additional ₦1,100 held'
+  400000::bigint,
+  'available balance reflects additional ₦1,000 held'
 );
 
 select throws_ok(

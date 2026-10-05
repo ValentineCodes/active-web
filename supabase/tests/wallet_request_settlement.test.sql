@@ -118,8 +118,8 @@ select is(
     from public.wallets
     where user_id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'::uuid
   ),
-  450000::bigint,
-  'requester available unchanged after release (fee left the locked bucket)'
+  500000::bigint,
+  'requester available unchanged after release'
 );
 
 select is(
@@ -139,8 +139,8 @@ select is(
     from public.wallets
     where user_id = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb'::uuid
   ),
-  500000::bigint,
-  'responder receives provider amount in available balance'
+  450000::bigint,
+  'responder receives 90% of the offer in available balance'
 );
 
 select is(
@@ -166,7 +166,7 @@ select is(
     from public.wallets
     where user_id = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb'::uuid
   ),
-  500000::bigint,
+  450000::bigint,
   'repeated completion does not double-pay responder'
 );
 
@@ -189,7 +189,7 @@ select is(
     from public.wallets
     where user_id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'::uuid
   ),
-  10000::bigint,
+  100000::bigint,
   'funds locked for the cancellable request'
 );
 
@@ -204,7 +204,7 @@ select is(
     from public.wallets
     where user_id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'::uuid
   ),
-  450000::bigint,
+  500000::bigint,
   'cancellation returns held amount to available balance'
 );
 
