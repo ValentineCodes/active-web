@@ -2,6 +2,7 @@ import { ActivityIndicator, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import { Button } from '@/components/ui/Button';
+import { cn } from '@/lib/cn';
 import { toUserMessage } from '@/lib/supabase/errors';
 import { useColors } from '@/theme';
 
@@ -22,15 +23,25 @@ export function EmptyState({
   title,
   message,
   action,
+  layout = 'screen',
 }: {
   icon: keyof typeof Ionicons.glyphMap;
   title: string;
   message: string;
   action?: { label: string; onPress: () => void };
+  /** `card` — bordered block for lists (home, activity). `screen` — centred full-area placeholder. */
+  layout?: 'screen' | 'card';
 }) {
   const colors = useColors();
   return (
-    <View className="flex-1 items-center justify-center gap-3 p-8">
+    <View
+      className={cn(
+        'items-center gap-3',
+        layout === 'card'
+          ? 'rounded-2xl border border-hairline bg-elevated px-5 py-8'
+          : 'flex-1 justify-center p-8',
+      )}
+    >
       <View className="h-16 w-16 items-center justify-center rounded-full bg-brand-soft">
         <Ionicons name={icon} size={28} color={colors.brand} />
       </View>

@@ -23,7 +23,7 @@ export function ActivityStatusFilter<T extends string>({
       showsHorizontalScrollIndicator={false}
       style={{ flexGrow: 0 }}
       contentContainerStyle={{ alignItems: 'center', flexGrow: 0 }}
-      contentContainerClassName="gap-2 px-5 pb-3"
+      contentContainerClassName="gap-2 px-5 pb-3 pt-3"
     >
       {options.map((option) => {
         const selected = value === option.value;

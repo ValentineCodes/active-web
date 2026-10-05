@@ -5,7 +5,7 @@ import { router, useFocusEffect } from 'expo-router';
 import { DiscoverRequestCard } from '@/components/DiscoverRequestCard';
 import { HomeRequestCard } from '@/components/HomeRequestCard';
 import { SectionHeader } from '@/components/ui/SectionHeader';
-import { InlineError } from '@/components/ui/StateView';
+import { EmptyState, InlineError } from '@/components/ui/StateView';
 import { useBrowseNearbyRequests } from '@/features/requests/browse-api';
 import { useMyResponses } from '@/features/requests/responses-api';
 import { nearbyRequestBadge } from '@/features/requests/status';
@@ -132,11 +132,21 @@ export function NearbyRequests({
     ) : nearby.isError ? (
       <InlineError error={nearby.error} />
     ) : rows.length === 0 ? (
-      <Text className="text-sm text-muted">
-        {isHome
-          ? 'Nothing open near you right now. Check back later — or post a request.'
-          : 'Nothing open near you right now. Check back later — or ask for help on Home.'}
-      </Text>
+      <EmptyState
+        layout="card"
+        icon="compass-outline"
+        title="Nothing open nearby"
+        message={
+          isHome
+            ? 'New requests show up here when people nearby need help. Check back soon, or post what you need.'
+            : 'New requests show up here when people nearby need help. Check back soon.'
+        }
+        action={
+          isHome
+            ? { label: 'Post a request', onPress: () => router.push('/request/new') }
+            : undefined
+        }
+      />
     ) : (
       <>
         {visible.map((request) => {
