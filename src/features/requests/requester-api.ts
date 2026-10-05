@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tansta
 import { useUserId } from '@/features/auth/session';
 import type { Position } from '@/lib/location';
 import { queryKeys } from '@/lib/query/keys';
+import { invalidateWalletQueries } from '@/features/wallet/api';
 import { supabase } from '@/lib/supabase/client';
 import type { Database } from '@/lib/supabase/database.types';
 import type { Guaranteed, Nullable, RpcRow } from '@/lib/supabase/types';
@@ -277,6 +278,7 @@ export function useCreateRequest() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.myRequests });
       queryClient.invalidateQueries({ queryKey: queryKeys.browseNearbyAll });
+      void invalidateWalletQueries(queryClient);
     },
   });
 }
@@ -295,6 +297,7 @@ export function useCancelRequest(requestId: string) {
       queryClient.invalidateQueries({ queryKey: queryKeys.engagement(requestId) });
       queryClient.invalidateQueries({ queryKey: queryKeys.myResponses });
       queryClient.invalidateQueries({ queryKey: queryKeys.browseNearbyAll });
+      void invalidateWalletQueries(queryClient);
     },
   });
 }
@@ -315,6 +318,7 @@ export function useAcceptResponse(requestId: string) {
       queryClient.invalidateQueries({ queryKey: queryKeys.engagement(requestId) });
       queryClient.invalidateQueries({ queryKey: queryKeys.attendance });
       queryClient.invalidateQueries({ queryKey: queryKeys.myResponses });
+      void invalidateWalletQueries(queryClient);
     },
     onError: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.myRequest(requestId) });
@@ -354,6 +358,7 @@ export function useCompleteRequest(requestId: string) {
       queryClient.invalidateQueries({ queryKey: queryKeys.myRequests });
       queryClient.invalidateQueries({ queryKey: queryKeys.engagement(requestId) });
       queryClient.invalidateQueries({ queryKey: queryKeys.profile });
+      void invalidateWalletQueries(queryClient);
     },
   });
 }

@@ -9,27 +9,29 @@ import { KeyboardStickyFooter } from '@/components/ui/KeyboardStickyFooter';
 import { Screen } from '@/components/ui/Screen';
 import { InlineError } from '@/components/ui/StateView';
 import { MARKET, WALLET } from '@/config';
-import { useWalletTopUp } from '@/features/wallet/api';
+import { validateDepositAmountMajor } from '@/features/wallet/deposit-limits';
 import { formatMoney } from '@/lib/format';
-import { showAppToast } from '@/lib/toast';
 import { cn } from '@/lib/cn';
 
 export default function WalletAddMoneyScreen() {
   const inputRef = useRef<ComponentRef<typeof TextInput>>(null);
-  const topUp = useWalletTopUp();
   const [amount, setAmount] = useState('');
+  const [validationError, setValidationError] = useState<string | null>(null);
 
   const parsedAmount = Number(amount.replace(/[^\d]/g, ''));
   const hasAmount = parsedAmount > 0;
   const currency = MARKET.currency;
 
-  const submit = () => {
-    if (!hasAmount) return;
-    topUp.mutate(parsedAmount, {
-      onSuccess: () => {
-        showAppToast(`${formatMoney(parsedAmount, currency)} added to your balance`);
-        router.back();
-      },
+  const continueToReview = () => {
+    const error = validateDepositAmountMajor(parsedAmount);
+    if (error) {
+      setValidationError(error);
+      return;
+    }
+    setValidationError(null);
+    router.push({
+      pathname: '/wallet/deposit/review',
+      params: { amount: String(parsedAmount) },
     });
   };
 
@@ -38,7 +40,7 @@ export default function WalletAddMoneyScreen() {
       <KeyboardStickyFooter
         footer={
           <View className="gap-3 p-5">
-            {topUp.isError ? <InlineError error={topUp.error} /> : null}
+            {validationError ? <InlineError error={new Error(validationError)} /> : null}
             <Button
               label="Continue"
               variant="active"
@@ -46,8 +48,7 @@ export default function WalletAddMoneyScreen() {
               corner="2xl"
               className="w-full"
               disabled={!hasAmount}
-              loading={topUp.isPending}
-              onPress={submit}
+              onPress={continueToReview}
             />
           </View>
         }
@@ -64,7 +65,7 @@ export default function WalletAddMoneyScreen() {
               How much would you like to add?
             </Text>
             <Text className="text-base text-muted">
-              This money will be available to fund requests.
+              This money will be available to fund requests after payment is confirmed.
             </Text>
           </View>
 
@@ -80,7 +81,10 @@ export default function WalletAddMoneyScreen() {
               inputRef={inputRef}
               accessibilityLabel="Amount to add"
               value={amount}
-              onChangeText={(text) => setAmount(text.replace(/[^\d]/g, ''))}
+              onChangeText={(text) => {
+                setAmount(text.replace(/[^\d]/g, ''));
+                setValidationError(null);
+              }}
             />
           </Pressable>
 
@@ -92,7 +96,10 @@ export default function WalletAddMoneyScreen() {
                   key={preset}
                   accessibilityRole="button"
                   accessibilityState={{ selected }}
-                  onPress={() => setAmount(String(preset))}
+                  onPress={() => {
+                    setAmount(String(preset));
+                    setValidationError(null);
+                  }}
                   className={cn(
                     'rounded-xl px-4 py-2.5 active:opacity-90',
                     selected ? 'border border-active bg-surface' : 'bg-surface',
@@ -111,17 +118,10 @@ export default function WalletAddMoneyScreen() {
             })}
           </View>
 
-          {hasAmount ? (
-            <View className="rounded-2xl bg-surface px-4 py-4">
-              <Text className="text-base leading-6 text-muted">
-                You&apos;ll be adding{' '}
-                <Text className="font-semibold text-ink">
-                  {formatMoney(parsedAmount, currency)}
-                </Text>{' '}
-                to your Active wallet.
-              </Text>
-            </View>
-          ) : null}
+          <Text className="text-sm text-muted">
+            Min {formatMoney(WALLET.depositMinMajor, currency)} · Max{' '}
+            {formatMoney(WALLET.depositMaxMajor, currency)}
+          </Text>
         </ScrollView>
       </KeyboardStickyFooter>
     </Screen>

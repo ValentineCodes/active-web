@@ -191,7 +191,7 @@ export default function ProfileScreen() {
           </View>
           <View className="min-w-0 flex-1 gap-0.5">
             <Text className="text-lg font-semibold text-ink">Wallet</Text>
-            <Text className="text-sm text-muted">Balance, locked money, and activity</Text>
+            <Text className="text-sm text-muted">Available balance and history</Text>
           </View>
           <Ionicons name="chevron-forward" size={20} color={colors.subtle} />
         </Pressable>

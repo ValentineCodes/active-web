@@ -33,11 +33,16 @@ export const SERVICE_FEE_RATE = 0.1;
 
 /** Wallet presentation. Balances and ledger writes remain server-authoritative. */
 export const WALLET = {
-  /** Preset amounts on the add-money screen until a payment provider is integrated. */
+  /** Preset amounts on the add-money screen. */
   addMoneyAmounts: [1000, 5000, 10_000, 20_000] as const,
-  /** Max ledger rows loaded on the wallet screen. */
+  /** Min/max whole-naira deposit (server validates again in kobo). */
+  depositMinMajor: 100,
+  depositMaxMajor: 1_000_000,
+  /** Max rows per history page (server cap 200). */
+  historyPageSize: 25,
+  /** Max transaction rows loaded for wallet home preview query. */
   activityLimit: 50,
-  /** Recent activity rows shown on the wallet home screen. */
+  /** Rows shown on the wallet home screen. */
   previewActivityCount: 4,
   buckets: {
     available: 'Available',

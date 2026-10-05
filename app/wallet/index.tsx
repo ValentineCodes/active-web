@@ -152,7 +152,7 @@ export default function WalletHomeScreen() {
 
         <View className="gap-3">
           <View className="flex-row items-center justify-between gap-3">
-            <Text className="text-lg font-bold text-ink">Recent activity</Text>
+            <Text className="text-lg font-bold text-ink">Transaction history</Text>
             {(activity.data?.length ?? 0) > 0 ? (
               <Pressable
                 onPress={() => router.push('/wallet/history')}
@@ -173,8 +173,8 @@ export default function WalletHomeScreen() {
             <EmptyState
               layout="list"
               icon="wallet-outline"
-              title="No activity yet"
-              message="Deposits, payments for requests, refunds, and payouts appear here."
+              title="No transactions yet"
+              message="Money you add and payments for requests will show up here."
             />
           ) : (
             <View className="overflow-hidden rounded-2xl border border-hairline bg-elevated px-4">

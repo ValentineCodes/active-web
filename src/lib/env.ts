@@ -13,4 +13,10 @@ if (!supabaseUrl || !supabaseAnonKey) {
   );
 }
 
+if (supabaseAnonKey.startsWith('sb_publishable_')) {
+  throw new Error(
+    'EXPO_PUBLIC_SUPABASE_ANON_KEY must be the anon JWT from `supabase status` (starts with eyJ…), not the publishable key (sb_publishable_…).',
+  );
+}
+
 export const env = { supabaseUrl, supabaseAnonKey };

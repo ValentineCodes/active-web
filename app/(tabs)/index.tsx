@@ -1,5 +1,6 @@
+import { useCallback } from 'react';
 import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 
 import { HomeActiveRequestBanner } from '@/components/HomeActiveRequestBanner';
@@ -29,6 +30,7 @@ export default function HomeScreen() {
   const responses = useMyResponses();
   const wallet = useMyWallet();
   const queryClient = useQueryClient();
+  const { refetch: refetchWallet } = wallet;
 
   const openRequests =
     requests.data?.filter((request) => OPEN_STATUSES.includes(request.status)) ?? [];
@@ -73,6 +75,12 @@ export default function HomeScreen() {
   const tabBarScrollPadding = useTabBarScrollPadding();
   const listBottomPadding = fabBottom + fabSize + 12;
 
+  useFocusEffect(
+    useCallback(() => {
+      void refetchWallet();
+    }, [refetchWallet]),
+  );
+
   return (
     <Screen>
       <ScrollView
@@ -87,7 +95,7 @@ export default function HomeScreen() {
               requests.refetch();
               responses.refetch();
               attendance.refetch();
-              wallet.refetch();
+              refetchWallet();
               queryClient.invalidateQueries({ queryKey: queryKeys.browseNearbyAll });
             }}
           />
@@ -115,6 +123,17 @@ export default function HomeScreen() {
                 <Text className="text-sm font-semibold text-ink">
                   {formatMoney(wallet.data.available, wallet.data.currency)}
                 </Text>
+              </Pressable>
+            ) : wallet.isPending ? (
+              <Text className="text-sm font-semibold text-subtle">…</Text>
+            ) : wallet.isError ? (
+              <Pressable
+                onPress={() => router.push('/wallet')}
+                accessibilityRole="button"
+                accessibilityLabel="Open wallet"
+                hitSlop={8}
+              >
+                <Text className="text-sm font-semibold text-danger">Wallet</Text>
               </Pressable>
             ) : null}
             <Pressable

@@ -8,14 +8,15 @@ import { Screen } from '@/components/ui/Screen';
 import { ErrorState, LoadingState } from '@/components/ui/StateView';
 import { useEngagement } from '@/features/requests/requester-api';
 import { walletActivityAmount, walletActivityTitle } from '@/features/wallet/activity';
-import { useMyWallet, useWalletActivity } from '@/features/wallet/api';
+import { useMyWallet, useWalletActivityInfinite } from '@/features/wallet/api';
 import {
   formatWalletActivitySignedAmount,
   formatWalletTransactionWhen,
-  walletActivityDetailBadge,
   walletActivityReference,
   walletActivityVisual,
-  walletActivityWhatHappened,
+  walletHistoryDescription,
+  walletHistoryDirection,
+  walletTransactionStatusDisplay,
 } from '@/features/wallet/presentation';
 import { cn } from '@/lib/cn';
 import { useColors } from '@/theme';
@@ -33,11 +34,11 @@ export default function WalletTransactionScreen() {
   const colors = useColors();
   const { id } = useLocalSearchParams<{ id: string }>();
   const wallet = useMyWallet();
-  const activity = useWalletActivity();
-  const item = activity.data?.find((row) => row.id === id);
+  const history = useWalletActivityInfinite();
+  const item = history.data?.pages.flat().find((row) => row.id === id);
   const engagement = useEngagement(item?.request_id ?? '');
 
-  if (wallet.isPending || activity.isPending) {
+  if (wallet.isPending && history.isPending) {
     return (
       <Screen>
         <Header title="Transaction" onBack={() => router.back()} />
@@ -55,11 +56,11 @@ export default function WalletTransactionScreen() {
     );
   }
 
-  if (activity.isError) {
+  if (history.isError) {
     return (
       <Screen>
         <Header title="Transaction" onBack={() => router.back()} />
-        <ErrorState error={activity.error} onRetry={() => activity.refetch()} />
+        <ErrorState error={history.error} onRetry={() => history.refetch()} />
       </Screen>
     );
   }
@@ -68,20 +69,17 @@ export default function WalletTransactionScreen() {
     return (
       <Screen>
         <Header title="Transaction" onBack={() => router.back()} />
-        <ErrorState error={new Error('Transaction not found')} onRetry={() => activity.refetch()} />
+        <ErrorState error={new Error('Transaction not found')} onRetry={() => history.refetch()} />
       </Screen>
     );
   }
 
-  const currency = wallet.data.currency;
+  const currency = wallet.data?.currency ?? 'NGN';
   const kind = item.kind ?? 'activity';
   const amount = walletActivityAmount(item);
   const visual = walletActivityVisual(kind, amount);
-  const badge = walletActivityDetailBadge(kind);
+  const direction = walletHistoryDirection(item.available_delta);
   const requestTitle = engagement.data?.title ?? null;
-
-  const badgeLabel =
-    badge === 'locked' ? 'Locked' : badge === 'returned' ? 'Returned' : 'Completed';
 
   return (
     <Screen>
@@ -103,33 +101,22 @@ export default function WalletTransactionScreen() {
           </View>
 
           {amount !== null ? (
-            <Text className={cn('text-4xl font-bold', amount > 0 ? 'text-active' : 'text-ink')}>
+            <Text
+              className={cn('text-4xl font-bold', direction === 'in' ? 'text-active' : 'text-ink')}
+            >
               {formatWalletActivitySignedAmount(amount, currency)}
             </Text>
           ) : null}
 
           <Text className="text-lg font-semibold text-ink">{walletActivityTitle(kind)}</Text>
-
-          {badge ? (
-            <View
-              className={cn(
-                'rounded-full px-3 py-1',
-                badge === 'locked' ? 'bg-warning-soft' : 'bg-active-soft',
-              )}
-            >
-              <Text
-                className={cn(
-                  'text-sm font-semibold',
-                  badge === 'locked' ? 'text-warning' : 'text-active',
-                )}
-              >
-                {badgeLabel}
-              </Text>
-            </View>
-          ) : null}
+          <Text className="text-center text-base leading-6 text-muted">
+            {walletHistoryDescription(item)}
+          </Text>
         </View>
 
         <View className="overflow-hidden rounded-2xl border border-hairline bg-elevated">
+          <DetailRow label="Status" value={walletTransactionStatusDisplay(item.status)} />
+          <View className="mx-4 h-px bg-hairline" />
           {item.created_at ? (
             <>
               <DetailRow
@@ -139,20 +126,13 @@ export default function WalletTransactionScreen() {
               <View className="mx-4 h-px bg-hairline" />
             </>
           ) : null}
-          <DetailRow label="Reference" value={walletActivityReference(item.id)} />
           {requestTitle ? (
             <>
-              <View className="mx-4 h-px bg-hairline" />
               <DetailRow label="Request" value={`“${requestTitle}”`} />
+              <View className="mx-4 h-px bg-hairline" />
             </>
           ) : null}
-        </View>
-
-        <View className="gap-2 rounded-2xl border border-hairline bg-elevated px-4 py-4">
-          <Text className="text-xs font-semibold uppercase tracking-wide text-subtle">
-            What happened
-          </Text>
-          <Text className="text-base leading-6 text-muted">{walletActivityWhatHappened(kind)}</Text>
+          <DetailRow label="Support reference" value={walletActivityReference(item.id)} />
         </View>
       </View>
 

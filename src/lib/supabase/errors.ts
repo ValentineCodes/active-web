@@ -35,7 +35,27 @@ export function toUserMessage(error: unknown): string {
   if (error && typeof error === 'object' && 'code' in error && 'message' in error) {
     const { code, message } = error as { code: unknown; message: unknown };
     if (typeof code === 'string' && typeof message === 'string') {
-      if (INTENTIONAL_ERROR_CODES.has(code)) return message;
+      if (code === 'PGRST202') {
+        return 'Wallet is unavailable until the latest database migrations are applied.';
+      }
+      if (code === '25006') {
+        return 'Wallet could not load. Apply the latest database migrations and try again.';
+      }
+      if (
+        code === 'PGRST301' ||
+        message.toLowerCase().includes('invalid authentication credentials')
+      ) {
+        return 'Session expired or Supabase keys are wrong. Sign out, check EXPO_PUBLIC_SUPABASE_ANON_KEY (eyJ…), and sign in again.';
+      }
+      if (INTENTIONAL_ERROR_CODES.has(code)) {
+        if (message.toLowerCase().includes('insufficient wallet balance')) {
+          return 'You don\u2019t have enough available money to fund this request.';
+        }
+        if (message.toLowerCase().includes('insufficient available balance')) {
+          return 'You don\u2019t have enough available money for this action.';
+        }
+        return message;
+      }
       if (code.startsWith('23')) return message;
     }
   }

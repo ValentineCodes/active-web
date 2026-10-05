@@ -389,8 +389,19 @@ inspector_port = 8083
 # The Deno major version to use.
 deno_version = 2
 
-# [edge_runtime.secrets]
-# secret_key = "env(SECRET_VALUE)"
+[edge_runtime.secrets]
+PAYSTACK_SECRET_KEY = "env(PAYSTACK_SECRET_KEY)"
+PAYSTACK_PUBLIC_KEY = "env(PAYSTACK_PUBLIC_KEY)"
+PAYSTACK_BASE_URL = "env(PAYSTACK_BASE_URL)"
+
+[functions.paystack-initialize]
+verify_jwt = true
+
+[functions.paystack-verify]
+verify_jwt = true
+
+[functions.paystack-webhook]
+verify_jwt = false
 
 [analytics]
 enabled = true

@@ -1,23 +1,72 @@
-import type { Database } from '@/lib/supabase/database.types';
+import type { WalletTransactionStatus, WalletTransactionType } from './types';
 
-export type WalletActivityRow = Database['public']['Views']['my_wallet_activity']['Row'];
+export type WalletActivityRow = {
+  id: string;
+  kind: string;
+  available_delta: number;
+  locked_delta: number;
+  pending_delta: number;
+  request_id: string | null;
+  created_at: string;
+  status: WalletTransactionStatus;
+  description: string | null;
+};
 
 const KIND_LABELS: Record<string, string> = {
   external_deposit: 'Money added',
   manual_top_up: 'Money added',
+  deposit: 'Money added',
   manual_withdraw: 'Withdrawal',
+  withdrawal: 'Withdrawal',
   escrow_lock: 'Request funded',
-  escrow_top_up: 'Offer increased',
+  escrow_top_up: 'Request funded',
   escrow_partial_refund: 'Funds returned',
   escrow_pending: 'Request funded',
   escrow_relock: 'Request funded',
-  escrow_release: 'Service payment',
+  escrow_release: 'Payment released',
   pay_provider: 'Payment received',
-  refund: 'Funds returned',
+  payout: 'Payment received',
+  refund: 'Refund',
+  service_fee: 'Service fee',
+  adjustment: 'Balance update',
 };
 
+export function walletTransactionDisplayKind(input: {
+  type: WalletTransactionType;
+  metadata: Record<string, unknown>;
+}): string {
+  const legacy = input.metadata.legacy_kind;
+  if (typeof legacy === 'string' && legacy.trim()) {
+    return legacy.trim();
+  }
+
+  switch (input.type) {
+    case 'deposit':
+      return 'external_deposit';
+    case 'withdrawal':
+      return 'manual_withdraw';
+    case 'payout':
+      return 'pay_provider';
+    default:
+      return input.type;
+  }
+}
+
 export function walletActivityTitle(kind: string): string {
-  return KIND_LABELS[kind] ?? kind.replaceAll('_', ' ');
+  return KIND_LABELS[kind] ?? 'Balance update';
+}
+
+export function walletTransactionStatusLabel(status: WalletTransactionStatus): string {
+  switch (status) {
+    case 'pending':
+      return 'Pending';
+    case 'failed':
+      return 'Failed';
+    case 'reversed':
+      return 'Reversed';
+    default:
+      return 'Completed';
+  }
 }
 
 /** Primary amount shown in the activity list (always a user-visible money movement when non-zero). */

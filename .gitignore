@@ -15,6 +15,7 @@ web-build/
 # Supabase local state
 supabase/.branches
 supabase/.temp
+.deno/
 
 # macOS
 .DS_Store

@@ -1,29 +1,54 @@
-import { useCallback } from 'react';
-import { RefreshControl, ScrollView, Text, View } from 'react-native';
+import { useCallback, useMemo } from 'react';
+import {
+  RefreshControl,
+  ScrollView,
+  Text,
+  View,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
+} from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
 
-import { WalletActivityRow } from '@/components/wallet/WalletActivityRow';
+import { WalletActivityRow, WalletHistoryListFooter } from '@/components/wallet/WalletActivityRow';
 import { Header } from '@/components/ui/Header';
 import { Screen } from '@/components/ui/Screen';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/StateView';
-import { useMyWallet, useWalletActivity } from '@/features/wallet/api';
+import { useMyWallet, useWalletActivityInfinite } from '@/features/wallet/api';
 import { groupWalletActivityByMonth } from '@/features/wallet/presentation';
 
 export default function WalletHistoryScreen() {
   const wallet = useMyWallet();
-  const activity = useWalletActivity();
+  const history = useWalletActivityInfinite();
 
   const { refetch: refetchWallet } = wallet;
-  const { refetch: refetchActivity } = activity;
+  const { refetch: refetchHistory } = history;
 
   useFocusEffect(
     useCallback(() => {
       void refetchWallet();
-      void refetchActivity();
-    }, [refetchWallet, refetchActivity]),
+      void refetchHistory();
+    }, [refetchWallet, refetchHistory]),
   );
 
-  if (wallet.isPending || activity.isPending) {
+  const rows = useMemo(() => history.data?.pages.flat() ?? [], [history.data?.pages]);
+
+  const sections = useMemo(() => groupWalletActivityByMonth(rows), [rows]);
+
+  const loadMore = useCallback(() => {
+    if (!history.hasNextPage || history.isFetchingNextPage) return;
+    void history.fetchNextPage();
+  }, [history]);
+
+  const onScroll = useCallback(
+    (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+      const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
+      const distanceFromBottom = contentSize.height - layoutMeasurement.height - contentOffset.y;
+      if (distanceFromBottom < 240) loadMore();
+    },
+    [loadMore],
+  );
+
+  if (wallet.isPending && history.isPending) {
     return (
       <Screen>
         <Header title="Transaction history" onBack={() => router.back()} />
@@ -41,17 +66,16 @@ export default function WalletHistoryScreen() {
     );
   }
 
-  if (activity.isError) {
+  if (history.isError) {
     return (
       <Screen>
         <Header title="Transaction history" onBack={() => router.back()} />
-        <ErrorState error={activity.error} onRetry={() => activity.refetch()} />
+        <ErrorState error={history.error} onRetry={() => history.refetch()} />
       </Screen>
     );
   }
 
-  const currency = wallet.data.currency;
-  const sections = groupWalletActivityByMonth(activity.data ?? []);
+  const currency = wallet.data?.currency ?? 'NGN';
 
   return (
     <Screen>
@@ -60,26 +84,34 @@ export default function WalletHistoryScreen() {
         contentContainerStyle={
           sections.length === 0 ? { flexGrow: 1, justifyContent: 'center' as const } : undefined
         }
+        onScroll={onScroll}
+        scrollEventThrottle={200}
         refreshControl={
           <RefreshControl
-            refreshing={wallet.isRefetching || activity.isRefetching}
+            refreshing={wallet.isRefetching || history.isRefetching}
             onRefresh={() => {
               void wallet.refetch();
-              void activity.refetch();
+              void history.refetch();
             }}
           />
         }
       >
         <Header title="Transaction history" onBack={() => router.back()} />
-        <Text className="-mt-1 mb-2 px-1 text-base text-muted">All wallet activity</Text>
+        <Text className="-mt-1 mb-2 px-1 text-base text-muted">
+          Money added, request payments, and refunds
+        </Text>
 
         {sections.length === 0 ? (
-          <EmptyState
-            layout="list"
-            icon="wallet-outline"
-            title="No activity yet"
-            message="Deposits, payments for requests, refunds, and payouts appear here."
-          />
+          history.isPending ? (
+            <LoadingState />
+          ) : (
+            <EmptyState
+              layout="list"
+              icon="wallet-outline"
+              title="No transactions yet"
+              message="Money you add and payments for requests will show up here."
+            />
+          )
         ) : (
           sections.map((section) => (
             <View key={section.key} className="gap-2">
@@ -89,9 +121,10 @@ export default function WalletHistoryScreen() {
               <View className="overflow-hidden rounded-2xl border border-hairline bg-elevated px-4">
                 {section.items.map((item, index) => (
                   <WalletActivityRow
-                    key={item.id!}
+                    key={item.id}
                     row={item}
                     currency={currency}
+                    detailed
                     showDivider={index > 0}
                     onPress={() => router.push(`/wallet/transaction/${item.id}`)}
                   />
@@ -100,6 +133,11 @@ export default function WalletHistoryScreen() {
             </View>
           ))
         )}
+
+        <WalletHistoryListFooter
+          loading={history.isFetchingNextPage}
+          hasMore={Boolean(history.hasNextPage)}
+        />
       </ScrollView>
     </Screen>
   );

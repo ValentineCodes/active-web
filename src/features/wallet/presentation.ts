@@ -3,7 +3,12 @@ import { format, formatDistanceToNowStrict, isThisYear, isToday, isYesterday } f
 import { formatMoney } from '@/lib/format';
 
 import type { WalletActivityRow } from './activity';
-import { walletActivityAmount, walletActivityTitle } from './activity';
+import {
+  walletActivityAmount,
+  walletActivityTitle,
+  walletTransactionStatusLabel,
+} from './activity';
+import type { WalletTransactionStatus } from './types';
 
 export type WalletActivityStatusTag = 'locked' | 'returned' | 'completed';
 
@@ -14,8 +19,10 @@ export type WalletActivityVisual = {
 
 const INCOMING_KINDS = new Set([
   'external_deposit',
+  'deposit',
   'manual_top_up',
   'pay_provider',
+  'payout',
   'refund',
   'escrow_partial_refund',
 ]);
@@ -50,15 +57,14 @@ export function formatWalletActivityWhen(iso: string): string {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return '';
 
-  const time = format(date, 'h:mm a');
   if (isToday(date)) {
     const relative = formatDistanceToNowStrict(date, { addSuffix: false });
     if (relative === 'less than a minute') return 'Just now';
-    return `Today, ${time}`;
+    return 'Today';
   }
-  if (isYesterday(date)) return `Yesterday, ${time}`;
-  if (isThisYear(date)) return format(date, 'MMM d, h:mm a');
-  return format(date, 'MMM d, yyyy, h:mm a');
+  if (isYesterday(date)) return 'Yesterday';
+  if (isThisYear(date)) return format(date, 'MMM d');
+  return format(date, 'MMM d, yyyy');
 }
 
 export function formatWalletTransactionWhen(iso: string): string {
@@ -129,6 +135,68 @@ export function groupWalletActivityByMonth(rows: WalletActivityRow[]) {
     }));
 }
 
+export type WalletHistoryDirection = 'in' | 'out' | 'neutral';
+
+export function walletHistoryDirection(availableDelta: number): WalletHistoryDirection {
+  if (availableDelta > 0) return 'in';
+  if (availableDelta < 0) return 'out';
+  return 'neutral';
+}
+
+export function walletHistoryDescription(row: WalletActivityRow): string {
+  const trimmed = row.description?.trim();
+  if (trimmed) return trimmed;
+  return walletActivityWhatHappened(row.kind ?? 'activity');
+}
+
+export function formatWalletHistoryListWhen(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return '';
+
+  if (isToday(date)) {
+    const relative = formatDistanceToNowStrict(date, { addSuffix: false });
+    if (relative === 'less than a minute') return 'Just now';
+    return `Today, ${format(date, 'h:mm a')}`;
+  }
+  if (isYesterday(date)) return `Yesterday, ${format(date, 'h:mm a')}`;
+  if (isThisYear(date)) return format(date, 'MMM d, h:mm a');
+  return format(date, 'MMM d, yyyy, h:mm a');
+}
+
+export function walletHistoryListMeta(
+  row: WalletActivityRow,
+  currency: string,
+): {
+  title: string;
+  description: string;
+  statusLabel: string;
+  direction: WalletHistoryDirection;
+  amount: number | null;
+  signedAmount: string | null;
+  when: string;
+  visual: WalletActivityVisual;
+} {
+  const kind = row.kind ?? 'activity';
+  const amount = walletActivityAmount(row);
+  const visual = walletActivityVisual(kind, amount);
+  const direction = walletHistoryDirection(row.available_delta);
+
+  return {
+    title: walletActivityTitle(kind),
+    description: walletHistoryDescription(row),
+    statusLabel: walletTransactionStatusLabel(row.status),
+    direction,
+    amount,
+    signedAmount: amount !== null ? formatWalletActivitySignedAmount(amount, currency) : null,
+    when: row.created_at ? formatWalletHistoryListWhen(row.created_at) : '',
+    visual,
+  };
+}
+
+export function walletTransactionStatusDisplay(status: WalletTransactionStatus): string {
+  return walletTransactionStatusLabel(status);
+}
+
 export function walletActivityListMeta(
   row: WalletActivityRow,
   currency: string,
@@ -139,15 +207,12 @@ export function walletActivityListMeta(
   when: string;
   visual: WalletActivityVisual;
 } {
-  const kind = row.kind ?? 'activity';
-  const amount = walletActivityAmount(row);
-  const visual = walletActivityVisual(kind, amount);
-
+  const meta = walletHistoryListMeta(row, currency);
   return {
-    title: walletActivityTitle(kind),
-    amount,
-    signedAmount: amount !== null ? formatWalletActivitySignedAmount(amount, currency) : null,
+    title: meta.title,
+    amount: meta.amount,
+    signedAmount: meta.signedAmount,
     when: row.created_at ? formatWalletActivityWhen(row.created_at) : '',
-    visual,
+    visual: meta.visual,
   };
 }
