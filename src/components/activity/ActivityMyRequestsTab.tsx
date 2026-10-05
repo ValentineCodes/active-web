@@ -1,6 +1,8 @@
+import { useMemo, useState } from 'react';
 import { RefreshControl, ScrollView, View } from 'react-native';
 import { router } from 'expo-router';
 
+import { ActivityStatusFilter } from '@/components/activity/ActivityStatusFilter';
 import { ActivityMyRequestCard } from '@/components/ActivityTabCards';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/StateView';
 import {
@@ -9,6 +11,11 @@ import {
   myRequestActivityDetailLine,
   requestNavigationPath,
 } from '@/features/requests/activity-list';
+import {
+  MY_REQUEST_ACTIVITY_FILTER_OPTIONS,
+  type MyRequestActivityFilter,
+  myRequestMatchesActivityFilter,
+} from '@/features/requests/activity-filters';
 
 import { useTabBarScrollPadding } from '@/components/ui/tab-bar-insets';
 
@@ -17,6 +24,12 @@ import { useActivityFeed } from './useActivityFeed';
 export function ActivityMyRequestsTab() {
   const { myRequests, isLoading, isError, error, isRefetching, refetchAll } = useActivityFeed();
   const tabBarScrollPadding = useTabBarScrollPadding();
+  const [filter, setFilter] = useState<MyRequestActivityFilter>('all');
+
+  const filteredRequests = useMemo(
+    () => myRequests.filter((request) => myRequestMatchesActivityFilter(request, filter)),
+    [filter, myRequests],
+  );
 
   if (isLoading) {
     return (
@@ -35,56 +48,69 @@ export function ActivityMyRequestsTab() {
   }
 
   return (
-    <ScrollView
-      className="flex-1"
-      contentContainerClassName="gap-3 px-5 pt-4"
-      contentContainerStyle={{ paddingBottom: tabBarScrollPadding }}
-      scrollIndicatorInsets={{ bottom: tabBarScrollPadding }}
-      refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetchAll} />}
-    >
-      {myRequests.length === 0 ? (
-        <EmptyState
-          icon="add-circle-outline"
-          title="No requests yet"
-          message="When you need help, post a request and people nearby can respond."
-          action={{ label: 'Ask for help', onPress: () => router.push('/request/new') }}
-        />
-      ) : (
-        myRequests.map((request) => (
-          <ActivityMyRequestCard
-            key={request.request_id}
-            title={request.title ?? 'Request'}
-            responseLine={myRequestActivityDetailLine({
-              status: request.status,
-              expires_at: request.expires_at,
-              pending_response_count: request.pending_response_count,
-              created_at: request.created_at,
-              updated_at: request.updated_at,
-              completed_at: request.completed_at,
-              cancelled_at: request.cancelled_at,
-            })}
-            amount={activityAmountLabel(
-              request.offered_amount,
-              request.currency,
-              request.agreed_provider_amount,
-            )}
-            badge={myRequestActivityBadge({
-              status: request.status,
-              expires_at: request.expires_at,
-              pending_response_count: request.pending_response_count,
-            })}
-            onPress={() =>
-              router.push(
-                requestNavigationPath({
-                  role: 'requester',
-                  requestId: request.request_id,
-                  requestStatus: request.status,
-                }),
-              )
-            }
+    <View className="min-h-0 flex-1">
+      <ActivityStatusFilter
+        value={filter}
+        options={MY_REQUEST_ACTIVITY_FILTER_OPTIONS}
+        onChange={setFilter}
+      />
+      <ScrollView
+        className="flex-1"
+        contentContainerClassName="gap-3 px-5 pt-1"
+        contentContainerStyle={{ paddingBottom: tabBarScrollPadding }}
+        scrollIndicatorInsets={{ bottom: tabBarScrollPadding }}
+        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetchAll} />}
+      >
+        {myRequests.length === 0 ? (
+          <EmptyState
+            icon="add-circle-outline"
+            title="No requests yet"
+            message="When you need help, post a request and people nearby can respond."
+            action={{ label: 'Ask for help', onPress: () => router.push('/request/new') }}
           />
-        ))
-      )}
-    </ScrollView>
+        ) : filteredRequests.length === 0 ? (
+          <EmptyState
+            icon="filter-outline"
+            title="No matches"
+            message="Nothing in this status right now. Try another filter."
+          />
+        ) : (
+          filteredRequests.map((request) => (
+            <ActivityMyRequestCard
+              key={request.request_id}
+              title={request.title ?? 'Request'}
+              responseLine={myRequestActivityDetailLine({
+                status: request.status,
+                expires_at: request.expires_at,
+                pending_response_count: request.pending_response_count,
+                created_at: request.created_at,
+                updated_at: request.updated_at,
+                completed_at: request.completed_at,
+                cancelled_at: request.cancelled_at,
+              })}
+              amount={activityAmountLabel(
+                request.offered_amount,
+                request.currency,
+                request.agreed_provider_amount,
+              )}
+              badge={myRequestActivityBadge({
+                status: request.status,
+                expires_at: request.expires_at,
+                pending_response_count: request.pending_response_count,
+              })}
+              onPress={() =>
+                router.push(
+                  requestNavigationPath({
+                    role: 'requester',
+                    requestId: request.request_id,
+                    requestStatus: request.status,
+                  }),
+                )
+              }
+            />
+          ))
+        )}
+      </ScrollView>
+    </View>
   );
 }
