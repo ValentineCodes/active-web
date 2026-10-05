@@ -11,6 +11,8 @@ export const MARKET = {
   dialCode: '+234',
   /** Matches the `currency` default on public.requests. */
   currency: 'NGN',
+  /** Shown in the UI instead of the ISO code. */
+  currencySymbol: '₦',
 } as const;
 
 export const TITLE_LIMITS = { min: 3, max: 120 } as const;

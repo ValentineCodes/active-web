@@ -1,5 +1,7 @@
 import { format, formatDistanceToNowStrict, isThisYear, isToday, isTomorrow } from 'date-fns';
 
+import { MARKET } from '@/config';
+
 /**
  * Bucketed metres from the server → vague travel-time wording (not a route estimate).
  */
@@ -63,13 +65,20 @@ export function formatDistance(meters: number): string {
   return `${(meters / 1000).toFixed(meters < 10_000 ? 1 : 0)} km away`;
 }
 
+/** Server notification copy still uses ISO codes in some rows; normalize for display. */
+export function formatNotificationCopy(text: string): string {
+  return text.replace(/(\d+(?:\.\d+)?)\s+NGN\b/gi, (_, amount: string) =>
+    formatMoney(Number(amount), MARKET.currency),
+  );
+}
+
 export function formatMoney(amount: number, currency: string): string {
   const amountLabel = new Intl.NumberFormat(undefined, {
     maximumFractionDigits: 0,
   }).format(amount);
 
-  if (currency === 'NGN') {
-    return `₦${amountLabel}`;
+  if (currency.toUpperCase() === MARKET.currency) {
+    return `${MARKET.currencySymbol}${amountLabel}`;
   }
 
   return new Intl.NumberFormat(undefined, {
@@ -77,6 +86,23 @@ export function formatMoney(amount: number, currency: string): string {
     currency,
     maximumFractionDigits: 0,
   }).format(amount);
+}
+
+/** E.164 phone numbers for display (e.g. +234 801 234 5678). */
+export function formatPhoneDisplay(phone: string): string {
+  const digits = phone.replace(/\D/g, '');
+  const countryCode = MARKET.dialCode.replace('+', '');
+
+  if (digits.startsWith(countryCode) && digits.length >= countryCode.length + 7) {
+    const national = digits.slice(countryCode.length);
+    const grouped = [national.slice(0, 3), national.slice(3, 6), national.slice(6)].filter(
+      (part) => part.length > 0,
+    );
+    return `${MARKET.dialCode} ${grouped.join(' ')}`;
+  }
+
+  if (phone.startsWith('+')) return phone;
+  return digits.length > 0 ? `+${digits}` : phone;
 }
 
 /** When shown on discovery cards — compact, no scheduling jargon. */

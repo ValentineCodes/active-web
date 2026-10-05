@@ -7,7 +7,7 @@ import { Header } from '@/components/ui/Header';
 import { KeyboardStickyFooter } from '@/components/ui/KeyboardStickyFooter';
 import { Screen } from '@/components/ui/Screen';
 import { InlineError } from '@/components/ui/StateView';
-import { WALLET } from '@/config';
+import { MARKET, WALLET } from '@/config';
 import { useWalletTopUp } from '@/features/wallet/api';
 import { formatMoney } from '@/lib/format';
 import { showAppToast } from '@/lib/toast';
@@ -22,7 +22,7 @@ export default function WalletAddMoneyScreen() {
 
   const parsedAmount = Number(amount.replace(/[^\d]/g, ''));
   const hasAmount = parsedAmount > 0;
-  const currency = 'NGN';
+  const currency = MARKET.currency;
 
   const submit = () => {
     if (!hasAmount) return;
@@ -77,7 +77,7 @@ export default function WalletAddMoneyScreen() {
               hasAmount ? 'border-active' : 'border-hairline',
             )}
           >
-            <Text className="text-3xl font-bold text-active">₦</Text>
+            <Text className="text-3xl font-bold text-active">{MARKET.currencySymbol}</Text>
             <TextInput
               ref={inputRef}
               accessibilityLabel="Amount to add"

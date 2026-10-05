@@ -1,9 +1,11 @@
 import { Pressable, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
+import { MARKET } from '@/config';
 import { formatInboxRelativeTime, notificationVisual } from '@/features/notifications/presentation';
 import type { InboxNotification } from '@/features/notifications/types';
 import { cn } from '@/lib/cn';
+import { formatNotificationCopy } from '@/lib/format';
 
 type Props = {
   item: InboxNotification;
@@ -13,12 +15,14 @@ type Props = {
 export function NotificationListItem({ item, onPress }: Props) {
   const unread = item.readAt === null;
   const visual = notificationVisual(item.type);
+  const title = formatNotificationCopy(item.title);
+  const body = item.body ? formatNotificationCopy(item.body) : null;
 
   return (
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
-      accessibilityLabel={`${item.title}. ${item.body}`}
+      accessibilityLabel={body ? `${title}. ${body}` : title}
       accessibilityState={{ selected: unread }}
       className="flex-row gap-3 py-4 active:opacity-80"
     >
@@ -28,7 +32,7 @@ export function NotificationListItem({ item, onPress }: Props) {
       >
         {visual.useNairaSymbol ? (
           <Text className="text-lg font-bold" style={{ color: visual.iconColor }}>
-            ₦
+            {MARKET.currencySymbol}
           </Text>
         ) : (
           <Ionicons name={visual.icon} size={22} color={visual.iconColor} />
@@ -37,11 +41,11 @@ export function NotificationListItem({ item, onPress }: Props) {
 
       <View className="min-w-0 flex-1 gap-1 pr-2">
         <Text className={cn('text-base text-ink', unread ? 'font-bold' : 'font-semibold')}>
-          {item.title}
+          {title}
         </Text>
-        {item.body ? (
+        {body ? (
           <Text className="text-sm leading-5 text-muted" numberOfLines={2}>
-            {item.body}
+            {body}
           </Text>
         ) : null}
       </View>

@@ -13,6 +13,7 @@ import {
   parseResponseOfferAmount,
   type RespondableRequest,
 } from '@/features/requests/responses-api';
+import { MARKET } from '@/config';
 import { cn } from '@/lib/cn';
 import { formatMoney } from '@/lib/format';
 import { showAppToast } from '@/lib/toast';
@@ -153,7 +154,7 @@ function OfferAmountStepper({
         onPress={() => inputRef.current?.focus()}
         className="flex-row items-center rounded-2xl bg-surface px-5 py-6"
       >
-        <Text className="text-3xl font-bold text-active">₦</Text>
+        <Text className="text-3xl font-bold text-active">{MARKET.currencySymbol}</Text>
         <TextInput
           ref={inputRef}
           accessibilityLabel="Your offer amount"

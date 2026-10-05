@@ -696,7 +696,7 @@ function NewRequestForm({ reuseSeed }: { reuseSeed?: ReuseSeed }) {
                 <Text className="text-base text-muted">How much you&apos;re willing to pay.</Text>
                 <View className="rounded-2xl bg-surface px-5 py-6">
                   <View className="flex-row items-center gap-2">
-                    <Text className="text-3xl font-bold text-active">₦</Text>
+                    <Text className="text-3xl font-bold text-active">{MARKET.currencySymbol}</Text>
                     <TextInput
                       ref={amountInputRef}
                       accessibilityLabel="Offer amount"

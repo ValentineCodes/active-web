@@ -1,5 +1,6 @@
 import { type ReactNode } from 'react';
 import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
+import * as Clipboard from 'expo-clipboard';
 import { router } from 'expo-router';
 import { useMutation } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
@@ -10,8 +11,11 @@ import { Header } from '@/components/ui/Header';
 import { Screen } from '@/components/ui/Screen';
 import { ErrorState, InlineError, LoadingState } from '@/components/ui/StateView';
 import { useAttendance } from '@/features/attendance/api';
+import { MARKET } from '@/config';
 import { signOut } from '@/features/auth/api';
 import { useProfile } from '@/features/profile/api';
+import { formatPhoneDisplay } from '@/lib/format';
+import { showAppToast } from '@/lib/toast';
 import { useMyResponses } from '@/features/requests/responses-api';
 import { useMyRequests } from '@/features/requests/requester-api';
 import type { ThemePreference } from '@/features/theme/preferences';
@@ -217,7 +221,7 @@ export default function ProfileScreen() {
           className="flex-row items-center gap-3 rounded-2xl border border-hairline bg-elevated px-4 py-4 active:opacity-90"
         >
           <View className="h-11 w-11 items-center justify-center rounded-xl bg-active-soft">
-            <Text className="text-lg font-bold text-active">₦</Text>
+            <Text className="text-lg font-bold text-active">{MARKET.currencySymbol}</Text>
           </View>
           <View className="min-w-0 flex-1 gap-0.5">
             <Text className="text-lg font-semibold text-ink">Wallet</Text>
@@ -225,6 +229,25 @@ export default function ProfileScreen() {
           </View>
           <Ionicons name="chevron-forward" size={20} color={colors.subtle} />
         </Pressable>
+
+        {data.phone ? (
+          <Pressable
+            onPress={() => {
+              void Clipboard.setStringAsync(data.phone!);
+              showAppToast('Phone number copied');
+            }}
+            accessibilityRole="button"
+            accessibilityLabel={`Phone number ${formatPhoneDisplay(data.phone)}`}
+            accessibilityHint="Copies your phone number"
+            className="flex-row items-center gap-3 rounded-2xl border border-hairline bg-elevated px-4 py-3.5 active:opacity-90"
+          >
+            <Ionicons name="call-outline" size={22} color={colors.active} />
+            <Text className="min-w-0 flex-1 text-lg text-ink">
+              {formatPhoneDisplay(data.phone)}
+            </Text>
+            <Ionicons name="chevron-forward" size={20} color={colors.subtle} />
+          </Pressable>
+        ) : null}
 
         <SettingsGroup title="Account">
           <SettingsRow label="Edit profile" onPress={() => router.push('/profile/edit')} />

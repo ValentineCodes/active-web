@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
 
-import { WALLET } from '@/config';
+import { MARKET, WALLET } from '@/config';
 import { queryKeys } from '@/lib/query/keys';
 import { supabase } from '@/lib/supabase/client';
 
@@ -28,7 +28,7 @@ export function useMyWallet() {
         available: data?.available ?? 0,
         locked: data?.locked ?? 0,
         pending: data?.pending ?? 0,
-        currency: data?.currency ?? 'NGN',
+        currency: data?.currency ?? MARKET.currency,
         updated_at: data?.updated_at ?? new Date(0).toISOString(),
       };
     },
