@@ -3,18 +3,27 @@ import { Platform, Text, TextInput, View } from 'react-native';
 
 import { MARKET } from '@/config';
 import { cn } from '@/lib/cn';
-import { MONEY_AMOUNT_ROW_HEIGHT, poppinsInputTypography, POPPINS } from '@/theme/fonts';
+import { MONEY_AMOUNT_ROW_HEIGHT, moneyAmountInputTypography, POPPINS } from '@/theme/fonts';
 import { useColors } from '@/theme';
 
-const amountTypography = poppinsInputTypography('bold', 'amount');
+const amountDisplayTypography = moneyAmountInputTypography();
 
-function AmountRowSlot({ children, className }: { children: ReactNode; className?: string }) {
-  return (
-    <View className={cn('justify-center', className)} style={{ height: MONEY_AMOUNT_ROW_HEIGHT }}>
-      {children}
-    </View>
-  );
-}
+/** iOS UITextField misaligns when lineHeight is set — match placeholder with padding instead. */
+const amountInputTypography =
+  Platform.OS === 'ios' ? { fontFamily: POPPINS.bold, fontSize: 30 } : amountDisplayTypography;
+
+/** Space between the currency symbol and the amount digits. */
+const AMOUNT_PAD_LEFT = 8;
+
+const placeholderContentInset = Platform.select({
+  ios: { paddingLeft: AMOUNT_PAD_LEFT, paddingTop: 3, paddingRight: 0, paddingBottom: 0 },
+  default: { paddingLeft: AMOUNT_PAD_LEFT, paddingTop: 0, paddingRight: 0, paddingBottom: 0 },
+});
+
+const inputContentInset = Platform.select({
+  ios: { paddingLeft: AMOUNT_PAD_LEFT, paddingTop: 0, paddingRight: 0, paddingBottom: 0 },
+  default: { paddingLeft: AMOUNT_PAD_LEFT, paddingTop: 0, paddingRight: 0, paddingBottom: 0 },
+});
 
 export function MoneyAmountInput({
   value,
@@ -34,46 +43,59 @@ export function MoneyAmountInput({
   className?: string;
 }) {
   const colors = useColors();
+  const showPlaceholder = value.length === 0;
 
-  const symbolStyle = [
-    amountTypography,
-    { color: colors.active, lineHeight: MONEY_AMOUNT_ROW_HEIGHT },
-  ];
+  const fieldBoxStyle = {
+    position: 'absolute' as const,
+    left: 0,
+    right: 0,
+    top: 0,
+    height: MONEY_AMOUNT_ROW_HEIGHT,
+    width: '100%',
+    margin: 0,
+  };
 
   const inputStyle = [
-    amountTypography,
-    {
-      color: colors.ink,
-      flex: 1,
-      width: '100%',
-      padding: 0,
-      margin: 0,
-    },
-    Platform.OS === 'android'
-      ? { fontFamily: POPPINS.bold, lineHeight: MONEY_AMOUNT_ROW_HEIGHT }
-      : null,
+    amountInputTypography,
+    fieldBoxStyle,
+    inputContentInset,
+    { color: colors.ink },
   ];
+
+  const placeholderStyle = [
+    amountDisplayTypography,
+    fieldBoxStyle,
+    placeholderContentInset,
+    {
+      lineHeight: MONEY_AMOUNT_ROW_HEIGHT,
+      color: colors.subtle,
+    },
+  ];
+
+  const symbolStyle = [amountDisplayTypography, { color: colors.active }];
 
   return (
     <View className={cn('flex-row items-center', className)}>
-      <AmountRowSlot>
-        <Text style={symbolStyle}>{MARKET.currencySymbol}</Text>
-      </AmountRowSlot>
+      <Text style={symbolStyle}>{MARKET.currencySymbol}</Text>
 
       <View className="min-w-0 flex-1 flex-row items-center">
-        <AmountRowSlot className="min-w-0 flex-1 px-2">
+        <View className="relative min-w-0 flex-1" style={{ height: MONEY_AMOUNT_ROW_HEIGHT }}>
           <TextInput
             ref={inputRef}
             accessibilityLabel={accessibilityLabel}
             value={value}
             onChangeText={onChangeText}
             keyboardType="number-pad"
-            placeholder="0"
-            placeholderTextColor={colors.subtle}
+            placeholder=""
             style={inputStyle}
             maxLength={maxLength}
           />
-        </AmountRowSlot>
+          {showPlaceholder ? (
+            <Text pointerEvents="none" style={placeholderStyle}>
+              0
+            </Text>
+          ) : null}
+        </View>
         {trailing}
       </View>
     </View>

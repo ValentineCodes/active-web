@@ -5,8 +5,6 @@ import { cn } from '@/lib/cn';
 import { poppinsInputTypography } from '@/theme/fonts';
 import { useColors } from '@/theme';
 
-const fieldTypography = poppinsInputTypography('regular', 'base');
-
 type Props = TextInputProps & {
   label: string;
   hint?: string;
@@ -29,6 +27,9 @@ export function TextField({
   const colors = useColors();
   const [isFocused, setIsFocused] = useState(false);
   const length = typeof inputProps.value === 'string' ? inputProps.value.length : 0;
+  const fieldTypography = poppinsInputTypography('regular', 'base', {
+    multiline: Boolean(inputProps.multiline),
+  });
 
   return (
     <View className="gap-2">

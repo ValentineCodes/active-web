@@ -50,11 +50,27 @@ export function poppinsInputTypography(
     fontSize,
     lineHeight,
     includeFontPadding: false,
-    textAlignVertical: 'center' as const,
+    textAlignVertical: (options?.multiline ? 'top' : 'center') as 'top' | 'center',
   };
 }
 
 export const MONEY_AMOUNT_ROW_HEIGHT = INPUT_SIZES.amount.lineHeight;
+
+/** Currency row — same metrics on Text and TextInput so placeholder and digits line up. */
+export function moneyAmountInputTypography() {
+  const { fontSize, lineHeight } = INPUT_SIZES.amount;
+  const shared = { fontFamily: POPPINS.bold, fontSize, lineHeight };
+
+  if (Platform.OS === 'android') {
+    return {
+      ...shared,
+      includeFontPadding: false,
+      textAlignVertical: 'center' as const,
+    };
+  }
+
+  return shared;
+}
 
 let defaultsApplied = false;
 

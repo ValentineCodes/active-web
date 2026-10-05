@@ -13,8 +13,6 @@ import { showAppToast } from '@/lib/toast';
 import { poppinsInputTypography } from '@/theme/fonts';
 import { useColors } from '@/theme';
 
-const editFieldTypography = poppinsInputTypography('regular', 'base');
-
 function EditField({
   label,
   className,
@@ -22,6 +20,9 @@ function EditField({
   ...inputProps
 }: { label: string } & ComponentProps<typeof TextInput>) {
   const colors = useColors();
+  const fieldTypography = poppinsInputTypography('regular', 'base', {
+    multiline: Boolean(inputProps.multiline),
+  });
 
   return (
     <View className="gap-2">
@@ -32,7 +33,7 @@ function EditField({
         accessibilityLabel={label}
         placeholderTextColor={colors.subtle}
         className={cn('rounded-2xl bg-surface px-4 py-4 text-ink', className)}
-        style={[editFieldTypography, style]}
+        style={[fieldTypography, style]}
         {...inputProps}
       />
     </View>
