@@ -27,7 +27,7 @@ export function HomeActiveRequestBanner({
         <Text className="text-xs font-bold uppercase tracking-widest text-on-brand">
           Active request
         </Text>
-        <Text className="font-serif text-lg font-bold leading-6 text-on-brand" numberOfLines={2}>
+        <Text className="text-lg font-bold leading-6 text-on-brand" numberOfLines={2}>
           {title}
         </Text>
       </View>

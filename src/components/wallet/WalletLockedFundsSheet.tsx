@@ -74,9 +74,7 @@ export const WalletLockedFundsSheet = forwardRef<WalletLockedFundsSheetHandle, P
           </View>
 
           <View className="gap-3">
-            <Text className="font-serif text-2xl font-bold leading-8 text-ink">
-              About locked money
-            </Text>
+            <Text className="text-2xl font-bold leading-8 text-ink">About locked money</Text>
             <Text className="text-base leading-6 text-muted">
               {formatMoney(lockedTotal, currency)} is set aside for an active request. It is still
               part of your total balance, but you can&apos;t use it for another request right now.

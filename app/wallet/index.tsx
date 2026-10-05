@@ -171,6 +171,7 @@ export default function WalletHomeScreen() {
             <LoadingState />
           ) : preview.length === 0 ? (
             <EmptyState
+              layout="list"
               icon="wallet-outline"
               title="No activity yet"
               message="Deposits, payments for requests, refunds, and payouts appear here."

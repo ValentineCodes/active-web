@@ -57,6 +57,9 @@ export default function WalletHistoryScreen() {
     <Screen>
       <ScrollView
         contentContainerClassName="gap-4 px-5 pb-12 pt-2"
+        contentContainerStyle={
+          sections.length === 0 ? { flexGrow: 1, justifyContent: 'center' as const } : undefined
+        }
         refreshControl={
           <RefreshControl
             refreshing={wallet.isRefetching || activity.isRefetching}
@@ -72,6 +75,7 @@ export default function WalletHistoryScreen() {
 
         {sections.length === 0 ? (
           <EmptyState
+            layout="list"
             icon="wallet-outline"
             title="No activity yet"
             message="Deposits, payments for requests, refunds, and payouts appear here."

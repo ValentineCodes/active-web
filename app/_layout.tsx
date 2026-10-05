@@ -13,6 +13,7 @@ import { ToastProvider } from '@/components/ui/ToastProvider';
 import { SessionProvider, useSession } from '@/features/auth/session';
 import { profileQueryOptions } from '@/features/profile/api';
 import { queryClient } from '@/lib/query/client';
+import { AppFontsProvider } from '@/theme/AppFontsProvider';
 import { ThemeProvider, useColors } from '@/theme';
 import { ThemeStatusBar } from '@/theme/ThemeStatusBar';
 
@@ -90,14 +91,16 @@ export default function RootLayout() {
       <SafeAreaProvider>
         <QueryClientProvider client={queryClient}>
           <ThemeProvider>
-            <SessionProvider>
-              <ToastProvider>
-                <BottomSheetModalProvider>
-                  <ThemeStatusBar />
-                  <RootNavigator />
-                </BottomSheetModalProvider>
-              </ToastProvider>
-            </SessionProvider>
+            <AppFontsProvider fallback={<BootScreen />}>
+              <SessionProvider>
+                <ToastProvider>
+                  <BottomSheetModalProvider>
+                    <ThemeStatusBar />
+                    <RootNavigator />
+                  </BottomSheetModalProvider>
+                </ToastProvider>
+              </SessionProvider>
+            </AppFontsProvider>
           </ThemeProvider>
         </QueryClientProvider>
       </SafeAreaProvider>

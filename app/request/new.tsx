@@ -274,7 +274,7 @@ function NewRequestReviewCard({
           style={{ aspectRatio: 4 / 3 }}
         />
       ) : null}
-      <Text className="font-serif text-xl font-bold text-ink" numberOfLines={1}>
+      <Text className="text-xl font-bold text-ink" numberOfLines={1}>
         {title}
       </Text>
       {description ? (
@@ -647,9 +647,7 @@ function NewRequestForm({ reuseSeed }: { reuseSeed?: ReuseSeed }) {
           >
             {step === 0 ? (
               <View className="gap-3">
-                <Text className="font-serif text-3xl font-bold leading-9 text-ink">
-                  What do you need?
-                </Text>
+                <Text className="text-3xl font-bold leading-9 text-ink">What do you need?</Text>
                 <Text className="text-base text-muted">Describe it in your own words.</Text>
                 <CreateTextArea
                   inputRef={titleInputRef}
@@ -670,9 +668,7 @@ function NewRequestForm({ reuseSeed }: { reuseSeed?: ReuseSeed }) {
 
             {step === 1 ? (
               <View className="gap-3">
-                <Text className="font-serif text-3xl font-bold leading-9 text-ink">
-                  Tell us more
-                </Text>
+                <Text className="text-3xl font-bold leading-9 text-ink">Tell us more</Text>
                 <Text className="text-base text-muted">
                   Optional. Any detail that helps people understand what&apos;s needed.
                 </Text>
@@ -690,7 +686,7 @@ function NewRequestForm({ reuseSeed }: { reuseSeed?: ReuseSeed }) {
 
             {step === 2 ? (
               <View className="gap-3">
-                <Text className="font-serif text-3xl font-bold leading-9 text-ink">
+                <Text className="text-3xl font-bold leading-9 text-ink">
                   What are you offering?
                 </Text>
                 <Text className="text-base text-muted">How much you&apos;re willing to pay.</Text>
@@ -716,9 +712,7 @@ function NewRequestForm({ reuseSeed }: { reuseSeed?: ReuseSeed }) {
 
             {step === 3 ? (
               <View className="gap-3">
-                <Text className="font-serif text-3xl font-bold leading-9 text-ink">
-                  When do you need it?
-                </Text>
+                <Text className="text-3xl font-bold leading-9 text-ink">When do you need it?</Text>
                 <Text className="text-base text-muted">
                   People nearby will see your request straight away.
                 </Text>
@@ -790,9 +784,7 @@ function NewRequestForm({ reuseSeed }: { reuseSeed?: ReuseSeed }) {
             {step === 4 ? (
               <View className="gap-5">
                 <View className="gap-3">
-                  <Text className="font-serif text-3xl font-bold leading-9 text-ink">
-                    Add a photo?
-                  </Text>
+                  <Text className="text-3xl font-bold leading-9 text-ink">Add a photo?</Text>
                   <Text className="text-base text-muted">
                     You don&apos;t have to but this will help people better understand your request
                   </Text>

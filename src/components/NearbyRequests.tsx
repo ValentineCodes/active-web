@@ -120,12 +120,20 @@ export function NearbyRequests({
     position === null ? (
       locating ? (
         <ActivityIndicator />
+      ) : blocked === 'denied' ? (
+        <EmptyState
+          layout="list"
+          icon="location-outline"
+          title="Turn on location"
+          message="Enable location in Settings to see requests near you."
+        />
       ) : (
-        <Text className="text-sm text-muted">
-          {blocked === 'denied'
-            ? 'Location access is off. Enable it in Settings to see nearby requests.'
-            : 'We could not get your location. Pull to refresh and try again.'}
-        </Text>
+        <EmptyState
+          layout="list"
+          icon="navigate-outline"
+          title="Location unavailable"
+          message="Pull to refresh and try again."
+        />
       )
     ) : nearby.isPending ? (
       <ActivityIndicator />
@@ -133,19 +141,10 @@ export function NearbyRequests({
       <InlineError error={nearby.error} />
     ) : rows.length === 0 ? (
       <EmptyState
-        layout="card"
+        layout="list"
         icon="compass-outline"
         title="Nothing open nearby"
-        message={
-          isHome
-            ? 'New requests show up here when people nearby need help. Check back soon, or post what you need.'
-            : 'New requests show up here when people nearby need help. Check back soon.'
-        }
-        action={
-          isHome
-            ? { label: 'Post a request', onPress: () => router.push('/request/new') }
-            : undefined
-        }
+        message="New requests show up here when people nearby need help. Check back soon."
       />
     ) : (
       <>

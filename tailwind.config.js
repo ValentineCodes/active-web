@@ -30,12 +30,20 @@ module.exports = {
   theme: {
     extend: {
       fontFamily: {
-        serif: ['Georgia', 'Times New Roman', 'serif'],
+        sans: ['Poppins_400Regular', 'Poppins', 'system-ui', 'sans-serif'],
       },
       colors: semanticColors,
     },
   },
   plugins: [
+    ({ addUtilities }) => {
+      addUtilities({
+        '.font-normal': { fontFamily: 'Poppins_400Regular', fontWeight: '400' },
+        '.font-medium': { fontFamily: 'Poppins_500Medium', fontWeight: '500' },
+        '.font-semibold': { fontFamily: 'Poppins_600SemiBold', fontWeight: '600' },
+        '.font-bold': { fontFamily: 'Poppins_700Bold', fontWeight: '700' },
+      });
+    },
     ({ addBase }) => {
       addBase({
         ':root': paletteToCssVarRecord(lightPalette),

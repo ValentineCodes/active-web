@@ -29,17 +29,15 @@ export function EmptyState({
   title: string;
   message: string;
   action?: { label: string; onPress: () => void };
-  /** `card` — bordered block for lists (home, activity). `screen` — centred full-area placeholder. */
-  layout?: 'screen' | 'card';
+  /** `list` — centred block inside a scroll feed. `screen` — full-area placeholder. */
+  layout?: 'screen' | 'list';
 }) {
   const colors = useColors();
   return (
     <View
       className={cn(
-        'items-center gap-3',
-        layout === 'card'
-          ? 'rounded-2xl border border-hairline bg-elevated px-5 py-8'
-          : 'flex-1 justify-center p-8',
+        'w-full items-center gap-3',
+        layout === 'list' ? 'px-2 py-8' : 'flex-1 justify-center p-8',
       )}
     >
       <View className="h-16 w-16 items-center justify-center rounded-full bg-brand-soft">

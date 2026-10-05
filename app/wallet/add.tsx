@@ -61,7 +61,7 @@ export default function WalletAddMoneyScreen() {
           className="flex-1"
         >
           <View className="gap-2">
-            <Text className="font-serif text-3xl font-bold leading-9 text-ink">
+            <Text className="text-3xl font-bold leading-9 text-ink">
               How much would you like to add?
             </Text>
             <Text className="text-base text-muted">

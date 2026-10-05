@@ -30,6 +30,7 @@ export function ActivityMyResponsesTab() {
     () => myResponses.filter((response) => myResponseMatchesActivityFilter(response, filter)),
     [filter, myResponses],
   );
+  const listEmpty = myResponses.length === 0 || filteredResponses.length === 0;
 
   if (isLoading) {
     return (
@@ -57,12 +58,16 @@ export function ActivityMyResponsesTab() {
       <ScrollView
         className="flex-1"
         contentContainerClassName="gap-3 px-5 pt-1"
-        contentContainerStyle={{ paddingBottom: tabBarScrollPadding }}
+        contentContainerStyle={{
+          paddingBottom: tabBarScrollPadding,
+          ...(listEmpty ? { flexGrow: 1, justifyContent: 'center' as const } : undefined),
+        }}
         scrollIndicatorInsets={{ bottom: tabBarScrollPadding }}
         refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetchAll} />}
       >
         {myResponses.length === 0 ? (
           <EmptyState
+            layout="list"
             icon="chatbubble-outline"
             title="No responses yet"
             message="Browse nearby on Home and respond when something fits."
@@ -70,6 +75,7 @@ export function ActivityMyResponsesTab() {
           />
         ) : filteredResponses.length === 0 ? (
           <EmptyState
+            layout="list"
             icon="filter-outline"
             title="No matches"
             message="Nothing in this status right now. Try another filter."

@@ -30,6 +30,7 @@ export function ActivityMyRequestsTab() {
     () => myRequests.filter((request) => myRequestMatchesActivityFilter(request, filter)),
     [filter, myRequests],
   );
+  const listEmpty = myRequests.length === 0 || filteredRequests.length === 0;
 
   if (isLoading) {
     return (
@@ -57,12 +58,16 @@ export function ActivityMyRequestsTab() {
       <ScrollView
         className="flex-1"
         contentContainerClassName="gap-3 px-5 pt-1"
-        contentContainerStyle={{ paddingBottom: tabBarScrollPadding }}
+        contentContainerStyle={{
+          paddingBottom: tabBarScrollPadding,
+          ...(listEmpty ? { flexGrow: 1, justifyContent: 'center' as const } : undefined),
+        }}
         scrollIndicatorInsets={{ bottom: tabBarScrollPadding }}
         refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetchAll} />}
       >
         {myRequests.length === 0 ? (
           <EmptyState
+            layout="list"
             icon="add-circle-outline"
             title="No requests yet"
             message="When you need help, post a request and people nearby can respond."
@@ -70,6 +75,7 @@ export function ActivityMyRequestsTab() {
           />
         ) : filteredRequests.length === 0 ? (
           <EmptyState
+            layout="list"
             icon="filter-outline"
             title="No matches"
             message="Nothing in this status right now. Try another filter."

@@ -36,7 +36,7 @@ export function ActivityMyRequestCard({
       )}
     >
       <View className="flex-row items-start justify-between gap-3">
-        <Text className="flex-1 font-serif text-xl font-bold leading-7 text-ink" numberOfLines={2}>
+        <Text className="flex-1 text-xl font-bold leading-7 text-ink" numberOfLines={2}>
           {title}
         </Text>
         <Badge label={badge.label} tone={badge.tone} dot={false} />
@@ -79,7 +79,7 @@ export function ActivityMyResponseCard({
         !disabled && 'active:opacity-90',
       )}
     >
-      <Text className="font-serif text-xl font-bold leading-7 text-ink" numberOfLines={2}>
+      <Text className="text-xl font-bold leading-7 text-ink" numberOfLines={2}>
         {title}
       </Text>
       <Text className="text-sm text-muted" numberOfLines={1}>
@@ -121,7 +121,7 @@ export function ActivityAttendingCard({
         style={shadow.card}
         className="gap-1 rounded-2xl border border-active/30 bg-active/5 p-4 active:opacity-90"
       >
-        <Text className="font-serif text-xl font-bold leading-7 text-ink" numberOfLines={2}>
+        <Text className="text-xl font-bold leading-7 text-ink" numberOfLines={2}>
           {title}
         </Text>
         <Text className="text-sm text-muted" numberOfLines={2}>

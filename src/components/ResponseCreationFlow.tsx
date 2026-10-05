@@ -326,7 +326,7 @@ export function ResponseCreationFlow({
                 name={profile.data?.display_name ?? null}
                 size="lg"
               />
-              <Text className="text-center font-serif text-3xl font-bold leading-9 text-ink">
+              <Text className="text-center text-3xl font-bold leading-9 text-ink">
                 Add a profile photo
               </Text>
               <Text className="max-w-sm text-center text-base leading-6 text-muted">
@@ -341,9 +341,7 @@ export function ResponseCreationFlow({
         {step === offerStep ? (
           <View className="gap-3">
             <StepLabel>{`Step ${offerStepNumber} of ${stepCount} · Offer`}</StepLabel>
-            <Text className="font-serif text-3xl font-bold leading-9 text-ink">
-              What are you offering?
-            </Text>
+            <Text className="text-3xl font-bold leading-9 text-ink">What are you offering?</Text>
             <Text className="text-base leading-6 text-muted">
               &ldquo;{request.title}&rdquo; — keep the amount or propose something different.
             </Text>
@@ -364,7 +362,7 @@ export function ResponseCreationFlow({
         {step === messageStep ? (
           <View className="gap-3">
             <StepLabel>{`Step ${messageStepNumber} of ${stepCount} · Message`}</StepLabel>
-            <Text className="font-serif text-3xl font-bold leading-9 text-ink">Say something</Text>
+            <Text className="text-3xl font-bold leading-9 text-ink">Say something</Text>
             <Text className="text-base leading-6 text-muted">
               Optional. A short message explaining how you can help.
             </Text>

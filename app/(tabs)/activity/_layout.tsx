@@ -17,7 +17,7 @@ export default function ActivityLayout() {
     <Screen>
       <View className="min-h-0 flex-1" style={nativeWindThemeVars(colors)}>
         <View className="px-5 pb-1 pt-3">
-          <Text className="font-serif text-3xl font-bold text-ink">Activity</Text>
+          <Text className="text-3xl font-bold text-ink">Activity</Text>
         </View>
         <TopTabs screenOptions={topTabScreenOptions}>
           <TopTabs.Screen name="index" options={{ title: 'My Requests' }} />

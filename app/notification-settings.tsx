@@ -133,9 +133,7 @@ export default function NotificationSettingsScreen() {
 
       <ScrollView contentContainerClassName="gap-6 px-5 pb-12 pt-2">
         <View className="gap-2">
-          <Text className="font-serif text-3xl font-bold leading-9 text-ink">
-            Choose what reaches you
-          </Text>
+          <Text className="text-3xl font-bold leading-9 text-ink">Choose what reaches you</Text>
           <Text className="text-base leading-6 text-muted">
             Important account and dispute updates are always sent.
           </Text>

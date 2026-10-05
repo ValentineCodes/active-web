@@ -37,7 +37,7 @@ export function HomeRequestCard({
         !disabled && 'active:opacity-90',
       )}
     >
-      <Text className="font-serif text-xl font-bold leading-7 text-ink" numberOfLines={1}>
+      <Text className="text-xl font-bold leading-7 text-ink" numberOfLines={1}>
         {title}
       </Text>
 

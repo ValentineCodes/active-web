@@ -124,12 +124,13 @@ export default function NotificationsScreen() {
         : `${unreadCount} unread updates`;
 
   const tabBarScrollPadding = useTabBarScrollPadding();
+  const inboxEmpty = inbox.isSuccess && filteredItems.length === 0;
 
   return (
     <Screen className="flex-1">
       <View className="flex-row items-start justify-between gap-3 px-5 pb-3 pt-2">
         <View className="min-w-0 flex-1 gap-1">
-          <Text className="font-serif text-3xl font-bold text-ink">Notifications</Text>
+          <Text className="text-3xl font-bold text-ink">Notifications</Text>
           <Text className="text-sm text-muted">{unreadLabel}</Text>
         </View>
         <IconButton
@@ -169,7 +170,10 @@ export default function NotificationsScreen() {
           data={filteredItems}
           keyExtractor={(item) => item.id}
           contentContainerClassName="px-5 pt-1"
-          contentContainerStyle={{ paddingBottom: tabBarScrollPadding }}
+          contentContainerStyle={{
+            paddingBottom: tabBarScrollPadding,
+            ...(inboxEmpty ? { flexGrow: 1, justifyContent: 'center' as const } : undefined),
+          }}
           scrollIndicatorInsets={{ bottom: tabBarScrollPadding }}
           refreshControl={
             <RefreshControl
@@ -183,12 +187,14 @@ export default function NotificationsScreen() {
           ListEmptyComponent={
             filter === 'unread' && (inbox.data?.length ?? 0) > 0 ? (
               <EmptyState
+                layout="list"
                 icon="checkmark-circle-outline"
                 title="You're all caught up"
                 message="No unread notifications right now."
               />
             ) : (
               <EmptyState
+                layout="list"
                 icon="notifications-outline"
                 title="Nothing yet"
                 message="When something needs your attention, it will show up here."
