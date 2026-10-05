@@ -152,7 +152,7 @@ export default function WalletHomeScreen() {
 
         <View className="gap-3">
           <View className="flex-row items-center justify-between gap-3">
-            <Text className="text-lg font-bold text-ink">Transaction history</Text>
+            <Text className="text-lg font-bold text-ink">Recent activity</Text>
             {(activity.data?.length ?? 0) > 0 ? (
               <Pressable
                 onPress={() => router.push('/wallet/history')}

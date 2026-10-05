@@ -2,7 +2,6 @@ import { Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
-import { Button } from '@/components/ui/Button';
 import { Header } from '@/components/ui/Header';
 import { Screen } from '@/components/ui/Screen';
 import { ErrorState, LoadingState } from '@/components/ui/StateView';
@@ -85,11 +84,11 @@ export default function WalletTransactionScreen() {
     <Screen>
       <Header title="Transaction" onBack={() => router.back()} />
 
-      <View className="flex-1 gap-6 px-5 pb-8 pt-4">
-        <View className="items-center gap-3 px-4">
+      <View className="flex-1 gap-6 px-5 pb-8 pt-2">
+        <View className="items-center px-4">
           <View
             className={cn(
-              'h-12 w-12 items-center justify-center rounded-full',
+              'mb-6 h-12 w-12 items-center justify-center rounded-full',
               visual.incoming ? 'bg-active-soft' : 'bg-surface',
             )}
           >
@@ -108,10 +107,12 @@ export default function WalletTransactionScreen() {
             </Text>
           ) : null}
 
-          <Text className="text-lg font-semibold text-ink">{walletActivityTitle(kind)}</Text>
-          <Text className="text-center text-base leading-6 text-muted">
-            {walletHistoryDescription(item)}
-          </Text>
+          <View className="mt-3 items-center gap-2">
+            <Text className="text-lg font-semibold text-ink">{walletActivityTitle(kind)}</Text>
+            <Text className="text-center text-base leading-6 text-muted">
+              {walletHistoryDescription(item)}
+            </Text>
+          </View>
         </View>
 
         <View className="overflow-hidden rounded-2xl border border-hairline bg-elevated">
@@ -134,17 +135,6 @@ export default function WalletTransactionScreen() {
           ) : null}
           <DetailRow label="Support reference" value={walletActivityReference(item.id)} />
         </View>
-      </View>
-
-      <View className="px-5 pb-8">
-        <Button
-          label="Done"
-          variant="active"
-          size="lg"
-          corner="2xl"
-          className="w-full"
-          onPress={() => router.back()}
-        />
       </View>
     </Screen>
   );

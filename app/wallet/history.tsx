@@ -79,8 +79,10 @@ export default function WalletHistoryScreen() {
 
   return (
     <Screen>
+      <Header title="Transaction history" onBack={() => router.back()} />
       <ScrollView
-        contentContainerClassName="gap-4 px-5 pb-12 pt-2"
+        className="flex-1"
+        contentContainerClassName="gap-4 px-5 pb-12 pt-1"
         contentContainerStyle={
           sections.length === 0 ? { flexGrow: 1, justifyContent: 'center' as const } : undefined
         }
@@ -96,11 +98,6 @@ export default function WalletHistoryScreen() {
           />
         }
       >
-        <Header title="Transaction history" onBack={() => router.back()} />
-        <Text className="-mt-1 mb-2 px-1 text-base text-muted">
-          Money added, request payments, and refunds
-        </Text>
-
         {sections.length === 0 ? (
           history.isPending ? (
             <LoadingState />
@@ -124,7 +121,6 @@ export default function WalletHistoryScreen() {
                     key={item.id}
                     row={item}
                     currency={currency}
-                    detailed
                     showDivider={index > 0}
                     onPress={() => router.push(`/wallet/transaction/${item.id}`)}
                   />
