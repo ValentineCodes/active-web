@@ -13,7 +13,7 @@ type Props = {
   accessibilityLabel?: string;
 };
 
-/** Full-width auth CTA with a trailing chevron, WhatsApp-style. */
+/** Full-width auth CTA with a trailing chevron (matches wizard primary buttons). */
 export function AuthFooterButton({
   label,
   onPress,
@@ -35,7 +35,7 @@ export function AuthFooterButton({
         onPress();
       }}
       className={cn(
-        'flex-row items-center justify-center rounded-full py-5 active:opacity-90',
+        'min-h-12 flex-row items-center justify-center rounded-2xl px-6 py-4 active:opacity-90',
         inert ? 'bg-surface' : 'bg-brand',
       )}
     >

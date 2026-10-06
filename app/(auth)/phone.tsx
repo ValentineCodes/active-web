@@ -1,19 +1,12 @@
 import { useEffect, useState } from 'react';
-import {
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { Alert, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useMutation } from '@tanstack/react-query';
 
 import { AuthFooterButton } from '@/components/auth/AuthFooterButton';
 import { OtpDashedInput } from '@/components/auth/OtpDashedInput';
+import { KeyboardStickyFooter } from '@/components/ui/KeyboardStickyFooter';
 import { Screen } from '@/components/ui/Screen';
 import { InlineError } from '@/components/ui/StateView';
 import { MARKET } from '@/config';
@@ -91,128 +84,133 @@ export default function PhoneScreen() {
 
   return (
     <Screen edges={['top', 'bottom']}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        className="flex-1 px-6 pb-8 pt-4"
-      >
-        <Pressable
-          onPress={() => router.back()}
-          accessibilityRole="button"
-          accessibilityLabel="Go back"
-          hitSlop={12}
-          className="mb-6 self-start"
-        >
-          <Ionicons name="arrow-back" size={24} color={colors.ink} />
-        </Pressable>
-
-        <Text className="text-2xl font-bold text-ink">
-          {otpSent ? 'Verify your number' : 'Enter your phone number'}
-        </Text>
-
-        <Text className="mt-3 text-base leading-6 text-muted">
-          {otpSent ? (
-            <>
-              Enter the {CODE_LENGTH}-digit code we sent to{' '}
-              <Text className="font-semibold text-ink">{displayNumber}</Text>.{' '}
-              <Text
-                className="font-semibold text-brand"
-                onPress={handleChangeNumber}
-                accessibilityRole="button"
-              >
-                Change number
-              </Text>
-            </>
-          ) : (
-            <>
-              Active will verify your phone number. Carrier charges may apply.{' '}
-              <Text
-                className="font-semibold text-brand"
-                onPress={handleWhatsMyNumber}
-                accessibilityRole="button"
-              >
-                What&apos;s my number?
-              </Text>
-            </>
-          )}
-        </Text>
-
-        {!otpSent ? (
-          <View
-            className="mt-8 pb-2"
-            style={{
-              borderBottomWidth: phoneFocused ? 2 : 1,
-              borderBottomColor: phoneFocused ? colors.brand : colors.hairline,
-            }}
-          >
-            <TextInput
-              value={phone}
-              onChangeText={(text) => setPhone(text.replace(/\D/g, ''))}
-              onFocus={() => setPhoneFocused(true)}
-              onBlur={() => setPhoneFocused(false)}
-              keyboardType="phone-pad"
-              autoComplete="tel"
-              textContentType="telephoneNumber"
-              placeholder="e.g. 08012345678"
-              placeholderTextColor={colors.muted}
-              accessibilityLabel="Your phone number"
-              autoFocus
-              underlineColorAndroid="transparent"
-              className="w-full bg-transparent text-ink"
-              style={[
-                phoneFieldTypography,
-                {
-                  paddingVertical: 8,
-                  margin: 0,
-                  borderWidth: 0,
-                  backgroundColor: 'transparent',
-                },
-              ]}
+      <KeyboardStickyFooter
+        footer={
+          <View className="px-6 pb-8">
+            <AuthFooterButton
+              label={otpSent ? 'Verify' : 'Next'}
+              onPress={primaryAction}
+              disabled={primaryDisabled}
+              loading={primaryLoading}
             />
           </View>
-        ) : (
-          <View className="mt-8">
-            <OtpDashedInput value={otp} onChange={setOtp} autoFocus />
+        }
+      >
+        <ScrollView
+          className="flex-1"
+          contentContainerClassName="grow px-6 pb-4 pt-4"
+          keyboardShouldPersistTaps="handled"
+        >
+          <Pressable
+            onPress={() => router.back()}
+            accessibilityRole="button"
+            accessibilityLabel="Go back"
+            hitSlop={12}
+            className="mb-6 self-start"
+          >
+            <Ionicons name="arrow-back" size={24} color={colors.ink} />
+          </Pressable>
 
-            <Text className="text-sm leading-5 text-muted">
-              Didn&apos;t get a code?{' '}
-              {resendSecondsLeft > 0 ? (
-                <Text className="font-semibold text-muted">Resend in {resendSecondsLeft}s</Text>
-              ) : (
+          <Text className="text-2xl font-bold text-ink">
+            {otpSent ? 'Verify your number' : 'Enter your phone number'}
+          </Text>
+
+          <Text className="mt-3 text-base leading-6 text-muted">
+            {otpSent ? (
+              <>
+                Enter the {CODE_LENGTH}-digit code we sent to{' '}
+                <Text className="font-semibold text-ink">{displayNumber}</Text>.{' '}
                 <Text
-                  className={
-                    resend.isPending ? 'font-semibold text-muted' : 'font-semibold text-brand'
-                  }
-                  onPress={() => !resend.isPending && resend.mutate()}
+                  className="font-semibold text-brand"
+                  onPress={handleChangeNumber}
                   accessibilityRole="button"
-                  accessibilityState={{ disabled: resend.isPending }}
                 >
-                  {resend.isPending ? 'Sending…' : 'Resend'}
+                  Change number
                 </Text>
-              )}
-            </Text>
-          </View>
-        )}
+              </>
+            ) : (
+              <>
+                Active will verify your phone number. Carrier charges may apply.{' '}
+                <Text
+                  className="font-semibold text-brand"
+                  onPress={handleWhatsMyNumber}
+                  accessibilityRole="button"
+                >
+                  What&apos;s my number?
+                </Text>
+              </>
+            )}
+          </Text>
 
-        {mutationError ? (
-          <View className="mt-3">
-            <InlineError error={mutationError} />
-          </View>
-        ) : null}
-        {resend.isError ? (
-          <View className="mt-3">
-            <InlineError error={resend.error} />
-          </View>
-        ) : null}
+          {!otpSent ? (
+            <View
+              className="mt-8 pb-2"
+              style={{
+                borderBottomWidth: phoneFocused ? 2 : 1,
+                borderBottomColor: phoneFocused ? colors.brand : colors.hairline,
+              }}
+            >
+              <TextInput
+                value={phone}
+                onChangeText={(text) => setPhone(text.replace(/\D/g, ''))}
+                onFocus={() => setPhoneFocused(true)}
+                onBlur={() => setPhoneFocused(false)}
+                keyboardType="phone-pad"
+                autoComplete="tel"
+                textContentType="telephoneNumber"
+                placeholder="e.g. 08012345678"
+                placeholderTextColor={colors.muted}
+                accessibilityLabel="Your phone number"
+                autoFocus
+                underlineColorAndroid="transparent"
+                className="w-full bg-transparent text-ink"
+                style={[
+                  phoneFieldTypography,
+                  {
+                    paddingVertical: 8,
+                    margin: 0,
+                    borderWidth: 0,
+                    backgroundColor: 'transparent',
+                  },
+                ]}
+              />
+            </View>
+          ) : (
+            <View className="mt-8">
+              <OtpDashedInput value={otp} onChange={setOtp} autoFocus />
 
-        <View className="flex-1" />
+              <Text className="text-sm leading-5 text-muted">
+                Didn&apos;t get a code?{' '}
+                {resendSecondsLeft > 0 ? (
+                  <Text className="font-semibold text-muted">Resend in {resendSecondsLeft}s</Text>
+                ) : (
+                  <Text
+                    className={
+                      resend.isPending ? 'font-semibold text-muted' : 'font-semibold text-brand'
+                    }
+                    onPress={() => !resend.isPending && resend.mutate()}
+                    accessibilityRole="button"
+                    accessibilityState={{ disabled: resend.isPending }}
+                  >
+                    {resend.isPending ? 'Sending…' : 'Resend'}
+                  </Text>
+                )}
+              </Text>
+            </View>
+          )}
 
-        <AuthFooterButton
-          label={otpSent ? 'Verify' : 'Next'}
-          onPress={primaryAction}
-          disabled={primaryDisabled}
-          loading={primaryLoading}
-        />
-      </KeyboardAvoidingView>
+          {mutationError ? (
+            <View className="mt-3">
+              <InlineError error={mutationError} />
+            </View>
+          ) : null}
+          {resend.isError ? (
+            <View className="mt-3">
+              <InlineError error={resend.error} />
+            </View>
+          ) : null}
+        </ScrollView>
+      </KeyboardStickyFooter>
     </Screen>
   );
 }
