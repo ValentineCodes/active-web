@@ -219,6 +219,7 @@ export default function ConversationScreen() {
             data={messages}
             keyExtractor={(item) => item.id}
             inverted
+            automaticallyAdjustKeyboardInsets={false}
             keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
             keyboardShouldPersistTaps="handled"
             initialNumToRender={18}

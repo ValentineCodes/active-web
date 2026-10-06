@@ -1,15 +1,30 @@
-import { type ReactNode, useEffect, useState } from 'react';
+import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { Keyboard, Platform, View, type KeyboardEvent } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaFrame, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { cn } from '@/lib/cn';
 
-function keyboardOverlap(event: KeyboardEvent, bottomSafeInset: number) {
-  const height = event.endCoordinates.height;
-  if (Platform.OS === 'ios') {
-    return Math.max(0, height - bottomSafeInset);
-  }
-  return height;
+function keyboardOverlapIos(event: KeyboardEvent, layoutBottomScreenY: number) {
+  const keyboardTop = event.endCoordinates.screenY;
+  const fromGeometry = Math.max(0, layoutBottomScreenY - keyboardTop);
+  const fromHeight = event.endCoordinates.height;
+  return Math.max(fromGeometry, fromHeight);
+}
+
+/**
+ * Android may shrink the window (`softwareKeyboardLayoutMode: resize`) or stay edge-to-edge.
+ * Use only the gap between the layout bottom and keyboard top so we do not double-lift when
+ * resize already moved the footer.
+ */
+function keyboardOverlapAndroid(event: KeyboardEvent, layoutBottomScreenY: number) {
+  const keyboardTop = event.endCoordinates.screenY;
+  return Math.max(0, layoutBottomScreenY - keyboardTop);
+}
+
+function keyboardOverlap(event: KeyboardEvent, layoutBottomScreenY: number) {
+  return Platform.OS === 'android'
+    ? keyboardOverlapAndroid(event, layoutBottomScreenY)
+    : keyboardOverlapIos(event, layoutBottomScreenY);
 }
 
 /** Wizard-style layout: main content scrolls; footer stays above the software keyboard. */
@@ -23,24 +38,45 @@ export function KeyboardStickyFooter({
   className?: string;
 }) {
   const insets = useSafeAreaInsets();
+  const frame = useSafeAreaFrame();
+  const layoutBottomScreenY = frame.y + frame.height;
   const [keyboardInset, setKeyboardInset] = useState(0);
+  const lastShowEvent = useRef<KeyboardEvent | null>(null);
 
   useEffect(() => {
+    if (!lastShowEvent.current) return;
+    setKeyboardInset(keyboardOverlap(lastShowEvent.current, layoutBottomScreenY));
+  }, [layoutBottomScreenY]);
+
+  useEffect(() => {
+    const applyInset = (event: KeyboardEvent) => {
+      lastShowEvent.current = event;
+      setKeyboardInset(keyboardOverlap(event, layoutBottomScreenY));
+    };
+
+    const clearInset = () => {
+      lastShowEvent.current = null;
+      setKeyboardInset(0);
+    };
+
     const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
     const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
 
-    const showSub = Keyboard.addListener(showEvent, (event) => {
-      setKeyboardInset(keyboardOverlap(event, insets.bottom));
-    });
-    const hideSub = Keyboard.addListener(hideEvent, () => {
-      setKeyboardInset(0);
-    });
+    const showSubs = [
+      Keyboard.addListener(showEvent, applyInset),
+      ...(Platform.OS === 'ios' ? [Keyboard.addListener('keyboardDidShow', applyInset)] : []),
+    ];
+    const hideSubs = [
+      Keyboard.addListener(hideEvent, clearInset),
+      ...(Platform.OS === 'ios' ? [Keyboard.addListener('keyboardDidHide', clearInset)] : []),
+    ];
 
     return () => {
-      showSub.remove();
-      hideSub.remove();
+      for (const sub of [...showSubs, ...hideSubs]) {
+        sub.remove();
+      }
     };
-  }, [insets.bottom]);
+  }, [layoutBottomScreenY]);
 
   const footerSafePadding = keyboardInset > 0 ? 0 : insets.bottom;
 

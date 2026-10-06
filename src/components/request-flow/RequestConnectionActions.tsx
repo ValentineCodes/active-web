@@ -57,7 +57,7 @@ export function RequestConnectionActions({
   callDisabled?: boolean;
   /** When true, only the chat action is shown (e.g. closed request on the request detail screen). */
   chatOnly?: boolean;
-  /** When false, call is hidden (responders use chat + map only). */
+  /** When false, call is hidden (e.g. closed request on the request detail screen). */
   showCall?: boolean;
 }) {
   return (
