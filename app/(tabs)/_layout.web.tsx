@@ -3,7 +3,6 @@ import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 import { HomeTabBar } from '@/components/ui/HomeTabBar';
-import { useConversationInboxUnreadCount } from '@/features/requests/conversation-inbox-api';
 import { useNotificationUnreadCount } from '@/features/notifications/inbox';
 import { useNotificationBridge } from '@/lib/notifications';
 import { useMyRequests } from '@/features/requests/requester-api';
@@ -26,9 +25,7 @@ export default function TabsLayout() {
   const colors = useColors();
   const { data: requests } = useMyRequests();
   const unreadNotifications = useNotificationUnreadCount();
-  const unreadMessages = useConversationInboxUnreadCount();
   const unreadCount = unreadNotifications.data ?? 0;
-  const messageUnreadCount = unreadMessages.data ?? 0;
 
   useNotificationBridge();
 
@@ -65,14 +62,6 @@ export default function TabsLayout() {
           title: 'Activity',
           tabBarBadge: waitingResponses > 0 ? waitingResponses : undefined,
           tabBarIcon: (props) => <TabIcon {...props} name="list-outline" />,
-        }}
-      />
-      <Tabs.Screen
-        name="messages"
-        options={{
-          title: 'Messages',
-          tabBarBadge: messageUnreadCount > 0 ? messageUnreadCount : undefined,
-          tabBarIcon: (props) => <TabIcon {...props} name="chatbubbles-outline" />,
         }}
       />
       <Tabs.Screen

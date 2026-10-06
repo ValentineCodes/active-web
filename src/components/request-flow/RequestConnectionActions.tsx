@@ -47,12 +47,18 @@ export function RequestConnectionActions({
   onViewMap,
   chatDisabled,
   callDisabled,
+  chatOnly = false,
+  showCall = true,
 }: {
   onChat: () => void;
   onCall: () => void;
   onViewMap: () => void;
   chatDisabled?: boolean;
   callDisabled?: boolean;
+  /** When true, only the chat action is shown (e.g. closed request on the request detail screen). */
+  chatOnly?: boolean;
+  /** When false, call is hidden (responders use chat + map only). */
+  showCall?: boolean;
 }) {
   return (
     <View className="flex-row gap-3">
@@ -62,8 +68,19 @@ export function RequestConnectionActions({
         onPress={onChat}
         disabled={chatDisabled}
       />
-      <ConnectionAction label="Call" icon="call-outline" onPress={onCall} disabled={callDisabled} />
-      <ConnectionAction label="View map" icon="location-outline" onPress={onViewMap} />
+      {chatOnly ? null : (
+        <>
+          {showCall ? (
+            <ConnectionAction
+              label="Call"
+              icon="call-outline"
+              onPress={onCall}
+              disabled={callDisabled}
+            />
+          ) : null}
+          <ConnectionAction label="View map" icon="location-outline" onPress={onViewMap} />
+        </>
+      )}
     </View>
   );
 }

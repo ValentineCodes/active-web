@@ -67,8 +67,8 @@ function openInMaps(latitude: number, longitude: number, label: string) {
  * shown, and it is reachable only after the requester chose someone to help — the server
  * refuses public.get_engagement for any earlier state.
  *
- * Communication in the MVP is the phone the account was created with. There is no in-app
- * messaging yet, so the two parties use the channel they already trust.
+ * In-app chat is available from here for the life of the request conversation (including
+ * after completion, read-only when the request is closed).
  */
 export default function EngagementScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -344,6 +344,7 @@ export default function EngagementScreen() {
           <View className="gap-3">
             <RequestConnectionActions
               onChat={() => router.push(`/conversation/${id}`)}
+              showCall={data.viewer_is_requester}
               callDisabled={!data.counterparty_phone}
               onCall={() => Linking.openURL(`tel:${data.counterparty_phone}`)}
               onViewMap={openMaps}

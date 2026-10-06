@@ -12,6 +12,7 @@ import { RequestCompletionCard } from '@/components/request-flow/RequestCompleti
 import { RequestFlowHeader } from '@/components/request-flow/RequestFlowHeader';
 import { RequestMetaRow } from '@/components/request-flow/RequestMetaRow';
 import { RequestOfferWhenCard } from '@/components/request-flow/RequestOfferWhenCard';
+import { RequestConnectionActions } from '@/components/request-flow/RequestConnectionActions';
 import { RequestPersonCard } from '@/components/request-flow/RequestPersonCard';
 import { RequestTitleSection } from '@/components/request-flow/RequestTitleSection';
 import { ResponseCard } from '@/components/ResponseCard';
@@ -26,6 +27,7 @@ import {
   useMyRequest,
   useRequestResponses,
 } from '@/features/requests/requester-api';
+import { useRequestConversation } from '@/features/requests/conversation-api';
 import { chooseResponderDialog } from '@/features/requests/selection-copy';
 import { myRequestActivityBadge } from '@/features/requests/activity-list';
 import {
@@ -68,6 +70,7 @@ export default function RequestDetailScreen() {
 
   const request = useMyRequest(id);
   const responses = useRequestResponses(id);
+  const conversation = useRequestConversation(id, Boolean(request.data?.selected_user_id));
 
   const cancelRequest = useCancelRequest(id);
   const acceptResponse = useAcceptResponse(id);
@@ -233,6 +236,16 @@ export default function RequestDetailScreen() {
             }
             ratingStars={data.my_rating_stars}
             ratingComment={data.my_rating_comment}
+          />
+        ) : null}
+
+        {conversation.data ? (
+          <RequestConnectionActions
+            chatOnly
+            onChat={() => router.push(`/conversation/${id}`)}
+            onCall={() => {}}
+            onViewMap={() => {}}
+            callDisabled
           />
         ) : null}
 

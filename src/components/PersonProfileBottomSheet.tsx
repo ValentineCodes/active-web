@@ -20,9 +20,9 @@ import { useColors } from '@/theme';
 
 function ProfileCompletionBadge({ percent }: { percent: number }) {
   return (
-    <View className="items-center justify-center rounded-2xl bg-active-soft px-4 py-2.5">
-      <Text className="text-2xl font-bold leading-none text-active">{percent}%</Text>
-      <Text className="mt-1.5 text-xs font-bold uppercase tracking-widest text-subtle">
+    <View className="items-center gap-0.5 rounded-2xl bg-active-soft px-4 py-3">
+      <Text className="text-2xl font-bold leading-8 text-active">{percent}%</Text>
+      <Text className="text-xs font-bold uppercase leading-4 tracking-widest text-subtle">
         Completion
       </Text>
     </View>
@@ -188,10 +188,10 @@ export function PersonProfileBottomSheet({
       >
         <View className="gap-5">
           <View className="flex-row items-center gap-3">
-            <Avatar path={avatarPath} name={displayName} size="md" />
-            <View className="min-w-0 flex-1 gap-1.5">
-              <Text className="text-lg font-bold text-ink">{title}</Text>
-              <View className="flex-row flex-wrap items-center gap-1.5">
+            <View className="min-w-0 flex-1 flex-row items-center gap-3">
+              <Avatar path={avatarPath} name={displayName} size="md" />
+              <View className="min-w-0 flex-1 gap-2">
+                <Text className="text-lg font-bold leading-7 text-ink">{title}</Text>
                 <StarRating average={ratingAverage} count={ratingCount ?? 0} />
               </View>
             </View>
