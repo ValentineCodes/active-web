@@ -15,7 +15,7 @@ import { format } from 'date-fns';
 import type { BottomSheetModal } from '@gorhom/bottom-sheet';
 
 import { PersonProfileBottomSheet } from '@/components/PersonProfileBottomSheet';
-import { ReportProblemModal, type ReportProblemPayload } from '@/components/ReportProblemModal';
+import { ReportIssueModal } from '@/components/ReportIssueModal';
 import { RequestCallout } from '@/components/request-flow/RequestCallout';
 import { RequestCompletionCard } from '@/components/request-flow/RequestCompletionCard';
 import { RequestConnectionActions } from '@/components/request-flow/RequestConnectionActions';
@@ -32,7 +32,6 @@ import { resolveAgreedAmount } from '@/features/requests/payment-display';
 import { requestEngagementStatusBadge } from '@/features/requests/status';
 import {
   useCancelService,
-  useReportClientNoShow,
   useMarkServiceComplete,
   useMyResponses,
 } from '@/features/requests/responses-api';
@@ -42,9 +41,8 @@ import {
   useContestServiceProblem,
   useEngagement,
   useLiveRequest,
-  useReportServiceProblem,
-  type ServiceProblemKind,
 } from '@/features/requests/requester-api';
+import { REQUEST_REPORT_ISSUES } from '@/features/support/report-issue-options';
 import {
   formatAgo,
   formatMoney,
@@ -64,21 +62,6 @@ function openInMaps(latitude: number, longitude: number, label: string) {
   Linking.openURL(url);
 }
 
-function disputeKindRequiresDescription(kind: ServiceProblemKind): boolean {
-  return (
-    kind === 'completion_issue' ||
-    kind === 'service_not_completed' ||
-    kind === 'service_differs_from_request' ||
-    kind === 'other'
-  );
-}
-
-type ReportModalState = {
-  kind: ServiceProblemKind;
-  title: string;
-  subtitle: string;
-};
-
 /**
  * The connected screen. This is the only place exact coordinates and phone numbers are
  * shown, and it is reachable only after the requester chose someone to help — the server
@@ -94,13 +77,11 @@ export default function EngagementScreen() {
   const myResponses = useMyResponses();
   const markServiceComplete = useMarkServiceComplete(id);
   const completeRequest = useCompleteRequest(id);
-  const reportProblem = useReportServiceProblem(id);
   const contestProblem = useContestServiceProblem(id);
-  const reportClientNoShow = useReportClientNoShow(id);
   const cancelRequest = useCancelRequest(id);
   const cancelService = useCancelService(id);
   const profileSheetRef = useRef<BottomSheetModal>(null);
-  const [reportModal, setReportModal] = useState<ReportModalState | null>(null);
+  const [reportIssueOpen, setReportIssueOpen] = useState(false);
   const [footerHeight, setFooterHeight] = useState(0);
   const insets = useSafeAreaInsets();
 
@@ -168,118 +149,6 @@ export default function EngagementScreen() {
     data.request_status !== 'completed';
 
   const helperFirstName = data.counterparty_display_name?.split(' ')[0] ?? 'They';
-
-  const submitReport = (payload: ReportProblemPayload) => {
-    const onSuccess = () => setReportModal(null);
-    const input = {
-      kind: payload.kind,
-      description: payload.description,
-      evidencePaths: payload.evidencePaths,
-    };
-
-    if (payload.kind === 'client_no_show') {
-      reportClientNoShow.mutate(
-        { description: payload.description, evidencePaths: payload.evidencePaths },
-        { onSuccess },
-      );
-      return;
-    }
-
-    reportProblem.mutate(input, { onSuccess });
-  };
-
-  const openReportModal = (state: ReportModalState) => setReportModal(state);
-
-  const openRequesterProblemMenu = () =>
-    Alert.alert('Report a problem', 'What went wrong?', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: "They didn't show up",
-        onPress: () =>
-          openReportModal({
-            kind: 'provider_no_show',
-            title: 'Report a no-show',
-            subtitle: `${helperFirstName} will have 24 hours to respond. Your payment stays on hold until this is resolved.`,
-          }),
-      },
-      {
-        text: "Can't reach them",
-        onPress: () =>
-          openReportModal({
-            kind: 'provider_unreachable',
-            title: "Can't reach them?",
-            subtitle: `We'll notify ${helperFirstName}. If they don't respond within 24 hours, you may receive a full refund.`,
-          }),
-      },
-      {
-        text: 'Work not done',
-        onPress: () =>
-          openReportModal({
-            kind: 'service_not_completed',
-            title: 'Work not done',
-            subtitle: 'Your payment stays on hold while we review your report.',
-          }),
-      },
-      {
-        text: 'Work differed from request',
-        onPress: () =>
-          openReportModal({
-            kind: 'service_differs_from_request',
-            title: 'Work differed from the request',
-            subtitle: 'Explain how the work differed from what you asked for.',
-          }),
-      },
-      {
-        text: 'Other problem',
-        onPress: () =>
-          openReportModal({
-            kind: 'other',
-            title: 'Report another problem',
-            subtitle: 'Tell us what went wrong. Your payment stays on hold until this is resolved.',
-          }),
-      },
-    ]);
-
-  const openHelperProblemMenu = () =>
-    Alert.alert('Report a problem', 'What went wrong?', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'They did not show up',
-        onPress: () =>
-          openReportModal({
-            kind: 'client_no_show',
-            title: 'Report a no-show',
-            subtitle: 'They will have 24 hours to respond before an automatic outcome.',
-          }),
-      },
-      {
-        text: 'Work not done',
-        onPress: () =>
-          openReportModal({
-            kind: 'service_not_completed',
-            title: 'Work not done',
-            subtitle: 'Your payment stays on hold while we review your report.',
-          }),
-      },
-      {
-        text: 'Work differed from request',
-        onPress: () =>
-          openReportModal({
-            kind: 'service_differs_from_request',
-            title: 'Work differed from the request',
-            subtitle: 'Explain how the work differed from what was agreed.',
-          }),
-      },
-      {
-        text: 'Other problem',
-        onPress: () =>
-          openReportModal({
-            kind: 'other',
-            title: 'Report another problem',
-            subtitle: 'Tell us what went wrong. Your payment stays on hold until this is resolved.',
-          }),
-      },
-    ]);
 
   const confirmContestProblem = () =>
     Alert.alert(
@@ -399,22 +268,7 @@ export default function EngagementScreen() {
   const openMaps = () =>
     openInMaps(data.request_latitude, data.request_longitude, data.location_label);
 
-  const openReportIssue = () => {
-    if (data.viewer_is_requester && data.request_status === 'completion_pending') {
-      openReportModal({
-        kind: 'completion_issue',
-        title: 'Report a problem',
-        subtitle:
-          'This pauses payment until we review. Only do this if the work was not done as agreed.',
-      });
-      return;
-    }
-    if (data.viewer_is_requester) {
-      openRequesterProblemMenu();
-      return;
-    }
-    openHelperProblemMenu();
-  };
+  const openReportIssue = () => setReportIssueOpen(true);
 
   const showReportFooter =
     !inActiveFlow &&
@@ -621,11 +475,6 @@ export default function EngagementScreen() {
                   <InlineError error={markServiceComplete.error} />
                 ) : null}
                 {completeRequest.isError ? <InlineError error={completeRequest.error} /> : null}
-                {reportProblem.isError ? <InlineError error={reportProblem.error} /> : null}
-                {reportClientNoShow.isError ? (
-                  <InlineError error={reportClientNoShow.error} />
-                ) : null}
-
                 {helperActive && ['accepted', 'in_progress'].includes(data.request_status) ? (
                   <Button
                     label="I'm done"
@@ -684,7 +533,6 @@ export default function EngagementScreen() {
                   label="Report an issue"
                   variant="danger"
                   size="lg"
-                  loading={reportProblem.isPending || reportClientNoShow.isPending}
                   onPress={openReportIssue}
                 />
               </>
@@ -692,15 +540,7 @@ export default function EngagementScreen() {
 
             {showReportFooter ? (
               <>
-                {reportProblem.isError ? <InlineError error={reportProblem.error} /> : null}
-                {reportClientNoShow.isError ? (
-                  <InlineError error={reportClientNoShow.error} />
-                ) : null}
-                <Pressable
-                  accessibilityRole="button"
-                  onPress={openReportIssue}
-                  disabled={reportProblem.isPending || reportClientNoShow.isPending}
-                >
+                <Pressable accessibilityRole="button" onPress={openReportIssue}>
                   <Text className="text-center text-base font-semibold text-danger">
                     Report an issue
                   </Text>
@@ -732,16 +572,14 @@ export default function EngagementScreen() {
         completionPercent={data.counterparty_completion_percent}
       />
 
-      <ReportProblemModal
-        key={reportModal?.kind ?? 'closed'}
-        visible={reportModal !== null}
-        kind={reportModal?.kind ?? null}
-        title={reportModal?.title ?? ''}
-        subtitle={reportModal?.subtitle ?? ''}
-        requiresDescription={reportModal ? disputeKindRequiresDescription(reportModal.kind) : false}
-        loading={reportProblem.isPending || reportClientNoShow.isPending}
-        onClose={() => setReportModal(null)}
-        onSubmit={submitReport}
+      <ReportIssueModal
+        visible={reportIssueOpen}
+        issues={REQUEST_REPORT_ISSUES}
+        onClose={() => setReportIssueOpen(false)}
+        onSubmit={() => {
+          setReportIssueOpen(false);
+          showAppToast('Thanks — we received your report');
+        }}
       />
     </Screen>
   );

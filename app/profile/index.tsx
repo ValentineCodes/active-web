@@ -1,4 +1,4 @@
-import { type ReactNode } from 'react';
+import { type ReactNode, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import { router } from 'expo-router';
@@ -6,6 +6,7 @@ import { useMutation } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 
 import { ProfileCatalogueRail } from '@/components/ProfileCatalogueRail';
+import { ReportIssueModal } from '@/components/ReportIssueModal';
 import { Avatar } from '@/components/ui/Avatar';
 import { Header } from '@/components/ui/Header';
 import { Screen } from '@/components/ui/Screen';
@@ -15,6 +16,7 @@ import { MARKET } from '@/config';
 import { signOut } from '@/features/auth/api';
 import { useProfile } from '@/features/profile/api';
 import { formatPhoneDisplay } from '@/lib/format';
+import { APP_REPORT_ISSUES } from '@/features/support/report-issue-options';
 import { showAppToast } from '@/lib/toast';
 import { useMyResponses } from '@/features/requests/responses-api';
 import { useMyRequests } from '@/features/requests/requester-api';
@@ -81,6 +83,7 @@ function AppearancePreferenceSection() {
 }
 
 export default function ProfileScreen() {
+  const [reportIssueOpen, setReportIssueOpen] = useState(false);
   const colors = useColors();
   const profile = useProfile();
   const attendance = useAttendance();
@@ -234,7 +237,11 @@ export default function ProfileScreen() {
 
         <SettingsGroup title="Support">
           <SettingsRow label="Help & support" onPress={() => {}} />
-          <SettingsRow label="Report a problem" onPress={() => {}} showDivider />
+          <SettingsRow
+            label="Report a problem"
+            onPress={() => setReportIssueOpen(true)}
+            showDivider
+          />
           <SettingsRow label="About Active" onPress={() => {}} showDivider />
         </SettingsGroup>
 
@@ -253,6 +260,16 @@ export default function ProfileScreen() {
           </Pressable>
         </View>
       </ScrollView>
+
+      <ReportIssueModal
+        visible={reportIssueOpen}
+        issues={APP_REPORT_ISSUES}
+        onClose={() => setReportIssueOpen(false)}
+        onSubmit={() => {
+          setReportIssueOpen(false);
+          showAppToast('Thanks — we received your report');
+        }}
+      />
     </Screen>
   );
 }

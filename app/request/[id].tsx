@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, RefreshControl, ScrollView, Text, View } from 'react-native';
+import { Alert, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 import { Redirect, router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { format } from 'date-fns';
 import type { BottomSheetModal } from '@gorhom/bottom-sheet';
 
 import { PersonProfileBottomSheet } from '@/components/PersonProfileBottomSheet';
+import { ReportIssueModal } from '@/components/ReportIssueModal';
 import { RequestAttachmentSection } from '@/components/request-flow/RequestAttachmentSection';
 import { RequestCallout } from '@/components/request-flow/RequestCallout';
 import { RequestCompletionCard } from '@/components/request-flow/RequestCompletionCard';
@@ -40,6 +41,7 @@ import {
   formatWhenRequestCard,
 } from '@/lib/format';
 import { markRequestResponseNotificationsRead } from '@/features/notifications/inbox';
+import { REQUEST_REPORT_ISSUES } from '@/features/support/report-issue-options';
 import { showAppToast } from '@/lib/toast';
 import { queryKeys } from '@/lib/query/keys';
 import { useQueryClient } from '@tanstack/react-query';
@@ -62,6 +64,7 @@ export default function RequestDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const profileSheetRef = useRef<BottomSheetModal>(null);
   const [profilePreview, setProfilePreview] = useState<ResponderProfilePreview | null>(null);
+  const [reportIssueOpen, setReportIssueOpen] = useState(false);
 
   const request = useMyRequest(id);
   const responses = useRequestResponses(id);
@@ -242,6 +245,16 @@ export default function RequestDetailScreen() {
           />
         ) : null}
 
+        {data.status === 'completed' || data.status === 'cancelled' || isExpiredRequest ? (
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => setReportIssueOpen(true)}
+            className="items-center py-2 active:opacity-80"
+          >
+            <Text className="text-base font-semibold text-danger">Report an issue</Text>
+          </Pressable>
+        ) : null}
+
         {isExpiredRequest ? (
           <RequestCallout tone="warning" title="Expired">
             <Text className="text-base text-muted">
@@ -308,6 +321,16 @@ export default function RequestDetailScreen() {
           </View>
         ) : null}
       </ScrollView>
+
+      <ReportIssueModal
+        visible={reportIssueOpen}
+        issues={REQUEST_REPORT_ISSUES}
+        onClose={() => setReportIssueOpen(false)}
+        onSubmit={() => {
+          setReportIssueOpen(false);
+          showAppToast('Thanks — we received your report');
+        }}
+      />
 
       {profilePreview ? (
         <PersonProfileBottomSheet
