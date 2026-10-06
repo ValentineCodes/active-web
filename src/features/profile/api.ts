@@ -86,6 +86,7 @@ export function useCaptureProfilePhoto() {
 
       const result = await ImagePicker.launchCameraAsync({
         mediaTypes: ['images'],
+        cameraType: ImagePicker.CameraType.front,
         allowsEditing: true,
         aspect: [1, 1],
         quality: 0.7,
