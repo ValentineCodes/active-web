@@ -197,7 +197,6 @@ export default function WalletDepositProcessingScreen() {
 
   return (
     <Screen edges={['top', 'bottom']}>
-      <Header title="Done" />
       <View className="flex-1 items-center justify-center gap-3 px-8">
         <Text className="text-center text-2xl font-bold text-ink">Payment successful</Text>
         {amountMajor !== null ? (

@@ -83,6 +83,9 @@ importers:
       expo-video:
         specifier: ~58.0.6
         version: 58.0.6(expo@58.0.3)(react-native@0.88.0-rc.3(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.88.0-rc.3(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)
+      expo-web-browser:
+        specifier: ~58.0.6
+        version: 58.0.6(expo@58.0.3)(react-native@0.88.0-rc.3(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.88.0-rc.3(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))
       input-otp-native:
         specifier: ^0.6.0
         version: 0.6.0(react-native@0.88.0-rc.3(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.88.0-rc.3(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)
@@ -125,9 +128,6 @@ importers:
       react-native-web:
         specifier: ^0.21.2
         version: 0.21.2(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
-      react-native-webview:
-        specifier: 14.0.1
-        version: 14.0.1(react-native@0.88.0-rc.3(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.88.0-rc.3(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)
       react-native-worklets:
         specifier: ^0.13.0
         version: 0.13.0(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.88.0-rc.3(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(react-native@0.88.0-rc.3(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.88.0-rc.3(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)(supports-color@8.1.1)
@@ -2363,6 +2363,12 @@ packages:
     peerDependencies:
       expo: '*'
       react: '*'
+      react-native: '*'
+
+  expo-web-browser@58.0.6:
+    resolution: {integrity: sha512-6/QtDqTOaTqM/ysYYdEZG4XDrWloOo1wVYCn4g3IgayF+1lZWTwMqa5j4kcn2TA1UBer8O7zbMQYLfSMppQ/zg==}
+    peerDependencies:
+      expo: '*'
       react-native: '*'
 
   expo@58.0.3:
@@ -6982,6 +6988,11 @@ snapshots:
       react: 19.3.0
       react-native: 0.88.0-rc.3(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.88.0-rc.3(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1)
 
+  expo-web-browser@58.0.6(expo@58.0.3)(react-native@0.88.0-rc.3(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.88.0-rc.3(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1)):
+    dependencies:
+      expo: 58.0.3(a06b0b3d6d2dbb7147ae833a9f2dd2b7)
+      react-native: 0.88.0-rc.3(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.88.0-rc.3(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1)
+
   expo@58.0.3(a06b0b3d6d2dbb7147ae833a9f2dd2b7):
     dependencies:
       '@babel/runtime': 7.29.7
@@ -8292,6 +8303,7 @@ snapshots:
       invariant: 2.2.4
       react: 19.3.0
       react-native: 0.88.0-rc.3(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.88.0-rc.3(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1)
+    optional: true
 
   react-native-worklets@0.13.0(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.88.0-rc.3(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(react-native@0.88.0-rc.3(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.88.0-rc.3(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)(supports-color@8.1.1):
     dependencies:
