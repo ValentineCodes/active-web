@@ -78,6 +78,7 @@ function RootNavigator() {
         <Stack.Screen name="request/[id]" />
         <Stack.Screen name="respond/[id]" options={{ presentation: 'modal' }} />
         <Stack.Screen name="engagement/[id]" />
+        <Stack.Screen name="conversation/[id]" />
         <Stack.Screen name="rate/[id]" options={{ presentation: 'modal' }} />
         <Stack.Screen name="notification-settings" />
       </Stack.Protected>

@@ -389,6 +389,12 @@ select is(
   'the request reports a waiting response while it is still posted'
 );
 
+select is(
+  (select count(*)::integer from public.request_conversations where request_id = :'request_id'::uuid),
+  0,
+  'responding does not create a conversation'
+);
+
 select pg_temp.act_as('33333333-3333-3333-3333-333333333333') as _ \gset
 select respond_to_request(
   :'request_id',
@@ -445,6 +451,206 @@ select is(
   (select agreed_provider_amount from public.requests where id = :'request_id'::uuid),
   7500::numeric,
   'selection stores the counter offer as the agreed amount'
+);
+
+select is(
+  (select count(*)::integer from public.request_conversations where request_id = :'request_id'::uuid),
+  1,
+  'selection creates one request conversation'
+);
+
+select is(
+  (
+    select (requester_id, selected_user_id)
+    from public.request_conversations
+    where request_id = :'request_id'::uuid
+  ),
+  ('11111111-1111-1111-1111-111111111111'::uuid, '22222222-2222-2222-2222-222222222222'::uuid),
+  'conversation participants are the requester and selected helper'
+);
+
+select id as conversation_id
+from public.request_conversations
+where request_id = :'request_id'::uuid \gset
+
+select pg_temp.act_as_owner() as _ \gset
+select is(
+  (
+    select m.body
+    from public.request_messages m
+    where m.conversation_id = :'conversation_id'::uuid
+      and m.message_type = 'system'::public.conversation_message_type
+      and m.metadata ->> 'lifecycle_key' = 'lifecycle:' || :'request_id'::text || ':selected'
+  ),
+  'Near was selected to help with this request.',
+  'selection adds a lifecycle system message to the conversation'
+);
+
+select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
+select is(
+  (select messaging_enabled from public.get_request_conversation(:'request_id'::uuid)),
+  true,
+  'messaging stays enabled while the request is active'
+);
+select is(
+  (select conversation_id from public.get_request_conversation(:'request_id'::uuid)),
+  :'conversation_id'::uuid,
+  'the requester can load the conversation after selection'
+);
+
+select pg_temp.act_as('22222222-2222-2222-2222-222222222222') as _ \gset
+select is(
+  (select conversation_id from public.get_request_conversation(:'request_id'::uuid)),
+  :'conversation_id'::uuid,
+  'the selected helper can load the conversation after selection'
+);
+
+select pg_temp.act_as('33333333-3333-3333-3333-333333333333') as _ \gset
+select is(
+  (select count(*) from public.get_request_conversation(:'request_id'::uuid)),
+  0::bigint,
+  'a non-selected responder cannot access the conversation'
+);
+
+select pg_temp.act_as_owner() as _ \gset
+select is(
+  public.ensure_request_conversation(
+    :'request_id'::uuid,
+    '11111111-1111-1111-1111-111111111111'::uuid,
+    '22222222-2222-2222-2222-222222222222'::uuid
+  ),
+  :'conversation_id'::uuid,
+  'ensure_request_conversation returns the existing conversation'
+);
+
+select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
+select pg_temp.act_as('22222222-2222-2222-2222-222222222222') as _ \gset
+select lives_ok(
+  format($$select public.set_request_conversation_focus(%L)$$, :'conversation_id'),
+  'the helper can mark the conversation as actively viewed'
+);
+
+select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
+select lives_ok(
+  format(
+    $$select public.send_request_message(%L, %L)$$,
+    :'conversation_id',
+    'On my way'
+  ),
+  'a participant can send a message'
+);
+
+select pg_temp.act_as_owner() as _ \gset
+select is(
+  (
+    select count(*)
+    from public.notification_inbox ni
+    where ni.user_id = '22222222-2222-2222-2222-222222222222'::uuid
+      and ni.type = 'new_message'::public.notification_type
+  ),
+  0::bigint,
+  'viewing the thread suppresses new_message inbox noise for the recipient'
+);
+
+select pg_temp.act_as('22222222-2222-2222-2222-222222222222') as _ \gset
+select lives_ok(
+  $$select public.set_request_conversation_focus(null::uuid)$$,
+  'the helper can clear conversation focus when leaving the thread'
+);
+
+select pg_temp.act_as_owner() as _ \gset
+select is(
+  (
+    select count(*)
+    from public.notification_inbox ni
+    where ni.user_id = '11111111-1111-1111-1111-111111111111'::uuid
+      and ni.type = 'new_message'::public.notification_type
+  ),
+  0::bigint,
+  'the sender does not receive a new_message notification for their own message'
+);
+
+select pg_temp.act_as('22222222-2222-2222-2222-222222222222') as _ \gset
+select lives_ok(
+  format(
+    $$select public.send_request_message(%L, %L)$$,
+    :'conversation_id',
+    'Sure, I can be there around 4.'
+  ),
+  'the selected helper can send a message through rpc'
+);
+
+select pg_temp.act_as_owner() as _ \gset
+select is(
+  (
+    select ni.body
+    from public.notification_inbox ni
+    where ni.user_id = '11111111-1111-1111-1111-111111111111'::uuid
+      and ni.type = 'new_message'::public.notification_type
+    order by ni.created_at desc
+    limit 1
+  ),
+  'Near sent you a message.',
+  'the requester receives a new_message notification when the helper replies'
+);
+
+select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
+select throws_ok(
+  format(
+    $$insert into public.request_messages (conversation_id, sender_id, message_type, body)
+      values (%L, '11111111-1111-1111-1111-111111111111', 'system', 'Voice call ended')$$,
+    :'conversation_id'
+  ),
+  '42501',
+  null,
+  'participants cannot insert chat rows directly (rpc only)'
+);
+
+select pg_temp.act_as('22222222-2222-2222-2222-222222222222') as _ \gset
+select is(
+  (select count(*) from public.list_my_request_conversations()),
+  1::bigint,
+  'the messages inbox lists one conversation for each party'
+);
+
+select is(
+  (select unread_count from public.list_my_request_conversations()),
+  1,
+  'the requester sees one unread message from the helper'
+);
+
+select lives_ok(
+  format($$select public.mark_request_conversation_read(%L)$$, :'conversation_id'),
+  'the requester can mark the conversation read'
+);
+
+select is(
+  (select unread_count from public.list_my_request_conversations()),
+  0,
+  'unread count clears after marking read'
+);
+
+select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
+
+select pg_temp.act_as('33333333-3333-3333-3333-333333333333') as _ \gset
+select throws_ok(
+  format(
+    $$select public.send_request_message(%L, %L)$$,
+    :'conversation_id',
+    'Should not send'
+  ),
+  '42501',
+  'conversation not found or not accessible',
+  'a non-participant cannot send messages'
+);
+
+select is(
+  (
+    select count(*)
+    from public.list_request_messages(:'conversation_id'::uuid)
+  ),
+  0::bigint,
+  'a non-participant cannot list messages by guessing a conversation id'
 );
 
 select pg_temp.act_as_owner() as _ \gset
@@ -571,12 +777,26 @@ select lives_ok(
   'the selected helper can mark the request completion pending'
 );
 
+select pg_temp.act_as('22222222-2222-2222-2222-222222222222') as _ \gset
 select is(
   (select request_status::text from get_engagement(:'request_id')),
   'completion_pending',
   'mark_service_complete moves the request to completion_pending'
 );
 
+select pg_temp.act_as_owner() as _ \gset
+select is(
+  (
+    select m.body
+    from public.request_messages m
+    where m.conversation_id = :'conversation_id'::uuid
+      and m.metadata ->> 'lifecycle_key' = 'lifecycle:' || :'request_id'::text || ':completion_pending'
+  ),
+  'Near marked the request as complete.',
+  'marking complete adds a lifecycle system message'
+);
+
+select pg_temp.act_as('22222222-2222-2222-2222-222222222222') as _ \gset
 select ok(
   (select completion_confirm_by from get_engagement(:'request_id')) > now(),
   'mark_service_complete sets a confirmation deadline'
@@ -592,6 +812,34 @@ select is(
   (select status::text from public.requests where id = :'request_id'::uuid),
   'completed',
   'confirmation completes the request'
+);
+
+select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
+select is(
+  (select messaging_enabled from public.get_request_conversation(:'request_id'::uuid)),
+  false,
+  'messaging is read-only after the request completes'
+);
+
+select throws_ok(
+  format(
+    $$select public.send_request_message(%L, %L)$$,
+    :'conversation_id',
+    'Trying after completion'
+  ),
+  '55000',
+  'this conversation is read-only',
+  'participants cannot send messages on a completed request'
+);
+
+select ok(
+  exists (
+    select 1
+    from public.list_my_request_conversations() inbox
+    where inbox.request_id = :'request_id'::uuid
+      and inbox.messaging_enabled = false
+  ),
+  'completed conversations remain in the messages inbox as read-only'
 );
 
 select is(

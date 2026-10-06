@@ -343,9 +343,8 @@ export default function EngagementScreen() {
 
           <View className="gap-3">
             <RequestConnectionActions
-              chatDisabled={!data.counterparty_phone}
+              onChat={() => router.push(`/conversation/${id}`)}
               callDisabled={!data.counterparty_phone}
-              onChat={() => Linking.openURL(`sms:${data.counterparty_phone}`)}
               onCall={() => Linking.openURL(`tel:${data.counterparty_phone}`)}
               onViewMap={openMaps}
             />

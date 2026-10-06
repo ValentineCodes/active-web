@@ -316,6 +316,7 @@ export function useAcceptResponse(requestId: string) {
       queryClient.invalidateQueries({ queryKey: queryKeys.myRequests });
       queryClient.invalidateQueries({ queryKey: queryKeys.requestResponses(requestId) });
       queryClient.invalidateQueries({ queryKey: queryKeys.engagement(requestId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.requestConversation(requestId) });
       queryClient.invalidateQueries({ queryKey: queryKeys.attendance });
       queryClient.invalidateQueries({ queryKey: queryKeys.myResponses });
       void invalidateWalletQueries(queryClient);

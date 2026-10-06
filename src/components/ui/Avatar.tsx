@@ -1,8 +1,10 @@
 import { Text, View } from 'react-native';
 import { Image } from 'expo-image';
+import { Ionicons } from '@expo/vector-icons';
 
 import { useAvatarUrl } from '@/features/profile/api';
 import { cn } from '@/lib/cn';
+import { useColors } from '@/theme';
 
 const SIZES = { sm: 40, md: 56, lg: 96 } as const;
 const TEXT_SIZES = { sm: 'text-base', md: 'text-xl', lg: 'text-3xl' } as const;
@@ -23,14 +25,19 @@ export function Avatar({
   size = 'md',
   /** A small dot in the mockup's brand green, signalling this person is Active right now. */
   showActiveDot = false,
+  /** In-app captured profile photo (Didit-verified). */
+  verified = false,
 }: {
   path: string | null | undefined;
   name: string | null;
   size?: keyof typeof SIZES;
   showActiveDot?: boolean;
+  verified?: boolean;
 }) {
+  const colors = useColors();
   const { data: url } = useAvatarUrl(path);
   const dimension = SIZES[size];
+  const badgeSize = Math.max(14, Math.round(dimension * 0.32));
 
   return (
     <View className="relative">
@@ -55,6 +62,14 @@ export function Avatar({
           className="absolute bottom-0 right-0 rounded-full border-2 border-canvas bg-active"
           style={{ width: DOT_SIZES[size], height: DOT_SIZES[size] }}
         />
+      ) : null}
+      {verified && !showActiveDot ? (
+        <View
+          className="absolute bottom-0 right-0 items-center justify-center rounded-full border-2 border-canvas bg-canvas"
+          style={{ width: badgeSize, height: badgeSize }}
+        >
+          <Ionicons name="checkmark-circle" size={badgeSize - 2} color={colors.active} />
+        </View>
       ) : null}
     </View>
   );

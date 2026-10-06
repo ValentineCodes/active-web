@@ -188,6 +188,9 @@ function invalidateLiveResponseQueries(
   queryClient.invalidateQueries({ queryKey: queryKeys.browseNearbyAll });
   if (next.request_id) {
     queryClient.invalidateQueries({ queryKey: queryKeys.engagement(next.request_id) });
+    if (next.status === 'accepted') {
+      queryClient.invalidateQueries({ queryKey: queryKeys.requestConversation(next.request_id) });
+    }
   }
 }
 

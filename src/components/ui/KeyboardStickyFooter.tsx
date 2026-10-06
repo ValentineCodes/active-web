@@ -42,7 +42,7 @@ export function KeyboardStickyFooter({
     };
   }, [insets.bottom]);
 
-  const footerSafePadding = keyboardInset > 0 ? 0 : Platform.OS === 'android' ? insets.bottom : 0;
+  const footerSafePadding = keyboardInset > 0 ? 0 : insets.bottom;
 
   return (
     <View className={cn('flex-1', className)} style={{ paddingBottom: keyboardInset }}>

@@ -1,4 +1,11 @@
-import { format, formatDistanceToNowStrict, isThisYear, isToday, isTomorrow } from 'date-fns';
+import {
+  format,
+  formatDistanceToNowStrict,
+  isThisYear,
+  isToday,
+  isTomorrow,
+  isYesterday,
+} from 'date-fns';
 
 import { MARKET } from '@/config';
 
@@ -140,6 +147,17 @@ export function formatWhen(scheduledFor: string | null): string {
 
 export function formatAgo(iso: string): string {
   return `${formatDistanceToNowStrict(new Date(iso))} ago`;
+}
+
+/** Time label on chat bubbles — compact when recent, dated when older. */
+export function formatChatMessageTime(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return '';
+
+  if (isToday(date)) return format(date, 'h:mm a');
+  if (isYesterday(date)) return `Yesterday ${format(date, 'h:mm a')}`;
+  if (isThisYear(date)) return format(date, 'EEE d MMM, h:mm a');
+  return format(date, 'd MMM yyyy, h:mm a');
 }
 
 export function formatRating(average: number | null, count: number): string {

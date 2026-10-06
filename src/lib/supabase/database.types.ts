@@ -682,6 +682,113 @@ export type Database = {
           },
         ]
       }
+      request_conversations: {
+        Row: {
+          created_at: string
+          id: string
+          request_id: string
+          requester_id: string
+          selected_user_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          request_id: string
+          requester_id: string
+          selected_user_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          request_id?: string
+          requester_id?: string
+          selected_user_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "request_conversations_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: true
+            referencedRelation: "my_requests"
+            referencedColumns: ["request_id"]
+          },
+          {
+            foreignKeyName: "request_conversations_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: true
+            referencedRelation: "requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "request_conversations_requester_id_fkey"
+            columns: ["requester_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "request_conversations_selected_user_id_fkey"
+            columns: ["selected_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      request_messages: {
+        Row: {
+          body: string
+          conversation_id: string
+          created_at: string
+          id: string
+          message_type: Database["public"]["Enums"]["conversation_message_type"]
+          metadata: Json | null
+          read_at: string | null
+          sender_id: string
+          updated_at: string
+        }
+        Insert: {
+          body: string
+          conversation_id: string
+          created_at?: string
+          id?: string
+          message_type?: Database["public"]["Enums"]["conversation_message_type"]
+          metadata?: Json | null
+          read_at?: string | null
+          sender_id: string
+          updated_at?: string
+        }
+        Update: {
+          body?: string
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          message_type?: Database["public"]["Enums"]["conversation_message_type"]
+          metadata?: Json | null
+          read_at?: string | null
+          sender_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "request_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "request_conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "request_messages_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       request_responses: {
         Row: {
           created_at: string
@@ -1027,6 +1134,39 @@ export type Database = {
           },
           {
             foreignKeyName: "user_attendance_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_conversation_focus: {
+        Row: {
+          conversation_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          conversation_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          conversation_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_conversation_focus_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "request_conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_conversation_focus_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: true
             referencedRelation: "profiles"
@@ -1461,6 +1601,15 @@ export type Database = {
         }
         Returns: undefined
       }
+      append_request_conversation_system_message: {
+        Args: {
+          p_body: string
+          p_lifecycle_key: string
+          p_request_id: string
+          p_sender_id: string
+        }
+        Returns: undefined
+      }
       apply_payment_transition: {
         Args: {
           p_idempotency_key: string
@@ -1562,6 +1711,11 @@ export type Database = {
         Args: { p_request_id: string }
         Returns: undefined
       }
+      conversation_focus_ttl: { Args: never; Returns: string }
+      conversation_participant: {
+        Args: { p_requester_id: string; p_selected_user_id: string }
+        Returns: boolean
+      }
       count_available_responses: {
         Args: { p_request_id: string }
         Returns: number
@@ -1620,6 +1774,14 @@ export type Database = {
       }
       discovery_radius_m: { Args: never; Returns: number }
       display_first_name: { Args: { p_display_name: string }; Returns: string }
+      ensure_request_conversation: {
+        Args: {
+          p_request_id: string
+          p_requester_id: string
+          p_selected_user_id: string
+        }
+        Returns: string
+      }
       ensure_wallet_account: { Args: { p_user_id: string }; Returns: undefined }
       expire_due_requests: { Args: { p_limit?: number }; Returns: number }
       expire_request: { Args: { p_request_id: string }; Returns: boolean }
@@ -1717,7 +1879,39 @@ export type Database = {
           wallet_id: string
         }[]
       }
+      get_request_conversation: {
+        Args: { p_request_id: string }
+        Returns: {
+          conversation_id: string
+          created_at: string
+          messaging_enabled: boolean
+          request_id: string
+          request_status: Database["public"]["Enums"]["request_status"]
+          requester_id: string
+          selected_user_id: string
+          updated_at: string
+        }[]
+      }
       kobo_to_ngn_major: { Args: { p_kobo: number }; Returns: number }
+      list_my_request_conversations: {
+        Args: never
+        Returns: {
+          conversation_id: string
+          counterparty_avatar_captured_in_app: boolean
+          counterparty_avatar_path: string
+          counterparty_display_name: string
+          counterparty_id: string
+          latest_message_at: string
+          latest_message_body: string
+          latest_message_sender_id: string
+          messaging_enabled: boolean
+          request_id: string
+          request_status: Database["public"]["Enums"]["request_status"]
+          request_title: string
+          unread_count: number
+          updated_at: string
+        }[]
+      }
       list_my_wallet_transactions:
         | {
             Args: { p_limit?: number }
@@ -1753,6 +1947,18 @@ export type Database = {
               type: Database["public"]["Enums"]["wallet_transaction_type"]
             }[]
           }
+      list_request_messages: {
+        Args: { p_before?: string; p_conversation_id: string; p_limit?: number }
+        Returns: {
+          body: string
+          created_at: string
+          message_id: string
+          message_type: Database["public"]["Enums"]["conversation_message_type"]
+          metadata: Json
+          read_at: string
+          sender_id: string
+        }[]
+      }
       list_request_responses: {
         Args: { p_request_id: string }
         Returns: {
@@ -1788,6 +1994,10 @@ export type Database = {
         Returns: undefined
       }
       mark_notification_inbox_read: { Args: never; Returns: undefined }
+      mark_request_conversation_read: {
+        Args: { p_conversation_id: string }
+        Returns: undefined
+      }
       mark_request_response_notifications_read: {
         Args: { p_request_id: string }
         Returns: undefined
@@ -1888,6 +2098,10 @@ export type Database = {
         Args: { p_comment?: string; p_request_id: string; p_stars: number }
         Returns: undefined
       }
+      recipient_is_viewing_conversation: {
+        Args: { p_conversation_id: string; p_recipient_user_id: string }
+        Returns: boolean
+      }
       record_request_status_event: {
         Args: {
           p_actor_id: string
@@ -1908,12 +2122,21 @@ export type Database = {
         }
         Returns: undefined
       }
+      request_conversation_is_accessible: {
+        Args: { p_conversation_id: string; p_user_id: string }
+        Returns: boolean
+      }
+      request_conversation_messaging_enabled: {
+        Args: { p_status: Database["public"]["Enums"]["request_status"] }
+        Returns: boolean
+      }
       request_expires_at: { Args: { p_scheduled_for: string }; Returns: string }
       request_lifetime_interval: { Args: never; Returns: string }
       request_media_visible_to_party: {
         Args: { p_name: string; p_user_id: string }
         Returns: boolean
       }
+      request_message_system_insert_allowed: { Args: never; Returns: boolean }
       request_open_to_user: {
         Args: {
           p_latitude?: number
@@ -1949,6 +2172,10 @@ export type Database = {
         }
         Returns: string
       }
+      send_request_message: {
+        Args: { p_body: string; p_conversation_id: string }
+        Returns: string
+      }
       service_problem_requires_description: {
         Args: { p_kind: Database["public"]["Enums"]["service_problem_kind"] }
         Returns: boolean
@@ -1962,6 +2189,10 @@ export type Database = {
           p_push_payments_wallet_enabled: boolean
           p_push_tips_reminders_enabled: boolean
         }
+        Returns: undefined
+      }
+      set_request_conversation_focus: {
+        Args: { p_conversation_id: string }
         Returns: undefined
       }
       set_user_attendance: {
@@ -2098,6 +2329,7 @@ export type Database = {
       withdraw_response: { Args: { p_response_id: string }; Returns: undefined }
     }
     Enums: {
+      conversation_message_type: "text" | "system"
       deposit_transaction_status:
         | "pending"
         | "processing"
@@ -2308,6 +2540,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      conversation_message_type: ["text", "system"],
       deposit_transaction_status: [
         "pending",
         "processing",

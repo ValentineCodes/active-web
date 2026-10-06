@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { NativeTabs } from 'expo-router/native-tabs';
 
+import { useConversationInboxUnreadCount } from '@/features/requests/conversation-inbox-api';
 import { useNotificationUnreadCount } from '@/features/notifications/inbox';
 import { useNotificationBridge } from '@/lib/notifications';
 import { useMyRequests } from '@/features/requests/requester-api';
@@ -12,7 +13,9 @@ export default function TabsLayout() {
   const colors = useColors();
   const { data: requests } = useMyRequests();
   const unreadNotifications = useNotificationUnreadCount();
+  const unreadMessages = useConversationInboxUnreadCount();
   const unreadCount = unreadNotifications.data ?? 0;
+  const messageUnreadCount = unreadMessages.data ?? 0;
 
   useNotificationBridge();
 
@@ -26,6 +29,7 @@ export default function TabsLayout() {
     ) ?? 0;
 
   const activityBadge = waitingResponses > 0 ? String(waitingResponses) : null;
+  const messagesBadge = messageUnreadCount > 0 ? String(messageUnreadCount) : null;
   const notificationBadge = unreadCount > 0 ? String(unreadCount) : null;
 
   return (
@@ -48,6 +52,19 @@ export default function TabsLayout() {
         />
         {activityBadge ? (
           <NativeTabs.Trigger.Badge>{activityBadge}</NativeTabs.Trigger.Badge>
+        ) : null}
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="messages" accessibilityLabel="Messages">
+        <NativeTabs.Trigger.Label hidden />
+        <NativeTabs.Trigger.Icon
+          sf={{ default: 'message', selected: 'message.fill' }}
+          src={{
+            default: <VectorIcon family={Ionicons} name="chatbubbles-outline" />,
+            selected: <VectorIcon family={Ionicons} name="chatbubbles" />,
+          }}
+        />
+        {messagesBadge ? (
+          <NativeTabs.Trigger.Badge>{messagesBadge}</NativeTabs.Trigger.Badge>
         ) : null}
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="notifications" accessibilityLabel="Notifications">
