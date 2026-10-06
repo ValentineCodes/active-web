@@ -29,13 +29,22 @@ export async function requestPosition(): Promise<PositionResult> {
   }
 
   try {
-    const { coords } = await Location.getCurrentPositionAsync({
-      accuracy: Location.Accuracy.Balanced,
-    });
-    return { ok: true, position: { latitude: coords.latitude, longitude: coords.longitude } };
+    const last = await Location.getLastKnownPositionAsync();
+    if (last) {
+      return {
+        ok: true,
+        position: { latitude: last.coords.latitude, longitude: last.coords.longitude },
+      };
+    }
   } catch {
+    // Fall through to a live read.
+  }
+
+  const position = await readCurrentPosition();
+  if (!position) {
     return { ok: false, reason: 'unavailable' };
   }
+  return { ok: true, position };
 }
 
 /**
