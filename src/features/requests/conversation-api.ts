@@ -11,10 +11,25 @@ import {
 import type { RealtimeChannel } from '@supabase/supabase-js';
 
 import { useUserId } from '@/features/auth/session';
-import type { RequestMessage } from '@/features/requests/conversation-message-model';
+import {
+  parseRequestMessageAttachments,
+  type RequestMessage,
+  type RequestMessageAttachment,
+} from '@/features/requests/conversation-message-model';
+import { mapConversationAttachmentError } from '@/features/requests/conversation-attachment-policy';
+import {
+  uploadConversationChatMessage,
+  type ConversationUploadItem,
+} from '@/features/requests/conversation-attachment-upload';
+import {
+  isConversationUploadCancelledError,
+  type ConversationAttachmentUploadState,
+} from '@/features/requests/conversation-attachment-upload-state';
 import type { Database, Json } from '@/lib/supabase/database.types';
 import { queryKeys } from '@/lib/query/keys';
 import { supabase } from '@/lib/supabase/client';
+import { incomingMessageToastLine } from '@/features/requests/conversation-message-notify';
+import { buildOptimisticOutgoingAttachmentMessage } from '@/features/requests/conversation-message-send';
 import { showAppToast } from '@/lib/toast';
 
 export type { RequestMessage } from '@/features/requests/conversation-message-model';
@@ -40,6 +55,7 @@ type MessageRow = {
   message_type: ConversationMessageType;
   body: string;
   metadata: Json;
+  attachments: Json;
   created_at: string;
   read_at: string | null;
 };
@@ -69,8 +85,38 @@ function mapMessage(row: MessageRow): RequestMessage {
     messageType: row.message_type,
     body: row.body,
     metadata: mapMessageMetadata(row.metadata),
+    attachments: parseRequestMessageAttachments(row.attachments),
     createdAt: row.created_at,
     readAt: row.read_at,
+  };
+}
+
+function mergeMessageAttachments(
+  existing: RequestMessageAttachment[],
+  incoming: RequestMessageAttachment[],
+): RequestMessageAttachment[] {
+  if (incoming.length === 0 && existing.length > 0) {
+    return existing;
+  }
+  if (incoming.length === 0) {
+    return incoming;
+  }
+
+  return incoming.map((attachment, index) => ({
+    ...attachment,
+    localPreviewUri: attachment.localPreviewUri ?? existing[index]?.localPreviewUri,
+  }));
+}
+
+function mergeCachedMessages(existing: RequestMessage, incoming: RequestMessage): RequestMessage {
+  const attachments = mergeMessageAttachments(existing.attachments, incoming.attachments);
+
+  return {
+    ...incoming,
+    attachments,
+    body: incoming.body || existing.body,
+    readAt: incoming.readAt ?? existing.readAt,
+    metadata: incoming.metadata ?? existing.metadata,
   };
 }
 
@@ -81,9 +127,81 @@ function mapRealtimeMessage(row: RealtimeMessageRow): RequestMessage {
     messageType: row.message_type,
     body: row.body,
     metadata: mapMessageMetadata(row.metadata),
+    attachments: [],
     createdAt: row.created_at,
     readAt: row.read_at,
   };
+}
+
+async function fetchRequestMessageForViewer(messageId: string): Promise<RequestMessage | null> {
+  const { data, error } = await supabase.rpc('get_request_message_for_viewer', {
+    p_message_id: messageId,
+  });
+
+  if (error) throw error;
+  const row = data?.[0];
+  if (!row) return null;
+
+  return mapMessage(row as MessageRow);
+}
+
+async function hydrateRequestMessageInCache(
+  queryClient: QueryClient,
+  conversationId: string,
+  messageId: string,
+) {
+  const existing = readCachedMessage(queryClient, conversationId, messageId);
+  const hydrated = await fetchRequestMessageForViewer(messageId);
+  if (!hydrated) return;
+
+  const merged: RequestMessage = {
+    ...hydrated,
+    attachments: mergeMessageAttachments(existing?.attachments ?? [], hydrated.attachments),
+  };
+
+  upsertMessageInCache(queryClient, conversationId, merged);
+
+  for (const attachment of merged.attachments) {
+    if (attachment.storagePath) {
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.conversationAttachmentUrl(attachment.storagePath),
+      });
+    }
+  }
+}
+
+function readCachedMessage(
+  queryClient: QueryClient,
+  conversationId: string,
+  messageId: string,
+): RequestMessage | undefined {
+  return readMessagesCache(queryClient, conversationId)
+    ?.pages.flat()
+    .find((message) => message.id === messageId);
+}
+
+function maybeToastIncomingMessage(
+  queryClient: QueryClient,
+  conversationId: string,
+  messageId: string,
+  senderId: string,
+  options: {
+    viewerId: string;
+    getSyncReadWhileViewing: () => boolean;
+    getIncomingToastLabel: () => string | null;
+  },
+) {
+  if (senderId === options.viewerId || !options.getSyncReadWhileViewing()) return;
+
+  const cached = readCachedMessage(queryClient, conversationId, messageId);
+  if (!cached) return;
+  if (!cached.body.trim() && cached.attachments.length === 0) return;
+
+  const label = options.getIncomingToastLabel();
+  if (!label) return;
+
+  showAppToast(incomingMessageToastLine(label, cached), 'info');
+  void persistConversationRead(queryClient, conversationId, options.viewerId);
 }
 
 export function isPendingMessageId(id: string): boolean {
@@ -108,7 +226,9 @@ function dedupeMessagesChronologically(messages: RequestMessage[]): RequestMessa
     }
     if (isPendingMessageId(existing.id) && !isPendingMessageId(message.id)) {
       byId.set(message.id, message);
+      continue;
     }
+    byId.set(message.id, mergeCachedMessages(existing, message));
   }
   return sortMessagesChronologically([...byId.values()]);
 }
@@ -238,7 +358,7 @@ export function upsertMessageInCache(
     page.map((row) => {
       if (row.id === message.id) {
         found = true;
-        return message;
+        return mergeCachedMessages(row, message);
       }
       return row;
     }),
@@ -256,7 +376,8 @@ export function upsertMessageInCache(
         !(
           isPendingMessageId(row.id) &&
           row.senderId === message.senderId &&
-          row.body === message.body
+          row.body === message.body &&
+          message.attachments.length > 0
         ),
     ),
   );
@@ -272,7 +393,7 @@ export function upsertMessageInCache(
   invalidateConversationInboxQueries(queryClient);
 }
 
-function removeMessageFromCache(
+export function removeMessageFromCache(
   queryClient: QueryClient,
   conversationId: string,
   messageId: string,
@@ -389,6 +510,7 @@ export function useSendRequestMessage(conversationId: string, requestId: string)
         messageType: 'text',
         body: trimmed,
         metadata: null,
+        attachments: [],
         createdAt: new Date().toISOString(),
         readAt: null,
       };
@@ -402,6 +524,7 @@ export function useSendRequestMessage(conversationId: string, requestId: string)
         messageType: 'text',
         body,
         metadata: null,
+        attachments: [],
         createdAt: new Date().toISOString(),
         readAt: null,
       });
@@ -413,6 +536,113 @@ export function useSendRequestMessage(conversationId: string, requestId: string)
       const message =
         error instanceof Error ? error.message : 'Could not send your message. Try again.';
       showAppToast(message, 'warning');
+    },
+  });
+}
+
+export function useSendRequestMessageAttachment(conversationId: string, requestId: string) {
+  const queryClient = useQueryClient();
+  const userId = useUserId();
+
+  return useMutation({
+    mutationFn: async ({
+      items,
+      caption,
+      clientSendId,
+      attachmentIds,
+      shouldCancel,
+      onAttachmentStateChange,
+      onUploadProgress,
+      onMessageReserved,
+    }: {
+      items: ConversationUploadItem[];
+      caption?: string | null;
+      clientSendId: string;
+      attachmentIds: string[];
+      shouldCancel?: () => boolean;
+      onAttachmentStateChange?: (
+        attachmentId: string,
+        state: ConversationAttachmentUploadState,
+      ) => void;
+      onUploadProgress?: (fraction: number) => void;
+      onMessageReserved?: (messageId: string) => void;
+      pendingId: string;
+      optimisticBody: string;
+    }) => {
+      const result = await uploadConversationChatMessage({
+        conversationId,
+        userId,
+        items,
+        attachmentIds,
+        caption,
+        clientSendId,
+        shouldCancel,
+        onAttachmentStateChange,
+        onUploadProgress,
+        onMessageReserved,
+      });
+
+      return {
+        messageId: result.messageId,
+        attachments: result.attachments,
+      };
+    },
+    onMutate: async ({ items, attachmentIds, optimisticBody, pendingId }) => {
+      const attachments = attachmentIds.map((id, index) => {
+        const prepared = items[index]?.prepared;
+        if (!prepared) {
+          throw new Error('Attachment is not ready to send.');
+        }
+        return { id, prepared };
+      });
+
+      upsertMessageInCache(
+        queryClient,
+        conversationId,
+        buildOptimisticOutgoingAttachmentMessage({
+          pendingMessageId: pendingId,
+          senderId: userId,
+          body: optimisticBody,
+          attachments,
+        }),
+      );
+    },
+    onSuccess: ({ messageId, attachments }, { optimisticBody, pendingId }) => {
+      const previewSource =
+        readCachedMessage(queryClient, conversationId, pendingId)?.attachments ??
+        readCachedMessage(queryClient, conversationId, messageId)?.attachments;
+      const attachmentsWithPreview = mergeMessageAttachments(previewSource ?? [], attachments);
+      const createdAt = attachmentsWithPreview[0]?.createdAt ?? new Date().toISOString();
+
+      replacePendingInCache(queryClient, conversationId, pendingId, {
+        id: messageId,
+        senderId: userId,
+        messageType: 'text',
+        body: optimisticBody,
+        metadata: null,
+        attachments: attachmentsWithPreview,
+        createdAt,
+        readAt: null,
+      });
+
+      for (const attachment of attachmentsWithPreview) {
+        if (attachment.storagePath) {
+          void queryClient.invalidateQueries({
+            queryKey: queryKeys.conversationAttachmentUrl(attachment.storagePath),
+          });
+        }
+      }
+
+      void queryClient.invalidateQueries({ queryKey: queryKeys.requestMessages(conversationId) });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.requestConversation(requestId) });
+      invalidateConversationInboxQueries(queryClient);
+    },
+    onError: (error, { pendingId }) => {
+      if (isConversationUploadCancelledError(error)) {
+        removeMessageFromCache(queryClient, conversationId, pendingId);
+        return;
+      }
+      showAppToast(mapConversationAttachmentError(error), 'warning');
     },
   });
 }
@@ -447,23 +677,68 @@ function createLiveConversationChannel(
         table: 'request_messages',
         filter: `conversation_id=eq.${conversationId}`,
       },
-      (payload) => {
+      async (payload) => {
         const row = payload.new as RealtimeMessageRow;
         if (!row?.id || row.conversation_id !== conversationId) return;
 
-        upsertMessageInCache(queryClient, conversationId, mapRealtimeMessage(row));
+        const isOwnMessage = row.sender_id === options.viewerId;
+        if (!isOwnMessage) {
+          upsertMessageInCache(queryClient, conversationId, mapRealtimeMessage(row));
+        }
+
+        try {
+          const hydrated = await fetchRequestMessageForViewer(row.id);
+          if (!hydrated) {
+            if (!isOwnMessage) {
+              removeMessageFromCache(queryClient, conversationId, row.id);
+            }
+            return;
+          }
+          upsertMessageInCache(queryClient, conversationId, hydrated);
+        } catch {
+          void queryClient.invalidateQueries({
+            queryKey: queryKeys.requestMessages(conversationId),
+          });
+        }
         void queryClient.invalidateQueries({ queryKey: queryKeys.requestConversation(requestId) });
 
-        if (
-          row.message_type === 'text' &&
-          row.sender_id !== options.viewerId &&
-          options.getSyncReadWhileViewing()
-        ) {
-          const label = options.getIncomingToastLabel();
-          if (label) {
-            showAppToast(`${label} sent you a message.`, 'info');
-          }
-          void persistConversationRead(queryClient, conversationId, options.viewerId);
+        maybeToastIncomingMessage(queryClient, conversationId, row.id, row.sender_id, options);
+      },
+    )
+    .on(
+      'postgres_changes',
+      {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'request_message_attachments',
+        filter: `conversation_id=eq.${conversationId}`,
+      },
+      async (payload) => {
+        const row = payload.new as {
+          message_id?: string;
+          uploaded_at?: string | null;
+          conversation_id?: string;
+          sender_id?: string;
+        };
+        if (!row?.message_id || row.conversation_id !== conversationId) return;
+        if (!row.uploaded_at) return;
+
+        try {
+          await hydrateRequestMessageInCache(queryClient, conversationId, row.message_id);
+        } catch {
+          void queryClient.invalidateQueries({
+            queryKey: queryKeys.requestMessages(conversationId),
+          });
+        }
+
+        if (row.sender_id) {
+          maybeToastIncomingMessage(
+            queryClient,
+            conversationId,
+            row.message_id,
+            row.sender_id,
+            options,
+          );
         }
       },
     )

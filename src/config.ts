@@ -50,3 +50,79 @@ export const WALLET = {
     pending: 'Held until completed',
   },
 } as const;
+
+/**
+ * Chat attachment limits and allowlists. The database enforces the same rules again on
+ * `begin_request_message_with_attachments` and `complete_request_message_with_attachments`.
+ * When changing limits or types, update `supabase/migrations/*conversation_attachment_validation*`
+ * (or the latest conversation attachment policy migration) to match.
+ */
+export const CONVERSATION_ATTACHMENTS = {
+  maxPerMessage: 10,
+  maxBytes: {
+    image: 5 * 1024 * 1024,
+    video: 50 * 1024 * 1024,
+    file: 25 * 1024 * 1024,
+  },
+  mimeTypes: {
+    image: ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'] as const,
+    video: ['video/mp4', 'video/quicktime', 'video/3gpp', 'video/3gpp2'] as const,
+    file: [
+      'application/pdf',
+      'text/plain',
+      'text/csv',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/rtf',
+      'application/vnd.oasis.opendocument.text',
+      'application/vnd.oasis.opendocument.spreadsheet',
+    ] as const,
+  },
+  extensions: {
+    image: ['jpg', 'jpeg', 'png', 'webp', 'heic', 'heif'] as const,
+    video: ['mp4', 'mov', '3gp', '3g2'] as const,
+    file: ['pdf', 'txt', 'csv', 'doc', 'docx', 'xls', 'xlsx', 'rtf', 'odt', 'ods'] as const,
+  },
+  blockedExtensions: [
+    'exe',
+    'msi',
+    'bat',
+    'cmd',
+    'com',
+    'scr',
+    'ps1',
+    'sh',
+    'bash',
+    'apk',
+    'ipa',
+    'dll',
+    'vbs',
+    'js',
+    'mjs',
+    'cjs',
+    'jar',
+    'dmg',
+    'pkg',
+    'deb',
+    'rpm',
+    'app',
+    'hta',
+    'wsf',
+    'cpl',
+    'msc',
+    'reg',
+    'iso',
+  ] as const,
+  blockedMimeTypes: [
+    'application/x-msdownload',
+    'application/x-msdos-program',
+    'application/x-executable',
+    'application/x-sh',
+    'application/javascript',
+    'text/javascript',
+    'application/vnd.android.package-archive',
+    'application/octet-stream',
+  ] as const,
+} as const;

@@ -580,6 +580,366 @@ select lives_ok(
   'the selected helper can send a message through rpc'
 );
 
+select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
+select message_id, attachment_id, storage_path
+from public.begin_request_message_with_attachments(
+  :'conversation_id'::uuid,
+  'Here is a photo',
+  jsonb_build_array(
+    jsonb_build_object(
+      'file_name', 'photo.jpg',
+      'mime_type', 'image/jpeg',
+      'file_size', 1024,
+      'attachment_type', 'image'
+    )
+  )
+)
+limit 1 \gset
+
+select pg_temp.act_as_owner() as _ \gset
+insert into storage.objects (bucket_id, name, owner, metadata)
+values (
+  'conversation-media',
+  :'storage_path',
+  '11111111-1111-1111-1111-111111111111'::uuid,
+  jsonb_build_object('mimetype', 'image/jpeg', 'name', 'photo.jpg', 'size', 1024)
+);
+
+select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
+select lives_ok(
+  format($$select public.complete_request_message_with_attachments(%L::uuid)$$, :'message_id'),
+  'a participant can complete an attachment message after uploading to conversation-media'
+);
+
+select pg_temp.act_as_owner() as _ \gset
+select is(
+  (
+    select count(*)
+    from public.notification_inbox ni
+    where ni.user_id = '22222222-2222-2222-2222-222222222222'::uuid
+      and ni.type = 'new_message'::public.notification_type
+      and ni.dedupe_key = 'request_message:' || :'message_id'
+  ),
+  1::bigint,
+  'completing an attachment message creates a single new_message notification'
+);
+
+select pg_temp.act_as('22222222-2222-2222-2222-222222222222') as _ \gset
+select is(
+  (
+    select ni.body
+    from public.notification_inbox ni
+    where ni.dedupe_key = 'request_message:' || :'message_id'
+    limit 1
+  ),
+  'Near sent you a message.',
+  'text plus attachment uses the generic new_message body'
+);
+
+select is(
+  (
+    select a.attachment_type::text
+    from public.request_message_attachments a
+    join public.request_messages m on m.id = a.message_id
+    where m.conversation_id = :'conversation_id'::uuid
+    order by a.created_at desc
+    limit 1
+  ),
+  'image',
+  'attachment rows store attachment_type from the uploaded content type'
+);
+
+select is(
+  (
+    select m.message_type::text
+    from public.request_messages m
+    where m.conversation_id = :'conversation_id'::uuid
+      and exists (
+        select 1
+        from public.request_message_attachments a
+        where a.message_id = m.id
+      )
+    order by m.created_at desc
+    limit 1
+  ),
+  'text',
+  'messages with attachments remain text messages'
+);
+
+select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
+select throws_ok(
+  format(
+    $$select * from public.begin_request_message_with_attachments(
+      %L::uuid,
+      '',
+      jsonb_build_array(
+        jsonb_build_object(
+          'file_name', 'virus.exe',
+          'mime_type', 'image/jpeg',
+          'file_size', 1024,
+          'attachment_type', 'image'
+        )
+      )
+    )$$,
+    :'conversation_id'
+  ),
+  '22023',
+  'This file type isn''t supported.',
+  'begin rejects dangerous attachment filenames'
+);
+
+select throws_ok(
+  format(
+    $$select * from public.begin_request_message_with_attachments(
+      %L::uuid,
+      '',
+      jsonb_build_array(
+        jsonb_build_object(
+          'file_name', 'huge.jpg',
+          'mime_type', 'image/jpeg',
+          'file_size', 6000000,
+          'attachment_type', 'image'
+        )
+      )
+    )$$,
+    :'conversation_id'
+  ),
+  '22023',
+  'This file is too large.',
+  'begin rejects planned attachments over the image size limit'
+);
+
+select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
+select message_id
+from public.begin_request_message_with_attachments(
+  :'conversation_id'::uuid,
+  'draft abort',
+  jsonb_build_array(
+    jsonb_build_object(
+      'file_name', 'draft.jpg',
+      'mime_type', 'image/jpeg',
+      'file_size', 1024,
+      'attachment_type', 'image'
+    )
+  ),
+  gen_random_uuid()
+)
+limit 1 \gset
+
+select lives_ok(
+  format($$select public.abort_request_message_with_attachments(%L::uuid)$$, :'message_id'),
+  'sender can abort an incomplete attachment message'
+);
+
+select is(
+  (
+    select count(*)
+    from public.request_messages m
+    where m.id = :'message_id'::uuid
+  ),
+  0::bigint,
+  'abort removes the draft message row'
+);
+
+select pg_temp.act_as('22222222-2222-2222-2222-222222222222') as _ \gset
+select message_id as pending_draft_message_id
+from public.begin_request_message_with_attachments(
+  :'conversation_id'::uuid,
+  'secret draft caption',
+  jsonb_build_array(
+    jsonb_build_object(
+      'file_name', 'pending.jpg',
+      'mime_type', 'image/jpeg',
+      'file_size', 1024,
+      'attachment_type', 'image'
+    )
+  ),
+  gen_random_uuid()
+)
+limit 1 \gset
+
+select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
+select is(
+  (
+    select count(*)
+    from public.request_message_attachments a
+    where a.message_id = :'pending_draft_message_id'::uuid
+  ),
+  0::bigint,
+  'the recipient cannot read pending attachment rows via table rls'
+);
+
+select is(
+  (
+    select count(*)
+    from public.list_request_messages(:'conversation_id'::uuid)
+    where message_id = :'pending_draft_message_id'::uuid
+  ),
+  0::bigint,
+  'the recipient does not see in-progress attachment messages in list'
+);
+
+select is(
+  (
+    select count(*)
+    from public.get_request_message_for_viewer(:'pending_draft_message_id'::uuid)
+  ),
+  0::bigint,
+  'hydration rpc hides in-progress attachment messages from the recipient'
+);
+
+select pg_temp.act_as('22222222-2222-2222-2222-222222222222') as _ \gset
+select lives_ok(
+  format($$select public.abort_request_message_with_attachments(%L::uuid)$$, :'pending_draft_message_id'),
+  'sender can abort the pending draft used for visibility tests'
+);
+
+select pg_temp.act_as('22222222-2222-2222-2222-222222222222') as _ \gset
+select message_id as photo_only_message_id, storage_path as photo_only_storage_path
+from public.begin_request_message_with_attachments(
+  :'conversation_id'::uuid,
+  '',
+  jsonb_build_array(
+    jsonb_build_object(
+      'file_name', 'photo-only.jpg',
+      'mime_type', 'image/jpeg',
+      'file_size', 1024,
+      'attachment_type', 'image'
+    )
+  ),
+  gen_random_uuid()
+)
+limit 1 \gset
+
+select pg_temp.act_as_owner() as _ \gset
+insert into storage.objects (bucket_id, name, owner, metadata)
+values (
+  'conversation-media',
+  :'photo_only_storage_path',
+  '22222222-2222-2222-2222-222222222222'::uuid,
+  jsonb_build_object('mimetype', 'image/jpeg', 'name', 'photo-only.jpg', 'size', 1024)
+);
+
+select pg_temp.act_as('22222222-2222-2222-2222-222222222222') as _ \gset
+select lives_ok(
+  format($$select public.complete_request_message_with_attachments(%L::uuid)$$, :'photo_only_message_id'),
+  'helper can complete a photo-only attachment message'
+);
+
+select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
+select is(
+  (
+    select ni.body
+    from public.notification_inbox ni
+    where ni.dedupe_key = 'request_message:' || :'photo_only_message_id'
+    limit 1
+  ),
+  'Near sent you a photo.',
+  'image-only attachment notifications mention a photo'
+);
+
+select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
+select message_id as multi_message_id, attachment_id as multi_attachment_id_1, storage_path as multi_storage_path_1
+from public.begin_request_message_with_attachments(
+  :'conversation_id'::uuid,
+  'Two files attached',
+  jsonb_build_array(
+    jsonb_build_object(
+      'file_name', 'one.pdf',
+      'mime_type', 'application/pdf',
+      'file_size', 1024,
+      'attachment_type', 'file'
+    ),
+    jsonb_build_object(
+      'file_name', 'two.txt',
+      'mime_type', 'text/plain',
+      'file_size', 512,
+      'attachment_type', 'file'
+    )
+  ),
+  gen_random_uuid()
+)
+limit 1 \gset
+
+select storage_path as multi_storage_path_2
+from public.request_message_attachments a
+where a.message_id = :'multi_message_id'::uuid
+  and a.id <> :'multi_attachment_id_1'::uuid
+limit 1 \gset
+
+select pg_temp.act_as_owner() as _ \gset
+insert into storage.objects (bucket_id, name, owner, metadata)
+values
+  (
+    'conversation-media',
+    :'multi_storage_path_1',
+    '11111111-1111-1111-1111-111111111111'::uuid,
+    jsonb_build_object('mimetype', 'application/pdf', 'name', 'one.pdf', 'size', 1024)
+  ),
+  (
+    'conversation-media',
+    :'multi_storage_path_2',
+    '11111111-1111-1111-1111-111111111111'::uuid,
+    jsonb_build_object('mimetype', 'text/plain', 'name', 'two.txt', 'size', 512)
+  );
+
+select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
+select lives_ok(
+  format($$select public.complete_request_message_with_attachments(%L::uuid)$$, :'multi_message_id'),
+  'a participant can complete a multi-attachment message'
+);
+
+select is(
+  (
+    select jsonb_array_length(attachments)
+    from public.list_request_messages(:'conversation_id'::uuid)
+    where message_id = :'multi_message_id'::uuid
+  ),
+  2::bigint,
+  'list_request_messages returns every attachment on a multi-attachment message'
+);
+
+select pg_temp.act_as('33333333-3333-3333-3333-333333333333') as _ \gset
+select is(
+  (
+    select count(*)
+    from public.get_request_message_for_viewer(:'photo_only_message_id'::uuid)
+  ),
+  0::bigint,
+  'a non-participant cannot hydrate an attachment message by id'
+);
+
+select is(
+  public.can_read_conversation_media(:'photo_only_storage_path'),
+  false,
+  'a non-participant cannot pass storage read policy for a chat attachment path'
+);
+
+select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
+select is(
+  public.can_read_conversation_media(:'photo_only_storage_path'),
+  true,
+  'a conversation participant can pass storage read policy for a completed attachment'
+);
+
+select is(
+  public.can_write_conversation_media(
+    replace(
+      :'photo_only_storage_path',
+      split_part(:'photo_only_storage_path', '/', 3),
+      '00000000-0000-0000-0000-000000000000'
+    )
+  ),
+  false,
+  'storage write policy rejects manipulated conversation ids in the path'
+);
+
+select pg_temp.act_as('22222222-2222-2222-2222-222222222222') as _ \gset
+select lives_ok(
+  format($$select public.send_request_message(%L, %L)$$, :'conversation_id', 'Text-only still works'),
+  'text-only send_request_message still succeeds alongside attachment messages'
+);
+
 select pg_temp.act_as_owner() as _ \gset
 select is(
   (

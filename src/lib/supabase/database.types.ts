@@ -789,6 +789,70 @@ export type Database = {
           },
         ]
       }
+      request_message_attachments: {
+        Row: {
+          attachment_type: Database["public"]["Enums"]["conversation_attachment_type"]
+          conversation_id: string
+          created_at: string
+          file_name: string | null
+          file_size: number | null
+          id: string
+          message_id: string
+          mime_type: string
+          sender_id: string
+          storage_path: string
+          uploaded_at: string | null
+        }
+        Insert: {
+          attachment_type: Database["public"]["Enums"]["conversation_attachment_type"]
+          conversation_id: string
+          created_at?: string
+          file_name?: string | null
+          file_size?: number | null
+          id?: string
+          message_id: string
+          mime_type: string
+          sender_id: string
+          storage_path: string
+          uploaded_at?: string | null
+        }
+        Update: {
+          attachment_type?: Database["public"]["Enums"]["conversation_attachment_type"]
+          conversation_id?: string
+          created_at?: string
+          file_name?: string | null
+          file_size?: number | null
+          id?: string
+          message_id?: string
+          mime_type?: string
+          sender_id?: string
+          storage_path?: string
+          uploaded_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "request_message_attachments_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "request_conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "request_message_attachments_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "request_messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "request_message_attachments_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       request_responses: {
         Row: {
           created_at: string
@@ -1610,6 +1674,23 @@ export type Database = {
         }
         Returns: undefined
       }
+      abort_request_message_with_attachments: {
+        Args: { p_message_id: string }
+        Returns: undefined
+      }
+      begin_request_message_with_attachments: {
+        Args: {
+          p_body?: string
+          p_client_send_id?: string
+          p_conversation_id: string
+          p_planned_attachments?: Json
+        }
+        Returns: {
+          attachment_id: string
+          message_id: string
+          storage_path: string
+        }[]
+      }
       apply_payment_transition: {
         Args: {
           p_idempotency_key: string
@@ -1681,6 +1762,10 @@ export type Database = {
         }[]
       }
       bucket_distance_m: { Args: { p_distance_m: number }; Returns: number }
+      can_read_conversation_media: {
+        Args: { p_name: string }
+        Returns: boolean
+      }
       can_read_request_media: { Args: { p_name: string }; Returns: boolean }
       cancel_request: { Args: { p_request_id: string }; Returns: undefined }
       cancel_service: { Args: { p_request_id: string }; Returns: undefined }
@@ -1694,6 +1779,10 @@ export type Database = {
         Returns: string
       }
       complete_request: { Args: { p_request_id: string }; Returns: undefined }
+      complete_request_message_with_attachments: {
+        Args: { p_message_id: string }
+        Returns: undefined
+      }
       completion_confirmation_interval: { Args: never; Returns: string }
       compute_request_charge: {
         Args: { p_provider_amount: number }
@@ -1712,6 +1801,14 @@ export type Database = {
         Returns: undefined
       }
       conversation_focus_ttl: { Args: never; Returns: string }
+      conversation_media_path_is_valid: {
+        Args: {
+          p_conversation_id: string
+          p_storage_path: string
+          p_user_id: string
+        }
+        Returns: boolean
+      }
       conversation_participant: {
         Args: { p_requester_id: string; p_selected_user_id: string }
         Returns: boolean
@@ -1892,6 +1989,19 @@ export type Database = {
           updated_at: string
         }[]
       }
+      get_request_message_for_viewer: {
+        Args: { p_message_id: string }
+        Returns: {
+          attachments: Json
+          body: string
+          created_at: string
+          message_id: string
+          message_type: Database["public"]["Enums"]["conversation_message_type"]
+          metadata: Json
+          read_at: string | null
+          sender_id: string
+        }[]
+      }
       kobo_to_ngn_major: { Args: { p_kobo: number }; Returns: number }
       list_my_request_conversations: {
         Args: never
@@ -1950,6 +2060,7 @@ export type Database = {
       list_request_messages: {
         Args: { p_before?: string; p_conversation_id: string; p_limit?: number }
         Returns: {
+          attachments: Json
           body: string
           created_at: string
           message_id: string
@@ -2176,6 +2287,22 @@ export type Database = {
         Args: { p_body: string; p_conversation_id: string }
         Returns: string
       }
+      send_request_message_attachment: {
+        Args: {
+          p_caption?: string
+          p_conversation_id: string
+          p_storage_path: string
+        }
+        Returns: string
+      }
+      send_request_message_with_attachments: {
+        Args: {
+          p_body?: string
+          p_conversation_id: string
+          p_storage_paths: string[]
+        }
+        Returns: string
+      }
       service_problem_requires_description: {
         Args: { p_kind: Database["public"]["Enums"]["service_problem_kind"] }
         Returns: boolean
@@ -2329,7 +2456,8 @@ export type Database = {
       withdraw_response: { Args: { p_response_id: string }; Returns: undefined }
     }
     Enums: {
-      conversation_message_type: "text" | "system"
+      conversation_attachment_type: "image" | "video" | "file"
+      conversation_message_type: "text" | "system" | "attachment"
       deposit_transaction_status:
         | "pending"
         | "processing"
@@ -2540,7 +2668,8 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      conversation_message_type: ["text", "system"],
+      conversation_attachment_type: ["image", "video", "file"],
+      conversation_message_type: ["text", "system", "attachment"],
       deposit_transaction_status: [
         "pending",
         "processing",

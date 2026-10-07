@@ -69,10 +69,14 @@ export function contentTypeForAsset(
   if (kind === 'photo') {
     if (extension === 'png') return 'image/png';
     if (extension === 'webp') return 'image/webp';
+    if (extension === 'heic') return 'image/heic';
+    if (extension === 'heif') return 'image/heif';
     return 'image/jpeg';
   }
 
   if (extension === 'mov' || extension === 'qt') return 'video/quicktime';
+  if (extension === '3gp') return 'video/3gpp';
+  if (extension === '3g2') return 'video/3gpp2';
   return 'video/mp4';
 }
 
@@ -82,11 +86,12 @@ export async function uploadPrivateObject(
   bytes: Uint8Array,
   contentType: string,
   onProgress?: (fraction: number) => void,
+  options?: { upsert?: boolean },
 ) {
   onProgress?.(0);
   const { error } = await supabase.storage.from(bucket).upload(path, bytes, {
     contentType,
-    upsert: true,
+    upsert: options?.upsert ?? true,
   });
 
   if (error) throw error;
