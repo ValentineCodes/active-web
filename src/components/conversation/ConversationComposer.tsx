@@ -5,6 +5,7 @@ import { ConversationComposerAttachmentPreview } from '@/components/conversation
 import {
   ConversationAttachmentSheet,
   type ConversationAttachmentSheetHandle,
+  type ConversationAttachmentSheetOption,
 } from '@/components/conversation/ConversationAttachmentSheet';
 import { IconButton } from '@/components/ui/IconButton';
 import { CONVERSATION_ATTACHMENTS } from '@/config';
@@ -15,6 +16,7 @@ import type { ConversationAttachmentUploadState } from '@/features/requests/conv
 import { mapConversationAttachmentError } from '@/features/requests/conversation-attachment-policy';
 import {
   chooseConversationFile,
+  pickConversationPhotosFromLibrary,
   recordConversationVideo,
   takeConversationPhoto,
   type ConversationAttachmentKind,
@@ -63,7 +65,7 @@ export type ComposerPendingAttachment = {
   id: string;
   attachment: ConversationPickedAttachment;
   kindHint: ConversationAttachmentKind;
-  source: 'photo' | 'video' | 'file';
+  source: 'photo' | 'photos' | 'video' | 'file';
   prepared: PreparedConversationAttachment;
 };
 
@@ -128,9 +130,11 @@ export function ConversationComposer({
   }, [canSend, onSend, pendingAttachments, trimmed]);
 
   const runAttachmentPick = useCallback(
-    async (kind: 'photo' | 'video' | 'file') => {
+    async (option: ConversationAttachmentSheetOption) => {
       if (uploadActive) return;
-      if (pendingAttachments.length >= CONVERSATION_ATTACHMENTS.maxPerMessage) {
+
+      const slotsLeft = CONVERSATION_ATTACHMENTS.maxPerMessage - pendingAttachments.length;
+      if (slotsLeft < 1) {
         showAppToast(
           `You can attach up to ${CONVERSATION_ATTACHMENTS.maxPerMessage} files.`,
           'warning',
@@ -138,17 +142,11 @@ export function ConversationComposer({
         return;
       }
 
-      try {
-        const attachment =
-          kind === 'photo'
-            ? await takeConversationPhoto()
-            : kind === 'video'
-              ? await recordConversationVideo()
-              : await chooseConversationFile();
-        if (!attachment) return;
-
-        const kindHint: ConversationAttachmentKind =
-          kind === 'photo' ? 'image' : kind === 'video' ? 'video' : 'file';
+      const stageAttachment = async (
+        attachment: ConversationPickedAttachment,
+        kindHint: ConversationAttachmentKind,
+        source: ComposerPendingAttachment['source'],
+      ) => {
         const prepared = await prepareConversationAttachment(attachment, kindHint);
         const stagedAttachment: ConversationPickedAttachment = {
           ...attachment,
@@ -158,16 +156,44 @@ export function ConversationComposer({
           name: prepared.fileName,
         };
 
-        setPendingAttachments((current) => [
-          ...current,
-          {
-            id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
-            attachment: stagedAttachment,
-            kindHint,
-            source: kind,
-            prepared,
-          },
-        ]);
+        return {
+          id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+          attachment: stagedAttachment,
+          kindHint,
+          source,
+          prepared,
+        };
+      };
+
+      try {
+        if (option === 'photos') {
+          const picks = await pickConversationPhotosFromLibrary(slotsLeft);
+          if (picks.length === 0) return;
+
+          const staged: ComposerPendingAttachment[] = [];
+          for (const attachment of picks) {
+            if (staged.length >= slotsLeft) break;
+            staged.push(await stageAttachment(attachment, 'image', 'photos'));
+          }
+
+          setPendingAttachments((current) => [...current, ...staged]);
+          return;
+        }
+
+        const attachment =
+          option === 'photo'
+            ? await takeConversationPhoto()
+            : option === 'video'
+              ? await recordConversationVideo()
+              : await chooseConversationFile();
+        if (!attachment) return;
+
+        const kindHint: ConversationAttachmentKind =
+          option === 'photo' ? 'image' : option === 'video' ? 'video' : 'file';
+        const source: ComposerPendingAttachment['source'] = option === 'browse' ? 'file' : option;
+
+        const stagedItem = await stageAttachment(attachment, kindHint, source);
+        setPendingAttachments((current) => [...current, stagedItem]);
       } catch (error) {
         showAppToast(mapConversationAttachmentError(error), 'warning');
       }

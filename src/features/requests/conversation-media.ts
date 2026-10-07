@@ -3,6 +3,7 @@ import * as ImageManipulator from 'expo-image-manipulator';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 
+import { CONVERSATION_ATTACHMENTS } from '@/config';
 import { contentTypeForAsset } from '@/features/profile/storage';
 
 export const CONVERSATION_MEDIA_BUCKET = 'conversation-media';
@@ -171,6 +172,31 @@ export async function recordConversationVideo(): Promise<ConversationPickedAttac
   });
   if (result.canceled || !result.assets[0]) return null;
   return fromImageAsset(result.assets[0]);
+}
+
+export async function pickConversationPhotosFromLibrary(
+  maxCount: number,
+): Promise<ConversationPickedAttachment[]> {
+  const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+  if (!permission.granted) {
+    throw new Error('Photo library access is needed to select photos.');
+  }
+
+  const limit = Math.max(1, Math.min(maxCount, CONVERSATION_ATTACHMENTS.maxPerMessage));
+  const result = await ImagePicker.launchImageLibraryAsync({
+    mediaTypes: ['images'],
+    allowsMultipleSelection: limit > 1,
+    selectionLimit: limit,
+    quality: 0.85,
+    preferredAssetRepresentationMode:
+      ImagePicker.UIImagePickerPreferredAssetRepresentationMode.Compatible,
+  });
+
+  if (result.canceled || !result.assets?.length) {
+    return [];
+  }
+
+  return result.assets.map(fromImageAsset);
 }
 
 export async function chooseConversationFile(): Promise<ConversationPickedAttachment | null> {

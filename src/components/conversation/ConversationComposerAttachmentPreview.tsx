@@ -126,7 +126,11 @@ function PendingAttachmentTile({
         {kindHint === 'file' ? (
           <View className="h-20 items-center justify-center gap-1 px-2">
             <Ionicons name="document-outline" size={28} color={colors.active} />
-            <Text className="w-full text-center text-xs font-medium text-ink" numberOfLines={2}>
+            <Text
+              className="w-full text-center text-xs font-medium text-ink"
+              numberOfLines={1}
+              ellipsizeMode="middle"
+            >
               {displayName}
             </Text>
             {sizeLabel ? <Text className="text-xs text-muted">{sizeLabel}</Text> : null}

@@ -214,11 +214,8 @@ const AttachmentTile = memo(function AttachmentTile({
     if (attachment.attachmentType === 'file') {
       const sizeLabel = formatFileSizeBytes(attachment.fileSize);
       return (
-        <View className="relative">
-          <View
-            className="flex-row items-center gap-3 px-4 py-3"
-            style={{ maxWidth: THUMB_WIDTH + 32 }}
-          >
+        <View className="relative w-full self-stretch">
+          <View className="w-full flex-row items-center gap-3 self-stretch px-4 py-3">
             <Ionicons
               name="document-outline"
               size={24}
@@ -227,7 +224,8 @@ const AttachmentTile = memo(function AttachmentTile({
             <View className="min-w-0 flex-1">
               <Text
                 className={cn('text-base font-semibold', isOutgoing ? 'text-on-brand' : 'text-ink')}
-                numberOfLines={2}
+                numberOfLines={1}
+                ellipsizeMode="tail"
               >
                 {attachment.fileName ?? 'File'}
               </Text>
@@ -387,8 +385,8 @@ const AttachmentTile = memo(function AttachmentTile({
       accessibilityRole="button"
       accessibilityLabel={`Open ${label}`}
       onPress={() => void openFile()}
-      className="flex-row items-center gap-3 px-4 py-3"
-      style={{ maxWidth: THUMB_WIDTH + 32 }}
+      className="w-full flex-row items-center gap-3 self-stretch px-4 py-3"
+      style={{ minWidth: THUMB_WIDTH }}
     >
       <Ionicons
         name="document-outline"
@@ -398,7 +396,8 @@ const AttachmentTile = memo(function AttachmentTile({
       <View className="min-w-0 flex-1">
         <Text
           className={cn('text-base font-semibold', isOutgoing ? 'text-on-brand' : 'text-ink')}
-          numberOfLines={2}
+          numberOfLines={1}
+          ellipsizeMode="tail"
         >
           {attachment.fileName ?? 'File'}
         </Text>

@@ -20,7 +20,7 @@ export type ConversationAttachmentSheetHandle = {
   dismiss: () => void;
 };
 
-type AttachmentOption = 'photo' | 'video' | 'file';
+export type ConversationAttachmentSheetOption = 'photo' | 'video' | 'photos' | 'browse';
 
 function AttachmentOptionRow({
   icon,
@@ -51,13 +51,13 @@ function AttachmentOptionRow({
 export const ConversationAttachmentSheet = forwardRef<
   ConversationAttachmentSheetHandle,
   {
-    onSelect: (option: AttachmentOption) => void;
+    onSelect: (option: ConversationAttachmentSheetOption) => void;
   }
 >(function ConversationAttachmentSheet({ onSelect }, ref) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const sheetRef = useRef<BottomSheetModal>(null);
-  const snapPoints = useMemo(() => ['32%'], []);
+  const snapPoints = useMemo(() => ['44%'], []);
 
   useImperativeHandle(ref, () => ({
     present: () => {
@@ -75,7 +75,7 @@ export const ConversationAttachmentSheet = forwardRef<
     [],
   );
 
-  const choose = (option: AttachmentOption) => {
+  const choose = (option: ConversationAttachmentSheetOption) => {
     sheetRef.current?.dismiss();
     onSelect(option);
   };
@@ -105,9 +105,14 @@ export const ConversationAttachmentSheet = forwardRef<
             onPress={() => choose('video')}
           />
           <AttachmentOptionRow
+            icon="images-outline"
+            label="Select photos"
+            onPress={() => choose('photos')}
+          />
+          <AttachmentOptionRow
             icon="folder-open-outline"
-            label="Choose file to upload"
-            onPress={() => choose('file')}
+            label="Browse"
+            onPress={() => choose('browse')}
           />
         </View>
       </BottomSheetView>

@@ -73,7 +73,7 @@ function GalleryImagePage({
   }
 
   return (
-    <View style={{ width: pageWidth, height: pageHeight }}>
+    <View className="items-center justify-center" style={{ width: pageWidth, height: pageHeight }}>
       <Image
         source={{ uri: displayUri }}
         accessibilityLabel={label}
@@ -124,33 +124,38 @@ export function ConversationImageGalleryViewer({
           </Pressable>
         </View>
 
-        <FlatList
-          ref={listRef}
-          data={attachments}
-          horizontal
-          pagingEnabled
-          showsHorizontalScrollIndicator={false}
-          keyExtractor={(item) => item.id}
-          initialScrollIndex={initialIndex > 0 ? initialIndex : undefined}
-          getItemLayout={(_, index) => ({
-            length: windowWidth,
-            offset: windowWidth * index,
-            index,
-          })}
-          onScrollToIndexFailed={() => {
-            listRef.current?.scrollToOffset({
-              offset: windowWidth * initialIndex,
-              animated: false,
-            });
-          }}
-          onMomentumScrollEnd={(event) => {
-            const nextIndex = Math.round(event.nativeEvent.contentOffset.x / windowWidth);
-            setPageIndex(nextIndex);
-          }}
-          renderItem={({ item }) => (
-            <GalleryImagePage attachment={item} pageWidth={windowWidth} pageHeight={pageHeight} />
-          )}
-        />
+        <View className="flex-1">
+          <FlatList
+            ref={listRef}
+            data={attachments}
+            horizontal
+            pagingEnabled
+            bounces={false}
+            overScrollMode="never"
+            showsHorizontalScrollIndicator={false}
+            style={{ flex: 1 }}
+            keyExtractor={(item) => item.id}
+            initialScrollIndex={initialIndex > 0 ? initialIndex : undefined}
+            getItemLayout={(_, index) => ({
+              length: windowWidth,
+              offset: windowWidth * index,
+              index,
+            })}
+            onScrollToIndexFailed={() => {
+              listRef.current?.scrollToOffset({
+                offset: windowWidth * initialIndex,
+                animated: false,
+              });
+            }}
+            onMomentumScrollEnd={(event) => {
+              const nextIndex = Math.round(event.nativeEvent.contentOffset.x / windowWidth);
+              setPageIndex(nextIndex);
+            }}
+            renderItem={({ item }) => (
+              <GalleryImagePage attachment={item} pageWidth={windowWidth} pageHeight={pageHeight} />
+            )}
+          />
+        </View>
       </View>
     </Modal>
   );
@@ -189,20 +194,20 @@ export function ConversationAttachmentViewer({
           </Pressable>
         </View>
 
-        <View className="flex-1">
+        <View className="flex-1 items-center justify-center">
           {!signedUrl ? (
-            <View className="flex-1 items-center justify-center">
-              <ActivityIndicator color={colors.canvas} />
-            </View>
+            <ActivityIndicator color={colors.canvas} />
           ) : kind === 'image' ? (
             <Image
               source={{ uri: signedUrl }}
               accessibilityLabel={accessibilityLabel}
-              style={{ flex: 1, width: '100%' }}
+              style={{ width: '100%', height: '100%' }}
               contentFit="contain"
             />
           ) : (
-            <ConversationVideoPlayer uri={signedUrl} />
+            <View className="h-full w-full">
+              <ConversationVideoPlayer uri={signedUrl} />
+            </View>
           )}
         </View>
       </View>
