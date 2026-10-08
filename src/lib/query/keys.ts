@@ -7,6 +7,10 @@ export const queryKeys = {
   browseNearbyAll: ['browse-nearby'] as const,
   browseNearby: (latitude: number | null, longitude: number | null) =>
     ['browse-nearby', latitude, longitude] as const,
+  requestSearchAll: ['request-search'] as const,
+  requestSearch: (query: string, latitude: number | null, longitude: number | null) =>
+    ['request-search', query, latitude, longitude] as const,
+  requestSearchSuggestions: (prefix: string) => ['request-search-suggestions', prefix] as const,
   browseRequest: (requestId: string, latitude: number | null, longitude: number | null) =>
     ['browse-request', requestId, latitude, longitude] as const,
   myResponses: ['my-responses'] as const,

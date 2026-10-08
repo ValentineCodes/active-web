@@ -11,6 +11,7 @@ import { Screen } from '@/components/ui/Screen';
 import { InlineError } from '@/components/ui/StateView';
 import { MARKET } from '@/config';
 import { isPlausiblePhone, sendPhoneOtp, toE164, verifyPhoneOtp } from '@/features/auth/api';
+import { useSession } from '@/features/auth/session';
 import { poppinsInputTypography } from '@/theme/fonts';
 import { useColors } from '@/theme';
 
@@ -21,6 +22,7 @@ const RESEND_COOLDOWN_SEC = 30;
 
 export default function PhoneScreen() {
   const colors = useColors();
+  const { session } = useSession();
   const [phone, setPhone] = useState('');
   const [otpSent, setOtpSent] = useState(false);
   const [otp, setOtp] = useState('');
@@ -73,7 +75,7 @@ export default function PhoneScreen() {
     );
   };
 
-  const primaryLoading = otpSent ? verify.isPending : sendCode.isPending;
+  const primaryLoading = otpSent ? verify.isPending || Boolean(session) : sendCode.isPending;
   const primaryDisabled = otpSent ? !isOtpComplete : !canSend;
   const primaryAction = () => {
     if (otpSent) verify.mutate();

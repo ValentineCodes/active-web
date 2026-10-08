@@ -289,6 +289,7 @@ export function useCreateRequest() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.myRequests });
       queryClient.invalidateQueries({ queryKey: queryKeys.browseNearbyAll });
+      queryClient.invalidateQueries({ queryKey: queryKeys.requestSearchAll });
       void invalidateWalletQueries(queryClient);
     },
   });
@@ -308,6 +309,7 @@ export function useCancelRequest(requestId: string) {
       queryClient.invalidateQueries({ queryKey: queryKeys.engagement(requestId) });
       queryClient.invalidateQueries({ queryKey: queryKeys.myResponses });
       queryClient.invalidateQueries({ queryKey: queryKeys.browseNearbyAll });
+      queryClient.invalidateQueries({ queryKey: queryKeys.requestSearchAll });
       void invalidateWalletQueries(queryClient);
     },
   });

@@ -18,6 +18,7 @@ import { Button } from '@/components/ui/Button';
 import { Screen } from '@/components/ui/Screen';
 import { EmptyState, ErrorState, InlineError, LoadingState } from '@/components/ui/StateView';
 import {
+  canRespondToRequest,
   useMyResponses,
   useRequestForResponse,
   useRespondToRequest,
@@ -114,8 +115,13 @@ export default function RespondScreen() {
 
   useEffect(() => {
     if (!autoStartPending.current || isPending || !request) return;
+    if (!canRespondToRequest(request)) {
+      autoStartPending.current = false;
+      return;
+    }
     autoStartPending.current = false;
-    beginFlow();
+    const handle = setTimeout(() => beginFlow(), 0);
+    return () => clearTimeout(handle);
   }, [isPending, request, beginFlow]);
 
   const exitFlow = () => {
@@ -235,12 +241,14 @@ export default function RespondScreen() {
         <EmptyState
           icon="close-circle-outline"
           title="This request has moved on"
-          message="It was answered, withdrawn, or is no longer open near you."
+          message="It was answered, withdrawn, or is no longer open."
           action={{ label: 'Back', onPress: () => router.back() }}
         />
       </Screen>
     );
   }
+
+  const respondAllowed = canRespondToRequest(request);
 
   if (inFlow) {
     return (
@@ -329,6 +337,13 @@ export default function RespondScreen() {
               </Text>
             )}
           </RequestCallout>
+        ) : !respondAllowed && !existingResponse ? (
+          <RequestCallout tone="warning" title="Too far away to respond">
+            <Text className="text-sm text-muted">
+              You can read this request, but only helpers within the local discovery area can send a
+              response.
+            </Text>
+          </RequestCallout>
         ) : null}
 
         {isFetchingMatch ? <LoadingState label="Checking this request" /> : null}
@@ -340,7 +355,7 @@ export default function RespondScreen() {
               requester selects you for that time.
             </Text>
           </RequestCallout>
-        ) : (
+        ) : respondAllowed ? (
           <View className="flex-row items-start gap-3 rounded-2xl bg-surface p-4">
             <Ionicons name="lock-closed-outline" size={18} color={colors.muted} />
             <Text className="flex-1 text-sm text-muted">
@@ -348,7 +363,7 @@ export default function RespondScreen() {
               are shared only if you are selected.
             </Text>
           </View>
-        )}
+        ) : null}
 
         {respond.isError ? <InlineError error={respond.error} /> : null}
         {withdrawResponse.isError ? <InlineError error={withdrawResponse.error} /> : null}
@@ -361,7 +376,7 @@ export default function RespondScreen() {
             loading={withdrawResponse.isPending}
             onPress={confirmWithdraw}
           />
-        ) : (
+        ) : respondAllowed ? (
           <Button
             label="Respond to request"
             variant="active"
@@ -369,7 +384,7 @@ export default function RespondScreen() {
             corner="2xl"
             onPress={beginFlow}
           />
-        )}
+        ) : null}
 
         {declinedParticipation ? null : existingResponse ? (
           <Button label="Update response" variant="secondary" size="lg" onPress={beginFlow} />

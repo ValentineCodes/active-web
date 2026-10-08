@@ -1,7 +1,8 @@
 import { useCallback } from 'react';
 import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
-import { router, useFocusEffect } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
+import { Ionicons } from '@expo/vector-icons';
 
 import { HomeActiveRequestBanner } from '@/components/HomeActiveRequestBanner';
 import { NearbyRequests } from '@/components/NearbyRequests';
@@ -23,8 +24,17 @@ import { useMyRequests } from '@/features/requests/requester-api';
 import { formatGreeting, formatMoney } from '@/lib/format';
 import { queryKeys } from '@/lib/query/keys';
 import { showQuerySkeleton } from '@/lib/query/show-skeleton';
+import { useTheme } from '@/theme';
+
+const CREATE_FAB_SIZE = 56;
+const SEARCH_FAB_SIZE = 48;
+const FAB_STACK_GAP = 8;
 
 export default function HomeScreen() {
+  const { colors, shadow } = useTheme();
+  const { q } = useLocalSearchParams<{ q?: string }>();
+  const activeSearchQuery = q?.trim() ?? '';
+
   const profile = useProfile();
   const attendance = useAttendance();
   const requests = useMyRequests();
@@ -38,15 +48,19 @@ export default function HomeScreen() {
   const walletSkeleton = showQuerySkeleton(wallet);
 
   const fabBottom = useFabBottomOffset();
-  const fabSize = 56;
+  const searchFabBottom = fabBottom + CREATE_FAB_SIZE + FAB_STACK_GAP;
   const tabBarScrollPadding = useTabBarScrollPadding();
-  const listBottomPadding = fabBottom + fabSize + 12;
+  const listBottomPadding = searchFabBottom + SEARCH_FAB_SIZE + 12;
 
   useFocusEffect(
     useCallback(() => {
       void refetchWallet();
     }, [refetchWallet]),
   );
+
+  const clearSearch = () => {
+    router.setParams({ q: '' });
+  };
 
   return (
     <Screen>
@@ -64,6 +78,7 @@ export default function HomeScreen() {
               attendance.refetch();
               refetchWallet();
               queryClient.invalidateQueries({ queryKey: queryKeys.browseNearbyAll });
+              queryClient.invalidateQueries({ queryKey: queryKeys.requestSearchAll });
             }}
           />
         }
@@ -133,6 +148,35 @@ export default function HomeScreen() {
           )}
         </View>
 
+        {activeSearchQuery ? (
+          <View className="flex-row items-center gap-2 rounded-2xl bg-surface px-3 py-2.5">
+            <Pressable
+              onPress={() =>
+                router.push({
+                  pathname: '/search',
+                  params: { q: activeSearchQuery },
+                })
+              }
+              accessibilityRole="button"
+              accessibilityLabel={`Search: ${activeSearchQuery}. Tap to edit`}
+              className="min-w-0 flex-1 flex-row items-center gap-2"
+            >
+              <Ionicons name="search-outline" size={18} color={colors.muted} />
+              <Text className="min-w-0 flex-1 text-sm text-ink" numberOfLines={1}>
+                {activeSearchQuery}
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={clearSearch}
+              accessibilityRole="button"
+              accessibilityLabel="Clear search"
+              hitSlop={8}
+            >
+              <Ionicons name="close-circle" size={20} color={colors.muted} />
+            </Pressable>
+          </View>
+        ) : null}
+
         {activeRequest ? (
           <HomeActiveRequestBanner
             title={activeRequest.title}
@@ -140,8 +184,32 @@ export default function HomeScreen() {
           />
         ) : null}
 
-        <NearbyRequests variant="home" />
+        <NearbyRequests variant="home" searchQuery={activeSearchQuery || null} />
       </ScrollView>
+
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Search requests"
+        onPress={() =>
+          router.push({
+            pathname: '/search',
+            params: activeSearchQuery ? { q: activeSearchQuery } : undefined,
+          })
+        }
+        style={[
+          shadow.raised,
+          {
+            position: 'absolute',
+            right: FAB_EDGE_INSET,
+            bottom: searchFabBottom,
+            width: SEARCH_FAB_SIZE,
+            height: SEARCH_FAB_SIZE,
+          },
+        ]}
+        className="items-center justify-center rounded-full bg-surface active:opacity-90"
+      >
+        <Ionicons name="search-outline" size={24} color={colors.ink} />
+      </Pressable>
 
       <FloatingActionButton
         variant="create"

@@ -253,8 +253,44 @@ select is(
 
 select is(
   (select count(*) from browse_nearby_requests(7.5000::double precision, 3.3800::double precision) where request_id = :'request_id'),
-  0::bigint,
-  'a browser outside discovery radius does not see the request'
+  1::bigint,
+  'a browser outside discovery radius still sees open requests in global discovery'
+);
+
+select is(
+  (select respond_allowed from browse_request(:'request_id', 7.5000::double precision, 3.3800::double precision)),
+  false,
+  'browsing a far request is allowed but responding is not'
+);
+
+select is(
+  (select respond_allowed from browse_request(:'request_id', 6.5000::double precision, 3.3800::double precision)),
+  true,
+  'browsing a nearby request allows responding'
+);
+
+select pg_temp.act_as('66666666-6666-6666-6666-666666666666') as _ \gset
+select lives_ok(
+  $$select public.record_request_search('generator repair')$$,
+  'record_request_search stores a normalized query'
+);
+
+select is(
+  (select count(*) from public.search_request_queries('gen', 10) where normalized_query = 'generator repair'),
+  1::bigint,
+  'search_request_queries returns prefix matches'
+);
+
+select is(
+  (select count(*) from search_requests('generator', 6.5000::double precision, 3.3800::double precision) where request_id = :'request_id'),
+  1::bigint,
+  'search_requests matches request titles'
+);
+
+select is(
+  (select count(*) from search_requests('5kVA', 7.5000::double precision, 3.3800::double precision) where request_id = :'request_id'),
+  1::bigint,
+  'search_requests matches descriptions across distance'
 );
 
 select is(

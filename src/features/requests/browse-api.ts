@@ -67,6 +67,33 @@ export function useBrowseNearbyRequests(position: Position | null) {
   });
 }
 
+export function useSearchRequests(query: string, position: Position | null) {
+  const trimmed = query.trim();
+  const latitude = position ? roundCoordinate(position.latitude) : null;
+  const longitude = position ? roundCoordinate(position.longitude) : null;
+
+  return useQuery({
+    queryKey: queryKeys.requestSearch(trimmed, latitude, longitude),
+    enabled: position !== null && trimmed.length > 0,
+    staleTime: 15_000,
+    placeholderData: keepPreviousData,
+    queryFn: async (): Promise<PublicRequest[]> => {
+      if (!position) throw new Error('Location is required to search requests.');
+      if (!trimmed) return [];
+
+      await recordDiscoveryCoordinates(position);
+
+      const { data, error } = await supabase.rpc('search_requests', {
+        p_query: trimmed,
+        p_latitude: position.latitude,
+        p_longitude: position.longitude,
+      });
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
 export function useBrowseRequest(
   requestId: string,
   position: Position | null,

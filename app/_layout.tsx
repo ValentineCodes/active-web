@@ -1,5 +1,6 @@
 import '../global.css';
 
+import { useState } from 'react';
 import { ActivityIndicator, Text, View } from 'react-native';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -32,18 +33,26 @@ function BootScreen() {
 
 /**
  * Three shells: sign-in, onboarding (profile loaded but no name), and the signed-in app.
- * While the profile query is still pending, the main app shell renders with screen skeletons
- * instead of blocking on a full-screen boot spinner.
+ * The profile query chooses between onboarding and the app. Until it settles, stay on the
+ * screen already showing — boot during session restore, or the verification screen after
+ * OTP — so home does not mount and then get replaced.
  */
 function RootNavigator() {
   const { session, isRestoring } = useSession();
+  const [sawSignedOutShell, setSawSignedOutShell] = useState(false);
 
   const profileQuery = useQuery({
     ...profileQueryOptions(session?.user.id ?? ''),
     enabled: Boolean(session),
   });
 
-  if (isRestoring) return <BootScreen />;
+  if (!isRestoring && !session && !sawSignedOutShell) {
+    setSawSignedOutShell(true);
+  }
+
+  const waitingForProfile = Boolean(session) && profileQuery.isPending;
+
+  if (isRestoring || (waitingForProfile && !sawSignedOutShell)) return <BootScreen />;
 
   if (session && profileQuery.isError) {
     return (
@@ -55,15 +64,13 @@ function RootNavigator() {
 
   const profile = profileQuery.data;
 
-  const isSignedIn = Boolean(session);
-  const needsProfile = isSignedIn && profileQuery.isSuccess && !profile?.display_name;
+  const needsProfile = Boolean(session) && profileQuery.isSuccess && !profile?.display_name;
   const showSignedInApp =
-    isSignedIn &&
-    (profileQuery.isPending || (profileQuery.isSuccess && Boolean(profile?.display_name)));
+    Boolean(session) && profileQuery.isSuccess && Boolean(profile?.display_name);
 
   return (
     <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Protected guard={!isSignedIn}>
+      <Stack.Protected guard={!session || waitingForProfile}>
         <Stack.Screen name="(auth)" />
       </Stack.Protected>
 
@@ -76,6 +83,7 @@ function RootNavigator() {
         <Stack.Screen name="profile" />
         <Stack.Screen name="profile/edit" />
         <Stack.Screen name="wallet" />
+        <Stack.Screen name="search" />
         <Stack.Screen name="request/new" options={{ presentation: 'modal' }} />
         <Stack.Screen name="request/[id]" />
         <Stack.Screen name="respond/[id]" options={{ presentation: 'modal' }} />

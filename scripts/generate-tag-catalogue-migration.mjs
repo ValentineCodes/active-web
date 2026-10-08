@@ -161,6 +161,6 @@ SET
   is_active = EXCLUDED.is_active;
 `;
 
-const outPath = join(root, 'supabase/migrations/20261008150000_tag_catalogue_categories.sql');
+const outPath = join(root, 'supabase/migrations/20261008171000_tag_catalogue_categories.sql');
 writeFileSync(outPath, sql);
 console.log(`Wrote ${rows.length} tags to ${outPath}`);

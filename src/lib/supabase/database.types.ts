@@ -1860,6 +1860,7 @@ export type Database = {
           requester_rating_average: number
           requester_rating_count: number
           scheduled_for: string
+          respond_allowed: boolean
           tag_slugs: string[]
           title: string
         }[]
@@ -1977,6 +1978,30 @@ export type Database = {
           tag_id: string
         }[]
       }
+      search_requests: {
+        Args: { p_latitude: number; p_longitude: number; p_query: string }
+        Returns: {
+          currency: string
+          description: string
+          distance_m: number
+          location_label: string
+          offered_amount: number
+          request_id: string
+          requester_avatar_path: string
+          requester_display_name: string
+          requester_rating_average: number
+          requester_rating_count: number
+          scheduled_for: string
+          title: string
+        }[]
+      }
+      search_request_queries: {
+        Args: { p_limit?: number; p_prefix?: string }
+        Returns: {
+          normalized_query: string
+        }[]
+      }
+      record_request_search: { Args: { p_query: string }; Returns: undefined }
       decline_response: {
         Args: { p_reason?: string; p_response_id: string }
         Returns: undefined
