@@ -670,9 +670,36 @@ function NewRequestForm({ reuseSeed }: { reuseSeed?: ReuseSeed }) {
                     accessibilityLabel="Offer amount"
                     value={amount}
                     onChangeText={(text) => setAmount(text.replace(/[^\d]/g, ''))}
+                    trailing={
+                      <View className="items-end pl-3">
+                        <Text className="text-xs font-medium text-muted">Available</Text>
+                        {wallet.isPending ? (
+                          <Text className="text-sm font-semibold text-subtle">…</Text>
+                        ) : wallet.isError ? (
+                          <Text className="text-sm font-semibold text-danger">—</Text>
+                        ) : (
+                          <Text className="text-sm font-semibold text-ink">
+                            {formatMoney(
+                              wallet.data?.available ?? 0,
+                              wallet.data?.currency ?? MARKET.currency,
+                            )}
+                          </Text>
+                        )}
+                      </View>
+                    }
                   />
                 </View>
                 {amountError ? <Text className="text-sm text-warning">{amountError}</Text> : null}
+                {REQUEST_REQUIRES_FUNDING &&
+                funding &&
+                !wallet.isPending &&
+                !wallet.isError &&
+                walletShort ? (
+                  <Text className="text-sm text-warning">
+                    You need {formatMoney(funding.total, funding.currency)} available to fund this
+                    offer.
+                  </Text>
+                ) : null}
               </View>
             ) : null}
 
