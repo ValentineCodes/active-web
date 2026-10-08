@@ -574,6 +574,19 @@ select is(
   'selection adds a lifecycle system message to the conversation'
 );
 
+select pg_temp.act_as_owner() as _ \gset
+select is(
+  (
+    select count(*)
+    from public.notification_inbox ni
+    where ni.user_id = '22222222-2222-2222-2222-222222222222'::uuid
+      and ni.request_id = :'request_id'::uuid
+      and ni.type = 'new_message'::public.notification_type
+  ),
+  0::bigint,
+  'selection lifecycle system messages do not create new_message notifications'
+);
+
 select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
 select is(
   (select messaging_enabled from public.get_request_conversation(:'request_id'::uuid)),
