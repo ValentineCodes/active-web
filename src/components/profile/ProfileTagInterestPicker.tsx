@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ComponentRef, type RefObject } from 'react';
 import { Pressable, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -14,12 +14,18 @@ type ProfileTagInterestPickerProps = {
   selected: RequestTag[];
   onChange: (next: RequestTag[]) => void;
   disabled?: boolean;
+  searchAnchorRef?: RefObject<ComponentRef<typeof View> | null>;
+  onSearchFocus?: () => void;
+  onSearchBlur?: () => void;
 };
 
 export function ProfileTagInterestPicker({
   selected,
   onChange,
   disabled,
+  searchAnchorRef,
+  onSearchFocus,
+  onSearchBlur,
 }: ProfileTagInterestPickerProps) {
   const colors = useColors();
   const [query, setQuery] = useState('');
@@ -71,22 +77,24 @@ export function ProfileTagInterestPicker({
             ))}
           </View>
         </View>
-      ) : (
-        <Text className="text-sm text-muted">No interests selected yet.</Text>
-      )}
+      ) : null}
 
-      <TextInput
-        accessibilityLabel="Search tags"
-        value={query}
-        onChangeText={setQuery}
-        placeholder="Search tags..."
-        placeholderTextColor={colors.subtle}
-        autoCapitalize="none"
-        autoCorrect={false}
-        editable={!disabled && !atLimit}
-        className="rounded-2xl bg-surface px-4 py-4 text-ink"
-        style={searchTypography}
-      />
+      <View ref={searchAnchorRef} collapsable={false}>
+        <TextInput
+          accessibilityLabel="Search tags"
+          value={query}
+          onChangeText={setQuery}
+          onFocus={onSearchFocus}
+          onBlur={onSearchBlur}
+          placeholder="Search tags..."
+          placeholderTextColor={colors.subtle}
+          autoCapitalize="none"
+          autoCorrect={false}
+          editable={!disabled && !atLimit}
+          className="rounded-2xl bg-surface px-4 py-4 text-ink"
+          style={searchTypography}
+        />
+      </View>
 
       {atLimit ? (
         <Text className="text-sm text-muted">
