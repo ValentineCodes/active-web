@@ -8,6 +8,7 @@ type RequestReviewBeforePostCardProps = {
   description: string;
   amountLabel: string | null;
   whenLabel: string;
+  locationLabel: string;
   tagSlugs: string[];
   previewUri?: string | null;
 };
@@ -17,15 +18,15 @@ export function RequestReviewBeforePostCard({
   description,
   amountLabel,
   whenLabel,
+  locationLabel,
   tagSlugs,
   previewUri,
 }: RequestReviewBeforePostCardProps) {
   return (
-    <View className="gap-4 rounded-2xl border border-hairline bg-elevated p-4">
+    <View className="gap-3 rounded-2xl border border-hairline bg-elevated p-4">
       <Text className="text-xs font-semibold uppercase tracking-wide text-subtle">
         Review before posting
       </Text>
-
       {previewUri ? (
         <Image
           source={{ uri: previewUri }}
@@ -35,30 +36,23 @@ export function RequestReviewBeforePostCard({
           style={{ aspectRatio: 4 / 3 }}
         />
       ) : null}
-
-      <View className="gap-1">
-        <Text className="text-xs font-semibold uppercase tracking-wide text-subtle">Title</Text>
-        <Text className="text-xl font-bold text-ink">{title}</Text>
-      </View>
-
-      <View className="gap-1">
-        <Text className="text-xs font-semibold uppercase tracking-wide text-subtle">
-          Description
+      <Text className="text-xl font-bold text-ink" numberOfLines={1}>
+        {title}
+      </Text>
+      {description ? (
+        <Text className="text-sm leading-5 text-muted" numberOfLines={2}>
+          {description}
         </Text>
-        <Text className="text-sm leading-5 text-muted">{description}</Text>
+      ) : null}
+      <View className="flex-row flex-wrap items-center gap-x-2 gap-y-1 pt-1">
+        {amountLabel ? (
+          <Text className="text-base font-bold text-active">{amountLabel}</Text>
+        ) : null}
+        <Text className="text-sm text-muted">·</Text>
+        <Text className="text-sm text-muted">{whenLabel}</Text>
+        <Text className="text-sm text-muted">·</Text>
+        <Text className="text-sm text-muted">{locationLabel}</Text>
       </View>
-
-      <View className="flex-row gap-4">
-        <View className="flex-1 gap-1">
-          <Text className="text-xs font-semibold uppercase tracking-wide text-subtle">Offer</Text>
-          <Text className="text-2xl font-bold text-active">{amountLabel ?? '—'}</Text>
-        </View>
-        <View className="flex-1 gap-1">
-          <Text className="text-xs font-semibold uppercase tracking-wide text-subtle">When</Text>
-          <Text className="text-base font-semibold text-ink">{whenLabel}</Text>
-        </View>
-      </View>
-
       <RequestTagsLine slugs={tagSlugs} />
     </View>
   );

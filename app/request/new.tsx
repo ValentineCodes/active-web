@@ -578,6 +578,7 @@ function NewRequestForm({ reuseSeed }: { reuseSeed?: ReuseSeed }) {
   const goBack = () => setStep((current) => Math.max(current - 1, 0));
 
   const reviewWhen = whenSummary(whenMode, laterAt);
+  const reviewLocation = areaLabel.trim() || 'My location';
   const reviewAmount = isFundedOffer(parsedAmount)
     ? formatMoney(parsedAmount, MARKET.currency)
     : null;
@@ -619,7 +620,7 @@ function NewRequestForm({ reuseSeed }: { reuseSeed?: ReuseSeed }) {
             {step === 0 ? (
               <View className="gap-3">
                 <Text className="text-3xl font-bold leading-9 text-ink">What do you need?</Text>
-                <Text className="text-base text-muted">A short title people will see first.</Text>
+                <Text className="text-base text-muted">Keep it short and concise.</Text>
                 <CreateTextArea
                   inputRef={titleInputRef}
                   value={title}
@@ -639,22 +640,17 @@ function NewRequestForm({ reuseSeed }: { reuseSeed?: ReuseSeed }) {
 
             {step === 1 ? (
               <View className="gap-3">
-                <Text className="text-3xl font-bold leading-9 text-ink">
-                  What needs to be done?
-                </Text>
-                <Text className="text-base text-muted">Tell people what success looks like.</Text>
+                <Text className="text-3xl font-bold leading-9 text-ink">Tell us more</Text>
+                <Text className="text-base text-muted">What does success look like?</Text>
                 <CreateTextArea
                   inputRef={descriptionInputRef}
                   value={description}
                   onChangeText={setDescription}
-                  placeholder="e.g. Move my 3-seater sofa from the ground floor to the second floor. Please be careful with the walls and furniture."
+                  placeholder="e.g. Move my 3-seater sofa from the ground floor to the second floor, All remote buttons must work as new, ..."
                   maxLength={DESCRIPTION_LIMITS.max}
                   textSize="lg"
                   minHeight={200}
                 />
-                {!descriptionValid ? (
-                  <Text className="text-sm text-muted">Description is required to continue.</Text>
-                ) : null}
               </View>
             ) : null}
 
@@ -776,9 +772,10 @@ function NewRequestForm({ reuseSeed }: { reuseSeed?: ReuseSeed }) {
 
             {step === 4 ? (
               <View className="gap-3">
-                <Text className="text-3xl font-bold leading-9 text-ink">Add tags</Text>
+                <Text className="text-3xl font-bold leading-9 text-ink">Tag it?</Text>
                 <Text className="text-base text-muted">
-                  Optional. Pick up to {MAX_REQUEST_TAGS} tags from the list.
+                  Optional. Pick up to {MAX_REQUEST_TAGS} tags to help people find your request
+                  faster.
                 </Text>
                 <RequestTagPicker selected={selectedTags} onChange={setSelectedTagsSafe} />
               </View>
@@ -787,25 +784,9 @@ function NewRequestForm({ reuseSeed }: { reuseSeed?: ReuseSeed }) {
             {step === 5 ? (
               <View className="gap-5">
                 <View className="gap-3">
-                  <Text className="text-3xl font-bold leading-9 text-ink">Review & Post</Text>
+                  <Text className="text-3xl font-bold leading-9 text-ink">Add a photo?</Text>
                   <Text className="text-base text-muted">
-                    Check everything looks right before you post.
-                  </Text>
-                </View>
-
-                <RequestReviewBeforePostCard
-                  title={trimmedTitle}
-                  description={trimmedDescription}
-                  amountLabel={reviewAmount}
-                  whenLabel={reviewWhen}
-                  tagSlugs={selectedTags.map((tag) => tag.name)}
-                  previewUri={attachmentUri}
-                />
-
-                <View className="gap-3">
-                  <Text className="text-lg font-bold text-ink">Add a photo (optional)</Text>
-                  <Text className="text-base text-muted">
-                    A photo can help people understand your request.
+                    Optional. This will help people better understand your request
                   </Text>
                   <View className="flex-row gap-3">
                     <PhotoSourceButton
@@ -822,6 +803,16 @@ function NewRequestForm({ reuseSeed }: { reuseSeed?: ReuseSeed }) {
                     />
                   </View>
                 </View>
+
+                <RequestReviewBeforePostCard
+                  title={trimmedTitle}
+                  description={trimmedDescription}
+                  amountLabel={reviewAmount}
+                  whenLabel={reviewWhen}
+                  locationLabel={reviewLocation}
+                  tagSlugs={selectedTags.map((tag) => tag.name)}
+                  previewUri={attachmentUri}
+                />
 
                 {REQUEST_REQUIRES_FUNDING && funding ? (
                   <View className="gap-2">
