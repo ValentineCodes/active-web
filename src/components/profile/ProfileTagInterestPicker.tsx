@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Pressable, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
+import { MAX_PROFILE_TAG_INTERESTS } from '@/features/notifications/tag-interests';
 import { useSearchTags, type RequestTag } from '@/features/requests/tags';
 import { cn } from '@/lib/cn';
 import { poppinsInputTypography } from '@/theme/fonts';
@@ -9,37 +10,42 @@ import { useColors } from '@/theme';
 
 const searchTypography = poppinsInputTypography('regular', 'base');
 
-type NotificationTagInterestPickerProps = {
+type ProfileTagInterestPickerProps = {
   selected: RequestTag[];
   onChange: (next: RequestTag[]) => void;
   disabled?: boolean;
 };
 
-export function NotificationTagInterestPicker({
+export function ProfileTagInterestPicker({
   selected,
   onChange,
   disabled,
-}: NotificationTagInterestPickerProps) {
+}: ProfileTagInterestPickerProps) {
   const colors = useColors();
   const [query, setQuery] = useState('');
   const tags = useSearchTags(query);
 
   const selectedIds = new Set(selected.map((tag) => tag.id));
+  const atLimit = selected.length >= MAX_PROFILE_TAG_INTERESTS;
+
+  const setSelected = (next: RequestTag[]) => {
+    onChange(next.slice(0, MAX_PROFILE_TAG_INTERESTS));
+  };
 
   const removeTag = (tagId: string) => {
     if (disabled) return;
-    onChange(selected.filter((item) => item.id !== tagId));
+    setSelected(selected.filter((item) => item.id !== tagId));
   };
 
   const addTag = (tag: RequestTag) => {
-    if (disabled || selectedIds.has(tag.id)) return;
-    onChange([...selected, tag]);
+    if (disabled || atLimit || selectedIds.has(tag.id)) return;
+    setSelected([...selected, tag]);
   };
 
   const results = (tags.data ?? []).filter((tag) => !selectedIds.has(tag.id));
 
   return (
-    <View className="gap-4 p-4">
+    <View className="gap-4">
       {selected.length > 0 ? (
         <View className="gap-2">
           <Text className="text-sm font-semibold text-ink">Selected</Text>
@@ -77,10 +83,16 @@ export function NotificationTagInterestPicker({
         placeholderTextColor={colors.subtle}
         autoCapitalize="none"
         autoCorrect={false}
-        editable={!disabled}
+        editable={!disabled && !atLimit}
         className="rounded-2xl bg-surface px-4 py-4 text-ink"
         style={searchTypography}
       />
+
+      {atLimit ? (
+        <Text className="text-sm text-muted">
+          You&apos;ve added {MAX_PROFILE_TAG_INTERESTS} tags. Remove one to choose a different tag.
+        </Text>
+      ) : null}
 
       <View className="flex-row flex-wrap gap-2">
         {tags.isPending ? (
@@ -91,7 +103,7 @@ export function NotificationTagInterestPicker({
           <Text className="text-sm text-muted">
             {query.trim() ? 'No tags match your search.' : 'No tags available.'}
           </Text>
-        ) : (
+        ) : atLimit ? null : (
           results.map((tag) => (
             <Pressable
               key={tag.id}

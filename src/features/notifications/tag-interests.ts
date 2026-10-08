@@ -4,6 +4,8 @@ import type { RequestTag } from '@/features/requests/tags';
 import { queryKeys } from '@/lib/query/keys';
 import { supabase } from '@/lib/supabase/client';
 
+export const MAX_PROFILE_TAG_INTERESTS = 5;
+
 export function useNotificationTagInterests() {
   return useQuery({
     queryKey: queryKeys.notificationTagInterests,
@@ -27,7 +29,7 @@ export function useUpdateNotificationTagInterests() {
   return useMutation({
     mutationFn: async (tags: RequestTag[]) => {
       const { error } = await supabase.rpc('set_notification_tag_interests', {
-        p_tag_ids: tags.map((tag) => tag.id),
+        p_tag_ids: tags.slice(0, MAX_PROFILE_TAG_INTERESTS).map((tag) => tag.id),
       });
       if (error) throw error;
     },

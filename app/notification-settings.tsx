@@ -5,17 +5,11 @@ import { router, useFocusEffect } from 'expo-router';
 import { Header } from '@/components/ui/Header';
 import { Screen } from '@/components/ui/Screen';
 import { ErrorState, InlineError, LoadingState } from '@/components/ui/StateView';
-import { NotificationTagInterestPicker } from '@/components/notifications/NotificationTagInterestPicker';
 import {
   useUpdateNotificationPreferences,
   setPushBannerDismissed,
   type NotificationPreferences,
 } from '@/features/notifications/preferences';
-import {
-  useNotificationTagInterests,
-  useUpdateNotificationTagInterests,
-} from '@/features/notifications/tag-interests';
-import type { RequestTag } from '@/features/requests/tags';
 import { useProfile } from '@/features/profile/api';
 import {
   openNotificationSettings,
@@ -65,8 +59,6 @@ function SettingsToggleRow({
 export default function NotificationSettingsScreen() {
   const profile = useProfile();
   const updatePrefs = useUpdateNotificationPreferences();
-  const tagInterests = useNotificationTagInterests();
-  const updateTagInterests = useUpdateNotificationTagInterests();
   const [permission, setPermission] = useState<PushPermissionState | null>(null);
 
   const refreshPermission = useCallback(() => {
@@ -79,7 +71,7 @@ export default function NotificationSettingsScreen() {
     }, [refreshPermission]),
   );
 
-  if (profile.isPending || tagInterests.isPending) {
+  if (profile.isPending) {
     return (
       <Screen>
         <Header title="Notification settings" onBack={() => router.back()} />
@@ -88,17 +80,11 @@ export default function NotificationSettingsScreen() {
     );
   }
 
-  if (profile.isError || tagInterests.isError) {
+  if (profile.isError) {
     return (
       <Screen>
         <Header title="Notification settings" onBack={() => router.back()} />
-        <ErrorState
-          error={profile.error ?? tagInterests.error}
-          onRetry={() => {
-            void profile.refetch();
-            void tagInterests.refetch();
-          }}
-        />
+        <ErrorState error={profile.error} onRetry={() => profile.refetch()} />
       </Screen>
     );
   }
@@ -119,10 +105,6 @@ export default function NotificationSettingsScreen() {
     prefs.paymentsWalletEnabled ||
     prefs.callsEnabled ||
     prefs.tipsRemindersEnabled;
-
-  const saveTagInterests = (next: RequestTag[]) => {
-    updateTagInterests.mutate(next);
-  };
 
   const savePrefs = (patch: Partial<NotificationPreferences>) => {
     const next = { ...prefs, ...patch };
@@ -200,28 +182,6 @@ export default function NotificationSettingsScreen() {
         </View>
 
         {updatePrefs.isError ? <InlineError error={updatePrefs.error} /> : null}
-
-        <View className="gap-2">
-          <Text className="text-lg font-bold text-ink">Request interests</Text>
-          <Text className="text-base leading-6 text-muted">
-            Choose the types of requests you&apos;d like to hear about.
-          </Text>
-        </View>
-
-        <View className="overflow-hidden rounded-3xl border border-hairline bg-elevated">
-          <NotificationTagInterestPicker
-            selected={tagInterests.data ?? []}
-            onChange={saveTagInterests}
-            disabled={updateTagInterests.isPending}
-          />
-        </View>
-
-        <Text className="text-sm leading-5 text-muted">
-          Alerts use the same tag list as requests. Leave this empty to skip interest-based request
-          alerts. Responding on the app is not limited by these choices.
-        </Text>
-
-        {updateTagInterests.isError ? <InlineError error={updateTagInterests.error} /> : null}
 
         {anyPushEnabled && !osGranted ? (
           <View className="gap-3 rounded-2xl border border-hairline bg-surface p-4">

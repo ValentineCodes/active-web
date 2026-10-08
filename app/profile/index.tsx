@@ -5,6 +5,7 @@ import { router } from 'expo-router';
 import { useMutation } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 
+import { ProfileTagInterestsLine } from '@/components/profile/ProfileTagInterestsLine';
 import { ProfileCatalogueRail } from '@/components/ProfileCatalogueRail';
 import { ReportIssueModal } from '@/components/ReportIssueModal';
 import { Avatar } from '@/components/ui/Avatar';
@@ -14,6 +15,7 @@ import { ErrorState, InlineError, LoadingState } from '@/components/ui/StateView
 import { hasProviderCommitments, useAttendance } from '@/features/attendance/api';
 import { MARKET } from '@/config';
 import { signOut } from '@/features/auth/api';
+import { useNotificationTagInterests } from '@/features/notifications/tag-interests';
 import { useProfile } from '@/features/profile/api';
 import { formatPhoneDisplay } from '@/lib/format';
 import { APP_REPORT_ISSUES } from '@/features/support/report-issue-options';
@@ -86,12 +88,13 @@ export default function ProfileScreen() {
   const [reportIssueOpen, setReportIssueOpen] = useState(false);
   const colors = useColors();
   const profile = useProfile();
+  const tagInterests = useNotificationTagInterests();
   const attendance = useAttendance();
   const myRequests = useMyRequests();
   const myResponses = useMyResponses();
   const leave = useMutation({ mutationFn: signOut });
 
-  if (profile.isPending) {
+  if (profile.isPending || tagInterests.isPending) {
     return (
       <Screen>
         <Header title="Profile" onBack={() => router.back()} />
@@ -100,11 +103,17 @@ export default function ProfileScreen() {
     );
   }
 
-  if (profile.isError) {
+  if (profile.isError || tagInterests.isError) {
     return (
       <Screen>
         <Header title="Profile" onBack={() => router.back()} />
-        <ErrorState error={profile.error} onRetry={() => profile.refetch()} />
+        <ErrorState
+          error={profile.error ?? tagInterests.error}
+          onRetry={() => {
+            void profile.refetch();
+            void tagInterests.refetch();
+          }}
+        />
       </Screen>
     );
   }
@@ -131,9 +140,12 @@ export default function ProfileScreen() {
         contentContainerClassName="gap-6 px-5 pb-12 pt-2"
         refreshControl={
           <RefreshControl
-            refreshing={profile.isRefetching || attendance.isRefetching}
+            refreshing={
+              profile.isRefetching || tagInterests.isRefetching || attendance.isRefetching
+            }
             onRefresh={() => {
               profile.refetch();
+              tagInterests.refetch();
               attendance.refetch();
               myRequests.refetch();
               myResponses.refetch();
@@ -170,6 +182,7 @@ export default function ProfileScreen() {
           {data.bio ? (
             <Text className="max-w-sm text-center text-base leading-6 text-muted">{data.bio}</Text>
           ) : null}
+          <ProfileTagInterestsLine tags={tagInterests.data ?? []} />
         </View>
 
         <View className="flex-row overflow-hidden rounded-2xl border border-hairline bg-elevated">

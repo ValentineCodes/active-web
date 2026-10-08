@@ -1895,8 +1895,45 @@ select set_notification_tag_interests(
 select is(
   (select count(*)::integer from public.list_notification_tag_interests()),
   4,
-  'users can save more than three notification interests'
+  'users can save up to five profile interests'
 );
+
+select id as gardening_tag_id
+from public.tags
+where slug = 'gardening'
+limit 1 \gset
+
+select id as cleaning_tag_id
+from public.tags
+where slug = 'cleaning'
+limit 1 \gset
+
+select lives_ok(
+  $$select set_notification_tag_interests(array[
+    :'electrician_tag_id'::uuid,
+    :'carpenter_tag_id'::uuid,
+    :'furniture_tag_id'::uuid,
+    :'food_tag_id'::uuid,
+    :'gardening_tag_id'::uuid
+  ])$$,
+  'profile interests accept five tags'
+);
+
+select throws_ok(
+  $$select set_notification_tag_interests(array[
+    :'electrician_tag_id'::uuid,
+    :'carpenter_tag_id'::uuid,
+    :'furniture_tag_id'::uuid,
+    :'food_tag_id'::uuid,
+    :'gardening_tag_id'::uuid,
+    :'cleaning_tag_id'::uuid
+  ])$$,
+  '22023',
+  'you may select at most 5 profile interests',
+  'profile interests reject more than five tags'
+);
+
+select set_notification_tag_interests('{}'::uuid[]);
 
 select throws_ok(
   $$select set_notification_tag_interests(array['00000000-0000-0000-0000-000000000099'::uuid])$$,

@@ -3,11 +3,17 @@ import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
+import { ProfileTagInterestPicker } from '@/components/profile/ProfileTagInterestPicker';
 import { Avatar } from '@/components/ui/Avatar';
 import { Header } from '@/components/ui/Header';
 import { Screen } from '@/components/ui/Screen';
 import { ErrorState, InlineError, LoadingState } from '@/components/ui/StateView';
+import {
+  useNotificationTagInterests,
+  useUpdateNotificationTagInterests,
+} from '@/features/notifications/tag-interests';
 import { useCaptureProfilePhoto, useProfile, useSaveProfile } from '@/features/profile/api';
+import type { RequestTag } from '@/features/requests/tags';
 import { cn } from '@/lib/cn';
 import { showAppToast } from '@/lib/toast';
 import { poppinsInputTypography } from '@/theme/fonts';
@@ -44,10 +50,18 @@ function EditProfileForm({
   avatarPath,
   displayName,
   initialBio,
+  tagInterests,
+  onTagInterestsChange,
+  tagInterestsSaving,
+  tagInterestsError,
 }: {
   avatarPath: string | null;
   displayName: string;
   initialBio: string | null;
+  tagInterests: RequestTag[];
+  onTagInterestsChange: (next: RequestTag[]) => void;
+  tagInterestsSaving: boolean;
+  tagInterestsError: unknown;
 }) {
   const colors = useColors();
   const save = useSaveProfile();
@@ -153,6 +167,26 @@ function EditProfileForm({
           </Text>
         </View>
 
+        <View className="gap-3">
+          <View className="gap-1 px-1">
+            <Text className="text-xs font-semibold uppercase tracking-wide text-subtle">
+              Request interests
+            </Text>
+            <Text className="text-sm leading-5 text-muted">
+              Choose up to 5. Shown on your profile and used for nearby request alerts. Responding
+              is not limited by these choices.
+            </Text>
+          </View>
+          <View className="rounded-2xl border border-hairline bg-elevated p-4">
+            <ProfileTagInterestPicker
+              selected={tagInterests}
+              onChange={onTagInterestsChange}
+              disabled={tagInterestsSaving}
+            />
+          </View>
+          {tagInterestsError ? <InlineError error={tagInterestsError} /> : null}
+        </View>
+
         {capturePhoto.isError ? <InlineError error={capturePhoto.error} /> : null}
         {save.isError ? <InlineError error={save.error} /> : null}
       </ScrollView>
@@ -162,8 +196,10 @@ function EditProfileForm({
 
 export default function EditProfileScreen() {
   const profile = useProfile();
+  const tagInterests = useNotificationTagInterests();
+  const updateTagInterests = useUpdateNotificationTagInterests();
 
-  if (profile.isPending) {
+  if (profile.isPending || tagInterests.isPending) {
     return (
       <Screen>
         <Header title="Edit profile" onBack={() => router.back()} />
@@ -172,11 +208,17 @@ export default function EditProfileScreen() {
     );
   }
 
-  if (profile.isError) {
+  if (profile.isError || tagInterests.isError) {
     return (
       <Screen>
         <Header title="Edit profile" onBack={() => router.back()} />
-        <ErrorState error={profile.error} onRetry={() => profile.refetch()} />
+        <ErrorState
+          error={profile.error ?? tagInterests.error}
+          onRetry={() => {
+            void profile.refetch();
+            void tagInterests.refetch();
+          }}
+        />
       </Screen>
     );
   }
@@ -190,6 +232,10 @@ export default function EditProfileScreen() {
         avatarPath={data.avatar_path}
         displayName={data.display_name ?? ''}
         initialBio={data.bio}
+        tagInterests={tagInterests.data ?? []}
+        onTagInterestsChange={(next) => updateTagInterests.mutate(next)}
+        tagInterestsSaving={updateTagInterests.isPending}
+        tagInterestsError={updateTagInterests.isError ? updateTagInterests.error : null}
       />
     </Screen>
   );
