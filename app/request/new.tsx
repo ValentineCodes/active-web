@@ -772,10 +772,9 @@ function NewRequestForm({ reuseSeed }: { reuseSeed?: ReuseSeed }) {
 
             {step === 4 ? (
               <View className="gap-3">
-                <Text className="text-3xl font-bold leading-9 text-ink">Tag it?</Text>
+                <Text className="text-3xl font-bold leading-9 text-ink">What kind of help?</Text>
                 <Text className="text-base text-muted">
-                  Optional. Pick up to {MAX_REQUEST_TAGS} tags to help people find your request
-                  faster.
+                  Optional. Pick up to {MAX_REQUEST_TAGS} tags so the right people see your request.
                 </Text>
                 <RequestTagPicker selected={selectedTags} onChange={setSelectedTagsSafe} />
               </View>

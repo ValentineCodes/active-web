@@ -25,5 +25,6 @@ export const queryKeys = {
   wallet: ['wallet'] as const,
   walletActivity: ['wallet-activity'] as const,
   requestTagsSearch: (query: string) => ['request-tags-search', query] as const,
+  requestTagsCatalogue: ['request-tags-catalogue'] as const,
   notificationTagInterests: ['notification-tag-interests'] as const,
 };

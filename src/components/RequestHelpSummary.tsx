@@ -18,7 +18,6 @@ import {
 
 type RequestHelpSummaryProps = {
   request: RespondableRequest;
-  postedAt?: string | null;
   existingResponse?: boolean;
   onRequesterPress?: () => void;
 };
@@ -26,28 +25,21 @@ type RequestHelpSummaryProps = {
 /** Respond / pending-response detail — matches request_1 and request_0 mocks. */
 export function RequestHelpSummary({
   request,
-  postedAt,
   existingResponse,
   onRequesterPress,
 }: RequestHelpSummaryProps) {
   const amount =
     request.offered_amount !== null ? formatMoney(request.offered_amount, request.currency) : null;
 
-  const badge = existingResponse
-    ? { label: 'Open', tone: 'warning' as const }
-    : nearbyRequestBadge(false);
+  const badge = nearbyRequestBadge(Boolean(existingResponse));
 
   return (
     <View className="gap-5">
-      {postedAt ? (
-        <RequestMetaRow
-          badgeLabel={badge.label}
-          badgeTone={badge.tone}
-          trailing={formatAgo(postedAt)}
-        />
-      ) : (
-        <RequestMetaRow badgeLabel={badge.label} badgeTone={badge.tone} trailing="Open" />
-      )}
+      <RequestMetaRow
+        badgeLabel={badge.label}
+        badgeTone={badge.tone}
+        trailing={formatAgo(request.posted_at)}
+      />
 
       <RequestTitleSection title={request.title} description={request.description} />
 

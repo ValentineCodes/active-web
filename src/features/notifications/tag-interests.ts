@@ -18,6 +18,7 @@ export function useNotificationTagInterests() {
         id: row.tag_id,
         name: row.name,
         slug: row.slug,
+        category: 'category' in row && row.category ? String(row.category) : 'General',
       }));
     },
   });

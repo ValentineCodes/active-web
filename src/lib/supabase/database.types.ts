@@ -1008,6 +1008,7 @@ export type Database = {
       }
       tags: {
         Row: {
+          category: string
           created_at: string
           id: string
           is_active: boolean
@@ -1015,6 +1016,7 @@ export type Database = {
           slug: string
         }
         Insert: {
+          category?: string
           created_at?: string
           id?: string
           is_active?: boolean
@@ -1022,6 +1024,7 @@ export type Database = {
           slug: string
         }
         Update: {
+          category?: string
           created_at?: string
           id?: string
           is_active?: boolean
@@ -1847,6 +1850,7 @@ export type Database = {
           distance_m: number
           location_label: string
           offered_amount: number
+          posted_at: string
           request_id: string
           requester_avatar_path: string
           requester_bio: string
@@ -1952,12 +1956,22 @@ export type Database = {
         }
         Returns: string
       }
+      list_tag_catalogue: {
+        Args: never
+        Returns: {
+          category: string
+          name: string
+          slug: string
+          tag_id: string
+        }[]
+      }
       search_tags: {
         Args: {
           p_limit?: number
           p_query?: string
         }
         Returns: {
+          category: string
           name: string
           slug: string
           tag_id: string
@@ -2244,6 +2258,7 @@ export type Database = {
           location_label: string
           message: string
           offered_amount: number
+          posted_at: string
           quoted_amount: number
           request_id: string
           request_status: Database["public"]["Enums"]["request_status"]

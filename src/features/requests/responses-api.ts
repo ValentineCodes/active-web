@@ -49,6 +49,7 @@ export type RespondableRequest = {
   requester_completion_percent: number | null;
   attachment_path: string | null;
   tag_slugs: string[];
+  posted_at: string;
 };
 
 function fromBrowseRequest(row: BrowseRequestDetail): RespondableRequest {
@@ -70,6 +71,7 @@ function fromBrowseRequest(row: BrowseRequestDetail): RespondableRequest {
     requester_completion_percent: row.requester_completion_percent,
     attachment_path: row.attachment_path,
     tag_slugs: normalizeRequestTagSlugs(row.tag_slugs),
+    posted_at: row.posted_at,
   };
 }
 
@@ -92,6 +94,7 @@ function fromMyResponse(row: MyResponse): RespondableRequest {
     requester_completion_percent: row.requester_completion_percent,
     attachment_path: row.attachment_path,
     tag_slugs: [],
+    posted_at: row.posted_at,
   };
 }
 

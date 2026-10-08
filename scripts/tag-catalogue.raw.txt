@@ -1,0 +1,479 @@
+REPAIRS & TRADES
+Electrician
+Plumbing
+Carpentry
+Welding
+Masonry
+Bricklaying
+Painting
+Tiling
+Roofing
+POP Ceiling
+Aluminium
+Glass
+Furniture
+Upholstery
+Handyman
+Generator Repair
+Solar
+Inverter
+Borehole
+Water Treatment
+AC Repair
+Refrigeration
+Appliance Repair
+Electronics Repair
+Phone Repair
+Computer Repair
+CCTV
+DSTV
+Satellite
+Water Heater
+Locksmith
+
+HOME
+Cleaning
+Deep Cleaning
+Laundry
+Dry Cleaning
+Ironing
+Fumigation
+Pest Control
+Gardening
+Landscaping
+Moving
+Packing
+Unpacking
+Furniture Assembly
+Home Organization
+Housekeeping
+Home Maintenance
+Interior Decoration
+Exterior Decoration
+Window Cleaning
+Carpet Cleaning
+Mattress Cleaning
+Pool Cleaning
+Waste Removal
+
+CARS & TRANSPORT
+Mechanic
+Auto Electrician
+Car Wash
+Car Detailing
+Vulcanizing
+Tyre Change
+Wheel Alignment
+Battery
+Towing
+Vehicle Inspection
+Car Repair
+Motorcycle Repair
+Tricycle Repair
+Driver
+Chauffeur
+Airport Pickup
+Moving
+Haulage
+Delivery
+Dispatch
+Courier
+Pickup
+Drop-off
+Ride
+Car Rental
+Truck Rental
+
+ERRANDS & EVERYDAY HELP
+Errands
+Shopping
+Grocery Shopping
+Food Pickup
+Document Pickup
+Document Delivery
+Queueing
+Waiting
+Personal Assistant
+Home Assistance
+Office Assistance
+Installation
+Assembly
+Heavy Lifting
+Loading
+Unloading
+Moving Help
+Event Assistance
+Local Guide
+
+FOOD & COOKING
+Cooking
+Meal Prep
+Catering
+Baking
+Cakes
+Small Chops
+Pastries
+Desserts
+Nigerian Food
+Continental Food
+Private Chef
+Food Delivery
+Food Pickup
+Drinks
+Bartending
+
+EVENTS
+Event Planning
+Event Decoration
+Event Setup
+Event Cleanup
+Wedding
+Birthday
+Party
+Owambe
+Conference
+Corporate Event
+Ushering
+Event Staffing
+Event Rentals
+Chairs & Tables
+Canopy
+Sound
+DJ
+MC
+Live Music
+Photography
+Videography
+Event Security
+
+BEAUTY & GROOMING
+Barber
+Hairdressing
+Hair Braiding
+Cornrows
+Locs
+Wig Making
+Wig Installation
+Hair Styling
+Makeup
+Bridal Makeup
+Gele
+Nails
+Manicure
+Pedicure
+Eyelashes
+Eyebrows
+Skincare
+Massage
+Spa
+
+FASHION
+Tailoring
+Fashion Design
+Clothing Alteration
+Native Wear
+Agbada
+Ankara
+Sewing
+Embroidery
+Beading
+Bead Making
+Shoe Making
+Shoe Repair
+Bag Making
+Leatherwork
+Fashion Styling
+Clothing Branding
+
+TECHNOLOGY
+Tech Support
+Phone Setup
+Computer Setup
+Software Installation
+Wi-Fi
+Internet Setup
+Network Setup
+Website
+Web Development
+App Development
+Software Development
+Graphic Design
+UI/UX Design
+Video Editing
+Photo Editing
+3D Design
+Animation
+Data Entry
+Data Recovery
+Printing
+Scanning
+Typing
+Social Media
+Digital Marketing
+SEO
+Content Creation
+Copywriting
+
+EDUCATION & SKILLS
+Tutoring
+Mathematics
+English
+Science
+Physics
+Chemistry
+Biology
+Coding
+Programming
+Computer Skills
+Language Lessons
+Igbo
+Yoruba
+Hausa
+French
+Music Lessons
+Singing
+Guitar
+Piano
+Driving Lessons
+Exam Prep
+Homework Help
+Research
+Writing
+Editing
+Career Coaching
+
+CREATIVE
+Photography
+Videography
+Portraits
+Product Photography
+Event Photography
+Video Production
+Video Editing
+Graphic Design
+Illustration
+Drawing
+Painting
+Animation
+Voiceover
+Music Production
+Sound Engineering
+Writing
+Copywriting
+Content Creation
+
+AGRICULTURE
+Farming
+Gardening
+Landscaping
+Planting
+Harvesting
+Farm Labour
+Poultry
+Fish Farming
+Livestock
+Animal Care
+Veterinary
+Farm Transport
+Food Processing
+Agricultural Labour
+Irrigation
+
+ANIMALS
+Pet Sitting
+Dog Walking
+Pet Grooming
+Pet Training
+Animal Care
+Veterinary
+Livestock Care
+Poultry
+Fish Care
+
+BUSINESS
+Business Support
+Bookkeeping
+Accounting
+Auditing
+Tax
+Business Registration
+Company Registration
+Branding
+Marketing
+Sales
+Customer Service
+Virtual Assistant
+Data Entry
+Research
+Administrative Help
+Recruitment
+CV Writing
+Resume Writing
+Career Advice
+Business Consulting
+
+OFFICE & PROFESSIONAL
+Office Cleaning
+Office Moving
+Office Setup
+IT Support
+Printing
+Branding
+Document Preparation
+Data Entry
+Receptionist
+Administrative Support
+Accounting
+Legal
+Consulting
+Translation
+Interpretation
+
+PROPERTY
+House Hunting
+Property Search
+Property Management
+Caretaking
+Cleaning
+Inspection
+Valuation
+Surveying
+Architecture
+Construction
+Renovation
+Repairs
+Interior Design
+Landscaping
+Security
+
+CONSTRUCTION
+Construction
+Building
+Masonry
+Bricklaying
+Carpentry
+Roofing
+Plumbing
+Electrical
+Welding
+Tiling
+Painting
+POP Ceiling
+Flooring
+Aluminium
+Glass
+Excavation
+Borehole
+Surveying
+Architecture
+Quantity Surveying
+Site Labour
+
+SECURITY
+Security
+Event Security
+Guard
+Bodyguard
+CCTV
+Alarm Installation
+Access Control
+Security System
+Locksmith
+
+HEALTH, FITNESS & WELLNESS
+Fitness
+Personal Training
+Gym
+Yoga
+Sports
+Massage
+Wellness
+Nutrition
+Physiotherapy
+Elder Care
+Home Care
+
+FAMILY & CARE
+Babysitting
+Childcare
+Nanny
+Elder Care
+Home Care
+School Pickup
+Child Pickup
+Tutoring
+Special Needs Care
+Pet Sitting
+
+TRAVEL
+Travel Planning
+Airport Pickup
+Airport Drop-off
+Driver
+Tour Guide
+Local Guide
+Translation
+Accommodation Help
+Travel Assistance
+Luggage Help
+
+ENVIRONMENT & COMMUNITY
+Waste Removal
+Recycling
+Cleanup
+Community Cleanup
+Tree Planting
+Gardening
+Landscaping
+Environmental Work
+Donation Pickup
+Community Projects
+Volunteer Work
+
+SHOPPING & RETAIL
+Shopping
+Grocery
+Market Run
+Personal Shopping
+Gift Shopping
+Clothing Shopping
+Food Shopping
+Pharmacy Pickup
+Electronics Shopping
+Errands
+Product Pickup
+Product Delivery
+
+DOCUMENTS & PERSONAL ADMIN
+Printing
+Scanning
+Photocopying
+Typing
+Document Delivery
+Document Pickup
+Form Filling
+Application Help
+CV
+Resume
+Translation
+Notary
+Research
+Data Entry
+
+GENERAL
+Help Needed
+General Help
+Manual Labour
+Heavy Lifting
+Setup
+Installation
+Assembly
+Repair
+Maintenance
+Pickup
+Delivery
+Moving
+Cleaning
+Shopping
+Event Help
+Personal Assistance
