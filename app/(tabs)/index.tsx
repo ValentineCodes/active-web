@@ -13,19 +13,14 @@ import {
   useTabBarScrollPadding,
 } from '@/components/ui/tab-bar-insets';
 import { Screen } from '@/components/ui/Screen';
-import {
-  hasProviderCommitments,
-  primaryProviderCommitmentRequestId,
-  useAttendance,
-} from '@/features/attendance/api';
+import { hasProviderCommitments, useAttendance } from '@/features/attendance/api';
 import { useProfile } from '@/features/profile/api';
+import { pickHomeActiveRequest } from '@/features/requests/home-active-request';
 import { useMyResponses } from '@/features/requests/responses-api';
 import { useMyWallet } from '@/features/wallet/api';
 import { useMyRequests } from '@/features/requests/requester-api';
 import { formatGreeting, formatMoney } from '@/lib/format';
 import { queryKeys } from '@/lib/query/keys';
-
-const OPEN_STATUSES = ['posted', 'searching', 'accepted', 'in_progress', 'completion_pending'];
 
 export default function HomeScreen() {
   const profile = useProfile();
@@ -36,46 +31,7 @@ export default function HomeScreen() {
   const queryClient = useQueryClient();
   const { refetch: refetchWallet } = wallet;
 
-  const openRequests =
-    requests.data?.filter((request) => OPEN_STATUSES.includes(request.status)) ?? [];
-
-  const engagementAsRequester = openRequests.find((request) =>
-    ['accepted', 'in_progress', 'completion_pending'].includes(request.status),
-  );
-  const primaryCommitmentRequestId = primaryProviderCommitmentRequestId(attendance.data);
-
-  const activeRequest = (() => {
-    if (engagementAsRequester) {
-      return {
-        id: engagementAsRequester.request_id,
-        title: engagementAsRequester.title ?? 'Request',
-      };
-    }
-    if (primaryCommitmentRequestId) {
-      const fromRequest = requests.data?.find(
-        (row) => row.request_id === primaryCommitmentRequestId,
-      );
-      const fromResponse = responses.data?.find(
-        (row) => row.request_id === primaryCommitmentRequestId,
-      );
-      return {
-        id: primaryCommitmentRequestId,
-        title: fromRequest?.title ?? fromResponse?.title ?? 'Request',
-      };
-    }
-    const engagementAsHelper = responses.data?.find(
-      (response) =>
-        response.response_status === 'accepted' &&
-        ['accepted', 'in_progress', 'completion_pending'].includes(response.request_status),
-    );
-    if (engagementAsHelper) {
-      return {
-        id: engagementAsHelper.request_id,
-        title: engagementAsHelper.title ?? 'Request',
-      };
-    }
-    return null;
-  })();
+  const activeRequest = pickHomeActiveRequest(requests.data, responses.data);
 
   const fabBottom = useFabBottomOffset();
   const fabSize = 56;
