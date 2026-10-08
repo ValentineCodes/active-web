@@ -121,7 +121,7 @@ export default function HomeScreen() {
           />
         ) : null}
 
-        <NearbyRequests variant="home" limit={20} />
+        <NearbyRequests variant="home" />
       </ScrollView>
 
       <FloatingActionButton

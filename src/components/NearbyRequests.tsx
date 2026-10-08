@@ -6,11 +6,14 @@ import { DiscoverRequestCard } from '@/components/DiscoverRequestCard';
 import { HomeRequestCard } from '@/components/HomeRequestCard';
 import { SectionHeader } from '@/components/ui/SectionHeader';
 import { EmptyState, InlineError } from '@/components/ui/StateView';
-import { useBrowseNearbyRequests } from '@/features/requests/browse-api';
+import { useProfile } from '@/features/profile/api';
+import { useBrowseNearbyRequests, type PublicRequest } from '@/features/requests/browse-api';
+import { useMyRequests } from '@/features/requests/requester-api';
 import { useMyResponses } from '@/features/requests/responses-api';
 import { requestOutcomeDescription } from '@/features/requests/outcome';
 import { nearbyRequestBadge } from '@/features/requests/status';
 import {
+  formatCoarseLocationLabel,
   formatMoney,
   formatProximity,
   formatProximityHome,
@@ -25,6 +28,7 @@ import {
 } from '@/lib/location';
 
 const BROWSE_HIDDEN_RESPONSE_STATUSES = new Set(['pending', 'accepted', 'declined']);
+const OPEN_REQUEST_STATUSES = new Set(['posted', 'searching']);
 
 type NearbyRequestsProps = {
   /** Cap list length on dense screens (e.g. Home). */
@@ -53,7 +57,9 @@ export function NearbyRequests({
   const [blocked, setBlocked] = useState<'denied' | 'unavailable' | null>(null);
 
   const nearby = useBrowseNearbyRequests(position);
+  const myRequests = useMyRequests();
   const myResponses = useMyResponses();
+  const profile = useProfile();
 
   const engagedRequestIds = useMemo(() => {
     const ids = new Set<string>();
@@ -113,7 +119,57 @@ export function NearbyRequests({
     }, []),
   );
 
-  const rows = (nearby.data ?? []).filter((request) => !engagedRequestIds.has(request.request_id));
+  const ownOpenRequestIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (const request of myRequests.data ?? []) {
+      if (OPEN_REQUEST_STATUSES.has(request.status)) {
+        ids.add(request.request_id);
+      }
+    }
+    return ids;
+  }, [myRequests.data]);
+
+  const rows = useMemo(() => {
+    const browseRows = nearby.data ?? [];
+
+    if (!isHome) {
+      return browseRows.filter((request) => !engagedRequestIds.has(request.request_id));
+    }
+
+    const merged = new Map<string, PublicRequest>();
+    for (const request of browseRows) {
+      merged.set(request.request_id, request);
+    }
+
+    const profileRow = profile.data;
+    for (const request of myRequests.data ?? []) {
+      if (!OPEN_REQUEST_STATUSES.has(request.status)) continue;
+      if (merged.has(request.request_id)) continue;
+
+      merged.set(request.request_id, {
+        request_id: request.request_id,
+        title: request.title,
+        description: request.description,
+        scheduled_for: request.scheduled_for,
+        offered_amount: request.offered_amount,
+        currency: request.currency,
+        location_label: request.location_label,
+        distance_m: Number.MAX_SAFE_INTEGER,
+        requester_display_name: profileRow?.display_name ?? null,
+        requester_avatar_path: profileRow?.avatar_path ?? null,
+        requester_rating_average: profileRow?.rating_average ?? null,
+        requester_rating_count: profileRow?.rating_count ?? null,
+      });
+    }
+
+    return [...merged.values()].sort((a, b) => {
+      const distanceA = a.distance_m ?? Number.MAX_SAFE_INTEGER;
+      const distanceB = b.distance_m ?? Number.MAX_SAFE_INTEGER;
+      if (distanceA !== distanceB) return distanceA - distanceB;
+      return a.title!.localeCompare(b.title!);
+    });
+  }, [nearby.data, engagedRequestIds, isHome, myRequests.data, profile.data]);
+
   const visible = limit !== undefined ? rows.slice(0, limit) : rows;
   const hasMore = limit !== undefined && rows.length > limit;
 
@@ -157,7 +213,13 @@ export function NearbyRequests({
               (response.request_status === 'posted' || response.request_status === 'searching'),
           );
 
-          const openDetail = (startFlow?: boolean) =>
+          const isOwnRequest = ownOpenRequestIds.has(request.request_id);
+
+          const openDetail = (startFlow?: boolean) => {
+            if (isOwnRequest) {
+              router.push(`/request/${request.request_id}`);
+              return;
+            }
             router.push({
               pathname: '/respond/[id]',
               params: {
@@ -168,6 +230,13 @@ export function NearbyRequests({
                 ...(startFlow ? { start: '1' } : {}),
               },
             });
+          };
+
+          const homeProximity = isOwnRequest
+            ? 'Your request'
+            : request.distance_m != null
+              ? formatProximityHome(request.distance_m)
+              : formatCoarseLocationLabel(request.location_label ?? '');
 
           if (isHome) {
             return (
@@ -177,9 +246,9 @@ export function NearbyRequests({
                 description={requestOutcomeDescription(request.description)}
                 amount={formatMoney(request.offered_amount!, request.currency)}
                 whenLine={formatWhenHome(request.scheduled_for)}
-                proximity={formatProximityHome(request.distance_m)}
+                proximity={homeProximity}
                 onPress={() => openDetail(false)}
-                disabled={Boolean(waiting)}
+                disabled={isOwnRequest ? false : Boolean(waiting)}
               />
             );
           }

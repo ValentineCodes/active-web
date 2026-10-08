@@ -298,8 +298,8 @@ select is(
 select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
 select is(
   (select count(*) from browse_nearby_requests(6.5000::double precision, 3.3800::double precision) where request_id = :'request_id'),
-  0::bigint,
-  'a requester does not see their own request in public discovery'
+  1::bigint,
+  'a requester sees their own posted request in nearby discovery'
 );
 
 select pg_temp.act_as_owner() as _ \gset
