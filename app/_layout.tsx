@@ -31,10 +31,9 @@ function BootScreen() {
 }
 
 /**
- * Three mutually exclusive shells: signing in, finishing a profile, and the app itself.
- *
- * Nothing here touches location. A new user reaches Home without ever being asked where
- * they are; that question only arrives when they submit a request or browse nearby.
+ * Three shells: sign-in, onboarding (profile loaded but no name), and the signed-in app.
+ * While the profile query is still pending, the main app shell renders with screen skeletons
+ * instead of blocking on a full-screen boot spinner.
  */
 function RootNavigator() {
   const { session, isRestoring } = useSession();
@@ -44,7 +43,7 @@ function RootNavigator() {
     enabled: Boolean(session),
   });
 
-  if (isRestoring || (session && profileQuery.isPending)) return <BootScreen />;
+  if (isRestoring) return <BootScreen />;
 
   if (session && profileQuery.isError) {
     return (
@@ -57,7 +56,10 @@ function RootNavigator() {
   const profile = profileQuery.data;
 
   const isSignedIn = Boolean(session);
-  const needsProfile = isSignedIn && !profile?.display_name;
+  const needsProfile = isSignedIn && profileQuery.isSuccess && !profile?.display_name;
+  const showSignedInApp =
+    isSignedIn &&
+    (profileQuery.isPending || (profileQuery.isSuccess && Boolean(profile?.display_name)));
 
   return (
     <Stack screenOptions={{ headerShown: false }}>
@@ -69,7 +71,7 @@ function RootNavigator() {
         <Stack.Screen name="onboarding" />
       </Stack.Protected>
 
-      <Stack.Protected guard={isSignedIn && !needsProfile}>
+      <Stack.Protected guard={showSignedInApp}>
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="profile" />
         <Stack.Screen name="profile/edit" />

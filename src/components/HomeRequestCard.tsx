@@ -1,6 +1,7 @@
 import { Pressable, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
+import { SkeletonBlock } from '@/components/ui/Skeleton';
 import { cn } from '@/lib/cn';
 import { useTheme } from '@/theme';
 
@@ -58,5 +59,24 @@ export function HomeRequestCard({
         </Text>
       </View>
     </Pressable>
+  );
+}
+
+export function HomeRequestCardSkeleton() {
+  const { shadow } = useTheme();
+  return (
+    <View
+      style={shadow.card}
+      className="gap-3 rounded-2xl border border-hairline bg-elevated p-4"
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants"
+    >
+      <SkeletonBlock className="h-7 w-4/5 rounded-md" />
+      <SkeletonBlock className="h-12 w-full rounded-md" />
+      <View className="flex-row items-center justify-between gap-3 pt-1">
+        <SkeletonBlock className="h-4 w-32 rounded-md" />
+        <SkeletonBlock className="h-6 w-20 rounded-md" />
+      </View>
+    </View>
   );
 }

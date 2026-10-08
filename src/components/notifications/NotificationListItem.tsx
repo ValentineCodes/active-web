@@ -1,6 +1,7 @@
 import { Pressable, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
+import { SkeletonBlock } from '@/components/ui/Skeleton';
 import { MARKET } from '@/config';
 import { formatInboxRelativeTime, notificationVisual } from '@/features/notifications/presentation';
 import type { InboxNotification } from '@/features/notifications/types';
@@ -57,5 +58,22 @@ export function NotificationListItem({ item, onPress }: Props) {
         {unread ? <View className="h-2 w-2 rounded-full bg-active" /> : null}
       </View>
     </Pressable>
+  );
+}
+
+export function NotificationListItemSkeleton() {
+  return (
+    <View
+      className="flex-row gap-3 py-4"
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants"
+    >
+      <SkeletonBlock className="h-11 w-11 rounded-full" />
+      <View className="min-w-0 flex-1 gap-2 pr-2">
+        <SkeletonBlock className="h-4 w-4/5 rounded-md" />
+        <SkeletonBlock className="h-10 w-full rounded-md" />
+      </View>
+      <SkeletonBlock className="h-3 w-10 rounded-md" />
+    </View>
   );
 }

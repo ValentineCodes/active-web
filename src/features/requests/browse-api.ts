@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 
 import type { Position } from '@/lib/location';
 import { queryKeys } from '@/lib/query/keys';
@@ -51,6 +51,7 @@ export function useBrowseNearbyRequests(position: Position | null) {
     queryKey: queryKeys.browseNearby(latitude, longitude),
     enabled: position !== null,
     staleTime: 15_000,
+    placeholderData: keepPreviousData,
     queryFn: async (): Promise<PublicRequest[]> => {
       if (!position) throw new Error('Location is required to browse nearby requests.');
 
@@ -79,6 +80,7 @@ export function useBrowseRequest(
     queryKey: queryKeys.browseRequest(requestId, latitude, longitude),
     enabled,
     staleTime: 15_000,
+    placeholderData: keepPreviousData,
     queryFn: async (): Promise<BrowseRequestDetail | null> => {
       if (!position) throw new Error('Location is required to open this request.');
 

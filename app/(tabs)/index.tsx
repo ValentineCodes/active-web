@@ -6,6 +6,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { HomeActiveRequestBanner } from '@/components/HomeActiveRequestBanner';
 import { NearbyRequests } from '@/components/NearbyRequests';
 import { Avatar } from '@/components/ui/Avatar';
+import { SkeletonBlock } from '@/components/ui/Skeleton';
 import { FloatingActionButton } from '@/components/ui/FloatingActionButton';
 import {
   FAB_EDGE_INSET,
@@ -21,6 +22,7 @@ import { useMyWallet } from '@/features/wallet/api';
 import { useMyRequests } from '@/features/requests/requester-api';
 import { formatGreeting, formatMoney } from '@/lib/format';
 import { queryKeys } from '@/lib/query/keys';
+import { showQuerySkeleton } from '@/lib/query/show-skeleton';
 
 export default function HomeScreen() {
   const profile = useProfile();
@@ -32,6 +34,8 @@ export default function HomeScreen() {
   const { refetch: refetchWallet } = wallet;
 
   const activeRequest = pickHomeActiveRequest(requests.data, responses.data);
+  const profileSkeleton = showQuerySkeleton(profile);
+  const walletSkeleton = showQuerySkeleton(wallet);
 
   const fabBottom = useFabBottomOffset();
   const fabSize = 56;
@@ -65,53 +69,68 @@ export default function HomeScreen() {
         }
       >
         <View className="flex-row items-start justify-between gap-3 pb-1">
-          <View className="min-w-0 flex-1 gap-1.5">
-            <Text
-              className="text-2xl font-bold leading-8 text-ink"
-              numberOfLines={1}
-              ellipsizeMode="tail"
-            >
-              {formatGreeting(profile.data?.display_name ?? null)}
-            </Text>
-            <Text className="text-base leading-6 text-muted">Get help or Get money</Text>
-          </View>
-          <View className="flex-row items-center gap-2.5 pt-0.5">
-            {wallet.data ? (
-              <Pressable
-                onPress={() => router.push('/wallet')}
-                accessibilityRole="button"
-                accessibilityLabel="Open wallet"
-                hitSlop={8}
-              >
-                <Text className="text-sm font-semibold text-ink">
-                  {formatMoney(wallet.data.available, wallet.data.currency)}
+          {profileSkeleton ? (
+            <>
+              <View className="min-w-0 flex-1 gap-2">
+                <SkeletonBlock className="h-8 w-56 max-w-full rounded-lg" />
+                <SkeletonBlock className="h-5 w-44 max-w-full rounded-lg" />
+              </View>
+              <View className="flex-row items-center gap-2.5 pt-0.5">
+                {walletSkeleton ? <SkeletonBlock className="h-5 w-16 rounded-md" /> : null}
+                <SkeletonBlock className="h-10 w-10 rounded-full" />
+              </View>
+            </>
+          ) : (
+            <>
+              <View className="min-w-0 flex-1 gap-1.5">
+                <Text
+                  className="text-2xl font-bold leading-8 text-ink"
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
+                >
+                  {formatGreeting(profile.data?.display_name ?? null)}
                 </Text>
-              </Pressable>
-            ) : wallet.isPending ? (
-              <Text className="text-sm font-semibold text-subtle">…</Text>
-            ) : wallet.isError ? (
-              <Pressable
-                onPress={() => router.push('/wallet')}
-                accessibilityRole="button"
-                accessibilityLabel="Open wallet"
-                hitSlop={8}
-              >
-                <Text className="text-sm font-semibold text-danger">Wallet</Text>
-              </Pressable>
-            ) : null}
-            <Pressable
-              onPress={() => router.push('/profile')}
-              accessibilityRole="button"
-              accessibilityLabel="Open your profile"
-            >
-              <Avatar
-                size="sm"
-                path={profile.data?.avatar_path}
-                name={profile.data?.display_name ?? null}
-                showActiveDot={hasProviderCommitments(attendance.data)}
-              />
-            </Pressable>
-          </View>
+                <Text className="text-base leading-6 text-muted">Get help or Get money</Text>
+              </View>
+              <View className="flex-row items-center gap-2.5 pt-0.5">
+                {wallet.data ? (
+                  <Pressable
+                    onPress={() => router.push('/wallet')}
+                    accessibilityRole="button"
+                    accessibilityLabel="Open wallet"
+                    hitSlop={8}
+                  >
+                    <Text className="text-sm font-semibold text-ink">
+                      {formatMoney(wallet.data.available, wallet.data.currency)}
+                    </Text>
+                  </Pressable>
+                ) : walletSkeleton ? (
+                  <SkeletonBlock className="h-5 w-16 rounded-md" />
+                ) : wallet.isError ? (
+                  <Pressable
+                    onPress={() => router.push('/wallet')}
+                    accessibilityRole="button"
+                    accessibilityLabel="Open wallet"
+                    hitSlop={8}
+                  >
+                    <Text className="text-sm font-semibold text-danger">Wallet</Text>
+                  </Pressable>
+                ) : null}
+                <Pressable
+                  onPress={() => router.push('/profile')}
+                  accessibilityRole="button"
+                  accessibilityLabel="Open your profile"
+                >
+                  <Avatar
+                    size="sm"
+                    path={profile.data?.avatar_path}
+                    name={profile.data?.display_name ?? null}
+                    showActiveDot={hasProviderCommitments(attendance.data)}
+                  />
+                </Pressable>
+              </View>
+            </>
+          )}
         </View>
 
         {activeRequest ? (

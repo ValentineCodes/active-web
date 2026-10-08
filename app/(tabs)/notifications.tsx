@@ -7,13 +7,17 @@ import {
   NotificationInboxFilter,
   type InboxFilter,
 } from '@/components/notifications/NotificationInboxFilter';
-import { NotificationListItem } from '@/components/notifications/NotificationListItem';
+import {
+  NotificationListItem,
+  NotificationListItemSkeleton,
+} from '@/components/notifications/NotificationListItem';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { IconButton } from '@/components/ui/IconButton';
 import { Screen } from '@/components/ui/Screen';
 import { useTabBarScrollPadding } from '@/components/ui/tab-bar-insets';
-import { EmptyState, ErrorState, LoadingState } from '@/components/ui/StateView';
+import { SkeletonBlock } from '@/components/ui/Skeleton';
+import { EmptyState, ErrorState } from '@/components/ui/StateView';
 import {
   markNotificationInboxItemRead,
   markNotificationInboxRead,
@@ -28,6 +32,7 @@ import { resolveNotificationHref } from '@/features/notifications/presentation';
 import type { InboxNotification } from '@/features/notifications/types';
 import { useProfile } from '@/features/profile/api';
 import { queryKeys } from '@/lib/query/keys';
+import { showQuerySkeleton } from '@/lib/query/show-skeleton';
 import {
   openNotificationSettings,
   readPushPermission,
@@ -125,13 +130,19 @@ export default function NotificationsScreen() {
 
   const tabBarScrollPadding = useTabBarScrollPadding();
   const inboxEmpty = inbox.isSuccess && filteredItems.length === 0;
+  const inboxSkeleton = showQuerySkeleton(inbox);
+  const INBOX_SKELETON_ROWS = 6;
 
   return (
     <Screen className="flex-1">
       <View className="flex-row items-start justify-between gap-3 px-5 pb-3 pt-2">
         <View className="min-w-0 flex-1 gap-1">
           <Text className="text-3xl font-bold text-ink">Notifications</Text>
-          <Text className="text-sm text-muted">{unreadLabel}</Text>
+          {inboxSkeleton ? (
+            <SkeletonBlock className="mt-1 h-4 w-32 rounded-md" />
+          ) : (
+            <Text className="text-sm text-muted">{unreadLabel}</Text>
+          )}
         </View>
         <IconButton
           icon="settings-outline"
@@ -160,7 +171,16 @@ export default function NotificationsScreen() {
         )}
       </View>
 
-      {inbox.isPending ? <LoadingState /> : null}
+      {inboxSkeleton ? (
+        <View className="flex-1 px-5 pt-1" style={{ paddingBottom: tabBarScrollPadding }}>
+          {Array.from({ length: INBOX_SKELETON_ROWS }, (_, index) => (
+            <View key={index}>
+              <NotificationListItemSkeleton />
+              {index < INBOX_SKELETON_ROWS - 1 ? <View className="h-px bg-hairline" /> : null}
+            </View>
+          ))}
+        </View>
+      ) : null}
 
       {inbox.isError ? <ErrorState error={inbox.error} onRetry={() => inbox.refetch()} /> : null}
 

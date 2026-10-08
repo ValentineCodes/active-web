@@ -1,6 +1,7 @@
 import { Pressable, Text, View } from 'react-native';
 
 import { Badge } from '@/components/ui/Badge';
+import { SkeletonBlock } from '@/components/ui/Skeleton';
 import { Button } from '@/components/ui/Button';
 import { cn } from '@/lib/cn';
 import { useTheme } from '@/theme';
@@ -73,6 +74,26 @@ export function DiscoverRequestCard({
       </Pressable>
 
       <Button label={helpLabel} size="lg" disabled={disabled} onPress={onHelp} />
+    </View>
+  );
+}
+
+export function DiscoverRequestCardSkeleton() {
+  const { shadow } = useTheme();
+  return (
+    <View
+      style={shadow.card}
+      className="gap-4 rounded-2xl border border-hairline bg-canvas p-4"
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants"
+    >
+      <View className="gap-2">
+        <SkeletonBlock className="h-5 w-3/5 rounded-md" />
+        <SkeletonBlock className="h-10 w-full rounded-md" />
+        <SkeletonBlock className="h-8 w-28 rounded-md" />
+        <SkeletonBlock className="h-4 w-40 rounded-md" />
+      </View>
+      <SkeletonBlock className="h-12 w-full rounded-2xl" />
     </View>
   );
 }

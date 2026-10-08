@@ -1,9 +1,9 @@
 import { useCallback, useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
 
-import { DiscoverRequestCard } from '@/components/DiscoverRequestCard';
-import { HomeRequestCard } from '@/components/HomeRequestCard';
+import { DiscoverRequestCard, DiscoverRequestCardSkeleton } from '@/components/DiscoverRequestCard';
+import { HomeRequestCard, HomeRequestCardSkeleton } from '@/components/HomeRequestCard';
 import { SectionHeader } from '@/components/ui/SectionHeader';
 import { EmptyState, InlineError } from '@/components/ui/StateView';
 import { useProfile } from '@/features/profile/api';
@@ -12,6 +12,7 @@ import { useMyRequests } from '@/features/requests/requester-api';
 import { useMyResponses } from '@/features/requests/responses-api';
 import { requestOutcomeDescription } from '@/features/requests/outcome';
 import { nearbyRequestBadge } from '@/features/requests/status';
+import { showQuerySkeleton } from '@/lib/query/show-skeleton';
 import {
   formatCoarseLocationLabel,
   formatMoney,
@@ -29,6 +30,21 @@ import {
 
 const BROWSE_HIDDEN_RESPONSE_STATUSES = new Set(['pending', 'accepted', 'declined']);
 const OPEN_REQUEST_STATUSES = new Set(['posted', 'searching']);
+const NEARBY_SKELETON_COUNT = 3;
+
+function NearbyFeedSkeleton({ home }: { home: boolean }) {
+  return (
+    <View className="gap-3">
+      {Array.from({ length: NEARBY_SKELETON_COUNT }, (_, index) =>
+        home ? (
+          <HomeRequestCardSkeleton key={index} />
+        ) : (
+          <DiscoverRequestCardSkeleton key={index} />
+        ),
+      )}
+    </View>
+  );
+}
 
 type NearbyRequestsProps = {
   /** Cap list length on dense screens (e.g. Home). */
@@ -173,10 +189,12 @@ export function NearbyRequests({
   const visible = limit !== undefined ? rows.slice(0, limit) : rows;
   const hasMore = limit !== undefined && rows.length > limit;
 
+  const browseSkeleton = showQuerySkeleton(nearby);
+
   const nearbyFeed =
     position === null ? (
       locating ? (
-        <ActivityIndicator />
+        <NearbyFeedSkeleton home={isHome} />
       ) : blocked === 'denied' ? (
         <EmptyState
           layout="list"
@@ -192,8 +210,8 @@ export function NearbyRequests({
           message="Pull to refresh and try again."
         />
       )
-    ) : nearby.isPending ? (
-      <ActivityIndicator />
+    ) : browseSkeleton ? (
+      <NearbyFeedSkeleton home={isHome} />
     ) : nearby.isError ? (
       <InlineError error={nearby.error} />
     ) : rows.length === 0 ? (
