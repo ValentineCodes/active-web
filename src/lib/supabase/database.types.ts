@@ -540,6 +540,8 @@ export type Database = {
           avatar_path: string | null
           bio: string | null
           created_at: string
+          discovery_location: unknown
+          discovery_location_updated_at: string | null
           display_name: string | null
           id: string
           jobs_completed: number
@@ -559,6 +561,8 @@ export type Database = {
           avatar_path?: string | null
           bio?: string | null
           created_at?: string
+          discovery_location?: unknown
+          discovery_location_updated_at?: string | null
           display_name?: string | null
           id: string
           jobs_completed?: number
@@ -969,6 +973,63 @@ export type Database = {
           },
         ]
       }
+      request_tags: {
+        Row: {
+          created_at: string
+          request_id: string
+          tag_id: string
+        }
+        Insert: {
+          created_at?: string
+          request_id: string
+          tag_id: string
+        }
+        Update: {
+          created_at?: string
+          request_id?: string
+          tag_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "request_tags_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "request_tags_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "tags"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tags: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          slug: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          slug: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          slug?: string
+        }
+        Relationships: []
+      }
       requests: {
         Row: {
           accepted_at: string | null
@@ -981,7 +1042,7 @@ export type Database = {
           completion_reminder_sent_at: string | null
           created_at: string
           currency: string
-          description: string | null
+          description: string
           expires_at: string | null
           expiry_reminder_sent_at: string | null
           id: string
@@ -1010,7 +1071,7 @@ export type Database = {
           completion_reminder_sent_at?: string | null
           created_at?: string
           currency?: string
-          description?: string | null
+          description: string
           expires_at?: string | null
           expiry_reminder_sent_at?: string | null
           id?: string
@@ -1039,7 +1100,7 @@ export type Database = {
           completion_reminder_sent_at?: string | null
           created_at?: string
           currency?: string
-          description?: string | null
+          description?: string
           expires_at?: string | null
           expiry_reminder_sent_at?: string | null
           id?: string
@@ -1165,19 +1226,52 @@ export type Database = {
           },
         ]
       }
+      user_notification_tag_interests: {
+        Row: {
+          created_at: string
+          tag_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          tag_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          tag_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_notification_tag_interests_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "tags"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_notification_tag_interests_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_attendance: {
         Row: {
-          request_id: string | null
+          request_id: string
           updated_at: string
           user_id: string
         }
         Insert: {
-          request_id?: string | null
+          request_id: string
           updated_at?: string
           user_id: string
         }
         Update: {
-          request_id?: string | null
+          request_id?: string
           updated_at?: string
           user_id?: string
         }
@@ -1199,7 +1293,7 @@ export type Database = {
           {
             foreignKeyName: "user_attendance_user_id_fkey"
             columns: ["user_id"]
-            isOneToOne: true
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -1355,16 +1449,19 @@ export type Database = {
       my_attendance: {
         Row: {
           attending_request_id: string | null
+          commitment_count: number | null
           updated_at: string | null
           user_id: string | null
         }
         Insert: {
           attending_request_id?: string | null
+          commitment_count?: number | null
           updated_at?: string | null
           user_id?: string | null
         }
         Update: {
           attending_request_id?: string | null
+          commitment_count?: number | null
           updated_at?: string | null
           user_id?: string | null
         }
@@ -1386,7 +1483,7 @@ export type Database = {
           {
             foreignKeyName: "user_attendance_user_id_fkey"
             columns: ["user_id"]
-            isOneToOne: true
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -1401,7 +1498,7 @@ export type Database = {
           completed_at: string | null
           created_at: string | null
           currency: string | null
-          description: string | null
+          description: string
           expires_at: string | null
           is_rated: boolean | null
           latitude: number | null
@@ -1419,6 +1516,7 @@ export type Database = {
           started_at: string | null
           status: Database["public"]["Enums"]["request_status"] | null
           submitted_at: string | null
+          tag_slugs: string[] | null
           title: string | null
           updated_at: string | null
         }
@@ -1758,6 +1856,7 @@ export type Database = {
           requester_rating_average: number
           requester_rating_count: number
           scheduled_for: string
+          tag_slugs: string[]
           title: string
         }[]
       }
@@ -1773,7 +1872,10 @@ export type Database = {
         Args: { p_name: string }
         Returns: boolean
       }
-      clear_user_attendance: { Args: { p_user_id: string }; Returns: undefined }
+      clear_user_attendance: {
+        Args: { p_request_id?: string; p_user_id: string }
+        Returns: undefined
+      }
       clone_request_from_prior: {
         Args: { p_idempotency_key: string; p_source_request_id: string }
         Returns: string
@@ -1845,9 +1947,21 @@ export type Database = {
           p_offered_amount?: number
           p_scheduled_for?: string
           p_source_request_id?: string
+          p_tag_ids?: string[]
           p_title: string
         }
         Returns: string
+      }
+      search_tags: {
+        Args: {
+          p_limit?: number
+          p_query?: string
+        }
+        Returns: {
+          name: string
+          slug: string
+          tag_id: string
+        }[]
       }
       decline_response: {
         Args: { p_reason?: string; p_response_id: string }
@@ -1960,6 +2074,7 @@ export type Database = {
           service_problem_reported_by_me: boolean
           service_problem_respond_by: string
           started_at: string
+          tag_slugs: string[]
           title: string
           viewer_has_rated: boolean
           viewer_is_requester: boolean
@@ -2308,6 +2423,18 @@ export type Database = {
         Returns: boolean
       }
       service_problem_response_interval: { Args: never; Returns: string }
+      list_notification_tag_interests: {
+        Args: never
+        Returns: {
+          name: string
+          slug: string
+          tag_id: string
+        }[]
+      }
+      record_discovery_coordinates: {
+        Args: { p_latitude: number; p_longitude: number }
+        Returns: undefined
+      }
       set_notification_preferences: {
         Args: {
           p_message_push_enabled: boolean
@@ -2316,6 +2443,10 @@ export type Database = {
           p_push_payments_wallet_enabled: boolean
           p_push_tips_reminders_enabled: boolean
         }
+        Returns: undefined
+      }
+      set_notification_tag_interests: {
+        Args: { p_tag_ids: string[] }
         Returns: undefined
       }
       set_request_conversation_focus: {
@@ -2467,6 +2598,7 @@ export type Database = {
       notification_type:
         | "response_received"
         | "new_responses"
+        | "matching_request"
         | "request_expiring"
         | "request_expired"
         | "response_accepted"
@@ -2680,6 +2812,7 @@ export const Constants = {
       notification_type: [
         "response_received",
         "new_responses",
+        "matching_request",
         "request_expiring",
         "request_expired",
         "response_accepted",

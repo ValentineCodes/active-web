@@ -11,6 +11,7 @@ import type { ReportServiceProblemInput } from '@/features/requests/requester-ap
 import type { Database } from '@/lib/supabase/database.types';
 import type { Nullable, RpcRow } from '@/lib/supabase/types';
 import { normalizeRequestStatus } from '@/features/domain/transitions';
+import { normalizeRequestTagSlugs } from '@/features/requests/tags';
 
 type Functions = Database['public']['Functions'];
 
@@ -28,13 +29,12 @@ type MyResponse = Nullable<
   | 'attachment_path'
   | 'decline_reason'
   | 'message'
-  | 'description'
 >;
 
 export type RespondableRequest = {
   request_id: string;
   title: string;
-  description: string | null;
+  description: string;
   scheduled_for: string | null;
   offered_amount: number | null;
   currency: string;
@@ -48,13 +48,14 @@ export type RespondableRequest = {
   requester_rating_count: number | null;
   requester_completion_percent: number | null;
   attachment_path: string | null;
+  tag_slugs: string[];
 };
 
 function fromBrowseRequest(row: BrowseRequestDetail): RespondableRequest {
   return {
     request_id: row.request_id,
     title: row.title,
-    description: row.description,
+    description: row.description ?? '',
     scheduled_for: row.scheduled_for,
     offered_amount: row.offered_amount,
     currency: row.currency,
@@ -68,6 +69,7 @@ function fromBrowseRequest(row: BrowseRequestDetail): RespondableRequest {
     requester_rating_count: row.requester_rating_count,
     requester_completion_percent: row.requester_completion_percent,
     attachment_path: row.attachment_path,
+    tag_slugs: normalizeRequestTagSlugs(row.tag_slugs),
   };
 }
 
@@ -75,7 +77,7 @@ function fromMyResponse(row: MyResponse): RespondableRequest {
   return {
     request_id: row.request_id,
     title: row.title,
-    description: row.description,
+    description: row.description ?? '',
     scheduled_for: row.scheduled_for,
     offered_amount: row.offered_amount,
     currency: row.currency,
@@ -89,6 +91,7 @@ function fromMyResponse(row: MyResponse): RespondableRequest {
     requester_rating_count: row.requester_rating_count,
     requester_completion_percent: row.requester_completion_percent,
     attachment_path: row.attachment_path,
+    tag_slugs: [],
   };
 }
 

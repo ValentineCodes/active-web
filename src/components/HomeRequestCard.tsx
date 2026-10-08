@@ -6,7 +6,7 @@ import { useTheme } from '@/theme';
 
 type HomeRequestCardProps = {
   title: string;
-  description?: string | null;
+  description: string;
   amount: string;
   whenLine: string;
   proximity: string;
@@ -41,11 +41,9 @@ export function HomeRequestCard({
         {title}
       </Text>
 
-      {description ? (
-        <Text className="text-base leading-6 text-muted" numberOfLines={2}>
-          {description}
-        </Text>
-      ) : null}
+      <Text className="text-base leading-6 text-muted" numberOfLines={2}>
+        {description}
+      </Text>
 
       <View className="flex-row items-center justify-between gap-3 pt-1">
         <View className="flex-1 flex-row flex-wrap items-center gap-x-3 gap-y-1">

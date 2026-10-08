@@ -24,6 +24,7 @@ import { RequestFlowHeader } from '@/components/request-flow/RequestFlowHeader';
 import { RequestMetaRow } from '@/components/request-flow/RequestMetaRow';
 import { RequestOfferWhenCard } from '@/components/request-flow/RequestOfferWhenCard';
 import { RequestPersonCard } from '@/components/request-flow/RequestPersonCard';
+import { RequestTagsLine } from '@/components/request-flow/RequestTagsLine';
 import { RequestTitleSection } from '@/components/request-flow/RequestTitleSection';
 import { Button } from '@/components/ui/Button';
 import { Screen } from '@/components/ui/Screen';
@@ -47,6 +48,7 @@ import {
   formatAgo,
   formatMoney,
   formatRequestOfferLocationLabel,
+  formatCommitmentDayLabel,
   formatWhen,
   formatWhenHome,
   formatWhenRequestCard,
@@ -318,6 +320,8 @@ export default function EngagementScreen() {
             />
           ) : null}
 
+          <RequestTagsLine slugs={data.tag_slugs} />
+
           {requesterActive ? (
             <View className="gap-3">
               <Text className="text-lg font-bold text-ink">Attending your request</Text>
@@ -361,7 +365,10 @@ export default function EngagementScreen() {
           ) : null}
 
           {helperActive ? (
-            <RequestCallout tone="info" title="You’re attending this request">
+            <RequestCallout
+              tone="info"
+              title={`You're committed to this request on ${formatCommitmentDayLabel(data.scheduled_for)}.`}
+            >
               <Text className="text-sm text-muted">
                 Payment is secured. Mark it done when the work is complete.
               </Text>

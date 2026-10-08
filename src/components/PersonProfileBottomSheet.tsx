@@ -10,6 +10,7 @@ import {
 } from '@gorhom/bottom-sheet';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { ResponderScheduleAvailability } from '@/components/ResponderScheduleAvailability';
 import { BottomSheetWindow } from '@/components/ui/BottomSheetWindow';
 import { ProfileCataloguePreview } from '@/components/ProfileCataloguePreview';
 import { Avatar } from '@/components/ui/Avatar';
@@ -108,11 +109,9 @@ function PersonProfileResponseFooter({
             />
           </View>
         )}
-        {!responderAvailable ? (
-          <Text className="text-center text-sm text-muted">
-            This person is currently attending to another request.
-          </Text>
-        ) : null}
+        <View className="items-center">
+          <ResponderScheduleAvailability available={responderAvailable} />
+        </View>
       </View>
     </BottomSheetFooter>
   );

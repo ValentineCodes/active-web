@@ -5,18 +5,9 @@ import { WALLET } from '@/config';
 import { queryKeys } from '@/lib/query/keys';
 import { supabase } from '@/lib/supabase/client';
 
-import { koboToMajor, parseKobo } from './kobo';
+import { koboToMajor } from './kobo';
 import { walletTransactionDisplayKind, type WalletActivityRow } from './activity';
 import type { MyWallet, WalletBalanceKobo, WalletTransactionRow } from './types';
-
-type GetMyWalletRow = {
-  wallet_id: string;
-  available_kobo: number;
-  locked_kobo: number;
-  pending_kobo: number;
-  currency: string;
-  updated_at: string;
-};
 
 type ListWalletTransactionRow = {
   id: string;
@@ -36,25 +27,17 @@ type ListWalletTransactionRow = {
 export type { MyWallet, WalletBalanceKobo, WalletTransactionRow } from './types';
 export type { WalletActivityRow as WalletActivityListItem } from './activity';
 
-function mapWalletBalance(row: GetMyWalletRow): WalletBalanceKobo {
-  return {
-    walletId: row.wallet_id,
-    availableKobo: parseKobo(row.available_kobo),
-    lockedKobo: parseKobo(row.locked_kobo),
-    pendingKobo: parseKobo(row.pending_kobo),
-    currency: 'NGN',
-    updatedAt: row.updated_at,
-  };
-}
+const EMPTY_WALLET: MyWallet = {
+  available: 0,
+  locked: 0,
+  pending: 0,
+  currency: 'NGN',
+  updated_at: new Date(0).toISOString(),
+};
 
-function balanceToMyWallet(balance: WalletBalanceKobo): MyWallet {
-  return {
-    available: koboToMajor(balance.availableKobo),
-    locked: koboToMajor(balance.lockedKobo),
-    pending: koboToMajor(balance.pendingKobo),
-    currency: balance.currency,
-    updated_at: balance.updatedAt,
-  };
+function majorFromView(value: number | null | undefined): number {
+  if (value === null || value === undefined) return 0;
+  return Number(value);
 }
 
 function mapTransaction(row: ListWalletTransactionRow): WalletTransactionRow {
@@ -92,22 +75,35 @@ function transactionToActivityItem(row: WalletTransactionRow): WalletActivityRow
   };
 }
 
-export async function fetchMyWalletBalance(): Promise<WalletBalanceKobo> {
-  const { data, error } = await supabase.rpc('get_my_wallet').maybeSingle();
+/** Read-only wallet snapshot (PostgREST-safe; avoids get_my_wallet INSERT side effects). */
+export async function fetchMyWallet(): Promise<MyWallet> {
+  const { data, error } = await supabase
+    .from('my_wallet')
+    .select('available, locked, pending, currency, updated_at')
+    .maybeSingle();
   if (error) throw error;
 
-  if (!data) {
-    return {
-      walletId: '',
-      availableKobo: 0,
-      lockedKobo: 0,
-      pendingKobo: 0,
-      currency: 'NGN',
-      updatedAt: new Date(0).toISOString(),
-    };
-  }
+  if (!data) return EMPTY_WALLET;
 
-  return mapWalletBalance(data as GetMyWalletRow);
+  return {
+    available: majorFromView(data.available),
+    locked: majorFromView(data.locked),
+    pending: majorFromView(data.pending),
+    currency: data.currency ?? 'NGN',
+    updated_at: data.updated_at ?? EMPTY_WALLET.updated_at,
+  };
+}
+
+export async function fetchMyWalletBalance(): Promise<WalletBalanceKobo> {
+  const wallet = await fetchMyWallet();
+  return {
+    walletId: '',
+    availableKobo: Math.round(wallet.available * 100),
+    lockedKobo: Math.round(wallet.locked * 100),
+    pendingKobo: Math.round(wallet.pending * 100),
+    currency: 'NGN',
+    updatedAt: wallet.updated_at,
+  };
 }
 
 export async function fetchMyWalletTransactions(
@@ -127,10 +123,7 @@ export function useMyWallet() {
   return useQuery({
     queryKey: queryKeys.wallet,
     enabled: Boolean(session),
-    queryFn: async (): Promise<MyWallet> => {
-      const balance = await fetchMyWalletBalance();
-      return balanceToMyWallet(balance);
-    },
+    queryFn: fetchMyWallet,
   });
 }
 

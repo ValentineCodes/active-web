@@ -13,7 +13,6 @@ import {
   type RequestLocationSheetHandle,
 } from '@/components/RequestLocationModal';
 import { ResponseCreationFlow } from '@/components/ResponseCreationFlow';
-import { useAttendance, isAttendingAnotherRequest } from '@/features/attendance/api';
 import { hasProfilePhotoReady, useProfile } from '@/features/profile/api';
 import { Button } from '@/components/ui/Button';
 import { Screen } from '@/components/ui/Screen';
@@ -48,7 +47,6 @@ export default function RespondScreen() {
     lng?: string;
     start?: string;
   }>();
-  const attendance = useAttendance();
   const myResponses = useMyResponses();
   const profile = useProfile();
   const respond = useRespondToRequest();
@@ -79,8 +77,6 @@ export default function RespondScreen() {
     error,
     refetch,
   } = useRequestForResponse(id, position);
-
-  const attendingElsewhere = isAttendingAnotherRequest(attendance.data, id);
 
   useFocusEffect(
     useCallback(() => {
@@ -335,21 +331,13 @@ export default function RespondScreen() {
           </RequestCallout>
         ) : null}
 
-        {attendingElsewhere ? (
-          <RequestCallout tone="warning" title="Attending another request">
-            <Text className="text-sm text-muted">
-              You can still respond to other requests. Nobody can select you while you are attending
-              another one.
-            </Text>
-          </RequestCallout>
-        ) : null}
-
         {isFetchingMatch ? <LoadingState label="Checking this request" /> : null}
 
         {declinedParticipation ? null : existingResponse ? (
           <RequestCallout tone="warning" title="Response awaiting acceptance">
             <Text className="text-sm text-muted">
-              You can keep responding to other requests. You only commit when the requester accepts.
+              You can respond to other requests anytime. You are only committed to a job after the
+              requester selects you for that time.
             </Text>
           </RequestCallout>
         ) : (

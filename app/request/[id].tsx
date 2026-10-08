@@ -14,6 +14,7 @@ import { RequestMetaRow } from '@/components/request-flow/RequestMetaRow';
 import { RequestOfferWhenCard } from '@/components/request-flow/RequestOfferWhenCard';
 import { RequestConnectionActions } from '@/components/request-flow/RequestConnectionActions';
 import { RequestPersonCard } from '@/components/request-flow/RequestPersonCard';
+import { RequestTagsLine } from '@/components/request-flow/RequestTagsLine';
 import { RequestTitleSection } from '@/components/request-flow/RequestTitleSection';
 import { ResponseCard } from '@/components/ResponseCard';
 import { Button } from '@/components/ui/Button';
@@ -195,6 +196,8 @@ export default function RequestDetailScreen() {
             locationLabel={formatRequestOfferLocationLabel(data.location_label, null)}
           />
         ) : null}
+
+        <RequestTagsLine slugs={data.tag_slugs} />
 
         {data.status === 'disputed' ? (
           <RequestCallout tone="danger" title="Issue reported">

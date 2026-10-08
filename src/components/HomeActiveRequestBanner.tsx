@@ -15,7 +15,7 @@ export function HomeActiveRequestBanner({
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`Active request: ${title}`}
+      accessibilityLabel={`Open: ${title}`}
       onPress={onPress}
       style={shadow.raised}
       className="flex-row items-center gap-3 rounded-2xl bg-active p-4 active:opacity-90"
@@ -24,9 +24,7 @@ export function HomeActiveRequestBanner({
         <View className="h-2.5 w-2.5 rounded-full bg-on-brand" />
       </View>
       <View className="min-w-0 flex-1 gap-1">
-        <Text className="text-xs font-bold uppercase tracking-widest text-on-brand">
-          Active request
-        </Text>
+        <Text className="text-xs font-bold uppercase tracking-widest text-on-brand">Continue</Text>
         <Text className="text-lg font-bold leading-6 text-on-brand" numberOfLines={2}>
           {title}
         </Text>

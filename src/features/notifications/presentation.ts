@@ -79,6 +79,11 @@ export function notificationVisual(type: NotificationType): NotificationVisual {
         icon: 'chatbubble-ellipses-outline',
         ...blue,
       };
+    case 'matching_request':
+      return {
+        icon: 'location-outline',
+        ...blue,
+      };
     case 'request_expiring':
     case 'request_expired':
       return {

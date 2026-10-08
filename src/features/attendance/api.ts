@@ -12,23 +12,35 @@ export function useAttendance() {
     queryFn: async (): Promise<MyAttendance> => {
       const { data, error } = await supabase
         .from('my_attendance')
-        .select('user_id, attending_request_id, updated_at')
-        .single();
+        .select('user_id, attending_request_id, commitment_count, updated_at')
+        .maybeSingle();
 
       if (error) throw error;
-      return data;
+
+      return (
+        data ?? {
+          user_id: '',
+          attending_request_id: null,
+          commitment_count: 0,
+          updated_at: null,
+        }
+      );
     },
   });
 }
 
-export function isAttendingAnotherRequest(
-  attendance: MyAttendance | undefined,
-  requestId: string,
-): boolean {
-  return attendance?.attending_request_id != null && attendance.attending_request_id !== requestId;
+/** Selected/committed provider requests (schedule conflicts enforced at selection). */
+export function providerCommitmentCount(attendance: MyAttendance | undefined): number {
+  return attendance?.commitment_count ?? 0;
 }
 
-/** True when the user is attending a selected request, not merely pending responses elsewhere. */
-export function isAttendingAnyRequest(attendance: MyAttendance | undefined): boolean {
-  return attendance?.attending_request_id != null;
+export function hasProviderCommitments(attendance: MyAttendance | undefined): boolean {
+  return providerCommitmentCount(attendance) > 0;
+}
+
+/** Primary commitment for banners when the user has multiple non-conflicting jobs. */
+export function primaryProviderCommitmentRequestId(
+  attendance: MyAttendance | undefined,
+): string | null {
+  return attendance?.attending_request_id ?? null;
 }

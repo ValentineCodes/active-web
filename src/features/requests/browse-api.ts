@@ -12,7 +12,6 @@ export type PublicRequest = Nullable<
   RpcRow<Functions['browse_nearby_requests']['Returns']>,
   | 'scheduled_for'
   | 'offered_amount'
-  | 'description'
   | 'requester_display_name'
   | 'requester_avatar_path'
   | 'requester_rating_average'
@@ -23,7 +22,6 @@ export type BrowseRequestDetail = Nullable<
   RpcRow<Functions['browse_request']['Returns']>,
   | 'scheduled_for'
   | 'offered_amount'
-  | 'description'
   | 'requester_display_name'
   | 'requester_avatar_path'
   | 'requester_bio'
@@ -37,6 +35,14 @@ function roundCoordinate(value: number) {
   return Math.round(value * 1000) / 1000;
 }
 
+async function recordDiscoveryCoordinates(position: Position) {
+  const { error } = await supabase.rpc('record_discovery_coordinates', {
+    p_latitude: position.latitude,
+    p_longitude: position.longitude,
+  });
+  if (error) throw error;
+}
+
 export function useBrowseNearbyRequests(position: Position | null) {
   const latitude = position ? roundCoordinate(position.latitude) : null;
   const longitude = position ? roundCoordinate(position.longitude) : null;
@@ -47,6 +53,8 @@ export function useBrowseNearbyRequests(position: Position | null) {
     staleTime: 15_000,
     queryFn: async (): Promise<PublicRequest[]> => {
       if (!position) throw new Error('Location is required to browse nearby requests.');
+
+      await recordDiscoveryCoordinates(position);
 
       const { data, error } = await supabase.rpc('browse_nearby_requests', {
         p_latitude: position.latitude,
@@ -73,6 +81,8 @@ export function useBrowseRequest(
     staleTime: 15_000,
     queryFn: async (): Promise<BrowseRequestDetail | null> => {
       if (!position) throw new Error('Location is required to open this request.');
+
+      await recordDiscoveryCoordinates(position);
 
       const { data, error } = await supabase.rpc('browse_request', {
         p_request_id: requestId,

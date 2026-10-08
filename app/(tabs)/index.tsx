@@ -13,7 +13,11 @@ import {
   useTabBarScrollPadding,
 } from '@/components/ui/tab-bar-insets';
 import { Screen } from '@/components/ui/Screen';
-import { useAttendance } from '@/features/attendance/api';
+import {
+  hasProviderCommitments,
+  primaryProviderCommitmentRequestId,
+  useAttendance,
+} from '@/features/attendance/api';
 import { useProfile } from '@/features/profile/api';
 import { useMyResponses } from '@/features/requests/responses-api';
 import { useMyWallet } from '@/features/wallet/api';
@@ -38,13 +42,7 @@ export default function HomeScreen() {
   const engagementAsRequester = openRequests.find((request) =>
     ['accepted', 'in_progress', 'completion_pending'].includes(request.status),
   );
-  const engagementAsHelper = responses.data?.find(
-    (response) =>
-      response.response_status === 'accepted' &&
-      ['accepted', 'in_progress', 'completion_pending'].includes(response.request_status),
-  );
-
-  const attendingRequestId = attendance.data?.attending_request_id ?? null;
+  const primaryCommitmentRequestId = primaryProviderCommitmentRequestId(attendance.data);
 
   const activeRequest = (() => {
     if (engagementAsRequester) {
@@ -53,18 +51,27 @@ export default function HomeScreen() {
         title: engagementAsRequester.title ?? 'Request',
       };
     }
+    if (primaryCommitmentRequestId) {
+      const fromRequest = requests.data?.find(
+        (row) => row.request_id === primaryCommitmentRequestId,
+      );
+      const fromResponse = responses.data?.find(
+        (row) => row.request_id === primaryCommitmentRequestId,
+      );
+      return {
+        id: primaryCommitmentRequestId,
+        title: fromRequest?.title ?? fromResponse?.title ?? 'Request',
+      };
+    }
+    const engagementAsHelper = responses.data?.find(
+      (response) =>
+        response.response_status === 'accepted' &&
+        ['accepted', 'in_progress', 'completion_pending'].includes(response.request_status),
+    );
     if (engagementAsHelper) {
       return {
         id: engagementAsHelper.request_id,
         title: engagementAsHelper.title ?? 'Request',
-      };
-    }
-    if (attendingRequestId) {
-      const fromRequest = requests.data?.find((row) => row.request_id === attendingRequestId);
-      const fromResponse = responses.data?.find((row) => row.request_id === attendingRequestId);
-      return {
-        id: attendingRequestId,
-        title: fromRequest?.title ?? fromResponse?.title ?? 'Active request',
       };
     }
     return null;
@@ -145,7 +152,7 @@ export default function HomeScreen() {
                 size="sm"
                 path={profile.data?.avatar_path}
                 name={profile.data?.display_name ?? null}
-                showActiveDot={attendingRequestId != null}
+                showActiveDot={hasProviderCommitments(attendance.data)}
               />
             </Pressable>
           </View>

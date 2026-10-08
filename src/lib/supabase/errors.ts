@@ -1,7 +1,7 @@
 /**
  * The database raises deliberate, user-readable messages for the states a person can
- * actually hit ("this request is no longer available to you", "finish your current request
- * before responding elsewhere"). Those are shown as-is. Anything else is either a transport
+ * actually hit ("this request is no longer available to you", schedule conflict at selection).
+ * Those are shown as-is. Anything else is either a transport
  * failure or a bug, and gets a generic message instead of leaking internals.
  */
 
@@ -39,7 +39,7 @@ export function toUserMessage(error: unknown): string {
         return 'Wallet is unavailable until the latest database migrations are applied.';
       }
       if (code === '25006') {
-        return 'Wallet could not load. Apply the latest database migrations and try again.';
+        return 'Something could not load. Restart the app and run the latest database migrations.';
       }
       if (
         code === 'PGRST301' ||

@@ -8,6 +8,7 @@ import { SectionHeader } from '@/components/ui/SectionHeader';
 import { EmptyState, InlineError } from '@/components/ui/StateView';
 import { useBrowseNearbyRequests } from '@/features/requests/browse-api';
 import { useMyResponses } from '@/features/requests/responses-api';
+import { requestOutcomeDescription } from '@/features/requests/outcome';
 import { nearbyRequestBadge } from '@/features/requests/status';
 import {
   formatMoney,
@@ -173,7 +174,7 @@ export function NearbyRequests({
               <HomeRequestCard
                 key={request.request_id}
                 title={request.title ?? 'Request'}
-                description={request.description}
+                description={requestOutcomeDescription(request.description)}
                 amount={formatMoney(request.offered_amount!, request.currency)}
                 whenLine={formatWhenHome(request.scheduled_for)}
                 proximity={formatProximityHome(request.distance_m)}
@@ -187,7 +188,7 @@ export function NearbyRequests({
             <DiscoverRequestCard
               key={request.request_id}
               title={request.title ?? 'Request'}
-              description={request.description}
+              description={requestOutcomeDescription(request.description)}
               badge={nearbyRequestBadge(Boolean(waiting))}
               amount={formatMoney(request.offered_amount!, request.currency)}
               whenLine={formatWhenDiscover(request.scheduled_for)}

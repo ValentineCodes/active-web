@@ -4,6 +4,7 @@ import { RequestAttachmentSection } from '@/components/request-flow/RequestAttac
 import { RequestMetaRow } from '@/components/request-flow/RequestMetaRow';
 import { RequestOfferWhenCard } from '@/components/request-flow/RequestOfferWhenCard';
 import { RequestPersonCard } from '@/components/request-flow/RequestPersonCard';
+import { RequestTagsLine } from '@/components/request-flow/RequestTagsLine';
 import { RequestTitleSection } from '@/components/request-flow/RequestTitleSection';
 import type { RespondableRequest } from '@/features/requests/responses-api';
 import { nearbyRequestBadge } from '@/features/requests/status';
@@ -63,6 +64,8 @@ export function RequestHelpSummary({
           )}
         />
       ) : null}
+
+      <RequestTagsLine slugs={request.tag_slugs} />
 
       {request.requester_display_name ? (
         <RequestPersonCard

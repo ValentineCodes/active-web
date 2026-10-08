@@ -28,6 +28,7 @@ export type InboxNotification = {
 export const NOTIFICATION_TYPES = [
   'response_received',
   'new_responses',
+  'matching_request',
   'request_expiring',
   'request_expired',
   'response_accepted',

@@ -1,0 +1,38 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+
+import type { RequestTag } from '@/features/requests/tags';
+import { queryKeys } from '@/lib/query/keys';
+import { supabase } from '@/lib/supabase/client';
+
+export function useNotificationTagInterests() {
+  return useQuery({
+    queryKey: queryKeys.notificationTagInterests,
+    queryFn: async (): Promise<RequestTag[]> => {
+      const { data, error } = await supabase.rpc('list_notification_tag_interests');
+
+      if (error) throw error;
+
+      return (data ?? []).map((row) => ({
+        id: row.tag_id,
+        name: row.name,
+        slug: row.slug,
+      }));
+    },
+  });
+}
+
+export function useUpdateNotificationTagInterests() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (tags: RequestTag[]) => {
+      const { error } = await supabase.rpc('set_notification_tag_interests', {
+        p_tag_ids: tags.map((tag) => tag.id),
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.notificationTagInterests });
+    },
+  });
+}

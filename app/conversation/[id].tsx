@@ -8,6 +8,7 @@ import {
   composerPendingFromOutgoingMessage,
   type ComposerPendingAttachment,
 } from '@/components/conversation/ConversationComposer';
+import { RequestOutcomeContext } from '@/components/request-flow/RequestOutcomeContext';
 import { ConversationHeader } from '@/components/conversation/ConversationHeader';
 import { ConversationHeaderActions } from '@/components/conversation/ConversationHeaderActions';
 import { ConversationMessageItem } from '@/components/conversation/ConversationMessageItem';
@@ -428,6 +429,8 @@ export default function ConversationScreen() {
           />
         }
       />
+
+      <RequestOutcomeContext description={data.description} />
 
       <KeyboardStickyFooter
         className="flex-1"

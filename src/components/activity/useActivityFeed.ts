@@ -1,4 +1,4 @@
-import { useAttendance } from '@/features/attendance/api';
+import { primaryProviderCommitmentRequestId, useAttendance } from '@/features/attendance/api';
 import { useMyResponses } from '@/features/requests/responses-api';
 import { useMyRequests } from '@/features/requests/requester-api';
 
@@ -7,7 +7,7 @@ export function useActivityFeed() {
   const requests = useMyRequests();
   const responses = useMyResponses();
 
-  const attendingRequestId = attendance.data?.attending_request_id ?? null;
+  const attendingRequestId = primaryProviderCommitmentRequestId(attendance.data);
 
   const attendingRequestRow = requests.data?.find((row) => row.request_id === attendingRequestId);
   const attendingResponseRow = responses.data?.find((row) => row.request_id === attendingRequestId);

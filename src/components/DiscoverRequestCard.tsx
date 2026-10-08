@@ -9,7 +9,7 @@ type Tone = 'neutral' | 'brand' | 'active' | 'danger' | 'warning' | 'info';
 
 type DiscoverRequestCardProps = {
   title: string;
-  description?: string | null;
+  description: string;
   amount: string;
   whenLine: string;
   proximity: string;
@@ -59,11 +59,9 @@ export function DiscoverRequestCard({
           {badge ? <Badge label={badge.label} tone={badge.tone} dot={false} /> : null}
         </View>
 
-        {description ? (
-          <Text className="text-sm leading-5 text-muted" numberOfLines={2}>
-            &ldquo;{description}&rdquo;
-          </Text>
-        ) : null}
+        <Text className="text-sm leading-5 text-muted" numberOfLines={2}>
+          &ldquo;{description}&rdquo;
+        </Text>
 
         <Text className="text-2xl font-bold text-ink">{amount}</Text>
 

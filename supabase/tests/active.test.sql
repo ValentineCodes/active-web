@@ -121,20 +121,108 @@ select create_request(
   5000
 ) as cancelled_request_id \gset
 
-select create_request(
-  'Title only',
+select throws_ok(
+  $$select create_request(
+    'Title only',
+    null,
+    6.5000,
+    3.3800,
+    'Yaba, Lagos',
+    null,
+    5000
+  )$$,
+  '22023',
+  'description must be between 1 and 1000 characters',
+  'create_request rejects a missing description'
+);
+
+select throws_ok(
+  $$select create_request(
+    'Whitespace only',
+    '   ',
+    6.5000,
+    3.3800,
+    'Yaba, Lagos',
+    null,
+    5000
+  )$$,
+  '22023',
+  'description must be between 1 and 1000 characters',
+  'create_request rejects a whitespace-only description'
+);
+
+select isnt(
+  (select description from public.requests where id = :'request_id'::uuid),
   null,
+  'requests.description is stored for every created request'
+);
+
+-- Request tags -------------------------------------------------------------------------
+
+select id as tag_plumbing_id from public.tags where slug = 'plumbing' \gset
+select id as tag_moving_id from public.tags where slug = 'moving' \gset
+select id as tag_cleaning_id from public.tags where slug = 'cleaning' \gset
+select id as tag_food_id from public.tags where slug = 'food' \gset
+
+select create_request(
+  'Tagged help',
+  'Need help with pipes under the sink.',
   6.5000,
   3.3800,
   'Yaba, Lagos',
   null,
-  5000
-) as optional_description_request_id \gset
+  5000,
+  null,
+  null,
+  array[:'tag_plumbing_id'::uuid, :'tag_moving_id'::uuid]
+) as tagged_request_id \gset
 
 select is(
-  (select description from public.requests where id = :'optional_description_request_id'::uuid),
-  null,
-  'create_request accepts a null description (optional details step)'
+  (select count(*) from public.request_tags where request_id = :'tagged_request_id'::uuid),
+  2::bigint,
+  'create_request stores catalogue tags on the request'
+);
+
+select throws_ok(
+  format(
+    $$select create_request(
+      'Too many tags',
+      'This should fail tag validation on the server.',
+      6.5000,
+      3.3800,
+      'Yaba, Lagos',
+      null,
+      5000,
+      null,
+      null,
+      ARRAY[%L::uuid, %L::uuid, %L::uuid, %L::uuid]
+    )$$,
+    :'tag_plumbing_id',
+    :'tag_moving_id',
+    :'tag_cleaning_id',
+    :'tag_food_id'
+  ),
+  '22023',
+  'a request may have at most 3 tags',
+  'create_request rejects more than three tags'
+);
+
+select throws_ok(
+  $$select create_request(
+    'Bad tag',
+    'This should fail when a tag id is not in the catalogue.',
+    6.5000,
+    3.3800,
+    'Yaba, Lagos',
+    null,
+    5000,
+    null,
+    null,
+    array['00000000-0000-0000-0000-000000000099'::uuid]
+  )$$,
+  '22023',
+  'one or more tags are invalid or inactive',
+  'create_request rejects unknown tag ids'
 );
 
 select pg_temp.act_as_owner() as _ \gset
@@ -1061,8 +1149,13 @@ select is(
 
 select pg_temp.act_as_owner() as _ \gset
 select is(
-  (select request_id from public.user_attendance where user_id = '22222222-2222-2222-2222-222222222222'),
-  :'request_id'::uuid,
+  (
+    select count(*)::integer
+    from public.user_attendance
+    where user_id = '22222222-2222-2222-2222-222222222222'
+      and request_id = :'request_id'::uuid
+  ),
+  1,
   'selection records attendance on the chosen helper'
 );
 
@@ -1070,8 +1163,8 @@ select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
 select throws_ok(
   format('select accept_response(%L)', :'second_response_id'),
   '55000',
-  'This person is currently attending to another request.',
-  'another request cannot select a helper who is already attending a job'
+  'This person is already committed to another request at this time.',
+  'cannot select a helper for a same-day conflicting commitment'
 );
 
 select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
@@ -1082,7 +1175,46 @@ select is(
     where response_id = :'second_response_id'
   ),
   false,
-  'requesters see when a responder is attending another request'
+  'requesters see when a responder has a schedule conflict'
+);
+
+select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
+select create_request(
+  'Later week job',
+  'Scheduled on a different day so the same helper can be selected.',
+  6.5000,
+  3.3800,
+  'Yaba, Lagos',
+  now() + interval '2 days',
+  5000,
+  null,
+  null,
+  '{}'::uuid[]
+) as future_request_id \gset
+
+select pg_temp.act_as('22222222-2222-2222-2222-222222222222') as _ \gset
+select respond_to_request(
+  :'future_request_id'::uuid,
+  null,
+  null,
+  6.5000,
+  3.3800
+) as future_response_id \gset
+
+select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
+select lives_ok(
+  format('select accept_response(%L)', :'future_response_id'),
+  'a helper can be selected on another day while committed elsewhere'
+);
+
+select is(
+  (
+    select count(*)::integer
+    from public.user_attendance
+    where user_id = '22222222-2222-2222-2222-222222222222'
+  ),
+  2,
+  'selection keeps one attendance row per committed request'
 );
 
 select pg_temp.act_as('22222222-2222-2222-2222-222222222222') as _ \gset
@@ -1286,8 +1418,13 @@ select is(
 
 select pg_temp.act_as_owner() as _ \gset
 select ok(
-  (select request_id from public.user_attendance where user_id = '22222222-2222-2222-2222-222222222222') is null,
-  'completion clears helper attendance'
+  (
+    select count(*)::integer
+    from public.user_attendance
+    where user_id = '22222222-2222-2222-2222-222222222222'
+      and request_id = :'request_id'::uuid
+  ) = 0,
+  'completion clears attendance for the finished request only'
 );
 
 select pg_temp.act_as('55555555-5555-5555-5555-555555555555') as _ \gset
@@ -1553,6 +1690,342 @@ select throws_ok(
   '55000',
   null,
   'selection fails after the request was cancelled'
+);
+
+-- Tag interest request notifications -------------------------------------------------
+
+select id as electrician_tag_id
+from public.tags
+where slug = 'electrician'
+limit 1 \gset
+
+select id as carpenter_tag_id
+from public.tags
+where slug = 'carpenter'
+limit 1 \gset
+
+select pg_temp.act_as_owner() as _ \gset
+update public.profiles
+set discovery_location = public.assert_coordinates(6.5400, 3.3800),
+    discovery_location_updated_at = now()
+where id in (
+  '22222222-2222-2222-2222-222222222222',
+  '33333333-3333-3333-3333-333333333333'
+);
+
+select pg_temp.act_as('22222222-2222-2222-2222-222222222222') as _ \gset
+select set_notification_tag_interests(array[:'electrician_tag_id'::uuid]);
+
+select pg_temp.act_as('33333333-3333-3333-3333-333333333333') as _ \gset
+select set_notification_tag_interests(array[:'carpenter_tag_id'::uuid]);
+
+select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
+select create_request(
+  'Help me install a ceiling fan',
+  'Need an electrician for ceiling fan install.',
+  6.5000,
+  3.3800,
+  'Yaba, Lagos',
+  null,
+  5000,
+  null,
+  null,
+  array[:'electrician_tag_id'::uuid, :'tag_food_id'::uuid]
+) as fan_notify_request_id \gset
+
+select is(
+  (
+    select count(*)::integer
+    from public.notification_inbox
+    where user_id = '22222222-2222-2222-2222-222222222222'
+      and request_id = :'fan_notify_request_id'::uuid
+      and type = 'matching_request'
+  ),
+  1,
+  'notifies a nearby user with a matching tag interest'
+);
+
+select is(
+  (
+    select title
+    from public.notification_inbox
+    where user_id = '22222222-2222-2222-2222-222222222222'
+      and request_id = :'fan_notify_request_id'::uuid
+      and type = 'matching_request'
+    limit 1
+  ),
+  'New request',
+  'tag-interest alerts use the new-request notification title when the request has a title'
+);
+
+select ok(
+  (
+    select body
+    from public.notification_inbox
+    where user_id = '22222222-2222-2222-2222-222222222222'
+      and request_id = :'fan_notify_request_id'::uuid
+      and type = 'matching_request'
+    limit 1
+  ) like '%Help me install a ceiling fan%',
+  'tag-interest alert body quotes the request title'
+);
+
+select is(
+  (
+    select count(*)::integer
+    from public.notification_inbox
+    where user_id = '11111111-1111-1111-1111-111111111111'
+      and request_id = :'fan_notify_request_id'::uuid
+      and type = 'matching_request'
+  ),
+  0,
+  'requesters are not notified about their own tag-matching requests'
+);
+
+select is(
+  (
+    select count(*)::integer
+    from public.notification_inbox
+    where user_id = '33333333-3333-3333-3333-333333333333'
+      and request_id = :'fan_notify_request_id'::uuid
+      and type = 'matching_request'
+  ),
+  0,
+  'skips users whose interests do not match explicit request tags'
+);
+
+select pg_temp.act_as('22222222-2222-2222-2222-222222222222') as _ \gset
+select set_notification_tag_interests(
+  array[
+    :'electrician_tag_id'::uuid,
+    :'tag_food_id'::uuid,
+    :'tag_plumbing_id'::uuid
+  ]
+);
+
+select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
+select create_request(
+  'Another tagged job',
+  'Tagged with food and plumbing.',
+  6.5000,
+  3.3800,
+  'Yaba, Lagos',
+  null,
+  5000,
+  null,
+  null,
+  array[:'tag_food_id'::uuid, :'tag_plumbing_id'::uuid]
+) as multi_match_request_id \gset
+
+select is(
+  (
+    select count(*)::integer
+    from public.notification_inbox
+    where user_id = '22222222-2222-2222-2222-222222222222'
+      and request_id = :'multi_match_request_id'::uuid
+      and type = 'matching_request'
+  ),
+  1,
+  'sends one notification per request when several interests match'
+);
+
+select pg_temp.act_as_owner() as _ \gset
+update public.profiles
+set discovery_location = public.assert_coordinates(7.5000, 3.3800),
+    discovery_location_updated_at = now()
+where id = '55555555-5555-5555-5555-555555555555';
+
+select pg_temp.act_as('55555555-5555-5555-5555-555555555555') as _ \gset
+select set_notification_tag_interests(array[:'electrician_tag_id'::uuid]);
+
+select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
+select create_request(
+  'Fan install far away',
+  'Should not notify helpers outside discovery radius.',
+  6.5000,
+  3.3800,
+  'Yaba, Lagos',
+  null,
+  5000,
+  null,
+  null,
+  array[:'electrician_tag_id'::uuid]
+) as far_notify_request_id \gset
+
+select is(
+  (
+    select count(*)::integer
+    from public.notification_inbox
+    where user_id = '55555555-5555-5555-5555-555555555555'
+      and request_id = :'far_notify_request_id'::uuid
+      and type = 'matching_request'
+  ),
+  0,
+  'skips users outside the discovery radius'
+);
+
+-- Notification tag interests (settings RPC) -----------------------------------------
+
+select pg_temp.act_as('22222222-2222-2222-2222-222222222222') as _ \gset
+
+select id as carpenter_tag_id
+from public.tags
+where slug = 'carpenter'
+limit 1 \gset
+
+select id as furniture_tag_id
+from public.tags
+where slug = 'furniture'
+limit 1 \gset
+
+select id as food_tag_id
+from public.tags
+where slug = 'food'
+limit 1 \gset
+
+select set_notification_tag_interests(
+  array[
+    :'electrician_tag_id'::uuid,
+    :'carpenter_tag_id'::uuid,
+    :'furniture_tag_id'::uuid,
+    :'food_tag_id'::uuid
+  ]
+);
+
+select is(
+  (select count(*)::integer from public.list_notification_tag_interests()),
+  4,
+  'users can save more than three notification interests'
+);
+
+select throws_ok(
+  $$select set_notification_tag_interests(array['00000000-0000-0000-0000-000000000099'::uuid])$$,
+  '22023',
+  'one or more tags are invalid or inactive',
+  'notification interests reject unknown tag ids'
+);
+
+select set_notification_tag_interests('{}'::uuid[]);
+
+select is(
+  (select count(*)::integer from public.list_notification_tag_interests()),
+  0,
+  'clearing notification interests removes all rows'
+);
+
+-- Request system server E2E (creation, tags, description surfaces, security) ---------
+
+select isnt_empty(
+  $$select * from public.search_tags('plumb', 10)$$,
+  'search_tags returns catalogue matches'
+);
+
+select is(
+  (select slug from public.search_tags('#electrician', 5) limit 1),
+  'electrician',
+  'search_tags accepts hash-prefixed queries'
+);
+
+select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
+select create_request(
+  'No tags job',
+  'Description for a request with zero tags.',
+  6.5000,
+  3.3800,
+  'Yaba, Lagos',
+  null,
+  5000,
+  null,
+  null,
+  '{}'::uuid[]
+) as zero_tag_request_id \gset
+
+select is(
+  (select count(*)::bigint from public.request_tags where request_id = :'zero_tag_request_id'::uuid),
+  0::bigint,
+  'create_request accepts zero tags'
+);
+
+select create_request(
+  'Three tag job',
+  'Description for a three-tag request.',
+  6.5000,
+  3.3800,
+  'Yaba, Lagos',
+  null,
+  5000,
+  null,
+  null,
+  array[
+    :'tag_plumbing_id'::uuid,
+    :'tag_moving_id'::uuid,
+    :'tag_cleaning_id'::uuid
+  ]
+) as three_tag_request_id \gset
+
+select is(
+  (select count(*)::bigint from public.request_tags where request_id = :'three_tag_request_id'::uuid),
+  3::bigint,
+  'create_request stores three catalogue tags'
+);
+
+select is(
+  public.request_tag_slugs(:'tagged_request_id'::uuid),
+  array['moving', 'plumbing'],
+  'request_tag_slugs returns persisted catalogue slugs'
+);
+
+select is(
+  (
+    select description
+    from public.browse_request(:'request_id'::uuid, 6.5400::double precision, 3.3800::double precision)
+    limit 1
+  ),
+  (select description from public.requests where id = :'request_id'::uuid),
+  'browse_request returns the stored description'
+);
+
+select pg_temp.act_as('22222222-2222-2222-2222-222222222222') as _ \gset
+select is(
+  (select description from public.get_engagement(:'request_id'::uuid) limit 1),
+  (select description from public.requests where id = :'request_id'::uuid),
+  'get_engagement exposes description after selection'
+);
+
+select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
+select throws_ok(
+  format(
+    'select public.attach_tags_to_request(%L, %L::uuid[])',
+    :'zero_tag_request_id',
+    array[:'tag_food_id'::uuid]
+  ),
+  '42501',
+  null,
+  'clients cannot call attach_tags_to_request directly'
+);
+
+select pg_temp.act_as('22222222-2222-2222-2222-222222222222') as _ \gset
+select set_notification_preferences(false, false, false, false, false);
+
+select is(
+  public.user_push_delivery_allowed(
+    '22222222-2222-2222-2222-222222222222'::uuid,
+    'matching_request'::public.notification_type
+  ),
+  false,
+  'matching_request push respects disabled Requests & responses preference'
+);
+
+select set_notification_preferences(true, true, true, true, true);
+
+select pg_temp.act_as('22222222-2222-2222-2222-222222222222') as _ \gset
+select lives_ok(
+  format(
+    'select respond_to_request(%L, %L, null, 6.5400, 3.3800)',
+    :'second_request_id',
+    'Can still respond on the same day while committed elsewhere.'
+  ),
+  'responding is not blocked by an existing same-day commitment'
 );
 
 select * from finish();

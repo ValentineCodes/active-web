@@ -344,6 +344,7 @@ export function ResponseCreationFlow({
             <Text className="text-base leading-6 text-muted">
               &ldquo;{request.title}&rdquo; — keep the amount or propose something different.
             </Text>
+            <Text className="text-sm leading-5 text-muted">{request.description}</Text>
 
             <OfferAmountStepper
               value={yourOffer}

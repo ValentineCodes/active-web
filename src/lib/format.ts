@@ -130,6 +130,15 @@ export function formatWhenDiscover(scheduledFor: string | null): string {
   return `${format(date, 'd MMM yyyy')} · ${format(date, 'h:mm a')}`;
 }
 
+/** Day label for provider commitment copy (e.g. Thursday, Oct 8). */
+export function formatCommitmentDayLabel(scheduledFor: string | null): string {
+  if (!scheduledFor) return 'today';
+
+  const date = new Date(scheduledFor);
+  if (isThisYear(date)) return format(date, 'EEEE, MMM d');
+  return format(date, 'EEEE, MMM d, yyyy');
+}
+
 /** Short when label for request offer cards (Today / Tomorrow / weekday). */
 export function formatWhenRequestCard(scheduledFor: string | null): string {
   if (!scheduledFor) return 'Today';

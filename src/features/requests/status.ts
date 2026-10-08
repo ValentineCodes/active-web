@@ -74,10 +74,10 @@ export function myResponseLifecycleBadge(
 
 export function responderAvailabilityBadge(available: boolean): { label: string; tone: Tone } {
   if (available) {
-    return { label: 'Can be selected', tone: 'brand' };
+    return { label: 'Available for this time', tone: 'brand' };
   }
 
-  return { label: 'Attending another request', tone: 'warning' };
+  return { label: 'Unavailable at this time', tone: 'warning' };
 }
 
 export function nearbyRequestBadge(alreadyResponded: boolean): { label: string; tone: Tone } {

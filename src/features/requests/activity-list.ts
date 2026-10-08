@@ -332,7 +332,11 @@ export function notificationNavigationPath(input: {
   type: NotificationType;
   metadata: Record<string, unknown> | null;
 }): `/request/${string}` | `/respond/${string}` | `/engagement/${string}` {
-  if (input.metadata?.link === 'respond' || input.type === 'response_not_selected') {
+  if (
+    input.metadata?.link === 'respond' ||
+    input.type === 'response_not_selected' ||
+    input.type === 'matching_request'
+  ) {
     return `/respond/${input.requestId}`;
   }
 

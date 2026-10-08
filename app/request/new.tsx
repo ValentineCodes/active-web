@@ -11,7 +11,6 @@ import {
 import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Image } from 'expo-image';
 import { addHours, set, startOfTomorrow } from 'date-fns';
 
 import {
@@ -39,6 +38,9 @@ import {
   takeRequestPhoto,
   uploadRequestPhoto,
 } from '@/features/requests/request-media';
+import { RequestReviewBeforePostCard } from '@/components/request-flow/RequestReviewBeforePostCard';
+import { RequestTagPicker } from '@/components/request-flow/RequestTagPicker';
+import { MAX_REQUEST_TAGS, type RequestTag } from '@/features/requests/tags';
 import { useCreateRequest, useMyRequest } from '@/features/requests/requester-api';
 import { cn } from '@/lib/cn';
 import { formatMoney, formatWhenHome } from '@/lib/format';
@@ -58,7 +60,7 @@ function createTextAreaTypography(textSize: 'base' | 'lg' | 'xl') {
   return poppinsInputTypography('regular', size, { multiline: true });
 }
 
-const STEP_COUNT = 5;
+const STEP_COUNT = 6;
 
 type WhenMode = 'now' | 'later';
 
@@ -152,19 +154,6 @@ function WizardHeader({
   );
 }
 
-function WizardSkipButton({ onPress }: { onPress: () => void }) {
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel="Skip"
-      onPress={onPress}
-      className="items-center justify-center rounded-2xl bg-surface px-7 py-4 active:opacity-90"
-    >
-      <Text className="text-base font-semibold text-muted">Skip</Text>
-    </Pressable>
-  );
-}
-
 function WizardPrimaryButton({
   label,
   disabled,
@@ -244,56 +233,6 @@ function CreateTextArea({
       className="rounded-2xl bg-surface px-4 py-4 text-ink"
       style={[typography, { minHeight }]}
     />
-  );
-}
-
-function NewRequestReviewCard({
-  title,
-  description,
-  amountLabel,
-  whenLabel,
-  locationLabel,
-  previewUri,
-}: {
-  title: string;
-  description: string;
-  amountLabel: string | null;
-  whenLabel: string;
-  locationLabel: string;
-  previewUri?: string | null;
-}) {
-  return (
-    <View className="gap-3 rounded-2xl border border-hairline bg-elevated p-4">
-      <Text className="text-xs font-semibold uppercase tracking-wide text-subtle">
-        Review before posting
-      </Text>
-      {previewUri ? (
-        <Image
-          source={{ uri: previewUri }}
-          accessibilityLabel="Selected request photo"
-          contentFit="cover"
-          className="w-full overflow-hidden rounded-xl bg-surface"
-          style={{ aspectRatio: 4 / 3 }}
-        />
-      ) : null}
-      <Text className="text-xl font-bold text-ink" numberOfLines={1}>
-        {title}
-      </Text>
-      {description ? (
-        <Text className="text-sm leading-5 text-muted" numberOfLines={2}>
-          {description}
-        </Text>
-      ) : null}
-      <View className="flex-row flex-wrap items-center gap-x-2 gap-y-1 pt-1">
-        {amountLabel ? (
-          <Text className="text-base font-bold text-active">{amountLabel}</Text>
-        ) : null}
-        <Text className="text-sm text-muted">·</Text>
-        <Text className="text-sm text-muted">{whenLabel}</Text>
-        <Text className="text-sm text-muted">·</Text>
-        <Text className="text-sm text-muted">{locationLabel}</Text>
-      </View>
-    </View>
   );
 }
 
@@ -381,6 +320,10 @@ function NewRequestForm({ reuseSeed }: { reuseSeed?: ReuseSeed }) {
   const [attachmentUri, setAttachmentUri] = useState<string | null>(null);
   const [attachmentMimeType, setAttachmentMimeType] = useState<string | null>(null);
   const [attachmentUploading, setAttachmentUploading] = useState(false);
+  const [selectedTags, setSelectedTags] = useState<RequestTag[]>([]);
+  const setSelectedTagsSafe = (next: RequestTag[]) => {
+    setSelectedTags(next.slice(0, MAX_REQUEST_TAGS));
+  };
   const locationSheetRef = useRef<RequestLocationSheetHandle>(null);
 
   const titleInputRef = useRef<ComponentRef<typeof TextInput>>(null);
@@ -397,14 +340,21 @@ function NewRequestForm({ reuseSeed }: { reuseSeed?: ReuseSeed }) {
       ? 'Enter a valid amount.'
       : null;
 
+  const descriptionValid =
+    trimmedDescription.length >= DESCRIPTION_LIMITS.min &&
+    trimmedDescription.length <= DESCRIPTION_LIMITS.max;
+
   const stepValid = [
     trimmedTitle.length >= CREATE_TITLE_LIMITS.min &&
       trimmedTitle.length <= CREATE_TITLE_LIMITS.max,
-    true,
+    descriptionValid,
     REQUEST_REQUIRES_FUNDING ? isFundedOffer(parsedAmount) && !amountError : amountError === null,
     whenMode === 'now' || isFutureSchedule(laterAt),
     true,
+    true,
   ];
+
+  const formCoreValid = stepValid[0] && stepValid[1] && stepValid[2] && stepValid[3];
 
   const isLastStep = step === STEP_COUNT - 1;
   const funding = isFundedOffer(parsedAmount) ? summarizeRequestFunding(parsedAmount) : null;
@@ -432,6 +382,10 @@ function NewRequestForm({ reuseSeed }: { reuseSeed?: ReuseSeed }) {
     if (!stepValid[step]) {
       if (step === 0) {
         showAppToast(`Use at least ${CREATE_TITLE_LIMITS.min} characters in the title.`, 'warning');
+        return;
+      }
+      if (step === 1) {
+        showAppToast('Describe what needs to be done to continue.', 'warning');
         return;
       }
       if (step === 2) {
@@ -477,6 +431,7 @@ function NewRequestForm({ reuseSeed }: { reuseSeed?: ReuseSeed }) {
 
     if (
       trimmedTitle.length < CREATE_TITLE_LIMITS.min ||
+      !descriptionValid ||
       (REQUEST_REQUIRES_FUNDING && !isFundedOffer(parsedAmount)) ||
       (whenMode === 'later' && scheduledFor === null)
     ) {
@@ -488,13 +443,14 @@ function NewRequestForm({ reuseSeed }: { reuseSeed?: ReuseSeed }) {
     create.mutate(
       {
         title: trimmedTitle,
-        description: trimmedDescription || null,
+        description: trimmedDescription,
         position: postPosition,
         locationLabel,
         scheduledFor,
         offeredAmount: parsedAmount!,
         sourceRequestId: reusingPrior ? reuseSeed?.sourceRequestId : undefined,
         attachmentPath,
+        tagIds: selectedTags.slice(0, MAX_REQUEST_TAGS).map((tag) => tag.id),
       },
       {
         onSuccess: (requestId) => {
@@ -544,6 +500,26 @@ function NewRequestForm({ reuseSeed }: { reuseSeed?: ReuseSeed }) {
   const handlePostPress = () => {
     const scheduledFor: Date | null =
       whenMode === 'now' ? null : isFutureSchedule(laterAt) ? laterAt : null;
+
+    if (!formCoreValid) {
+      if (!stepValid[0]) {
+        showAppToast(`Use at least ${CREATE_TITLE_LIMITS.min} characters in the title.`, 'warning');
+        return;
+      }
+      if (!stepValid[1]) {
+        showAppToast('Describe what needs to be done to continue.', 'warning');
+        return;
+      }
+      if (!stepValid[2]) {
+        showAppToast(amountError ?? 'Enter a valid offer amount to continue.', 'warning');
+        return;
+      }
+      if (whenMode === 'later' && scheduledFor === null) {
+        setLaterTimeError(true);
+        showAppToast('Choose a date and time in the future.', 'warning');
+      }
+      return;
+    }
 
     if (whenMode === 'later' && scheduledFor === null) {
       setLaterTimeError(true);
@@ -602,7 +578,6 @@ function NewRequestForm({ reuseSeed }: { reuseSeed?: ReuseSeed }) {
   const goBack = () => setStep((current) => Math.max(current - 1, 0));
 
   const reviewWhen = whenSummary(whenMode, laterAt);
-  const reviewLocation = areaLabel.trim() || 'My location';
   const reviewAmount = isFundedOffer(parsedAmount)
     ? formatMoney(parsedAmount, MARKET.currency)
     : null;
@@ -615,16 +590,11 @@ function NewRequestForm({ reuseSeed }: { reuseSeed?: ReuseSeed }) {
         <KeyboardStickyFooter
           footer={
             <View className="gap-3 p-5">
-              {step === 1 ? (
-                <View className="flex-row items-stretch gap-3">
-                  <WizardSkipButton onPress={goNext} />
-                  <WizardPrimaryButton label="Next" onPress={goNext} className="flex-1" />
-                </View>
-              ) : isLastStep ? (
+              {isLastStep ? (
                 <WizardPrimaryButton
                   label="Post request"
                   loading={posting}
-                  disabled={!stepValid[step] || walletShort}
+                  disabled={!formCoreValid || walletShort}
                   onPress={handlePostPress}
                 />
               ) : (
@@ -649,7 +619,7 @@ function NewRequestForm({ reuseSeed }: { reuseSeed?: ReuseSeed }) {
             {step === 0 ? (
               <View className="gap-3">
                 <Text className="text-3xl font-bold leading-9 text-ink">What do you need?</Text>
-                <Text className="text-base text-muted">Describe it in your own words.</Text>
+                <Text className="text-base text-muted">A short title people will see first.</Text>
                 <CreateTextArea
                   inputRef={titleInputRef}
                   value={title}
@@ -669,19 +639,22 @@ function NewRequestForm({ reuseSeed }: { reuseSeed?: ReuseSeed }) {
 
             {step === 1 ? (
               <View className="gap-3">
-                <Text className="text-3xl font-bold leading-9 text-ink">Tell us more</Text>
-                <Text className="text-base text-muted">
-                  Optional. Any detail that helps people understand what&apos;s needed.
+                <Text className="text-3xl font-bold leading-9 text-ink">
+                  What needs to be done?
                 </Text>
+                <Text className="text-base text-muted">Tell people what success looks like.</Text>
                 <CreateTextArea
                   inputRef={descriptionInputRef}
                   value={description}
                   onChangeText={setDescription}
-                  placeholder="Any extra context, requirements, or things to know…"
+                  placeholder="e.g. Move my 3-seater sofa from the ground floor to the second floor. Please be careful with the walls and furniture."
                   maxLength={DESCRIPTION_LIMITS.max}
                   textSize="lg"
                   minHeight={200}
                 />
+                {!descriptionValid ? (
+                  <Text className="text-sm text-muted">Description is required to continue.</Text>
+                ) : null}
               </View>
             ) : null}
 
@@ -711,7 +684,7 @@ function NewRequestForm({ reuseSeed }: { reuseSeed?: ReuseSeed }) {
                 </Text>
                 <View className="flex-row gap-3">
                   <WhenPill
-                    label="Right Now"
+                    label="Now"
                     selected={whenMode === 'now'}
                     onPress={() => {
                       setWhenMode('now');
@@ -775,11 +748,37 @@ function NewRequestForm({ reuseSeed }: { reuseSeed?: ReuseSeed }) {
             ) : null}
 
             {step === 4 ? (
+              <View className="gap-3">
+                <Text className="text-3xl font-bold leading-9 text-ink">Add tags</Text>
+                <Text className="text-base text-muted">
+                  Optional. Pick up to {MAX_REQUEST_TAGS} tags from the list.
+                </Text>
+                <RequestTagPicker selected={selectedTags} onChange={setSelectedTagsSafe} />
+              </View>
+            ) : null}
+
+            {step === 5 ? (
               <View className="gap-5">
                 <View className="gap-3">
-                  <Text className="text-3xl font-bold leading-9 text-ink">Add a photo?</Text>
+                  <Text className="text-3xl font-bold leading-9 text-ink">Review & Post</Text>
                   <Text className="text-base text-muted">
-                    You don&apos;t have to but this will help people better understand your request
+                    Check everything looks right before you post.
+                  </Text>
+                </View>
+
+                <RequestReviewBeforePostCard
+                  title={trimmedTitle}
+                  description={trimmedDescription}
+                  amountLabel={reviewAmount}
+                  whenLabel={reviewWhen}
+                  tagSlugs={selectedTags.map((tag) => tag.name)}
+                  previewUri={attachmentUri}
+                />
+
+                <View className="gap-3">
+                  <Text className="text-lg font-bold text-ink">Add a photo (optional)</Text>
+                  <Text className="text-base text-muted">
+                    A photo can help people understand your request.
                   </Text>
                   <View className="flex-row gap-3">
                     <PhotoSourceButton
@@ -796,15 +795,6 @@ function NewRequestForm({ reuseSeed }: { reuseSeed?: ReuseSeed }) {
                     />
                   </View>
                 </View>
-
-                <NewRequestReviewCard
-                  title={trimmedTitle}
-                  description={trimmedDescription}
-                  amountLabel={reviewAmount}
-                  whenLabel={reviewWhen}
-                  locationLabel={reviewLocation}
-                  previewUri={attachmentUri}
-                />
 
                 {REQUEST_REQUIRES_FUNDING && funding ? (
                   <View className="gap-2">

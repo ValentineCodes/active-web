@@ -1,5 +1,6 @@
 import { Text, View } from 'react-native';
 
+import { ResponderScheduleAvailability } from '@/components/ResponderScheduleAvailability';
 import { RequestPersonCard } from '@/components/request-flow/RequestPersonCard';
 import { formatAgo, formatMoney } from '@/lib/format';
 import { useTheme } from '@/theme';
@@ -58,11 +59,7 @@ export function ResponseCard({
         </View>
       ) : null}
 
-      {!responderAvailable ? (
-        <Text className="text-sm text-muted">
-          This person is currently attending to another request.
-        </Text>
-      ) : null}
+      <ResponderScheduleAvailability available={responderAvailable} />
     </View>
   );
 }

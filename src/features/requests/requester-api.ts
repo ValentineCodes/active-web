@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tansta
 
 import { useUserId } from '@/features/auth/session';
 import type { Position } from '@/lib/location';
+import { DESCRIPTION_LIMITS } from '@/config';
 import { queryKeys } from '@/lib/query/keys';
 import { invalidateWalletQueries } from '@/features/wallet/api';
 import { supabase } from '@/lib/supabase/client';
@@ -51,12 +52,13 @@ type Engagement = Nullable<
 >;
 
 const REQUEST_COLUMNS =
-  'request_id, title, description, scheduled_for, offered_amount, agreed_provider_amount, currency, payment_status, location_label, latitude, longitude, status, selected_user_id, source_request_id, attachment_path, pending_response_count, is_rated, my_rating_stars, my_rating_comment, created_at, updated_at, expires_at, accepted_at, started_at, completed_at, cancelled_at';
+  'request_id, title, description, scheduled_for, offered_amount, agreed_provider_amount, currency, payment_status, location_label, latitude, longitude, status, selected_user_id, source_request_id, attachment_path, tag_slugs, pending_response_count, is_rated, my_rating_stars, my_rating_comment, created_at, updated_at, expires_at, accepted_at, started_at, completed_at, cancelled_at';
 
 type MyRequest = Guaranteed<
   Database['public']['Views']['my_requests']['Row'],
   | 'request_id'
   | 'title'
+  | 'description'
   | 'currency'
   | 'location_label'
   | 'latitude'
@@ -249,20 +251,28 @@ export function useCreateRequest() {
   return useMutation({
     mutationFn: async (input: {
       title: string;
-      description: string | null;
+      description: string;
       position: Position;
       locationLabel: string;
       scheduledFor: Date | null;
       offeredAmount: number;
       sourceRequestId?: string;
       attachmentPath?: string | null;
+      tagIds?: string[];
     }) => {
       if (!userId) throw new Error('Sign in to create a request.');
 
-      const trimmedDescription = input.description?.trim();
+      const trimmedDescription = input.description.trim();
+      if (
+        trimmedDescription.length < DESCRIPTION_LIMITS.min ||
+        trimmedDescription.length > DESCRIPTION_LIMITS.max
+      ) {
+        throw new Error('Description is required.');
+      }
+
       const { data, error } = await supabase.rpc('create_request', {
         p_title: input.title.trim(),
-        p_description: trimmedDescription || '',
+        p_description: trimmedDescription,
         p_latitude: input.position.latitude,
         p_longitude: input.position.longitude,
         p_location_label: input.locationLabel,
@@ -270,6 +280,7 @@ export function useCreateRequest() {
         p_offered_amount: input.offeredAmount,
         p_source_request_id: input.sourceRequestId,
         p_attachment_path: input.attachmentPath || undefined,
+        p_tag_ids: input.tagIds?.length ? input.tagIds : undefined,
       });
 
       if (error) throw error;

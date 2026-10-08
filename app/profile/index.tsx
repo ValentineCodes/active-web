@@ -11,7 +11,7 @@ import { Avatar } from '@/components/ui/Avatar';
 import { Header } from '@/components/ui/Header';
 import { Screen } from '@/components/ui/Screen';
 import { ErrorState, InlineError, LoadingState } from '@/components/ui/StateView';
-import { useAttendance } from '@/features/attendance/api';
+import { hasProviderCommitments, useAttendance } from '@/features/attendance/api';
 import { MARKET } from '@/config';
 import { signOut } from '@/features/auth/api';
 import { useProfile } from '@/features/profile/api';
@@ -110,7 +110,7 @@ export default function ProfileScreen() {
   }
 
   const { data } = profile;
-  const attending = attendance.data?.attending_request_id != null;
+  const hasCommitments = hasProviderCommitments(attendance.data);
   const completed = data.jobs_completed + data.requests_completed;
   const activeRequests =
     myRequests.data?.filter((request) =>
@@ -146,7 +146,7 @@ export default function ProfileScreen() {
             path={data.avatar_path}
             name={data.display_name}
             size="lg"
-            showActiveDot={attending}
+            showActiveDot={hasCommitments}
           />
           <Text className="text-2xl font-bold text-ink">{data.display_name}</Text>
           {ratingAverage !== null || completed > 0 ? (
