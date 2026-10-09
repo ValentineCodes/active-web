@@ -4,7 +4,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(58);
+select plan(67);
 
 create function pg_temp.make_user(p_id uuid, p_name text, p_phone text)
 returns text
@@ -121,23 +121,23 @@ select throws_ok(
 
 select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
 select create_request(
-  'Response locks edit',
+  'Pending response blocks edit',
   'Will receive a response.',
   6.5000,
   3.3800,
   'Yaba, Lagos',
   null,
   5000
-) as locked_after_response_id \gset
+) as pending_response_id \gset
 
 select pg_temp.act_as('22222222-2222-2222-2222-222222222222') as _ \gset
 select respond_to_request(
-  :'locked_after_response_id',
-  'First response locks editing.',
+  :'pending_response_id',
+  'Pending response blocks editing.',
   null,
   6.5400,
   3.3800
-) as lock_response_id \gset
+) as pending_response_response_id \gset
 
 select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
 select throws_ok(
@@ -146,34 +146,51 @@ select throws_ok(
       %L, 'Nope', 'Should not apply.',
       6.5000, 3.3800, 'Yaba, Lagos', null, 5000, null, '{}'::uuid[]
     )$$,
-    :'locked_after_response_id'
+    :'pending_response_id'
   ),
   '55000',
   'this request can no longer be edited',
-  'request with a response cannot be edited'
+  'request with a pending response cannot be edited'
+);
+
+select is(
+  (select is_editable from public.my_requests where request_id = :'pending_response_id'::uuid),
+  false,
+  'not editable while a response is pending'
 );
 
 select pg_temp.act_as('22222222-2222-2222-2222-222222222222') as _ \gset
 select lives_ok(
-  format('select withdraw_response(%L)', :'lock_response_id'),
-  'withdraw response after lock test'
+  format('select withdraw_response(%L)', :'pending_response_response_id'),
+  'withdraw pending response'
 );
 
 select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
 select is(
-  (select is_editable from public.my_requests where request_id = :'locked_after_response_id'::uuid),
-  false,
-  'editing stays locked after response withdrawal'
+  (select is_editable from public.my_requests where request_id = :'pending_response_id'::uuid),
+  true,
+  'editing available again after response withdrawal'
 );
 
 select lives_ok(
-  format('select cancel_request(%L::uuid)', :'locked_after_response_id'),
-  'cancel locked fixture to stay under open-request cap'
+  format(
+    $$select update_request(
+      %L, 'Pending response blocks edit', 'Edited after withdrawal.',
+      6.5000, 3.3800, 'Yaba, Lagos', null, 5000, null, '{}'::uuid[]
+    )$$,
+    :'pending_response_id'
+  ),
+  'update succeeds after all responses withdrawn'
+);
+
+select lives_ok(
+  format('select cancel_request(%L::uuid)', :'pending_response_id'),
+  'cancel pending-response fixture to stay under open-request cap'
 );
 
 select create_request(
-  'Declined response lock',
-  'Decline path still locks edit.',
+  'Declined response unlocks edit',
+  'Decline path unlocks edit.',
   6.5000,
   3.3800,
   'Yaba, Lagos',
@@ -198,8 +215,19 @@ select lives_ok(
 
 select is(
   (select is_editable from public.my_requests where request_id = :'declined_lock_id'::uuid),
-  false,
-  'editing stays locked after response is declined'
+  true,
+  'editing available again after response is declined'
+);
+
+select lives_ok(
+  format(
+    $$select update_request(
+      %L, 'Declined response unlocks edit', 'Edited after decline.',
+      6.5000, 3.3800, 'Yaba, Lagos', null, 5000, null, '{}'::uuid[]
+    )$$,
+    :'declined_lock_id'
+  ),
+  'update succeeds after all responses declined'
 );
 
 select lives_ok(
@@ -208,8 +236,63 @@ select lives_ok(
 );
 
 select create_request(
-  'Deleted response row lock',
-  'Row delete does not unlock edit.',
+  'Accepted then cancelled',
+  'Acceptance permanently disables edit.',
+  6.5000,
+  3.3800,
+  'Yaba, Lagos',
+  null,
+  5000
+) as accepted_cancel_id \gset
+
+select pg_temp.act_as('22222222-2222-2222-2222-222222222222') as _ \gset
+select respond_to_request(
+  :'accepted_cancel_id',
+  'Will be accepted then cancelled.',
+  null,
+  6.5400,
+  3.3800
+) as accepted_cancel_response_id \gset
+
+select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
+select lives_ok(
+  format('select accept_response(%L::uuid)', :'accepted_cancel_response_id'),
+  'accept helper before cancellation'
+);
+
+select lives_ok(
+  format('select cancel_request(%L::uuid)', :'accepted_cancel_id'),
+  'cancel request after acceptance'
+);
+
+select is(
+  (select accepted_at is not null from public.requests where id = :'accepted_cancel_id'::uuid),
+  true,
+  'accepted_at preserved after cancellation'
+);
+
+select is(
+  (select is_editable from public.my_requests where request_id = :'accepted_cancel_id'::uuid),
+  false,
+  'not editable after acceptance even when later cancelled'
+);
+
+select throws_ok(
+  format(
+    $$select update_request(
+      %L, 'Accepted then cancelled', 'Should not apply.',
+      6.5000, 3.3800, 'Yaba, Lagos', null, 5000, null, '{}'::uuid[]
+    )$$,
+    :'accepted_cancel_id'
+  ),
+  '55000',
+  'this request can no longer be edited',
+  'update blocked after prior acceptance'
+);
+
+select create_request(
+  'Deleted response row unlocks edit',
+  'Row delete unlocks edit when never accepted.',
   6.5000,
   3.3800,
   'Yaba, Lagos',
@@ -238,8 +321,8 @@ select lives_ok(
 select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
 select is(
   (select is_editable from public.my_requests where request_id = :'deleted_row_lock_id'::uuid),
-  false,
-  'editing stays locked after response row is deleted'
+  true,
+  'editing available again after response row is deleted'
 );
 
 select lives_ok(
@@ -270,9 +353,9 @@ select throws_ok(
 
 select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
 select is(
-  (select first_response_at is null from public.requests where id = :'failed_respond_id'::uuid),
-  true,
-  'failed response leaves first_response_at unset'
+  (select pending_response_count from public.my_requests where request_id = :'failed_respond_id'::uuid),
+  0,
+  'failed response leaves no pending responses'
 );
 
 select lives_ok(
@@ -432,7 +515,7 @@ select throws_ok(
   'empty title is rejected'
 );
 
-select throws_ok(
+select lives_ok(
   format(
     $$select update_request(
       %L, 'Valid title', '   ',
@@ -440,9 +523,13 @@ select throws_ok(
     )$$,
     :'validation_id'
   ),
-  '22023',
-  'description must be between 1 and 1000 characters',
-  'empty description is rejected'
+  'blank description is accepted on update'
+);
+
+select is(
+  (select description is null from public.requests where id = :'validation_id'::uuid),
+  true,
+  'blank description is stored as null'
 );
 
 select throws_ok(

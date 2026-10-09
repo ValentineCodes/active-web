@@ -2467,8 +2467,9 @@ export type Database = {
       }
       request_allows_requester_edit: {
         Args: {
+          p_accepted_at: string
           p_expires_at: string
-          p_first_response_at: string
+          p_request_id: string
           p_status: Database["public"]["Enums"]["request_status"]
         }
         Returns: boolean

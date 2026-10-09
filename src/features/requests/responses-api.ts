@@ -328,6 +328,7 @@ export function useWithdrawResponse() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.myResponses });
+      queryClient.invalidateQueries({ queryKey: queryKeys.myRequests });
       queryClient.invalidateQueries({ queryKey: queryKeys.browseNearbyAll });
       queryClient.invalidateQueries({ queryKey: queryKeys.requestSearchAll });
     },

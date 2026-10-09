@@ -6,7 +6,8 @@ type RequestStatus = Database['public']['Enums']['request_status'];
 export type RequestEditEligibilityInput = {
   status: RequestStatus;
   expires_at: string | null;
-  first_response_at?: string | null;
+  accepted_at?: string | null;
+  pending_response_count?: number | null;
   /** From `my_requests.is_editable` when available. */
   is_editable?: boolean | null;
 };
@@ -20,7 +21,11 @@ export function isRequestEditable(input: RequestEditEligibilityInput): boolean {
     return input.is_editable;
   }
 
-  if (input.first_response_at) {
+  if (input.accepted_at) {
+    return false;
+  }
+
+  if ((input.pending_response_count ?? 0) > 0) {
     return false;
   }
 

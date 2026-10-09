@@ -158,7 +158,8 @@ export default function RequestDetailScreen() {
   const canEdit = isRequestEditable({
     status: data.status,
     expires_at: data.expires_at,
-    first_response_at: data.first_response_at,
+    accepted_at: data.accepted_at,
+    pending_response_count: data.pending_response_count,
     is_editable: data.is_editable,
   });
 

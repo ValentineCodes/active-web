@@ -314,9 +314,6 @@ export function useUpdateRequest(requestId: string) {
       tags?: Pick<RequestTag, 'slug'>[];
     }) => {
       const trimmedDescription = input.description.trim();
-      if (trimmedDescription.length < 1) {
-        throw new Error('Describe what needs to be done to continue.');
-      }
       if (trimmedDescription.length > DESCRIPTION_LIMITS.max) {
         throw new Error('Description is too long.');
       }

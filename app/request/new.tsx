@@ -375,7 +375,8 @@ export function NewRequestForm({
     isRequestEditable({
       status: editRequest.data.status,
       expires_at: editRequest.data.expires_at,
-      first_response_at: editRequest.data.first_response_at,
+      accepted_at: editRequest.data.accepted_at,
+      pending_response_count: editRequest.data.pending_response_count,
       is_editable: editRequest.data.is_editable,
     });
 
@@ -426,9 +427,7 @@ export function NewRequestForm({
       ? 'Enter a valid amount.'
       : null;
 
-  const descriptionValid = isEdit
-    ? trimmedDescription.length >= 1 && trimmedDescription.length <= DESCRIPTION_LIMITS.max
-    : trimmedDescription.length <= DESCRIPTION_LIMITS.max;
+  const descriptionValid = trimmedDescription.length <= DESCRIPTION_LIMITS.max;
 
   const stepValid = [
     trimmedTitle.length >= CREATE_TITLE_LIMITS.min &&
@@ -476,10 +475,6 @@ export function NewRequestForm({
         return;
       }
       if (step === 1) {
-        if (isEdit && trimmedDescription.length < 1) {
-          showAppToast('Describe what needs to be done to continue.', 'warning');
-          return;
-        }
         showAppToast(
           trimmedDescription.length > DESCRIPTION_LIMITS.max
             ? `Keep the description under ${DESCRIPTION_LIMITS.max} characters.`
@@ -534,7 +529,6 @@ export function NewRequestForm({
     if (
       trimmedTitle.length < CREATE_TITLE_LIMITS.min ||
       !descriptionValid ||
-      (isEdit && trimmedDescription.length < 1) ||
       (REQUEST_REQUIRES_FUNDING && !isFundedOffer(parsedAmount)) ||
       (whenMode === 'later' && scheduledFor === null)
     ) {
@@ -857,11 +851,7 @@ export function NewRequestForm({
             {step === 1 ? (
               <View className="gap-3">
                 <Text className="text-3xl font-bold leading-9 text-ink">Tell us more</Text>
-                <Text className="text-base text-muted">
-                  {isEdit
-                    ? 'What needs to be done, and what does success look like?'
-                    : 'What does success look like? (optional)'}
-                </Text>
+                <Text className="text-base text-muted">What does success look like? (optional)</Text>
                 <CreateTextArea
                   inputRef={descriptionInputRef}
                   value={description}
@@ -871,11 +861,6 @@ export function NewRequestForm({
                   textSize="lg"
                   minHeight={200}
                 />
-                {isEdit && trimmedDescription.length === 0 ? (
-                  <Text className="text-sm text-muted">
-                    Add a short description so helpers know what you need.
-                  </Text>
-                ) : null}
                 {trimmedDescription.length > DESCRIPTION_LIMITS.max ? (
                   <Text className="text-sm text-warning">
                     Keep the description under {DESCRIPTION_LIMITS.max} characters.
