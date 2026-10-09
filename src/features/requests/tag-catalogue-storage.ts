@@ -11,7 +11,7 @@ type RequestTag = {
 };
 
 const STORAGE_KEY = 'request-tag-catalogue';
-const CACHE_SCHEMA_VERSION = 1;
+const CACHE_SCHEMA_VERSION = 2;
 
 type PersistedTagCatalogue = {
   schemaVersion: number;

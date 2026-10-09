@@ -31,6 +31,7 @@ import {
 import { useRequestConversation } from '@/features/requests/conversation-api';
 import { chooseResponderDialog } from '@/features/requests/selection-copy';
 import { myRequestActivityBadge } from '@/features/requests/activity-list';
+import { isRequestEditable } from '@/features/requests/edit-eligibility';
 import {
   canReuseRequest,
   isExpiredRequestView,
@@ -154,8 +155,20 @@ export default function RequestDetailScreen() {
       },
     ]);
 
+  const canEdit = isRequestEditable({
+    status: data.status,
+    expires_at: data.expires_at,
+    first_response_at: data.first_response_at,
+    is_editable: data.is_editable,
+  });
+
   const menuActions = isOpen
-    ? [{ label: 'Cancel request', destructive: true, onPress: confirmCancel }]
+    ? [
+        ...(canEdit
+          ? [{ label: 'Edit Request', onPress: () => router.push(`/request/edit/${id}`) }]
+          : []),
+        { label: 'Cancel request', destructive: true, onPress: confirmCancel },
+      ]
     : undefined;
 
   if (redirectsToEngagement) {

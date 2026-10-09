@@ -10,8 +10,8 @@ export function RequestTagsLine({ slugs }: { slugs: string[] | null | undefined 
 
   return (
     <View className="flex-row flex-wrap gap-2">
-      {tags.map((label) => (
-        <TagPill key={label} label={label} selected />
+      {tags.map((label, index) => (
+        <TagPill key={`${label}:${index}`} label={label} selected />
       ))}
     </View>
   );

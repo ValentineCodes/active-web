@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tansta
 import { useUserId } from '@/features/auth/session';
 import type { Position } from '@/lib/location';
 import { DESCRIPTION_LIMITS } from '@/config';
+import { resolveRequestTagIdsForRpc, type RequestTag } from '@/features/requests/tags';
 import { queryKeys } from '@/lib/query/keys';
 import { invalidateWalletQueries } from '@/features/wallet/api';
 import { supabase } from '@/lib/supabase/client';
@@ -52,7 +53,7 @@ type Engagement = Nullable<
 >;
 
 const REQUEST_COLUMNS =
-  'request_id, title, description, scheduled_for, offered_amount, agreed_provider_amount, currency, payment_status, location_label, latitude, longitude, status, selected_user_id, source_request_id, attachment_path, tag_slugs, pending_response_count, is_rated, my_rating_stars, my_rating_comment, created_at, updated_at, expires_at, accepted_at, started_at, completed_at, cancelled_at';
+  'request_id, title, description, scheduled_for, offered_amount, agreed_provider_amount, currency, payment_status, location_label, latitude, longitude, status, selected_user_id, source_request_id, attachment_path, tag_slugs, pending_response_count, first_response_at, is_editable, is_rated, my_rating_stars, my_rating_comment, created_at, updated_at, expires_at, accepted_at, started_at, completed_at, cancelled_at';
 
 type MyRequest = Guaranteed<
   Database['public']['Views']['my_requests']['Row'],
@@ -66,6 +67,8 @@ type MyRequest = Guaranteed<
   | 'status'
   | 'created_at'
   | 'pending_response_count'
+  | 'first_response_at'
+  | 'is_editable'
   | 'is_rated'
   | 'attachment_path'
 >;
@@ -229,6 +232,8 @@ export function useLiveRequest(requestId: string) {
   const queryClient = useQueryClient();
 
   useEffect(() => {
+    if (!requestId) return;
+
     let cancelled = false;
 
     void acquireLiveRequestChannel(requestId, queryClient).then(() => {
@@ -258,7 +263,7 @@ export function useCreateRequest() {
       offeredAmount: number;
       sourceRequestId?: string;
       attachmentPath?: string | null;
-      tagIds?: string[];
+      tags?: Pick<RequestTag, 'slug'>[];
     }) => {
       if (!userId) throw new Error('Sign in to create a request.');
 
@@ -266,6 +271,8 @@ export function useCreateRequest() {
       if (trimmedDescription.length > DESCRIPTION_LIMITS.max) {
         throw new Error('Description is too long.');
       }
+
+      const tagIds = await resolveRequestTagIdsForRpc(input.tags ?? []);
 
       const { data, error } = await supabase.rpc('create_request', {
         p_title: input.title.trim(),
@@ -277,13 +284,64 @@ export function useCreateRequest() {
         p_offered_amount: input.offeredAmount,
         p_source_request_id: input.sourceRequestId,
         p_attachment_path: input.attachmentPath || undefined,
-        p_tag_ids: input.tagIds?.length ? input.tagIds : undefined,
+        p_tag_ids: tagIds,
       });
 
       if (error) throw error;
       return data;
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.myRequests });
+      queryClient.invalidateQueries({ queryKey: queryKeys.browseNearbyAll });
+      queryClient.invalidateQueries({ queryKey: queryKeys.requestSearchAll });
+      void invalidateWalletQueries(queryClient);
+    },
+  });
+}
+
+export function useUpdateRequest(requestId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (input: {
+      title: string;
+      description: string;
+      position: Position;
+      locationLabel: string;
+      scheduledFor: Date | null;
+      offeredAmount: number;
+      attachmentPath?: string | null;
+      tags?: Pick<RequestTag, 'slug'>[];
+    }) => {
+      const trimmedDescription = input.description.trim();
+      if (trimmedDescription.length < 1) {
+        throw new Error('Describe what needs to be done to continue.');
+      }
+      if (trimmedDescription.length > DESCRIPTION_LIMITS.max) {
+        throw new Error('Description is too long.');
+      }
+
+      const tagIds = (await resolveRequestTagIdsForRpc(input.tags ?? [])) ?? [];
+
+      const { error } = await supabase.rpc('update_request', {
+        p_request_id: requestId,
+        p_title: input.title.trim(),
+        p_description: trimmedDescription,
+        p_latitude: input.position.latitude,
+        p_longitude: input.position.longitude,
+        p_location_label: input.locationLabel,
+        p_scheduled_for: input.scheduledFor?.toISOString(),
+        p_offered_amount: input.offeredAmount,
+        ...(input.attachmentPath !== undefined
+          ? { p_attachment_path: input.attachmentPath ?? '' }
+          : {}),
+        p_tag_ids: tagIds,
+      });
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.myRequest(requestId) });
       queryClient.invalidateQueries({ queryKey: queryKeys.myRequests });
       queryClient.invalidateQueries({ queryKey: queryKeys.browseNearbyAll });
       queryClient.invalidateQueries({ queryKey: queryKeys.requestSearchAll });

@@ -5,6 +5,8 @@ import { responderAvailabilityBadge } from '@/features/requests/status';
 
 /** Requester-facing hint: availability for this request's scheduled time only. */
 export function ResponderScheduleAvailability({ available }: { available: boolean }) {
+  if (available) return null;
+
   const badge = responderAvailabilityBadge(available);
 
   return (

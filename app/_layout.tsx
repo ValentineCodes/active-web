@@ -86,6 +86,7 @@ function RootNavigator() {
         <Stack.Screen name="wallet" />
         <Stack.Screen name="search" />
         <Stack.Screen name="request/new" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="request/edit/[id]" options={{ presentation: 'modal' }} />
         <Stack.Screen name="request/[id]" />
         <Stack.Screen name="respond/[id]" options={{ presentation: 'modal' }} />
         <Stack.Screen name="engagement/[id]" />

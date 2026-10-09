@@ -582,6 +582,8 @@ export type Database = {
           avatar_path?: string | null
           bio?: string | null
           created_at?: string
+          discovery_location?: unknown
+          discovery_location_updated_at?: string | null
           display_name?: string | null
           id?: string
           jobs_completed?: number
@@ -742,57 +744,6 @@ export type Database = {
           },
         ]
       }
-      request_messages: {
-        Row: {
-          body: string
-          conversation_id: string
-          created_at: string
-          id: string
-          message_type: Database["public"]["Enums"]["conversation_message_type"]
-          metadata: Json | null
-          read_at: string | null
-          sender_id: string
-          updated_at: string
-        }
-        Insert: {
-          body: string
-          conversation_id: string
-          created_at?: string
-          id?: string
-          message_type?: Database["public"]["Enums"]["conversation_message_type"]
-          metadata?: Json | null
-          read_at?: string | null
-          sender_id: string
-          updated_at?: string
-        }
-        Update: {
-          body?: string
-          conversation_id?: string
-          created_at?: string
-          id?: string
-          message_type?: Database["public"]["Enums"]["conversation_message_type"]
-          metadata?: Json | null
-          read_at?: string | null
-          sender_id?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "request_messages_conversation_id_fkey"
-            columns: ["conversation_id"]
-            isOneToOne: false
-            referencedRelation: "request_conversations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "request_messages_sender_id_fkey"
-            columns: ["sender_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       request_message_attachments: {
         Row: {
           attachment_type: Database["public"]["Enums"]["conversation_attachment_type"]
@@ -850,6 +801,57 @@ export type Database = {
           },
           {
             foreignKeyName: "request_message_attachments_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      request_messages: {
+        Row: {
+          body: string
+          conversation_id: string
+          created_at: string
+          id: string
+          message_type: Database["public"]["Enums"]["conversation_message_type"]
+          metadata: Json | null
+          read_at: string | null
+          sender_id: string
+          updated_at: string
+        }
+        Insert: {
+          body: string
+          conversation_id: string
+          created_at?: string
+          id?: string
+          message_type?: Database["public"]["Enums"]["conversation_message_type"]
+          metadata?: Json | null
+          read_at?: string | null
+          sender_id: string
+          updated_at?: string
+        }
+        Update: {
+          body?: string
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          message_type?: Database["public"]["Enums"]["conversation_message_type"]
+          metadata?: Json | null
+          read_at?: string | null
+          sender_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "request_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "request_conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "request_messages_sender_id_fkey"
             columns: ["sender_id"]
             isOneToOne: false
             referencedRelation: "profiles"
@@ -920,6 +922,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      request_search_queries: {
+        Row: {
+          last_searched_at: string
+          normalized_query: string
+          search_count: number
+        }
+        Insert: {
+          last_searched_at?: string
+          normalized_query: string
+          search_count?: number
+        }
+        Update: {
+          last_searched_at?: string
+          normalized_query?: string
+          search_count?: number
+        }
+        Relationships: []
       }
       request_status_events: {
         Row: {
@@ -994,6 +1014,13 @@ export type Database = {
             foreignKeyName: "request_tags_request_id_fkey"
             columns: ["request_id"]
             isOneToOne: false
+            referencedRelation: "my_requests"
+            referencedColumns: ["request_id"]
+          },
+          {
+            foreignKeyName: "request_tags_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
             referencedRelation: "requests"
             referencedColumns: ["id"]
           },
@@ -1005,33 +1032,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      tags: {
-        Row: {
-          category: string
-          created_at: string
-          id: string
-          is_active: boolean
-          name: string
-          slug: string
-        }
-        Insert: {
-          category?: string
-          created_at?: string
-          id?: string
-          is_active?: boolean
-          name: string
-          slug: string
-        }
-        Update: {
-          category?: string
-          created_at?: string
-          id?: string
-          is_active?: boolean
-          name?: string
-          slug?: string
-        }
-        Relationships: []
       }
       requests: {
         Row: {
@@ -1045,9 +1045,10 @@ export type Database = {
           completion_reminder_sent_at: string | null
           created_at: string
           currency: string
-          description: string
+          description: string | null
           expires_at: string | null
           expiry_reminder_sent_at: string | null
+          first_response_at: string | null
           id: string
           location: unknown
           location_label: string
@@ -1074,9 +1075,10 @@ export type Database = {
           completion_reminder_sent_at?: string | null
           created_at?: string
           currency?: string
-          description: string
+          description?: string | null
           expires_at?: string | null
           expiry_reminder_sent_at?: string | null
+          first_response_at?: string | null
           id?: string
           location: unknown
           location_label: string
@@ -1103,9 +1105,10 @@ export type Database = {
           completion_reminder_sent_at?: string | null
           created_at?: string
           currency?: string
-          description?: string
+          description?: string | null
           expires_at?: string | null
           expiry_reminder_sent_at?: string | null
+          first_response_at?: string | null
           id?: string
           location?: unknown
           location_label?: string
@@ -1229,38 +1232,32 @@ export type Database = {
           },
         ]
       }
-      user_notification_tag_interests: {
+      tags: {
         Row: {
+          category: string
           created_at: string
-          tag_id: string
-          user_id: string
+          id: string
+          is_active: boolean
+          name: string
+          slug: string
         }
         Insert: {
+          category?: string
           created_at?: string
-          tag_id: string
-          user_id: string
+          id?: string
+          is_active?: boolean
+          name: string
+          slug: string
         }
         Update: {
+          category?: string
           created_at?: string
-          tag_id?: string
-          user_id?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          slug?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "user_notification_tag_interests_tag_id_fkey"
-            columns: ["tag_id"]
-            isOneToOne: false
-            referencedRelation: "tags"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "user_notification_tag_interests_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       user_attendance: {
         Row: {
@@ -1330,6 +1327,39 @@ export type Database = {
             foreignKeyName: "user_conversation_focus_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_notification_tag_interests: {
+        Row: {
+          created_at: string
+          tag_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          tag_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          tag_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_notification_tag_interests_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "tags"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_notification_tag_interests_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -1456,33 +1486,7 @@ export type Database = {
           updated_at: string | null
           user_id: string | null
         }
-        Insert: {
-          attending_request_id?: string | null
-          commitment_count?: number | null
-          updated_at?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          attending_request_id?: string | null
-          commitment_count?: number | null
-          updated_at?: string | null
-          user_id?: string | null
-        }
         Relationships: [
-          {
-            foreignKeyName: "user_attendance_request_id_fkey"
-            columns: ["attending_request_id"]
-            isOneToOne: false
-            referencedRelation: "my_requests"
-            referencedColumns: ["request_id"]
-          },
-          {
-            foreignKeyName: "user_attendance_request_id_fkey"
-            columns: ["attending_request_id"]
-            isOneToOne: false
-            referencedRelation: "requests"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "user_attendance_user_id_fkey"
             columns: ["user_id"]
@@ -1501,8 +1505,10 @@ export type Database = {
           completed_at: string | null
           created_at: string | null
           currency: string | null
-          description: string
+          description: string | null
           expires_at: string | null
+          first_response_at: string | null
+          is_editable: boolean | null
           is_rated: boolean | null
           latitude: number | null
           location_label: string | null
@@ -1748,6 +1754,10 @@ export type Database = {
       }
     }
     Functions: {
+      abort_request_message_with_attachments: {
+        Args: { p_message_id: string }
+        Returns: undefined
+      }
       accept_response: { Args: { p_response_id: string }; Returns: string }
       admin_resolve_service_problem: {
         Args: {
@@ -1775,23 +1785,6 @@ export type Database = {
         }
         Returns: undefined
       }
-      abort_request_message_with_attachments: {
-        Args: { p_message_id: string }
-        Returns: undefined
-      }
-      begin_request_message_with_attachments: {
-        Args: {
-          p_body?: string
-          p_client_send_id?: string
-          p_conversation_id: string
-          p_planned_attachments?: Json
-        }
-        Returns: {
-          attachment_id: string
-          message_id: string
-          storage_path: string
-        }[]
-      }
       apply_payment_transition: {
         Args: {
           p_idempotency_key: string
@@ -1811,6 +1804,14 @@ export type Database = {
         Returns: undefined
       }
       assert_onboarded: { Args: never; Returns: string }
+      assert_responder_available_for_selection: {
+        Args: { p_provider_id: string; p_target_request_id: string }
+        Returns: undefined
+      }
+      attach_tags_to_request: {
+        Args: { p_request_id: string; p_tag_ids: string[] }
+        Returns: undefined
+      }
       attending_request_statuses: {
         Args: never
         Returns: Database["public"]["Enums"]["request_status"][]
@@ -1824,6 +1825,19 @@ export type Database = {
         Returns: boolean
       }
       avatar_is_published: { Args: { p_name: string }; Returns: boolean }
+      begin_request_message_with_attachments: {
+        Args: {
+          p_body?: string
+          p_client_send_id?: string
+          p_conversation_id: string
+          p_planned_attachments?: Json
+        }
+        Returns: {
+          attachment_id: string
+          message_id: string
+          storage_path: string
+        }[]
+      }
       browse_nearby_requests: {
         Args: { p_latitude: number; p_longitude: number }
         Returns: {
@@ -1859,8 +1873,8 @@ export type Database = {
           requester_id: string
           requester_rating_average: number
           requester_rating_count: number
-          scheduled_for: string
           respond_allowed: boolean
+          scheduled_for: string
           tag_slugs: string[]
           title: string
         }[]
@@ -1871,16 +1885,22 @@ export type Database = {
         Returns: boolean
       }
       can_read_request_media: { Args: { p_name: string }; Returns: boolean }
+      can_write_conversation_media: {
+        Args: { p_name: string }
+        Returns: boolean
+      }
       cancel_request: { Args: { p_request_id: string }; Returns: undefined }
       cancel_service: { Args: { p_request_id: string }; Returns: undefined }
       catalogue_media_is_published: {
         Args: { p_name: string }
         Returns: boolean
       }
-      clear_user_attendance: {
-        Args: { p_request_id?: string; p_user_id: string }
-        Returns: undefined
-      }
+      clear_user_attendance:
+        | { Args: { p_user_id: string }; Returns: undefined }
+        | {
+            Args: { p_request_id?: string; p_user_id: string }
+            Returns: undefined
+          }
       clone_request_from_prior: {
         Args: { p_idempotency_key: string; p_source_request_id: string }
         Returns: string
@@ -1906,6 +1926,59 @@ export type Database = {
       contest_service_problem: {
         Args: { p_request_id: string }
         Returns: undefined
+      }
+      conversation_attachment_extension_is_blocked: {
+        Args: { p_ext: string }
+        Returns: boolean
+      }
+      conversation_attachment_filename_extension: {
+        Args: { p_file_name: string }
+        Returns: string
+      }
+      conversation_attachment_max_bytes: {
+        Args: {
+          p_kind: Database["public"]["Enums"]["conversation_attachment_type"]
+        }
+        Returns: number
+      }
+      conversation_attachment_mime_kind: {
+        Args: { p_mime: string }
+        Returns: Database["public"]["Enums"]["conversation_attachment_type"]
+      }
+      conversation_attachment_normalize_mime: {
+        Args: { p_mime: string }
+        Returns: string
+      }
+      conversation_attachment_type_for_mime: {
+        Args: { p_mime_type: string }
+        Returns: Database["public"]["Enums"]["conversation_attachment_type"]
+      }
+      conversation_attachment_validate_planned: {
+        Args: {
+          p_attachment_type: Database["public"]["Enums"]["conversation_attachment_type"]
+          p_file_name: string
+          p_file_size: number
+          p_mime_type: string
+        }
+        Returns: undefined
+      }
+      conversation_attachment_validate_stored: {
+        Args: {
+          p_expected_type: Database["public"]["Enums"]["conversation_attachment_type"]
+          p_file_size: number
+          p_mime_type: string
+        }
+        Returns: Database["public"]["Enums"]["conversation_attachment_type"]
+      }
+      conversation_chat_storage_path: {
+        Args: {
+          p_attachment_id: string
+          p_conversation_id: string
+          p_file_name: string
+          p_message_id: string
+          p_user_id: string
+        }
+        Returns: string
       }
       conversation_focus_ttl: { Args: never; Returns: string }
       conversation_media_path_is_valid: {
@@ -1957,51 +2030,6 @@ export type Database = {
         }
         Returns: string
       }
-      list_tag_catalogue: {
-        Args: never
-        Returns: {
-          category: string
-          name: string
-          slug: string
-          tag_id: string
-        }[]
-      }
-      search_tags: {
-        Args: {
-          p_limit?: number
-          p_query?: string
-        }
-        Returns: {
-          category: string
-          name: string
-          slug: string
-          tag_id: string
-        }[]
-      }
-      search_requests: {
-        Args: { p_latitude: number; p_longitude: number; p_query: string }
-        Returns: {
-          currency: string
-          description: string
-          distance_m: number
-          location_label: string
-          offered_amount: number
-          request_id: string
-          requester_avatar_path: string
-          requester_display_name: string
-          requester_rating_average: number
-          requester_rating_count: number
-          scheduled_for: string
-          title: string
-        }[]
-      }
-      search_request_queries: {
-        Args: { p_limit?: number; p_prefix?: string }
-        Returns: {
-          normalized_query: string
-        }[]
-      }
-      record_request_search: { Args: { p_query: string }; Returns: undefined }
       decline_response: {
         Args: { p_reason?: string; p_response_id: string }
         Returns: undefined
@@ -2152,7 +2180,7 @@ export type Database = {
           message_id: string
           message_type: Database["public"]["Enums"]["conversation_message_type"]
           metadata: Json
-          read_at: string | null
+          read_at: string
           sender_id: string
         }[]
       }
@@ -2211,6 +2239,14 @@ export type Database = {
               type: Database["public"]["Enums"]["wallet_transaction_type"]
             }[]
           }
+      list_notification_tag_interests: {
+        Args: never
+        Returns: {
+          name: string
+          slug: string
+          tag_id: string
+        }[]
+      }
       list_request_messages: {
         Args: { p_before?: string; p_conversation_id: string; p_limit?: number }
         Returns: {
@@ -2246,6 +2282,15 @@ export type Database = {
           status: Database["public"]["Enums"]["response_status"]
         }[]
       }
+      list_tag_catalogue: {
+        Args: never
+        Returns: {
+          category: string
+          name: string
+          slug: string
+          tag_id: string
+        }[]
+      }
       lock_request_escrow: {
         Args: { p_idempotency_key: string; p_request_id: string }
         Returns: undefined
@@ -2270,6 +2315,10 @@ export type Database = {
       mark_service_complete: {
         Args: { p_request_id: string }
         Returns: undefined
+      }
+      matching_request_notification_body: {
+        Args: { p_recipient_id: string; p_request_id: string }
+        Returns: string
       }
       my_responses: {
         Args: never
@@ -2300,6 +2349,10 @@ export type Database = {
           title: string
         }[]
       }
+      new_message_notification_body: {
+        Args: { p_body: string; p_message_id: string; p_sender_first: string }
+        Returns: string
+      }
       ngn_major_to_kobo: { Args: { p_amount: number }; Returns: number }
       notification_dedupe_key: {
         Args: {
@@ -2318,8 +2371,22 @@ export type Database = {
         Returns: number
       }
       notify_expiring_requests: { Args: { p_limit?: number }; Returns: number }
+      notify_request_message_dispatch: {
+        Args: {
+          p_message: Database["public"]["Tables"]["request_messages"]["Row"]
+        }
+        Returns: undefined
+      }
+      notify_request_message_manual: {
+        Args: { p_message_id: string }
+        Returns: undefined
+      }
       notify_responders_not_chosen: {
         Args: { p_chosen_response_id: string; p_request_id: string }
+        Returns: undefined
+      }
+      notify_tag_interest_subscribers: {
+        Args: { p_request_id: string }
         Returns: undefined
       }
       open_request_statuses: {
@@ -2356,6 +2423,11 @@ export type Database = {
         }
         Returns: boolean
       }
+      provider_schedule_conflict_message: { Args: never; Returns: string }
+      provider_selection_conflicts: {
+        Args: { p_provider_id: string; p_target_request_id: string }
+        Returns: boolean
+      }
       prune_invalid_expo_push_tokens: {
         Args: { p_response: Json; p_tokens: string[] }
         Returns: undefined
@@ -2368,6 +2440,11 @@ export type Database = {
         Args: { p_conversation_id: string; p_recipient_user_id: string }
         Returns: boolean
       }
+      record_discovery_coordinates: {
+        Args: { p_latitude: number; p_longitude: number }
+        Returns: undefined
+      }
+      record_request_search: { Args: { p_query: string }; Returns: undefined }
       record_request_status_event: {
         Args: {
           p_actor_id: string
@@ -2388,6 +2465,14 @@ export type Database = {
         }
         Returns: undefined
       }
+      request_allows_requester_edit: {
+        Args: {
+          p_expires_at: string
+          p_first_response_at: string
+          p_status: Database["public"]["Enums"]["request_status"]
+        }
+        Returns: boolean
+      }
       request_conversation_is_accessible: {
         Args: { p_conversation_id: string; p_user_id: string }
         Returns: boolean
@@ -2396,13 +2481,25 @@ export type Database = {
         Args: { p_status: Database["public"]["Enums"]["request_status"] }
         Returns: boolean
       }
+      request_discoverable_for_user: {
+        Args: { p_request_id: string; p_user_id: string }
+        Returns: boolean
+      }
       request_expires_at: { Args: { p_scheduled_for: string }; Returns: string }
       request_lifetime_interval: { Args: never; Returns: string }
       request_media_visible_to_party: {
         Args: { p_name: string; p_user_id: string }
         Returns: boolean
       }
+      request_message_attachments_for_row: {
+        Args: { p_message_id: string }
+        Returns: Json
+      }
       request_message_system_insert_allowed: { Args: never; Returns: boolean }
+      request_message_visible_to_viewer: {
+        Args: { p_message_id: string; p_viewer_id: string }
+        Returns: boolean
+      }
       request_open_to_user: {
         Args: {
           p_latitude?: number
@@ -2416,6 +2513,20 @@ export type Database = {
         Args: { p_request_id: string; p_requester_id: string }
         Returns: string
       }
+      request_schedule_anchor: {
+        Args: { p_accepted_at: string; p_scheduled_for: string }
+        Returns: string
+      }
+      request_schedule_conflicts: {
+        Args: {
+          p_existing_accepted: string
+          p_existing_scheduled: string
+          p_new_anchor: string
+          p_new_scheduled: string
+        }
+        Returns: boolean
+      }
+      request_tag_slugs: { Args: { p_request_id: string }; Returns: string[] }
       requester_completion_percent: {
         Args: { p_user_id: string }
         Returns: number
@@ -2438,6 +2549,42 @@ export type Database = {
         }
         Returns: string
       }
+      sanitize_chat_attachment_filename: {
+        Args: { p_file_name: string }
+        Returns: string
+      }
+      search_request_queries: {
+        Args: { p_limit?: number; p_prefix?: string }
+        Returns: {
+          normalized_query: string
+        }[]
+      }
+      search_requests: {
+        Args: { p_latitude: number; p_longitude: number; p_query: string }
+        Returns: {
+          currency: string
+          description: string
+          distance_m: number
+          location_label: string
+          offered_amount: number
+          request_id: string
+          requester_avatar_path: string
+          requester_display_name: string
+          requester_rating_average: number
+          requester_rating_count: number
+          scheduled_for: string
+          title: string
+        }[]
+      }
+      search_tags: {
+        Args: { p_limit?: number; p_query?: string }
+        Returns: {
+          category: string
+          name: string
+          slug: string
+          tag_id: string
+        }[]
+      }
       send_request_message: {
         Args: { p_body: string; p_conversation_id: string }
         Returns: string
@@ -2454,7 +2601,7 @@ export type Database = {
         Args: {
           p_body?: string
           p_conversation_id: string
-          p_storage_paths: string[]
+          p_storage_paths?: string[]
         }
         Returns: string
       }
@@ -2463,18 +2610,6 @@ export type Database = {
         Returns: boolean
       }
       service_problem_response_interval: { Args: never; Returns: string }
-      list_notification_tag_interests: {
-        Args: never
-        Returns: {
-          name: string
-          slug: string
-          tag_id: string
-        }[]
-      }
-      record_discovery_coordinates: {
-        Args: { p_latitude: number; p_longitude: number }
-        Returns: undefined
-      }
       set_notification_preferences: {
         Args: {
           p_message_push_enabled: boolean
@@ -2504,6 +2639,21 @@ export type Database = {
           p_idempotency_key: string
           p_request_id: string
           p_to: Database["public"]["Enums"]["payment_status"]
+        }
+        Returns: undefined
+      }
+      update_request: {
+        Args: {
+          p_attachment_path?: string
+          p_description: string
+          p_latitude: number
+          p_location_label: string
+          p_longitude: number
+          p_offered_amount?: number
+          p_request_id: string
+          p_scheduled_for?: string
+          p_tag_ids?: string[]
+          p_title: string
         }
         Returns: undefined
       }
@@ -2638,7 +2788,6 @@ export type Database = {
       notification_type:
         | "response_received"
         | "new_responses"
-        | "matching_request"
         | "request_expiring"
         | "request_expired"
         | "response_accepted"
@@ -2661,6 +2810,7 @@ export type Database = {
         | "dispute_resolved"
         | "funds_released_after_resolution"
         | "rate_experience"
+        | "matching_request"
       payment_lock_bucket: "locked" | "pending"
       payment_lock_status: "active" | "released" | "refunded"
       payment_status:
@@ -2852,7 +3002,6 @@ export const Constants = {
       notification_type: [
         "response_received",
         "new_responses",
-        "matching_request",
         "request_expiring",
         "request_expired",
         "response_accepted",
@@ -2875,6 +3024,7 @@ export const Constants = {
         "dispute_resolved",
         "funds_released_after_resolution",
         "rate_experience",
+        "matching_request",
       ],
       payment_lock_bucket: ["locked", "pending"],
       payment_lock_status: ["active", "released", "refunded"],

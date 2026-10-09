@@ -38,10 +38,27 @@ import {
   takeRequestPhoto,
   uploadRequestPhoto,
 } from '@/features/requests/request-media';
+import { RequestEditLockedState } from '@/components/request-flow/RequestEditLockedState';
 import { RequestReviewBeforePostCard } from '@/components/request-flow/RequestReviewBeforePostCard';
 import { RequestTagPickerAfterNavigation } from '@/components/request-flow/RequestTagPicker';
-import { MAX_REQUEST_TAGS, useTagCatalogue, type RequestTag } from '@/features/requests/tags';
-import { useCreateRequest, useMyRequest } from '@/features/requests/requester-api';
+import {
+  MAX_REQUEST_TAGS,
+  resolveRequestTagsFromApiLabels,
+  useTagCatalogue,
+  type RequestTag,
+} from '@/features/requests/tags';
+import { isRequestEditable } from '@/features/requests/edit-eligibility';
+import {
+  isRequestEditLockedError,
+  showRequestEditLockedToast,
+} from '@/features/requests/request-edit-locked';
+import { useRequestAttachmentUrl } from '@/features/requests/request-attachment-url';
+import {
+  useCreateRequest,
+  useLiveRequest,
+  useMyRequest,
+  useUpdateRequest,
+} from '@/features/requests/requester-api';
 import { cn } from '@/lib/cn';
 import { formatMoney, formatWhenHome } from '@/lib/format';
 import {
@@ -111,8 +128,8 @@ function whenSummary(mode: WhenMode, laterAt: Date): string {
   return formatWhenHome(laterAt.toISOString());
 }
 
-function WizardProgress({ step }: { step: number }) {
-  const progress = ((step + 1) / STEP_COUNT) * 100;
+function WizardProgress({ step, stepCount }: { step: number; stepCount: number }) {
+  const progress = ((step + 1) / stepCount) * 100;
 
   return (
     <View className="mx-5 h-1 overflow-hidden rounded-full bg-surface">
@@ -124,11 +141,13 @@ function WizardProgress({ step }: { step: number }) {
 function WizardHeader({
   title,
   step,
+  stepCount,
   onClose,
   onBack,
 }: {
   title: string;
   step: number;
+  stepCount: number;
   onClose: () => void;
   onBack?: () => void;
 }) {
@@ -148,7 +167,7 @@ function WizardHeader({
         {title}
       </Text>
       <Text className="min-w-10 text-right text-sm font-medium text-subtle">
-        {step + 1} / {STEP_COUNT}
+        {step + 1} / {stepCount}
       </Text>
     </View>
   );
@@ -291,13 +310,23 @@ function WhenPill({
   );
 }
 
-function NewRequestForm({ reuseSeed }: { reuseSeed?: ReuseSeed }) {
+export function NewRequestForm({
+  reuseSeed,
+  editRequestId,
+}: {
+  reuseSeed?: ReuseSeed;
+  editRequestId?: string;
+}) {
   const userId = useUserId();
+  const isEdit = Boolean(editRequestId);
+  const editRequest = useMyRequest(editRequestId ?? '');
   const seeded = newRequestFormState(reuseSeed);
   const create = useCreateRequest();
+  const update = useUpdateRequest(editRequestId ?? '');
+  useLiveRequest(editRequestId ?? '');
   const wallet = useMyWallet();
   const { refetch: refetchWallet } = wallet;
-  useTagCatalogue();
+  const tagCatalogue = useTagCatalogue();
 
   useFocusEffect(
     useCallback(() => {
@@ -322,6 +351,7 @@ function NewRequestForm({ reuseSeed }: { reuseSeed?: ReuseSeed }) {
   const [attachmentMimeType, setAttachmentMimeType] = useState<string | null>(null);
   const [attachmentUploading, setAttachmentUploading] = useState(false);
   const [selectedTags, setSelectedTags] = useState<RequestTag[]>([]);
+  const [editFormSeeded, setEditFormSeeded] = useState(false);
   const setSelectedTagsSafe = (next: RequestTag[]) => {
     setSelectedTags(next.slice(0, MAX_REQUEST_TAGS));
   };
@@ -331,7 +361,62 @@ function NewRequestForm({ reuseSeed }: { reuseSeed?: ReuseSeed }) {
   const descriptionInputRef = useRef<ComponentRef<typeof TextInput>>(null);
   const amountInputRef = useRef<ComponentRef<typeof TextInput>>(null);
 
-  const reusingPrior = Boolean(reuseSeed);
+  const reusingPrior = Boolean(reuseSeed) && !isEdit;
+  const stepCount = STEP_COUNT;
+  const savedOfferAmount = isEdit ? editRequest.data?.offered_amount ?? null : null;
+  const savedAttachmentUrl = useRequestAttachmentUrl(
+    isEdit && !attachmentUri ? editRequest.data?.attachment_path : null,
+  );
+  const reviewPreviewUri = attachmentUri ?? savedAttachmentUrl.data ?? null;
+
+  const editStillAllowed =
+    !isEdit ||
+    !editRequest.data ||
+    isRequestEditable({
+      status: editRequest.data.status,
+      expires_at: editRequest.data.expires_at,
+      first_response_at: editRequest.data.first_response_at,
+      is_editable: editRequest.data.is_editable,
+    });
+
+  const exitEditToRequestDetail = () => {
+    router.back();
+  };
+
+  const rejectEditBecauseLocked = () => {
+    showRequestEditLockedToast();
+    exitEditToRequestDetail();
+  };
+
+  useEffect(() => {
+    if (!isEdit || !editRequest.data || editFormSeeded) return;
+
+    const row = editRequest.data;
+    setTitle(row.title);
+    setDescription(row.description ?? '');
+    if (row.scheduled_for) {
+      setWhenMode('later');
+      setLaterAt(new Date(row.scheduled_for));
+    } else {
+      setWhenMode('now');
+    }
+    if (row.offered_amount != null) {
+      setAmount(String(row.offered_amount));
+    }
+    setPosition({ latitude: row.latitude, longitude: row.longitude });
+    setAreaLabel(row.location_label);
+
+    setEditFormSeeded(true);
+  }, [isEdit, editRequest.data, editFormSeeded]);
+
+  useEffect(() => {
+    if (!isEdit || !editRequest.data?.tag_slugs?.length || !tagCatalogue.data?.length) return;
+    const tags = resolveRequestTagsFromApiLabels(editRequest.data.tag_slugs, tagCatalogue.data);
+    if (tags.length > 0) {
+      setSelectedTagsSafe(tags);
+    }
+  }, [isEdit, editRequest.data?.tag_slugs, tagCatalogue.data]);
+
   const trimmedTitle = title.trim();
   const trimmedDescription = description.trim();
   const parsedAmount = amount.trim() ? Number(amount.replace(/[^\d.]/g, '')) : null;
@@ -341,7 +426,9 @@ function NewRequestForm({ reuseSeed }: { reuseSeed?: ReuseSeed }) {
       ? 'Enter a valid amount.'
       : null;
 
-  const descriptionValid = trimmedDescription.length <= DESCRIPTION_LIMITS.max;
+  const descriptionValid = isEdit
+    ? trimmedDescription.length >= 1 && trimmedDescription.length <= DESCRIPTION_LIMITS.max
+    : trimmedDescription.length <= DESCRIPTION_LIMITS.max;
 
   const stepValid = [
     trimmedTitle.length >= CREATE_TITLE_LIMITS.min &&
@@ -355,13 +442,18 @@ function NewRequestForm({ reuseSeed }: { reuseSeed?: ReuseSeed }) {
 
   const formCoreValid = stepValid[0] && stepValid[1] && stepValid[2] && stepValid[3];
 
-  const isLastStep = step === STEP_COUNT - 1;
+  const isLastStep = step === stepCount - 1;
   const funding = isFundedOffer(parsedAmount) ? summarizeRequestFunding(parsedAmount) : null;
-  const walletShort =
-    REQUEST_REQUIRES_FUNDING &&
-    funding !== null &&
-    wallet.data !== undefined &&
-    wallet.data.available < funding.total;
+  const walletShort = (() => {
+    if (!REQUEST_REQUIRES_FUNDING || funding === null || wallet.data === undefined) {
+      return false;
+    }
+    if (isEdit && savedOfferAmount != null && parsedAmount != null) {
+      const increase = Math.max(0, parsedAmount - savedOfferAmount);
+      return increase > 0 && wallet.data.available < increase;
+    }
+    return wallet.data.available < funding.total;
+  })();
 
   useEffect(() => {
     if (step > 2) return;
@@ -384,8 +476,14 @@ function NewRequestForm({ reuseSeed }: { reuseSeed?: ReuseSeed }) {
         return;
       }
       if (step === 1) {
+        if (isEdit && trimmedDescription.length < 1) {
+          showAppToast('Describe what needs to be done to continue.', 'warning');
+          return;
+        }
         showAppToast(
-          `Keep the description under ${DESCRIPTION_LIMITS.max} characters.`,
+          trimmedDescription.length > DESCRIPTION_LIMITS.max
+            ? `Keep the description under ${DESCRIPTION_LIMITS.max} characters.`
+            : 'Describe what needs to be done to continue.',
           'warning',
         );
         return;
@@ -403,7 +501,7 @@ function NewRequestForm({ reuseSeed }: { reuseSeed?: ReuseSeed }) {
     }
 
     setLaterTimeError(false);
-    setStep((current) => Math.min(current + 1, STEP_COUNT - 1));
+    setStep((current) => Math.min(current + 1, stepCount - 1));
   };
 
   const onLaterDateChange = (event: DateTimePickerEvent, date?: Date) => {
@@ -428,12 +526,15 @@ function NewRequestForm({ reuseSeed }: { reuseSeed?: ReuseSeed }) {
   };
 
   const submit = (postPosition: Position, locationLabel: string, attachmentPath: string | null) => {
+    const attachmentForRpc: string | null | undefined =
+      attachmentPath ?? (isEdit ? undefined : null);
     const scheduledFor: Date | null =
       whenMode === 'now' ? null : isFutureSchedule(laterAt) ? laterAt : null;
 
     if (
       trimmedTitle.length < CREATE_TITLE_LIMITS.min ||
       !descriptionValid ||
+      (isEdit && trimmedDescription.length < 1) ||
       (REQUEST_REQUIRES_FUNDING && !isFundedOffer(parsedAmount)) ||
       (whenMode === 'later' && scheduledFor === null)
     ) {
@@ -442,17 +543,41 @@ function NewRequestForm({ reuseSeed }: { reuseSeed?: ReuseSeed }) {
       return;
     }
 
+    const payload = {
+      title: trimmedTitle,
+      description: trimmedDescription,
+      position: postPosition,
+      locationLabel,
+      scheduledFor,
+      offeredAmount: parsedAmount!,
+      attachmentPath: attachmentForRpc,
+      tags: selectedTags.slice(0, MAX_REQUEST_TAGS).map((tag) => ({ slug: tag.slug })),
+    };
+
+    if (isEdit && editRequestId) {
+      if (update.isPending) return;
+      if (!editStillAllowed) {
+        rejectEditBecauseLocked();
+        return;
+      }
+      update.mutate(payload, {
+        onSuccess: () => {
+          showAppToast('Your changes were saved', { type: 'success', title: 'Request updated' });
+          router.back();
+        },
+        onError: (error) => {
+          if (isRequestEditLockedError(error)) {
+            rejectEditBecauseLocked();
+          }
+        },
+      });
+      return;
+    }
+
     create.mutate(
       {
-        title: trimmedTitle,
-        description: trimmedDescription,
-        position: postPosition,
-        locationLabel,
-        scheduledFor,
-        offeredAmount: parsedAmount!,
+        ...payload,
         sourceRequestId: reusingPrior ? reuseSeed?.sourceRequestId : undefined,
-        attachmentPath,
-        tagIds: selectedTags.slice(0, MAX_REQUEST_TAGS).map((tag) => tag.id),
       },
       {
         onSuccess: (requestId) => {
@@ -499,7 +624,51 @@ function NewRequestForm({ reuseSeed }: { reuseSeed?: ReuseSeed }) {
     }
   };
 
+  const handleSaveEdit = async () => {
+    if (update.isPending) return;
+    if (!editStillAllowed) {
+      rejectEditBecauseLocked();
+      return;
+    }
+
+    const scheduledFor: Date | null =
+      whenMode === 'now' ? null : isFutureSchedule(laterAt) ? laterAt : null;
+
+    if (!formCoreValid || !position) {
+      if (!stepValid[1]) {
+        showAppToast('Describe what needs to be done to continue.', 'warning');
+      } else {
+        showAppToast('Check the details on earlier steps and try again.', 'warning');
+      }
+      return;
+    }
+
+    if (whenMode === 'later' && scheduledFor === null) {
+      setLaterTimeError(true);
+      showAppToast('Choose a date and time in the future.', 'warning');
+      return;
+    }
+
+    const locationLabel =
+      areaLabel.trim() || editRequest.data?.location_label.trim() || 'My location';
+
+    try {
+      const attachmentPath = await uploadAttachmentIfNeeded();
+      submit(position, locationLabel, attachmentPath);
+    } catch (error) {
+      showAppToast(
+        error instanceof Error ? error.message : 'Could not upload the photo. Try again.',
+        'warning',
+      );
+    }
+  };
+
   const handlePostPress = () => {
+    if (isEdit) {
+      void handleSaveEdit();
+      return;
+    }
+
     const scheduledFor: Date | null =
       whenMode === 'now' ? null : isFutureSchedule(laterAt) ? laterAt : null;
 
@@ -585,7 +754,51 @@ function NewRequestForm({ reuseSeed }: { reuseSeed?: ReuseSeed }) {
     ? formatMoney(parsedAmount, MARKET.currency)
     : null;
   const posting =
-    create.isPending || wallet.isPending || locationModalLoading || attachmentUploading;
+    create.isPending ||
+    update.isPending ||
+    wallet.isPending ||
+    locationModalLoading ||
+    attachmentUploading;
+
+  if (isEdit && editRequest.isPending) {
+    return (
+      <Screen edges={['top']}>
+        <LoadingState />
+      </Screen>
+    );
+  }
+
+  if (isEdit && editRequest.isError) {
+    return (
+      <Screen edges={['top']}>
+        <WizardHeader
+          title="Edit Request"
+          step={0}
+          stepCount={stepCount}
+          onClose={() => router.back()}
+        />
+        <ErrorState error={editRequest.error} onRetry={() => editRequest.refetch()} />
+      </Screen>
+    );
+  }
+
+  if (isEdit && editRequest.isSuccess && !editStillAllowed) {
+    return (
+      <Screen edges={['top']}>
+        <WizardHeader
+          title="Edit Request"
+          step={0}
+          stepCount={stepCount}
+          onClose={exitEditToRequestDetail}
+        />
+        <RequestEditLockedState onBack={exitEditToRequestDetail} />
+      </Screen>
+    );
+  }
+
+  const wizardTitle = isEdit ? 'Edit Request' : reusingPrior ? 'Send request again' : 'New request';
+  const postLabel = isEdit ? 'Save changes' : 'Post request';
+  const saveDisabled = !formCoreValid || walletShort || posting || (isEdit && !editStillAllowed);
 
   return (
     <>
@@ -595,9 +808,9 @@ function NewRequestForm({ reuseSeed }: { reuseSeed?: ReuseSeed }) {
             <View className="gap-3 p-5">
               {isLastStep ? (
                 <WizardPrimaryButton
-                  label="Post request"
+                  label={postLabel}
                   loading={posting}
-                  disabled={!formCoreValid || walletShort}
+                  disabled={saveDisabled}
                   onPress={handlePostPress}
                 />
               ) : (
@@ -607,12 +820,13 @@ function NewRequestForm({ reuseSeed }: { reuseSeed?: ReuseSeed }) {
           }
         >
           <WizardHeader
-            title={reusingPrior ? 'Send request again' : 'New request'}
+            title={wizardTitle}
             step={step}
+            stepCount={stepCount}
             onClose={closeWizard}
             onBack={step > 0 ? goBack : undefined}
           />
-          <WizardProgress step={step} />
+          <WizardProgress step={step} stepCount={stepCount} />
 
           <ScrollView
             contentContainerClassName="gap-5 p-5 pb-8"
@@ -644,7 +858,9 @@ function NewRequestForm({ reuseSeed }: { reuseSeed?: ReuseSeed }) {
               <View className="gap-3">
                 <Text className="text-3xl font-bold leading-9 text-ink">Tell us more</Text>
                 <Text className="text-base text-muted">
-                  What does success look like? (optional)
+                  {isEdit
+                    ? 'What needs to be done, and what does success look like?'
+                    : 'What does success look like? (optional)'}
                 </Text>
                 <CreateTextArea
                   inputRef={descriptionInputRef}
@@ -655,6 +871,16 @@ function NewRequestForm({ reuseSeed }: { reuseSeed?: ReuseSeed }) {
                   textSize="lg"
                   minHeight={200}
                 />
+                {isEdit && trimmedDescription.length === 0 ? (
+                  <Text className="text-sm text-muted">
+                    Add a short description so helpers know what you need.
+                  </Text>
+                ) : null}
+                {trimmedDescription.length > DESCRIPTION_LIMITS.max ? (
+                  <Text className="text-sm text-warning">
+                    Keep the description under {DESCRIPTION_LIMITS.max} characters.
+                  </Text>
+                ) : null}
               </View>
             ) : null}
 
@@ -696,8 +922,12 @@ function NewRequestForm({ reuseSeed }: { reuseSeed?: ReuseSeed }) {
                 !wallet.isError &&
                 walletShort ? (
                   <Text className="text-sm text-warning">
-                    You need {formatMoney(funding.total, funding.currency)} available to fund this
-                    offer.
+                    {isEdit && savedOfferAmount != null && parsedAmount != null
+                      ? `You need ${formatMoney(
+                          Math.max(0, parsedAmount - savedOfferAmount),
+                          funding.currency,
+                        )} more available to increase this offer.`
+                      : `You need ${formatMoney(funding.total, funding.currency)} available to fund this offer.`}
                   </Text>
                 ) : null}
               </View>
@@ -817,7 +1047,8 @@ function NewRequestForm({ reuseSeed }: { reuseSeed?: ReuseSeed }) {
                   whenLabel={reviewWhen}
                   locationLabel={reviewLocation}
                   tagSlugs={selectedTags.map((tag) => tag.name)}
-                  previewUri={attachmentUri}
+                  previewUri={reviewPreviewUri}
+                  reviewHeading={isEdit ? 'Review your changes' : 'Review before posting'}
                 />
 
                 {REQUEST_REQUIRES_FUNDING && funding ? (
@@ -828,9 +1059,20 @@ function NewRequestForm({ reuseSeed }: { reuseSeed?: ReuseSeed }) {
                       <InlineError error={wallet.error} />
                     ) : wallet.data ? (
                       <Text className="text-sm text-muted">
-                        {walletShort
-                          ? `You need ${formatMoney(funding.total, funding.currency)} available to fund this offer. Top up before posting.`
-                          : `${formatMoney(funding.total, funding.currency)} will be held from your wallet when this goes live.`}
+                        {isEdit
+                          ? walletShort
+                            ? 'Top up your wallet before increasing the offer.'
+                            : savedOfferAmount != null &&
+                                parsedAmount != null &&
+                                parsedAmount > savedOfferAmount
+                              ? `${formatMoney(
+                                  parsedAmount - savedOfferAmount,
+                                  funding.currency,
+                                )} more will be held from your wallet.`
+                              : 'Your wallet hold will update if you change the offer.'
+                          : walletShort
+                            ? `You need ${formatMoney(funding.total, funding.currency)} available to fund this offer. Top up before posting.`
+                            : `${formatMoney(funding.total, funding.currency)} will be held from your wallet when this goes live.`}
                       </Text>
                     ) : null}
                     {walletShort ? (
@@ -844,6 +1086,7 @@ function NewRequestForm({ reuseSeed }: { reuseSeed?: ReuseSeed }) {
                 ) : null}
 
                 {create.isError ? <InlineError error={create.error} /> : null}
+                {update.isError ? <InlineError error={update.error} /> : null}
               </View>
             ) : null}
           </ScrollView>
@@ -877,7 +1120,12 @@ export default function NewRequestScreen() {
   if (sourceRequestId && sourceRequest.isError) {
     return (
       <Screen edges={['top']}>
-        <WizardHeader title="New request" step={0} onClose={() => router.back()} />
+        <WizardHeader
+          title="New request"
+          step={0}
+          stepCount={STEP_COUNT}
+          onClose={() => router.back()}
+        />
         <ErrorState error={sourceRequest.error} onRetry={() => sourceRequest.refetch()} />
       </Screen>
     );
@@ -890,7 +1138,12 @@ export default function NewRequestScreen() {
   ) {
     return (
       <Screen edges={['top']}>
-        <WizardHeader title="New request" step={0} onClose={() => router.back()} />
+        <WizardHeader
+          title="New request"
+          step={0}
+          stepCount={STEP_COUNT}
+          onClose={() => router.back()}
+        />
         <ErrorState
           error={
             new Error(

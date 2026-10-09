@@ -82,6 +82,7 @@ export default function OnboardingScreen() {
         <Button
           label="Continue"
           size="lg"
+          corner="2xl"
           disabled={!isNameValid}
           loading={save.isPending}
           onPress={() => save.mutate({ display_name: trimmedName, bio: bio.trim() || null })}

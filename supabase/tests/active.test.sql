@@ -135,6 +135,17 @@ select isnt(
 
 -- Request tags -------------------------------------------------------------------------
 
+select pg_temp.act_as_owner() as _ \gset
+update public.requests
+set expires_at = now() - interval '1 minute'
+where id = :'expired_request_id';
+
+select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
+select lives_ok(
+  format('select cancel_request(%L)', :'cancelled_request_id'),
+  'the requester can cancel a posted request'
+);
+
 select id as tag_plumbing_id from public.tags where slug = 'plumbing' \gset
 select id as tag_moving_id from public.tags where slug = 'moving' \gset
 select id as tag_cleaning_id from public.tags where slug = 'cleaning' \gset
@@ -199,17 +210,6 @@ select throws_ok(
   '22023',
   'one or more tags are invalid or inactive',
   'create_request rejects unknown tag ids'
-);
-
-select pg_temp.act_as_owner() as _ \gset
-update public.requests
-set expires_at = now() - interval '1 minute'
-where id = :'expired_request_id';
-
-select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
-select lives_ok(
-  format('select cancel_request(%L)', :'cancelled_request_id'),
-  'the requester can cancel a posted request'
 );
 
 -- Discovery -------------------------------------------------------------------------
@@ -1008,7 +1008,7 @@ select is(
     from public.list_request_messages(:'conversation_id'::uuid)
     where message_id = :'multi_message_id'::uuid
   ),
-  2::bigint,
+  2,
   'list_request_messages returns every attachment on a multi-attachment message'
 );
 

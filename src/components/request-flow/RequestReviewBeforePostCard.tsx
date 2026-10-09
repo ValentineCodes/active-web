@@ -11,6 +11,7 @@ type RequestReviewBeforePostCardProps = {
   locationLabel: string;
   tagSlugs: string[];
   previewUri?: string | null;
+  reviewHeading?: string;
 };
 
 export function RequestReviewBeforePostCard({
@@ -21,11 +22,12 @@ export function RequestReviewBeforePostCard({
   locationLabel,
   tagSlugs,
   previewUri,
+  reviewHeading = 'Review before posting',
 }: RequestReviewBeforePostCardProps) {
   return (
     <View className="gap-3 rounded-2xl border border-hairline bg-elevated p-4">
       <Text className="text-xs font-semibold uppercase tracking-wide text-subtle">
-        Review before posting
+        {reviewHeading}
       </Text>
       {previewUri ? (
         <Image

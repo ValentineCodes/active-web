@@ -1,3 +1,8 @@
+import {
+  isRequestEditLockedError,
+  REQUEST_EDIT_LOCKED_MESSAGE,
+} from '@/features/requests/request-edit-locked';
+
 /**
  * The database raises deliberate, user-readable messages for the states a person can
  * actually hit ("this request is no longer available to you", schedule conflict at selection).
@@ -31,6 +36,7 @@ export function isNetworkError(error: unknown): boolean {
 
 export function toUserMessage(error: unknown): string {
   if (isNetworkError(error)) return NETWORK_MESSAGE;
+  if (isRequestEditLockedError(error)) return REQUEST_EDIT_LOCKED_MESSAGE;
 
   if (error && typeof error === 'object' && 'code' in error && 'message' in error) {
     const { code, message } = error as { code: unknown; message: unknown };
