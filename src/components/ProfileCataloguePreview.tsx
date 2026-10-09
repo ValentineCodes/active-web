@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, View } from 'react-native';
+import { ActivityIndicator, Pressable, View } from 'react-native';
+import { ScrollView } from 'react-native-gesture-handler';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -99,7 +100,9 @@ export function ProfileCataloguePreview({ userId }: { userId: string }) {
     <View>
       <ScrollView
         horizontal
+        nestedScrollEnabled
         showsHorizontalScrollIndicator={false}
+        style={{ flexGrow: 0, height: TILE_SIZE }}
         contentContainerClassName="gap-3"
       >
         {video ? <VideoTile path={video.storage_path} onPress={() => setViewerIndex(0)} /> : null}

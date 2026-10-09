@@ -10,6 +10,7 @@ import {
 } from '@gorhom/bottom-sheet';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { CatalogueViewer } from '@/components/CatalogueViewer';
 import { ResponderScheduleAvailability } from '@/components/ResponderScheduleAvailability';
 import { BottomSheetWindow } from '@/components/ui/BottomSheetWindow';
 import { ProfileCataloguePreview } from '@/components/ProfileCataloguePreview';
@@ -141,6 +142,7 @@ export function PersonProfileBottomSheet({
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const [footerKey, setFooterKey] = useState(0);
+  const [avatarViewerOpen, setAvatarViewerOpen] = useState(false);
 
   const snapPoints = useMemo(() => ['62%', '94%'], []);
   const title = displayName?.trim() || 'Profile';
@@ -188,7 +190,12 @@ export function PersonProfileBottomSheet({
         <View className="gap-5">
           <View className="flex-row items-center gap-3">
             <View className="min-w-0 flex-1 flex-row items-center gap-3">
-              <Avatar path={avatarPath} name={displayName} size="md" />
+              <Avatar
+                path={avatarPath}
+                name={displayName}
+                size="md"
+                onPress={avatarPath ? () => setAvatarViewerOpen(true) : undefined}
+              />
               <View className="min-w-0 flex-1 gap-2">
                 <Text className="text-lg font-bold leading-7 text-ink">{title}</Text>
                 <StarRating average={ratingAverage} count={ratingCount ?? 0} />
@@ -204,6 +211,14 @@ export function PersonProfileBottomSheet({
           <ProfileCataloguePreview userId={userId} />
         </View>
       </BottomSheetScrollView>
+
+      {avatarViewerOpen && avatarPath ? (
+        <CatalogueViewer
+          items={[{ path: avatarPath, kind: 'photo', storage: 'avatar' }]}
+          initialIndex={0}
+          onClose={() => setAvatarViewerOpen(false)}
+        />
+      ) : null}
     </BottomSheetModal>
   );
 }

@@ -1,12 +1,21 @@
 import { useState } from 'react';
-import { ActivityIndicator, Modal, Pressable, Text, View } from 'react-native';
+import { ActivityIndicator, Modal, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Image } from 'expo-image';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { BottomSheetWindow } from '@/components/ui/BottomSheetWindow';
+import { useAvatarUrl } from '@/features/profile/api';
 import { useCatalogueMediaUrl } from '@/features/profile/catalogue-api';
 import { useColors } from '@/theme';
+
+export type CatalogueViewerItem = {
+  path: string;
+  kind: 'photo' | 'video';
+  /** Defaults to catalogue media; use `avatar` for profile photos. */
+  storage?: 'catalogue' | 'avatar';
+};
 
 function CatalogueVideoPlayer({ uri }: { uri: string }) {
   const player = useVideoPlayer(uri, (instance) => {
@@ -31,7 +40,7 @@ function CatalogueViewerBody({
   onPrev,
   onNext,
 }: {
-  item: { path: string; kind: 'photo' | 'video' };
+  item: CatalogueViewerItem;
   index: number;
   count: number;
   onClose: () => void;
@@ -40,7 +49,10 @@ function CatalogueViewerBody({
 }) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const url = useCatalogueMediaUrl(item.path);
+  const storage = item.storage ?? 'catalogue';
+  const catalogueUrl = useCatalogueMediaUrl(storage === 'catalogue' ? item.path : null);
+  const avatarUrl = useAvatarUrl(storage === 'avatar' ? item.path : null);
+  const url = storage === 'avatar' ? avatarUrl : catalogueUrl;
 
   return (
     <View
@@ -104,7 +116,7 @@ export function CatalogueViewer({
   initialIndex,
   onClose,
 }: {
-  items: { path: string; kind: 'photo' | 'video' }[];
+  items: CatalogueViewerItem[];
   initialIndex: number;
   onClose: () => void;
 }) {
@@ -112,16 +124,28 @@ export function CatalogueViewer({
   const item = items[index];
   if (!item) return null;
 
+  const body = (
+    <CatalogueViewerBody
+      item={item}
+      index={index}
+      count={items.length}
+      onClose={onClose}
+      onPrev={() => setIndex((current) => Math.max(0, current - 1))}
+      onNext={() => setIndex((current) => Math.min(items.length - 1, current + 1))}
+    />
+  );
+
+  if (Platform.OS === 'ios') {
+    return (
+      <BottomSheetWindow>
+        <View style={StyleSheet.absoluteFill}>{body}</View>
+      </BottomSheetWindow>
+    );
+  }
+
   return (
     <Modal visible animationType="fade" onRequestClose={onClose} statusBarTranslucent>
-      <CatalogueViewerBody
-        item={item}
-        index={index}
-        count={items.length}
-        onClose={onClose}
-        onPrev={() => setIndex((current) => Math.max(0, current - 1))}
-        onNext={() => setIndex((current) => Math.min(items.length - 1, current + 1))}
-      />
+      {body}
     </Modal>
   );
 }

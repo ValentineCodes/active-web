@@ -1,4 +1,4 @@
-import { Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -27,24 +27,29 @@ export function Avatar({
   showActiveDot = false,
   /** In-app captured profile photo (Didit-verified). */
   verified = false,
+  onPress,
 }: {
   path: string | null | undefined;
   name: string | null;
   size?: keyof typeof SIZES;
   showActiveDot?: boolean;
   verified?: boolean;
+  onPress?: () => void;
 }) {
   const colors = useColors();
   const { data: url } = useAvatarUrl(path);
   const dimension = SIZES[size];
   const badgeSize = Math.max(14, Math.round(dimension * 0.32));
 
-  return (
-    <View className="relative">
+  const pictureLabel = name ? `${name}'s profile picture` : 'Profile picture';
+  const shellClassName = 'relative';
+
+  const content = (
+    <>
       <View
         className="items-center justify-center overflow-hidden rounded-full bg-surface"
         style={{ width: dimension, height: dimension }}
-        accessibilityLabel={name ? `${name}'s profile picture` : 'Profile picture'}
+        accessibilityLabel={onPress ? undefined : pictureLabel}
       >
         {url ? (
           <Image
@@ -71,6 +76,21 @@ export function Avatar({
           <Ionicons name="checkmark-circle" size={badgeSize - 2} color={colors.active} />
         </View>
       ) : null}
-    </View>
+    </>
   );
+
+  if (onPress && path) {
+    return (
+      <Pressable
+        onPress={onPress}
+        accessibilityRole="button"
+        accessibilityLabel={`View ${pictureLabel}`}
+        className={cn(shellClassName, 'active:opacity-90')}
+      >
+        {content}
+      </Pressable>
+    );
+  }
+
+  return <View className={shellClassName}>{content}</View>;
 }
