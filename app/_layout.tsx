@@ -5,9 +5,9 @@ import { ActivityIndicator, Text, View } from 'react-native';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { Image } from 'expo-image';
 import { Stack } from 'expo-router';
 import { QueryClientProvider, useQuery } from '@tanstack/react-query';
-import { Ionicons } from '@expo/vector-icons';
 
 import { ErrorState } from '@/components/ui/StateView';
 import { ToastProvider } from '@/components/ui/ToastProvider';
@@ -23,9 +23,11 @@ function BootScreen() {
   const colors = useColors();
   return (
     <View className="flex-1 items-center justify-center gap-4 bg-canvas">
-      <View className="h-16 w-16 items-center justify-center rounded-full bg-brand-soft">
-        <Ionicons name="radio-outline" size={30} color={colors.brand} />
-      </View>
+      <Image
+        source={require('../assets/images/icon.png')}
+        accessibilityLabel="Active"
+        style={{ width: 80, height: 80, borderRadius: 18 }}
+      />
       <Text className="text-2xl font-bold text-ink">Active</Text>
       <ActivityIndicator color={colors.brand} />
     </View>

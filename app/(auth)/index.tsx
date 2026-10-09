@@ -1,10 +1,9 @@
 import { Linking, Text, View } from 'react-native';
+import { Image } from 'expo-image';
 import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 
 import { AuthFooterButton } from '@/components/auth/AuthFooterButton';
 import { Screen } from '@/components/ui/Screen';
-import { useColors } from '@/theme';
 
 const PRIVACY_URL = 'https://example.com/privacy';
 const TERMS_URL = 'https://example.com/terms';
@@ -16,14 +15,15 @@ function openUrl(url: string) {
 }
 
 export default function WelcomeScreen() {
-  const colors = useColors();
   return (
     <Screen edges={['top', 'bottom']}>
       <View className="flex-1 justify-between px-8 pb-10 pt-12">
         <View className="mt-20 items-center">
-          <View className="mb-10 h-28 w-28 items-center justify-center rounded-full bg-brand-soft">
-            <Ionicons name="radio-outline" size={52} color={colors.brand} />
-          </View>
+          <Image
+            source={require('../../assets/images/icon.png')}
+            accessibilityLabel="Active"
+            style={{ width: 144, height: 144, borderRadius: 32, marginBottom: 40 }}
+          />
           <Text className="text-center text-3xl font-bold text-ink">Welcome to Active</Text>
           <Text className="mt-4 text-center text-base leading-6 text-muted">
             Need something? Ask.{'\n'}Can help? Respond.
