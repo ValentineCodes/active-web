@@ -42,6 +42,7 @@ export function KeyboardStickyFooter({
   const layoutBottomScreenY = frame.y + frame.height;
   const [keyboardInset, setKeyboardInset] = useState(0);
   const lastShowEvent = useRef<KeyboardEvent | null>(null);
+  const hideInsetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (!lastShowEvent.current) return;
@@ -50,13 +51,22 @@ export function KeyboardStickyFooter({
 
   useEffect(() => {
     const applyInset = (event: KeyboardEvent) => {
+      if (hideInsetTimer.current) {
+        clearTimeout(hideInsetTimer.current);
+        hideInsetTimer.current = null;
+      }
       lastShowEvent.current = event;
       setKeyboardInset(keyboardOverlap(event, layoutBottomScreenY));
     };
 
     const clearInset = () => {
       lastShowEvent.current = null;
-      setKeyboardInset(0);
+      if (hideInsetTimer.current) clearTimeout(hideInsetTimer.current);
+      // Delay so footer primary buttons still receive the first tap while the keyboard closes.
+      hideInsetTimer.current = setTimeout(() => {
+        setKeyboardInset(0);
+        hideInsetTimer.current = null;
+      }, 120);
     };
 
     const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
@@ -72,6 +82,7 @@ export function KeyboardStickyFooter({
     ];
 
     return () => {
+      if (hideInsetTimer.current) clearTimeout(hideInsetTimer.current);
       for (const sub of [...showSubs, ...hideSubs]) {
         sub.remove();
       }

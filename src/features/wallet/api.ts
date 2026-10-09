@@ -6,7 +6,11 @@ import { queryKeys } from '@/lib/query/keys';
 import { supabase } from '@/lib/supabase/client';
 
 import { koboToMajor } from './kobo';
-import { walletTransactionDisplayKind, type WalletActivityRow } from './activity';
+import {
+  walletActivityIsVisibleInFeed,
+  walletTransactionDisplayKind,
+  type WalletActivityRow,
+} from './activity';
 import type { MyWallet, WalletBalanceKobo, WalletTransactionRow } from './types';
 
 type ListWalletTransactionRow = {
@@ -56,6 +60,12 @@ function mapTransaction(row: ListWalletTransactionRow): WalletTransactionRow {
     createdAt: row.created_at,
   };
 }
+
+type WalletActivityPage = {
+  items: WalletActivityRow[];
+  nextOffset: number;
+  hasMore: boolean;
+};
 
 function transactionToActivityItem(row: WalletTransactionRow): WalletActivityRow {
   const kind = walletTransactionDisplayKind(row);
@@ -118,6 +128,32 @@ export async function fetchMyWalletTransactions(
   return ((data ?? []) as ListWalletTransactionRow[]).map(mapTransaction);
 }
 
+/** Loads feed rows, advancing raw offsets past hidden ledger entries (e.g. escrow_pending). */
+async function fetchVisibleWalletActivity(
+  targetCount: number,
+  startOffset = 0,
+): Promise<WalletActivityPage> {
+  const items: WalletActivityRow[] = [];
+  let offset = startOffset;
+  let hasMore = true;
+
+  while (items.length < targetCount && hasMore) {
+    const raw = await fetchMyWalletTransactions(WALLET.historyPageSize, offset);
+    if (raw.length === 0) {
+      hasMore = false;
+      break;
+    }
+    for (const row of raw) {
+      const item = transactionToActivityItem(row);
+      if (walletActivityIsVisibleInFeed(item)) items.push(item);
+    }
+    offset += raw.length;
+    hasMore = raw.length === WALLET.historyPageSize;
+  }
+
+  return { items, nextOffset: offset, hasMore };
+}
+
 export function useMyWallet() {
   const { session } = useSession();
   return useQuery({
@@ -142,8 +178,8 @@ export function useWalletActivity() {
     queryKey: queryKeys.walletActivity,
     enabled: Boolean(session),
     queryFn: async (): Promise<WalletActivityRow[]> => {
-      const rows = await fetchMyWalletTransactions(WALLET.activityLimit);
-      return rows.map(transactionToActivityItem);
+      const page = await fetchVisibleWalletActivity(WALLET.activityLimit);
+      return page.items;
     },
   });
 }
@@ -154,14 +190,9 @@ export function useWalletActivityInfinite() {
     queryKey: [...queryKeys.walletActivity, 'pages'],
     enabled: Boolean(session),
     initialPageParam: 0,
-    queryFn: async ({ pageParam }) => {
-      const rows = await fetchMyWalletTransactions(WALLET.historyPageSize, pageParam);
-      return rows.map(transactionToActivityItem);
-    },
-    getNextPageParam: (lastPage, _allPages, lastPageParam) => {
-      if (lastPage.length < WALLET.historyPageSize) return undefined;
-      return lastPageParam + WALLET.historyPageSize;
-    },
+    queryFn: async ({ pageParam }) =>
+      fetchVisibleWalletActivity(WALLET.historyPageSize, pageParam),
+    getNextPageParam: (lastPage) => (lastPage.hasMore ? lastPage.nextOffset : undefined),
   });
 }
 

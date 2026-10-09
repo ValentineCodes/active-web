@@ -61,7 +61,7 @@ export default function WalletTransactionScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const wallet = useMyWallet();
   const history = useWalletActivityInfinite();
-  const item = history.data?.pages.flat().find((row) => row.id === id);
+  const item = history.data?.pages.flatMap((page) => page.items).find((row) => row.id === id);
   const engagement = useEngagement(item?.request_id ?? '');
 
   if (wallet.isPending && history.isPending) {

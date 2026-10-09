@@ -326,12 +326,12 @@ select ok(
   'public discovery does not return response counts, phone, or coordinates'
 );
 
--- Escrow on expiration --------------------------------------------------------------
+-- Expiration before acceptance (no wallet lock) ---------------------------------------
 
 select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
 select create_request(
-  'Funded expiry',
-  'Funded request that should refund when the window ends.',
+  'Unfunded expiry',
+  'Posted request that expires before anyone is chosen.',
   6.5000,
   3.3800,
   'Yaba, Lagos',
@@ -346,19 +346,19 @@ where id = :'funded_expired_request_id'::uuid;
 
 select ok(
   public.expire_request(:'funded_expired_request_id'::uuid),
-  'expiration refunds locked funds on a funded request'
+  'expiration closes a posted request that was never accepted'
 );
 
 select is(
   (select payment_status::text from public.requests where id = :'funded_expired_request_id'::uuid),
-  'refunded',
-  'expiration moves locked payment status to refunded'
+  'not_required',
+  'expiration does not refund wallet funds that were never locked'
 );
 
 select is(
-  (select total from public.request_escrow where request_id = :'funded_expired_request_id'::uuid),
-  7500::numeric,
-  'escrow total equals the offer; fee is taken at payout'
+  (select count(*)::int from public.payment_locks where request_id = :'funded_expired_request_id'::uuid),
+  0,
+  'expiration leaves no escrow lock when funds were never held'
 );
 
 -- Privacy before selection ----------------------------------------------------------
@@ -1584,8 +1584,8 @@ select is(
 
 select is(
   (select payment_status::text from public.requests where id = :'cancel_funded_request_id'::uuid),
-  'refunded',
-  'pre-selection cancellation refunds locked funds'
+  'not_required',
+  'pre-selection cancellation does not refund funds that were never locked'
 );
 
 select is(

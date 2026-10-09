@@ -7,13 +7,22 @@ import { Button } from '@/components/ui/Button';
 import { Header } from '@/components/ui/Header';
 import { Screen } from '@/components/ui/Screen';
 import { ErrorState } from '@/components/ui/StateView';
-import { verifyWalletDeposit, waitForWalletDepositSettlement } from '@/features/wallet/deposit-api';
+import {
+  readPendingDepositReturnTo,
+  verifyWalletDeposit,
+  waitForWalletDepositSettlement,
+} from '@/features/wallet/deposit-api';
 import { invalidateWalletQueries } from '@/features/wallet/api';
 import { formatMoney } from '@/lib/format';
 import { MARKET } from '@/config';
 import { showAppToast } from '@/lib/toast';
 import { koboToMajor } from '@/features/wallet/kobo';
 import { isNetworkError, toUserMessage } from '@/lib/supabase/errors';
+import {
+  exitWalletDepositAfterSuccess,
+  exitWalletDepositLeaving,
+  readWalletReturnTo,
+} from '@/features/wallet/deposit-navigation';
 import { useColors } from '@/theme';
 
 type Phase = 'processing' | 'success' | 'failed' | 'still_processing';
@@ -21,7 +30,13 @@ type Phase = 'processing' | 'success' | 'failed' | 'still_processing';
 export default function WalletDepositProcessingScreen() {
   const colors = useColors();
   const queryClient = useQueryClient();
-  const { reference: referenceParam } = useLocalSearchParams<{ reference?: string }>();
+  const { reference: referenceParam, returnTo: returnToParam } = useLocalSearchParams<{
+    reference?: string;
+    returnTo?: string;
+  }>();
+  const returnTo =
+    readWalletReturnTo(returnToParam) ??
+    readWalletReturnTo(readPendingDepositReturnTo() ?? undefined);
   const reference = typeof referenceParam === 'string' ? referenceParam : referenceParam?.[0];
 
   const [phase, setPhase] = useState<Phase>(() => (reference ? 'processing' : 'failed'));
@@ -151,7 +166,7 @@ export default function WalletDepositProcessingScreen() {
   if (phase === 'still_processing') {
     return (
       <Screen edges={['top', 'bottom']}>
-        <Header title="Processing" onBack={() => router.dismissTo('/wallet')} />
+        <Header title="Processing" onBack={() => exitWalletDepositLeaving(returnTo)} />
         <View className="flex-1 items-center justify-center gap-4 px-8">
           <ActivityIndicator size="large" color={colors.brand} />
           <Text className="text-center text-lg font-semibold text-ink">Still confirming</Text>
@@ -171,12 +186,12 @@ export default function WalletDepositProcessingScreen() {
             onPress={() => void checkOnce()}
           />
           <Button
-            label="Back to wallet"
+            label={returnTo ? 'Back to request' : 'Back to wallet'}
             variant="secondary"
             size="lg"
             corner="2xl"
             className="w-full"
-            onPress={() => router.dismissTo('/wallet')}
+            onPress={() => exitWalletDepositLeaving(returnTo)}
           />
         </View>
       </Screen>
@@ -186,7 +201,7 @@ export default function WalletDepositProcessingScreen() {
   if (phase === 'failed') {
     return (
       <Screen>
-        <Header title="Payment" onBack={() => router.dismissTo('/wallet')} />
+        <Header title="Payment" onBack={() => exitWalletDepositLeaving(returnTo)} />
         <ErrorState
           error={error ?? new Error('Payment could not be confirmed')}
           onRetry={() => void retryConfirmation()}
@@ -210,12 +225,12 @@ export default function WalletDepositProcessingScreen() {
       </View>
       <View className="p-5">
         <Button
-          label="Back to wallet"
+          label={returnTo ? 'Continue' : 'Back to wallet'}
           variant="active"
           size="lg"
           corner="2xl"
           className="w-full"
-          onPress={() => router.dismissTo('/wallet')}
+          onPress={() => exitWalletDepositAfterSuccess(returnTo)}
         />
       </View>
     </Screen>

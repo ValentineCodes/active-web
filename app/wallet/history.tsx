@@ -30,7 +30,10 @@ export default function WalletHistoryScreen() {
     }, [refetchWallet, refetchHistory]),
   );
 
-  const rows = useMemo(() => history.data?.pages.flat() ?? [], [history.data?.pages]);
+  const rows = useMemo(
+    () => history.data?.pages.flatMap((page) => page.items) ?? [],
+    [history.data?.pages],
+  );
 
   const sections = useMemo(() => groupWalletActivityByMonth(rows), [rows]);
 

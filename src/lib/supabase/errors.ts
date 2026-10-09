@@ -23,6 +23,20 @@ const INTENTIONAL_ERROR_CODES = new Set([
 const NETWORK_MESSAGE = 'You appear to be offline. Check your connection and try again.';
 const FALLBACK_MESSAGE = 'Something went wrong. Please try again.';
 
+export function isInsufficientWalletBalanceError(error: unknown): boolean {
+  if (error && typeof error === 'object' && 'message' in error) {
+    const message = (error as { message: unknown }).message;
+    if (typeof message === 'string') {
+      const lower = message.toLowerCase();
+      return (
+        lower.includes('insufficient wallet balance') ||
+        lower.includes('insufficient available balance')
+      );
+    }
+  }
+  return false;
+}
+
 export function isNetworkError(error: unknown): boolean {
   if (error instanceof TypeError) return true;
   if (!(error instanceof Error)) return false;
@@ -55,7 +69,7 @@ export function toUserMessage(error: unknown): string {
       }
       if (INTENTIONAL_ERROR_CODES.has(code)) {
         if (message.toLowerCase().includes('insufficient wallet balance')) {
-          return 'You don\u2019t have enough available money to fund this request.';
+          return 'You don\u2019t have enough available money in your wallet. Add money, then try accepting again.';
         }
         if (message.toLowerCase().includes('insufficient available balance')) {
           return 'You don\u2019t have enough available money for this action.';

@@ -27,15 +27,27 @@ type CheckoutSession = {
   amountKobo: number;
   depositId: string;
   amountMajor: number;
+  returnTo?: string;
 };
 
 let checkoutSession: CheckoutSession | null = null;
 /** Last initialized deposit reference (survives checkout session consume) for status recovery. */
 let pendingDepositReference: string | null = null;
+/** Return path for contextual deposits (survives checkout consume; cleared on deposit exit). */
+let pendingDepositReturnTo: string | null = null;
 
 export function setCheckoutSession(session: CheckoutSession): void {
   checkoutSession = session;
   pendingDepositReference = session.reference;
+  pendingDepositReturnTo = session.returnTo ?? null;
+}
+
+export function readPendingDepositReturnTo(): string | null {
+  return pendingDepositReturnTo;
+}
+
+export function clearPendingDepositContext(): void {
+  pendingDepositReturnTo = null;
 }
 
 export function readPendingDepositReference(): string | null {

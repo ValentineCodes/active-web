@@ -17,11 +17,19 @@ import { validateDepositAmountMajor } from '@/features/wallet/deposit-limits';
 import { formatMoney } from '@/lib/format';
 import { showAppToast } from '@/lib/toast';
 import { toUserMessage } from '@/lib/supabase/errors';
+import {
+  readWalletReturnTo,
+  WALLET_RETURN_TO_PARAM,
+} from '@/features/wallet/deposit-navigation';
 import { useColors } from '@/theme';
 
 export default function WalletDepositReviewScreen() {
   const colors = useColors();
-  const { amount: amountParam } = useLocalSearchParams<{ amount: string }>();
+  const { amount: amountParam, returnTo: returnToParam } = useLocalSearchParams<{
+    amount: string;
+    returnTo?: string;
+  }>();
+  const returnTo = readWalletReturnTo(returnToParam);
   const amountMajor = Number(amountParam);
   const validationError = validateDepositAmountMajor(amountMajor);
   const currency = MARKET.currency;
@@ -50,6 +58,7 @@ export default function WalletDepositReviewScreen() {
         amountKobo: result.amount_kobo,
         depositId: result.deposit_id,
         amountMajor,
+        returnTo,
       });
       router.push('/wallet/deposit/checkout');
     } catch (err) {
@@ -67,7 +76,10 @@ export default function WalletDepositReviewScreen() {
     }
     router.replace({
       pathname: '/wallet/deposit/processing',
-      params: { reference },
+      params: {
+        reference,
+        ...(returnTo ? { [WALLET_RETURN_TO_PARAM]: returnTo } : {}),
+      },
     });
   };
 

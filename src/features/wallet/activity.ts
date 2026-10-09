@@ -82,3 +82,8 @@ export function walletActivityAmount(row: WalletActivityRow): number | null {
   }
   return null;
 }
+
+/** Omits internal bucket-move rows (e.g. escrow_pending) that duplicate “Request funded” with no amount. */
+export function walletActivityIsVisibleInFeed(row: WalletActivityRow): boolean {
+  return walletActivityAmount(row) !== null;
+}

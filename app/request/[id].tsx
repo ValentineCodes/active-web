@@ -49,6 +49,12 @@ import { REQUEST_REPORT_ISSUES } from '@/features/support/report-issue-options';
 import { showAppToast } from '@/lib/toast';
 import { queryKeys } from '@/lib/query/keys';
 import { useQueryClient } from '@tanstack/react-query';
+import { useMyWallet } from '@/features/wallet/api';
+import {
+  isInsufficientWalletBalanceError,
+  toUserMessage,
+} from '@/lib/supabase/errors';
+import { openWalletTopUp, walletLockAmountMajor } from '@/features/wallet/top-up';
 
 type ResponderProfilePreview = {
   userId: string;
@@ -78,16 +84,74 @@ export default function RequestDetailScreen() {
   const acceptResponse = useAcceptResponse(id);
   const declineResponse = useDeclineResponse(id);
   const queryClient = useQueryClient();
+  const wallet = useMyWallet();
 
   useLiveRequest(id);
 
+  const dismissProfileSheet = useCallback(() => {
+    profileSheetRef.current?.dismiss();
+    setProfilePreview(null);
+  }, []);
+
+  const showInsufficientWalletAlert = useCallback(
+    (error: unknown, requiredLockMajor: number) => {
+      Alert.alert('Not enough in your wallet', toUserMessage(error), [
+        { text: 'Not now', style: 'cancel' },
+        {
+          text: 'Add money',
+          onPress: () =>
+            openWalletTopUp({
+              returnTo: `/request/${id}`,
+              requiredLockMajor,
+              availableMajor: wallet.data?.available ?? 0,
+            }),
+        },
+      ]);
+    },
+    [id, wallet.data?.available],
+  );
+
+  const acceptResponder = useCallback(
+    (responseId: string, onAccepted?: () => void) => {
+      const offered = request.data?.offered_amount;
+      if (offered == null) return;
+
+      const quoted =
+        responses.data?.find((row) => row.response_id === responseId)?.quoted_amount ?? null;
+      const requiredLockMajor = walletLockAmountMajor({ offeredAmount: offered, quotedAmount: quoted });
+
+      acceptResponse.mutate(responseId, {
+        onSuccess: () => {
+          onAccepted?.();
+          showAppToast('Payment is being confirmed', 'info');
+          router.replace(`/engagement/${id}`);
+        },
+        onError: (error) => {
+          if (isInsufficientWalletBalanceError(error)) {
+            dismissProfileSheet();
+            showInsufficientWalletAlert(error, requiredLockMajor);
+          }
+        },
+      });
+    },
+    [
+      acceptResponse,
+      dismissProfileSheet,
+      id,
+      request.data?.offered_amount,
+      responses.data,
+      showInsufficientWalletAlert,
+    ],
+  );
+
   useFocusEffect(
     useCallback(() => {
+      void wallet.refetch();
       void markRequestResponseNotificationsRead(id).then(() => {
         void queryClient.invalidateQueries({ queryKey: queryKeys.notificationUnreadCount });
         void queryClient.invalidateQueries({ queryKey: queryKeys.notificationInbox });
       });
-    }, [id, queryClient]),
+    }, [id, queryClient, wallet.refetch]),
   );
 
   useEffect(() => {
@@ -314,7 +378,11 @@ export default function RequestDetailScreen() {
               </Text>
             ) : null}
 
-            {acceptResponse.isError ? <InlineError error={acceptResponse.error} /> : null}
+            {acceptResponse.isError &&
+            acceptResponse.error &&
+            !isInsufficientWalletBalanceError(acceptResponse.error) ? (
+              <InlineError error={acceptResponse.error} />
+            ) : null}
 
             {pending.map((response) => (
               <ResponseCard
@@ -396,15 +464,13 @@ export default function RequestDetailScreen() {
                       { text: dialog.cancel, style: 'cancel' },
                       {
                         text: dialog.confirm,
-                        onPress: () =>
-                          acceptResponse.mutate(profilePreview.pendingResponse!.responseId, {
-                            onSuccess: () => {
-                              profileSheetRef.current?.dismiss();
-                              setProfilePreview(null);
-                              showAppToast('Payment is being confirmed', 'info');
-                              router.replace(`/engagement/${id}`);
-                            },
-                          }),
+                        onPress: () => {
+                          const responseId = profilePreview.pendingResponse!.responseId;
+                          acceptResponder(responseId, () => {
+                            profileSheetRef.current?.dismiss();
+                            setProfilePreview(null);
+                          });
+                        },
                       },
                     ]);
                   },

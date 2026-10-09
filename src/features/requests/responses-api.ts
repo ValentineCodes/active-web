@@ -277,6 +277,21 @@ export function parseResponseOfferAmount(raw: string): number | null {
   return parsed;
 }
 
+/** Prefill for the response offer step (counter or requester's posted amount). */
+export function responseWizardInitialOffer(
+  quotedAmount: number | null | undefined,
+  requesterOffer: number,
+): string {
+  const quoted = quotedAmount != null ? Number(quotedAmount) : null;
+  const offered = Number(requesterOffer);
+  const amount =
+    quoted != null && Number.isFinite(quoted) && quoted > 0
+      ? quoted
+      : offered;
+  if (!Number.isFinite(amount) || amount <= 0) return '';
+  return String(Math.trunc(amount));
+}
+
 /** `null` means accept the requester's offer (no counter). */
 export function counterOfferForRpc(
   requesterOffer: number,
@@ -284,7 +299,8 @@ export function counterOfferForRpc(
 ): number | null | 'invalid' {
   const parsed = parseResponseOfferAmount(yourOfferRaw);
   if (parsed === null) return 'invalid';
-  if (parsed === requesterOffer) return null;
+  const offered = Number(requesterOffer);
+  if (parsed === offered) return null;
   return parsed;
 }
 

@@ -170,7 +170,7 @@ select is(
   'repeated completion does not double-pay responder'
 );
 
--- Cancellation refund -------------------------------------------------------------
+-- Cancellation before selection (no wallet lock) ------------------------------------
 
 select pg_temp.act_as('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa') as _ \gset
 select create_request(
@@ -189,13 +189,13 @@ select is(
     from public.wallets
     where user_id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'::uuid
   ),
-  100000::bigint,
-  'funds locked for the cancellable request'
+  500000::bigint,
+  'posted request does not lock funds before acceptance'
 );
 
 select lives_ok(
   format('select cancel_request(%L)', :'cancel_request_id'),
-  'cancel refunds locked funds to available balance'
+  'cancel before selection does not require a wallet refund'
 );
 
 select is(
@@ -205,17 +205,17 @@ select is(
     where user_id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'::uuid
   ),
   500000::bigint,
-  'cancellation returns held amount to available balance'
+  'cancellation before acceptance leaves available balance unchanged'
 );
 
 select is(
   (
-    select status::text
-    from public.payment_locks
-    where request_id = :'cancel_request_id'::uuid
+    select payment_status::text
+    from public.requests
+    where id = :'cancel_request_id'::uuid
   ),
-  'refunded',
-  'cancelled request lock marked refunded'
+  'not_required',
+  'cancelled posted request never moved payment to pending'
 );
 
 select lives_ok(
@@ -230,8 +230,82 @@ select is(
     where wt.request_id = :'cancel_request_id'::uuid
       and wt.type = 'refund'::public.wallet_transaction_type
   ),
+  0,
+  'no refund wallet transaction when funds were never locked'
+);
+
+-- Cancellation after acceptance refunds held funds ----------------------------------
+
+select pg_temp.act_as('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa') as _ \gset
+select create_request(
+  'Cancel after accept',
+  'Held funds return on cancel.',
+  6.5000,
+  3.3800,
+  'Yaba, Lagos',
+  null,
+  4000
+) as cancel_after_accept_id \gset
+
+select pg_temp.act_as('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb') as _ \gset
+select respond_to_request(
+  :'cancel_after_accept_id'::uuid,
+  null,
+  null,
+  6.5000,
+  3.3800
+) as cancel_after_accept_response_id \gset
+
+select pg_temp.act_as('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa') as _ \gset
+select lives_ok(
+  format('select accept_response(%L)', :'cancel_after_accept_response_id'),
+  'accept locks funds before cancellation test'
+);
+
+select is(
+  (
+    select available_balance
+    from public.wallets
+    where user_id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'::uuid
+  ),
+  100000::bigint,
+  'accept locks funds for the cancellable engagement'
+);
+
+select lives_ok(
+  format('select cancel_request(%L)', :'cancel_after_accept_id'),
+  'cancel after accept refunds held funds'
+);
+
+select is(
+  (
+    select available_balance
+    from public.wallets
+    where user_id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'::uuid
+  ),
+  500000::bigint,
+  'cancellation after accept returns held amount to available balance'
+);
+
+select is(
+  (
+    select status::text
+    from public.payment_locks
+    where request_id = :'cancel_after_accept_id'::uuid
+  ),
+  'refunded',
+  'cancelled engagement lock marked refunded'
+);
+
+select is(
+  (
+    select count(*)::int
+    from public.wallet_transactions wt
+    where wt.request_id = :'cancel_after_accept_id'::uuid
+      and wt.type = 'refund'::public.wallet_transaction_type
+  ),
   1,
-  'only one refund wallet transaction for cancellation'
+  'one refund wallet transaction after accepted cancellation'
 );
 
 select * from finish();

@@ -110,7 +110,7 @@ export default function SearchScreen() {
         keyboardShouldPersistTaps="handled"
         contentContainerClassName="px-5 py-2"
         ListEmptyComponent={
-          suggestionsPending ? null : (
+          suggestionsPending ? undefined : (
             <Text className="py-6 text-center text-sm text-muted">
               {draft.trim() ? 'No suggestions yet.' : 'Your recent searches will appear here.'}
             </Text>

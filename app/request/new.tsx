@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type ComponentRef, type RefObject } from 'react';
 import {
   ActivityIndicator,
+  Keyboard,
   Platform,
   Pressable,
   ScrollView,
@@ -179,6 +180,7 @@ function WizardPrimaryButton({
   inactive,
   loading,
   onPress,
+  fireOnPressIn,
   className,
 }: {
   label: string;
@@ -187,6 +189,8 @@ function WizardPrimaryButton({
   inactive?: boolean;
   loading?: boolean;
   onPress: () => void;
+  /** Use touch-down so Next works when the keyboard is open (footer is outside the ScrollView). */
+  fireOnPressIn?: boolean;
   className?: string;
 }) {
   const colors = useColors();
@@ -199,7 +203,8 @@ function WizardPrimaryButton({
       accessibilityLabel={label}
       accessibilityState={{ disabled: inert, busy: loading }}
       disabled={inert}
-      onPress={onPress}
+      onPress={fireOnPressIn ? undefined : onPress}
+      onPressIn={fireOnPressIn ? () => onPress() : undefined}
       hitSlop={8}
       className={cn(
         'min-h-12 items-center justify-center rounded-2xl px-6 py-4 active:opacity-90',
@@ -363,7 +368,6 @@ export function NewRequestForm({
 
   const reusingPrior = Boolean(reuseSeed) && !isEdit;
   const stepCount = STEP_COUNT;
-  const savedOfferAmount = isEdit ? editRequest.data?.offered_amount ?? null : null;
   const savedAttachmentUrl = useRequestAttachmentUrl(
     isEdit && !attachmentUri ? editRequest.data?.attachment_path : null,
   );
@@ -443,16 +447,6 @@ export function NewRequestForm({
 
   const isLastStep = step === stepCount - 1;
   const funding = isFundedOffer(parsedAmount) ? summarizeRequestFunding(parsedAmount) : null;
-  const walletShort = (() => {
-    if (!REQUEST_REQUIRES_FUNDING || funding === null || wallet.data === undefined) {
-      return false;
-    }
-    if (isEdit && savedOfferAmount != null && parsedAmount != null) {
-      const increase = Math.max(0, parsedAmount - savedOfferAmount);
-      return increase > 0 && wallet.data.available < increase;
-    }
-    return wallet.data.available < funding.total;
-  })();
 
   useEffect(() => {
     if (step > 2) return;
@@ -468,6 +462,11 @@ export function NewRequestForm({
 
   const goNext = () => {
     if (step === STEP_COUNT - 1) return;
+
+    titleInputRef.current?.blur();
+    descriptionInputRef.current?.blur();
+    amountInputRef.current?.blur();
+    Keyboard.dismiss();
 
     if (!stepValid[step]) {
       if (step === 0) {
@@ -580,12 +579,7 @@ export function NewRequestForm({
             parsedAmount !== null && isFundedOffer(parsedAmount)
               ? summarizeRequestFunding(parsedAmount)
               : null;
-          showAppToast(
-            funding
-              ? `${formatMoney(funding.total, funding.currency)} locked`
-              : 'Your request is live',
-            { type: 'success', title: 'Request posted' },
-          );
+          showAppToast('Your request is live', { type: 'success', title: 'Request posted' });
           router.replace(`/request/${requestId}`);
         },
       },
@@ -792,7 +786,7 @@ export function NewRequestForm({
 
   const wizardTitle = isEdit ? 'Edit Request' : reusingPrior ? 'Send request again' : 'New request';
   const postLabel = isEdit ? 'Save changes' : 'Post request';
-  const saveDisabled = !formCoreValid || walletShort || posting || (isEdit && !editStillAllowed);
+  const saveDisabled = !formCoreValid || posting || (isEdit && !editStillAllowed);
 
   return (
     <>
@@ -808,7 +802,12 @@ export function NewRequestForm({
                   onPress={handlePostPress}
                 />
               ) : (
-                <WizardPrimaryButton label="Next" inactive={!stepValid[step]} onPress={goNext} />
+                <WizardPrimaryButton
+                  label="Next"
+                  inactive={!stepValid[step]}
+                  fireOnPressIn
+                  onPress={goNext}
+                />
               )}
             </View>
           }
@@ -901,20 +900,6 @@ export function NewRequestForm({
                   />
                 </View>
                 {amountError ? <Text className="text-sm text-warning">{amountError}</Text> : null}
-                {REQUEST_REQUIRES_FUNDING &&
-                funding &&
-                !wallet.isPending &&
-                !wallet.isError &&
-                walletShort ? (
-                  <Text className="text-sm text-warning">
-                    {isEdit && savedOfferAmount != null && parsedAmount != null
-                      ? `You need ${formatMoney(
-                          Math.max(0, parsedAmount - savedOfferAmount),
-                          funding.currency,
-                        )} more available to increase this offer.`
-                      : `You need ${formatMoney(funding.total, funding.currency)} available to fund this offer.`}
-                  </Text>
-                ) : null}
               </View>
             ) : null}
 
@@ -1037,37 +1022,10 @@ export function NewRequestForm({
                 />
 
                 {REQUEST_REQUIRES_FUNDING && funding ? (
-                  <View className="gap-2">
-                    {wallet.isPending ? (
-                      <Text className="text-sm text-muted">Checking wallet…</Text>
-                    ) : wallet.isError ? (
-                      <InlineError error={wallet.error} />
-                    ) : wallet.data ? (
-                      <Text className="text-sm text-muted">
-                        {isEdit
-                          ? walletShort
-                            ? 'Top up your wallet before increasing the offer.'
-                            : savedOfferAmount != null &&
-                                parsedAmount != null &&
-                                parsedAmount > savedOfferAmount
-                              ? `${formatMoney(
-                                  parsedAmount - savedOfferAmount,
-                                  funding.currency,
-                                )} more will be held from your wallet.`
-                              : 'Your wallet hold will update if you change the offer.'
-                          : walletShort
-                            ? `You need ${formatMoney(funding.total, funding.currency)} available to fund this offer. Top up before posting.`
-                            : `${formatMoney(funding.total, funding.currency)} will be held from your wallet when this goes live.`}
-                      </Text>
-                    ) : null}
-                    {walletShort ? (
-                      <Button
-                        label="Top up wallet"
-                        variant="secondary"
-                        onPress={() => router.push('/wallet')}
-                      />
-                    ) : null}
-                  </View>
+                  <Text className="text-sm text-muted">
+                    {formatMoney(funding.total, funding.currency)} will be held from your wallet when
+                    you accept someone to help.
+                  </Text>
                 ) : null}
 
                 {create.isError ? <InlineError error={create.error} /> : null}

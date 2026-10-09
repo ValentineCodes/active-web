@@ -1,6 +1,6 @@
 import { type ComponentRef, useRef, useState } from 'react';
 import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 
 import { Button } from '@/components/ui/Button';
 import { MoneyAmountInput } from '@/components/ui/MoneyAmountInput';
@@ -12,10 +12,26 @@ import { MARKET, WALLET } from '@/config';
 import { validateDepositAmountMajor } from '@/features/wallet/deposit-limits';
 import { formatMoney } from '@/lib/format';
 import { cn } from '@/lib/cn';
+import { readWalletReturnTo, WALLET_RETURN_TO_PARAM } from '@/features/wallet/deposit-navigation';
+import {
+  readWalletTopUpPrefill,
+  readWalletTopUpShortfall,
+  walletDepositFlowParams,
+  walletTopUpAddSubtitle,
+} from '@/features/wallet/top-up';
 
 export default function WalletAddMoneyScreen() {
+  const { returnTo: returnToParam, prefillAmount, topUpShortfall: shortfallParam } =
+    useLocalSearchParams<{
+      returnTo?: string;
+      prefillAmount?: string;
+      topUpShortfall?: string;
+    }>();
+  const returnTo = readWalletReturnTo(returnToParam);
+  const prefill = readWalletTopUpPrefill(prefillAmount);
+  const topUpShortfall = readWalletTopUpShortfall(shortfallParam);
   const inputRef = useRef<ComponentRef<typeof TextInput>>(null);
-  const [amount, setAmount] = useState('');
+  const [amount, setAmount] = useState(() => prefill ?? '');
   const [validationError, setValidationError] = useState<string | null>(null);
 
   const parsedAmount = Number(amount.replace(/[^\d]/g, ''));
@@ -31,7 +47,10 @@ export default function WalletAddMoneyScreen() {
     setValidationError(null);
     router.push({
       pathname: '/wallet/deposit/review',
-      params: { amount: String(parsedAmount) },
+      params: {
+        amount: String(parsedAmount),
+        ...walletDepositFlowParams({ returnTo }),
+      },
     });
   };
 
@@ -63,7 +82,8 @@ export default function WalletAddMoneyScreen() {
           <View className="gap-2">
             <Text className="text-3xl font-bold leading-9 text-ink">How much?</Text>
             <Text className="text-base text-muted">
-              This money will be available to fund requests.
+              {(topUpShortfall != null ? walletTopUpAddSubtitle(topUpShortfall) : null) ??
+                'This money will be available to fund requests.'}
             </Text>
           </View>
 

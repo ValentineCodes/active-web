@@ -32,12 +32,15 @@ export default function WalletDepositCheckoutScreen() {
   }, [session, handedOff]);
 
   const goToProcessing = useCallback(
-    (reference: string) => {
+    (reference: string, returnTo?: string) => {
       if (handedOff) return;
       setHandedOff(true);
       router.replace({
         pathname: '/wallet/deposit/processing',
-        params: { reference },
+        params: {
+          reference,
+          ...(returnTo ? { returnTo } : {}),
+        },
       });
     },
     [handedOff],
@@ -47,7 +50,7 @@ export default function WalletDepositCheckoutScreen() {
     (url: string): boolean => {
       if (handedOff || !session || !isDepositCallbackUrl(url)) return false;
       const reference = referenceFromCallbackUrl(url) ?? session.reference;
-      goToProcessing(reference);
+      goToProcessing(reference, session?.returnTo);
       return true;
     },
     [goToProcessing, handedOff, session],
@@ -57,7 +60,7 @@ export default function WalletDepositCheckoutScreen() {
     if (handedOff) return;
 
     if (session?.reference) {
-      goToProcessing(session.reference);
+      goToProcessing(session.reference, session.returnTo);
       return;
     }
 

@@ -116,7 +116,7 @@ export function paymentStatusHint(
 
   switch (status) {
     case 'locked':
-      return 'Held from your wallet while your request is open.';
+      return 'Held from your wallet while acceptance is being confirmed.';
     case 'pending':
       return 'Held until the request is done, cancelled, or refunded.';
     case 'disputed':

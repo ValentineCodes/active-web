@@ -19,6 +19,7 @@ import { Screen } from '@/components/ui/Screen';
 import { EmptyState, ErrorState, InlineError, LoadingState } from '@/components/ui/StateView';
 import {
   canRespondToRequest,
+  responseWizardInitialOffer,
   useMyResponses,
   useRequestForResponse,
   useRespondToRequest,
@@ -103,15 +104,22 @@ export default function RespondScreen() {
   );
 
   const requesterOffer = request?.offered_amount ?? null;
-  const initialYourOffer = existingResponse?.quotedAmount ?? requesterOffer ?? 0;
+  const initialOfferInput = useMemo(
+    () =>
+      requesterOffer !== null
+        ? responseWizardInitialOffer(existingResponse?.quotedAmount, requesterOffer)
+        : '',
+    [existingResponse?.quotedAmount, requesterOffer],
+  );
   const initialMessage = existingResponse?.message ?? '';
 
   const beginFlow = useCallback(() => {
+    respond.reset();
     setNeedsPhotoStep(!hasProfilePhotoReady(profile.data));
     setFlowStep(0);
     setFlowKey((current) => current + 1);
     setInFlow(true);
-  }, [profile.data]);
+  }, [profile.data, respond.reset]);
 
   useEffect(() => {
     if (!autoStartPending.current || isPending || !request) return;
@@ -260,7 +268,7 @@ export default function RespondScreen() {
             onStepChange={setFlowStep}
             onExit={exitFlow}
             request={request}
-            initialYourOffer={initialYourOffer}
+            initialYourOffer={initialOfferInput}
             initialMessage={initialMessage}
             needsPhotoStep={needsPhotoStep}
             isUpdate={Boolean(existingResponse)}

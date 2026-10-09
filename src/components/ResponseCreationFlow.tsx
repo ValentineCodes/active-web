@@ -30,7 +30,7 @@ type ResponseCreationFlowProps = {
   onStepChange: (next: number) => void;
   onExit: () => void;
   request: RespondableRequest;
-  initialYourOffer: number;
+  initialYourOffer: string;
   initialMessage: string;
   needsPhotoStep: boolean;
   isUpdate: boolean;
@@ -207,7 +207,7 @@ export function ResponseCreationFlow({
   const colors = useColors();
   const profile = useProfile();
   const capturePhoto = useCaptureProfilePhoto();
-  const [yourOffer, setYourOffer] = useState(String(initialYourOffer));
+  const [yourOffer, setYourOffer] = useState(initialYourOffer);
   const [message, setMessage] = useState(initialMessage);
   const messageInputRef = useRef<ComponentRef<typeof TextInput>>(null);
 
@@ -221,12 +221,18 @@ export function ResponseCreationFlow({
     throw new Error('Request offer is required to respond.');
   }
 
+  const parsedYourOffer = parseResponseOfferAmount(yourOffer);
+  const parsedInitialOffer = parseResponseOfferAmount(initialYourOffer);
+
   const offerError = (() => {
-    const parsed = parseResponseOfferAmount(yourOffer);
-    if (parsed === null) return 'Enter a valid amount.';
-    if (parsed <= 0) return 'Enter an amount greater than zero.';
+    if (parsedYourOffer === null) return 'Enter a valid amount.';
+    if (parsedYourOffer <= 0) return 'Enter an amount greater than zero.';
     return null;
   })();
+
+  const offerStepReady =
+    (parsedYourOffer !== null && parsedYourOffer > 0) ||
+    (isUpdate && parsedInitialOffer !== null && parsedInitialOffer > 0);
 
   const adjustOffer = (delta: number) => {
     const parsed = parseResponseOfferAmount(yourOffer) ?? 0;
@@ -235,12 +241,14 @@ export function ResponseCreationFlow({
   };
 
   const send = () => {
-    if (offerError) return;
+    if (!offerStepReady) return;
     if (needsPhotoStep && !photoReady) {
       onStepChange(0);
       return;
     }
-    const quoted = counterOfferForRpc(requesterOffer, yourOffer);
+    const offerRaw =
+      parsedYourOffer !== null && parsedYourOffer > 0 ? yourOffer : initialYourOffer;
+    const quoted = counterOfferForRpc(requesterOffer, offerRaw);
     if (quoted === 'invalid') return;
     onSubmit({ message: message.trim() || null, quotedAmount: quoted });
   };
@@ -289,7 +297,7 @@ export function ResponseCreationFlow({
           {step === offerStep ? (
             <WizardPrimaryButton
               label="Next"
-              disabled={Boolean(offerError)}
+              disabled={!offerStepReady}
               onPress={() => onStepChange(messageStep)}
             />
           ) : null}
@@ -299,7 +307,7 @@ export function ResponseCreationFlow({
               <WizardSecondaryButton label="Back" onPress={() => onStepChange(offerStep)} />
               <WizardPrimaryButton
                 label={isUpdate ? 'Update response' : 'Send Response'}
-                disabled={Boolean(offerError)}
+                disabled={!offerStepReady}
                 loading={submitting}
                 onPress={send}
                 className="flex-1"

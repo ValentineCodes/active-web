@@ -1,13 +1,13 @@
 import { MARKET, SERVICE_FEE_RATE } from '@/config';
 
 export type RequestFundingSummary = {
-  /** Whole naira the requester offers (and locks from wallet). */
+  /** Whole naira the requester offers (locked from wallet on acceptance). */
   offerAmount: number;
   /** Platform fee taken from the offer when paying the helper. */
   serviceFee: number;
   /** Whole naira the helper receives after the fee. */
   providerReceives: number;
-  /** Same as offerAmount — held from the requester's available balance. */
+  /** Same as offerAmount — held from the requester's wallet after they accept a helper. */
   total: number;
   currency: string;
 };

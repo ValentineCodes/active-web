@@ -23,8 +23,8 @@ export const CREATE_TITLE_LIMITS = { min: TITLE_LIMITS.min, max: 50 } as const;
 export const DESCRIPTION_LIMITS = { min: 0, max: 1000 } as const;
 
 /**
- * When true, a request must carry a positive offer before it enters discovery. That
- * matches payment_status moving to `locked` on create.
+ * When true, a request must carry a positive offer before it enters discovery. Wallet
+ * funds are locked when the requester accepts a responder, not at post time.
  */
 export const REQUEST_REQUIRES_FUNDING = true;
 
