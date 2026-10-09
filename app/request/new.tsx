@@ -39,8 +39,8 @@ import {
   uploadRequestPhoto,
 } from '@/features/requests/request-media';
 import { RequestReviewBeforePostCard } from '@/components/request-flow/RequestReviewBeforePostCard';
-import { RequestTagPicker } from '@/components/request-flow/RequestTagPicker';
-import { MAX_REQUEST_TAGS, type RequestTag } from '@/features/requests/tags';
+import { RequestTagPickerAfterNavigation } from '@/components/request-flow/RequestTagPicker';
+import { MAX_REQUEST_TAGS, useTagCatalogue, type RequestTag } from '@/features/requests/tags';
 import { useCreateRequest, useMyRequest } from '@/features/requests/requester-api';
 import { cn } from '@/lib/cn';
 import { formatMoney, formatWhenHome } from '@/lib/format';
@@ -297,6 +297,7 @@ function NewRequestForm({ reuseSeed }: { reuseSeed?: ReuseSeed }) {
   const create = useCreateRequest();
   const wallet = useMyWallet();
   const { refetch: refetchWallet } = wallet;
+  useTagCatalogue();
 
   useFocusEffect(
     useCallback(() => {
@@ -779,7 +780,10 @@ function NewRequestForm({ reuseSeed }: { reuseSeed?: ReuseSeed }) {
                 <Text className="text-base text-muted">
                   Optional. Pick up to {MAX_REQUEST_TAGS} tags so the right people see your request.
                 </Text>
-                <RequestTagPicker selected={selectedTags} onChange={setSelectedTagsSafe} />
+                <RequestTagPickerAfterNavigation
+                  selected={selectedTags}
+                  onChange={setSelectedTagsSafe}
+                />
               </View>
             ) : null}
 

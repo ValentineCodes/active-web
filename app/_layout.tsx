@@ -13,6 +13,7 @@ import { ErrorState } from '@/components/ui/StateView';
 import { ToastProvider } from '@/components/ui/ToastProvider';
 import { SessionProvider, useSession } from '@/features/auth/session';
 import { profileQueryOptions } from '@/features/profile/api';
+import '@/features/requests/tag-catalogue-storage';
 import { queryClient } from '@/lib/query/client';
 import { AppFontsProvider } from '@/theme/AppFontsProvider';
 import { ThemeProvider, useColors } from '@/theme';

@@ -3,16 +3,14 @@ import { ScrollView, Text, TextInput, View } from 'react-native';
 
 import { TagPill } from '@/components/request-flow/TagPill';
 import { SkeletonBlock } from '@/components/ui/Skeleton';
+import type { TagCatalogueSection } from '@/features/requests/tag-catalogue-filter';
 import type { RequestTag } from '@/features/requests/tags';
 import { poppinsInputTypography } from '@/theme/fonts';
 import { useColors } from '@/theme';
 
 const searchTypography = poppinsInputTypography('regular', 'base');
 
-export type TagCatalogueSection = {
-  category: string;
-  tags: RequestTag[];
-};
+export type { TagCatalogueSection };
 
 type CategorizedTagPickerProps = {
   sections: TagCatalogueSection[];
@@ -156,21 +154,4 @@ export function CategorizedTagPicker({
       </ScrollView>
     </View>
   );
-}
-
-export function groupTagsByCategory(tags: RequestTag[]): TagCatalogueSection[] {
-  const byCategory = new Map<string, RequestTag[]>();
-
-  for (const tag of tags) {
-    const list = byCategory.get(tag.category) ?? [];
-    list.push(tag);
-    byCategory.set(tag.category, list);
-  }
-
-  return [...byCategory.entries()]
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([category, categoryTags]) => ({
-      category,
-      tags: categoryTags.sort((a, b) => a.name.localeCompare(b.name)),
-    }));
 }
