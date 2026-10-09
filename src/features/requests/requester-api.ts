@@ -263,11 +263,8 @@ export function useCreateRequest() {
       if (!userId) throw new Error('Sign in to create a request.');
 
       const trimmedDescription = input.description.trim();
-      if (
-        trimmedDescription.length < DESCRIPTION_LIMITS.min ||
-        trimmedDescription.length > DESCRIPTION_LIMITS.max
-      ) {
-        throw new Error('Description is required.');
+      if (trimmedDescription.length > DESCRIPTION_LIMITS.max) {
+        throw new Error('Description is too long.');
       }
 
       const { data, error } = await supabase.rpc('create_request', {

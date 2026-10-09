@@ -20,7 +20,7 @@ export const TITLE_LIMITS = { min: 3, max: 120 } as const;
 /** Create-request title field — shorter than DB max so home cards stay one line. */
 export const CREATE_TITLE_LIMITS = { min: TITLE_LIMITS.min, max: 50 } as const;
 
-export const DESCRIPTION_LIMITS = { min: 1, max: 1000 } as const;
+export const DESCRIPTION_LIMITS = { min: 0, max: 1000 } as const;
 
 /**
  * When true, a request must carry a positive offer before it enters discovery. That

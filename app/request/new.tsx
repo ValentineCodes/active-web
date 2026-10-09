@@ -340,9 +340,7 @@ function NewRequestForm({ reuseSeed }: { reuseSeed?: ReuseSeed }) {
       ? 'Enter a valid amount.'
       : null;
 
-  const descriptionValid =
-    trimmedDescription.length >= DESCRIPTION_LIMITS.min &&
-    trimmedDescription.length <= DESCRIPTION_LIMITS.max;
+  const descriptionValid = trimmedDescription.length <= DESCRIPTION_LIMITS.max;
 
   const stepValid = [
     trimmedTitle.length >= CREATE_TITLE_LIMITS.min &&
@@ -385,7 +383,10 @@ function NewRequestForm({ reuseSeed }: { reuseSeed?: ReuseSeed }) {
         return;
       }
       if (step === 1) {
-        showAppToast('Describe what needs to be done to continue.', 'warning');
+        showAppToast(
+          `Keep the description under ${DESCRIPTION_LIMITS.max} characters.`,
+          'warning',
+        );
         return;
       }
       if (step === 2) {
@@ -641,7 +642,9 @@ function NewRequestForm({ reuseSeed }: { reuseSeed?: ReuseSeed }) {
             {step === 1 ? (
               <View className="gap-3">
                 <Text className="text-3xl font-bold leading-9 text-ink">Tell us more</Text>
-                <Text className="text-base text-muted">What does success look like?</Text>
+                <Text className="text-base text-muted">
+                  What does success look like? (optional)
+                </Text>
                 <CreateTextArea
                   inputRef={descriptionInputRef}
                   value={description}

@@ -93,13 +93,19 @@ select create_request(
 
 select create_request(
   'Hallway cleaning',
-  'Need the hallway mopped before guests arrive.',
+  '   ',
   6.5000,
   3.3800,
   'Yaba, Lagos',
   null,
   5000
 ) as cleaning_request_id \gset
+
+select is(
+  (select description from public.requests where id = :'cleaning_request_id'::uuid),
+  null,
+  'create_request stores null when description is omitted or whitespace-only'
+);
 
 select create_request(
   'Expired fixture',
@@ -120,36 +126,6 @@ select create_request(
   null,
   5000
 ) as cancelled_request_id \gset
-
-select throws_ok(
-  $$select create_request(
-    'Title only',
-    null,
-    6.5000,
-    3.3800,
-    'Yaba, Lagos',
-    null,
-    5000
-  )$$,
-  '22023',
-  'description must be between 1 and 1000 characters',
-  'create_request rejects a missing description'
-);
-
-select throws_ok(
-  $$select create_request(
-    'Whitespace only',
-    '   ',
-    6.5000,
-    3.3800,
-    'Yaba, Lagos',
-    null,
-    5000
-  )$$,
-  '22023',
-  'description must be between 1 and 1000 characters',
-  'create_request rejects a whitespace-only description'
-);
 
 select isnt(
   (select description from public.requests where id = :'request_id'::uuid),
