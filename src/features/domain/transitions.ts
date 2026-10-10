@@ -13,6 +13,7 @@ export const REQUEST_STATUS_LABELS: Record<RequestStatus, string> = {
   completion_pending: 'Confirm',
   completed: 'Completed',
   cancelled: 'Cancelled',
+  awaiting_review: 'Awaiting review',
   expired: 'Expired',
   disputed: 'Issue open',
   no_show: 'No-show',
@@ -20,8 +21,9 @@ export const REQUEST_STATUS_LABELS: Record<RequestStatus, string> = {
 
 /** Allowed request status moves performed only by security-definer RPCs. */
 export const REQUEST_STATUS_TRANSITIONS: Partial<Record<RequestStatus, RequestStatus[]>> = {
-  posted: ['accepted', 'cancelled', 'expired'],
-  searching: ['accepted', 'cancelled', 'expired'],
+  posted: ['accepted', 'cancelled', 'expired', 'awaiting_review'],
+  searching: ['accepted', 'cancelled', 'expired', 'awaiting_review'],
+  awaiting_review: ['posted', 'expired', 'cancelled', 'accepted'],
   accepted: ['in_progress', 'completion_pending', 'cancelled', 'disputed', 'no_show'],
   in_progress: ['completion_pending', 'cancelled', 'disputed', 'no_show'],
   completion_pending: ['completed', 'disputed'],

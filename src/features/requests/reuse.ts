@@ -2,16 +2,23 @@ import type { Database } from '@/lib/supabase/database.types';
 
 type RequestStatus = Database['public']['Enums']['request_status'];
 
-export function canReuseRequest(status: RequestStatus, expiresAt: string | null): boolean {
-  if (status === 'completed' || status === 'expired') {
+export function isAwaitingReviewRequestView(
+  status: RequestStatus,
+  expiresAt: string | null,
+): boolean {
+  if (status === 'awaiting_review') {
     return true;
   }
 
-  if (status === 'posted' && expiresAt !== null && new Date(expiresAt).getTime() <= Date.now()) {
-    return true;
-  }
+  return (
+    status === 'posted' &&
+    expiresAt !== null &&
+    new Date(expiresAt).getTime() <= Date.now()
+  );
+}
 
-  return false;
+export function canReuseRequest(status: RequestStatus, _expiresAt: string | null): boolean {
+  return status === 'completed' || status === 'expired';
 }
 
 export function reuseRequestButtonLabel(status: RequestStatus): string | null {
@@ -26,13 +33,12 @@ export function reuseRequestButtonLabel(status: RequestStatus): string | null {
   return null;
 }
 
-/** Searching rows past expiry use the same action as expired. */
-export function isExpiredRequestView(status: RequestStatus, expiresAt: string | null): boolean {
+export function isExpiredRequestView(status: RequestStatus, _expiresAt: string | null): boolean {
   if (status === 'expired') {
     return true;
   }
 
-  return status === 'posted' && canReuseRequest(status, expiresAt);
+  return false;
 }
 
 /** Searching rows past expiry use the same action as expired. */

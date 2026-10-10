@@ -91,6 +91,7 @@ export function notificationVisual(type: NotificationType): NotificationVisual {
         ...blue,
       };
     case 'request_expiring':
+    case 'request_awaiting_review':
     case 'request_expired':
       return {
         icon: 'time-outline',

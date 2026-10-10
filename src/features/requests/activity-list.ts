@@ -5,7 +5,6 @@ import type { NotificationType } from '@/features/notifications/types';
 import type { Database } from '@/lib/supabase/database.types';
 import { formatAgo, formatMoney } from '@/lib/format';
 
-import { isExpiredRequestView } from '@/features/requests/reuse';
 
 type RequestStatus = Database['public']['Enums']['request_status'];
 type ResponseStatus = Database['public']['Enums']['response_status'];
@@ -67,7 +66,7 @@ export function myRequestActivityDetailLine(request: {
       ? request.completed_at
       : stage === 'cancelled'
         ? request.cancelled_at
-        : stage === 'expired'
+        : stage === 'expired' || stage === 'awaiting_review'
           ? request.expires_at
           : request.updated_at) ?? request.created_at;
 
@@ -101,6 +100,8 @@ export function myRequestActivityBadge(request: {
       return { label: 'Disputed', tone: 'danger' };
     case 'cancelled':
       return { label: 'Cancelled', tone: 'neutral' };
+    case 'awaiting_review':
+      return { label: 'Awaiting review', tone: 'warning' };
     case 'expired':
       return { label: 'Expired', tone: 'neutral' };
     case 'no_show':
@@ -118,13 +119,14 @@ export function myResponseActivityBadge(response: {
   response_status: ResponseStatus;
   request_status: RequestStatus;
 }): { label: string; tone: ActivityBadgeTone } {
-  const requestStatus = isExpiredRequestView(response.request_status, null)
-    ? 'expired'
-    : response.request_status;
+  const requestStatus = response.request_status;
 
   if (response.response_status === 'pending') {
     if (requestStatus === 'posted' || requestStatus === 'searching') {
       return { label: 'Waiting', tone: 'warning' };
+    }
+    if (requestStatus === 'awaiting_review') {
+      return { label: 'Closed', tone: 'neutral' };
     }
     return { label: 'Closed', tone: 'neutral' };
   }
@@ -207,7 +209,7 @@ export function myRequestActivitySubtitle(request: {
       ? activityDayLabel(request.completed_at)
       : stage === 'cancelled'
         ? activityDayLabel(request.cancelled_at)
-        : stage === 'expired'
+        : stage === 'expired' || stage === 'awaiting_review'
           ? activityDayLabel(request.expires_at)
           : activityDayLabel(request.created_at);
 
@@ -226,9 +228,7 @@ export function myResponseActivitySubtitle(response: {
   currency: string;
   created_at: string;
 }): string {
-  const requestStatus = isExpiredRequestView(response.request_status, null)
-    ? 'expired'
-    : response.request_status;
+  const requestStatus = response.request_status;
 
   let statusLine: string;
 
@@ -298,6 +298,7 @@ export function requestNavigationPath(input: {
 const REQUEST_STATUSES = new Set<RequestStatus>([
   'posted',
   'searching',
+  'awaiting_review',
   'accepted',
   'in_progress',
   'completion_pending',
@@ -354,6 +355,7 @@ export function notificationNavigationPath(input: {
     input.type === 'response_received' ||
     input.type === 'new_responses' ||
     input.type === 'request_expiring' ||
+    input.type === 'request_awaiting_review' ||
     input.type === 'request_expired' ||
     input.type === 'payment_secured' ||
     input.type === 'rate_experience' ||

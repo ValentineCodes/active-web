@@ -1,7 +1,17 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  Alert,
+  Modal,
+  Platform,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  Text,
+  View,
+} from 'react-native';
+import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { Redirect, router, useFocusEffect, useLocalSearchParams } from 'expo-router';
-import { format } from 'date-fns';
+import { addHours, format, set } from 'date-fns';
 import type { BottomSheetModal } from '@gorhom/bottom-sheet';
 
 import { PersonProfileBottomSheet } from '@/components/PersonProfileBottomSheet';
@@ -24,8 +34,10 @@ import {
   useAcceptResponse,
   useCancelRequest,
   useDeclineResponse,
+  useExtendRequest,
   useLiveRequest,
   useMyRequest,
+  useOwnerExpireRequest,
   useRequestResponses,
 } from '@/features/requests/requester-api';
 import {
@@ -37,9 +49,11 @@ import { myRequestActivityBadge } from '@/features/requests/activity-list';
 import { isRequestEditable } from '@/features/requests/edit-eligibility';
 import {
   canReuseRequest,
+  isAwaitingReviewRequestView,
   isExpiredRequestView,
   reuseRequestButtonLabelForRequest,
 } from '@/features/requests/reuse';
+import { REQUEST_MAX_LIFETIME_HOURS } from '@/features/domain/model';
 import {
   formatAgo,
   formatMoney,
@@ -86,8 +100,21 @@ export default function RequestDetailScreen() {
   const conversation = useRequestConversation(id, Boolean(request.data?.selected_user_id));
 
   const cancelRequest = useCancelRequest(id);
+  const extendRequest = useExtendRequest(id);
+  const ownerExpireRequest = useOwnerExpireRequest(id);
   const acceptResponse = useAcceptResponse(id);
   const declineResponse = useDeclineResponse(id);
+  const [extendDeadlineOpen, setExtendDeadlineOpen] = useState(false);
+  const [extendDeadlineAt, setExtendDeadlineAt] = useState(() =>
+    addHours(new Date(), REQUEST_MAX_LIFETIME_HOURS),
+  );
+  const [showExtendDatePicker, setShowExtendDatePicker] = useState(false);
+  const [showExtendTimePicker, setShowExtendTimePicker] = useState(false);
+
+  const extendDeadlineLabel = useMemo(
+    () => format(extendDeadlineAt, "EEEE, d MMM 'at' h:mm a"),
+    [extendDeadlineAt],
+  );
   const openPreHandshakeChat = useOpenPreHandshakeConversation();
   const queryClient = useQueryClient();
   const wallet = useMyWallet();
@@ -219,8 +246,12 @@ export default function RequestDetailScreen() {
     pending_response_count: data.pending_response_count,
   });
   const pending = responses.data?.filter((response) => response.status === 'pending') ?? [];
+  const isAwaitingReview = isAwaitingReviewRequestView(data.status, data.expires_at);
   const isExpiredRequest = isExpiredRequestView(data.status, data.expires_at);
-  const isOpen = (data.status === 'posted' || data.status === 'searching') && !isExpiredRequest;
+  const isOpen =
+    (data.status === 'posted' || data.status === 'searching') &&
+    !isAwaitingReview &&
+    !isExpiredRequest;
   const redirectsToEngagement = [
     'accepted',
     'in_progress',
@@ -266,7 +297,66 @@ export default function RequestDetailScreen() {
           : []),
         { label: 'Cancel request', destructive: true, onPress: confirmCancel },
       ]
-    : undefined;
+    : isAwaitingReview
+      ? [{ label: 'Cancel request', destructive: true, onPress: confirmCancel }]
+      : undefined;
+
+  const openExtendDeadline = () => {
+    setExtendDeadlineAt(addHours(new Date(), REQUEST_MAX_LIFETIME_HOURS));
+    setExtendDeadlineOpen(true);
+  };
+
+  const onExtendDateChange = (event: DateTimePickerEvent, date?: Date) => {
+    if (Platform.OS === 'android') setShowExtendDatePicker(false);
+    if (event.type === 'dismissed' || !date) return;
+    setExtendDeadlineAt((prev) =>
+      set(prev, { year: date.getFullYear(), month: date.getMonth(), date: date.getDate() }),
+    );
+  };
+
+  const onExtendTimeChange = (event: DateTimePickerEvent, date?: Date) => {
+    if (Platform.OS === 'android') setShowExtendTimePicker(false);
+    if (event.type === 'dismissed' || !date) return;
+    setExtendDeadlineAt((prev) =>
+      set(prev, {
+        hours: date.getHours(),
+        minutes: date.getMinutes(),
+        seconds: 0,
+        milliseconds: 0,
+      }),
+    );
+  };
+
+  const submitExtendDeadline = () => {
+    if (extendDeadlineAt.getTime() <= Date.now() + 5 * 60 * 1000) {
+      showAppToast('Choose a deadline at least 5 minutes from now.', 'warning');
+      return;
+    }
+
+    extendRequest.mutate(extendDeadlineAt, {
+      onSuccess: () => {
+        setExtendDeadlineOpen(false);
+        showAppToast('Request extended for new responses');
+      },
+    });
+  };
+
+  const confirmExpireRequest = () =>
+    Alert.alert(
+      'Close this request?',
+      'It will stop accepting new responses. You can still view responses and history.',
+      [
+        { text: 'Keep open', style: 'cancel' },
+        {
+          text: 'Close request',
+          style: 'destructive',
+          onPress: () =>
+            ownerExpireRequest.mutate(undefined, {
+              onSuccess: () => showAppToast('Request closed'),
+            }),
+        },
+      ],
+    );
 
   if (redirectsToEngagement) {
     return <Redirect href={`/engagement/${id}`} />;
@@ -373,6 +463,15 @@ export default function RequestDetailScreen() {
           </Pressable>
         ) : null}
 
+        {isAwaitingReview ? (
+          <RequestCallout tone="warning" title="Awaiting review">
+            <Text className="text-base text-muted">
+              The response window ended. Review responses below, extend for more responses, or close
+              the request.
+            </Text>
+          </RequestCallout>
+        ) : null}
+
         {isExpiredRequest ? (
           <RequestCallout tone="warning" title="Expired">
             <Text className="text-base text-muted">
@@ -381,7 +480,25 @@ export default function RequestDetailScreen() {
           </RequestCallout>
         ) : null}
 
-        {isOpen ? (
+        {isAwaitingReview ? (
+          <View className="gap-3">
+            <Button
+              label="Extend request"
+              size="lg"
+              onPress={openExtendDeadline}
+              loading={extendRequest.isPending}
+            />
+            <Button
+              label="Close request"
+              size="lg"
+              variant="secondary"
+              onPress={confirmExpireRequest}
+              loading={ownerExpireRequest.isPending}
+            />
+          </View>
+        ) : null}
+
+        {isOpen || isAwaitingReview ? (
           <View className="gap-4">
             <Text className="text-lg font-bold text-ink">
               {pending.length === 1 ? '1 Response' : `${pending.length} Responses`}
@@ -445,9 +562,74 @@ export default function RequestDetailScreen() {
             ))}
 
             {cancelRequest.isError ? <InlineError error={cancelRequest.error} /> : null}
+            {extendRequest.isError ? <InlineError error={extendRequest.error} /> : null}
+            {ownerExpireRequest.isError ? (
+              <InlineError error={ownerExpireRequest.error} />
+            ) : null}
           </View>
         ) : null}
       </ScrollView>
+
+      <Modal
+        visible={extendDeadlineOpen}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setExtendDeadlineOpen(false)}
+      >
+        <Pressable
+          accessibilityRole="button"
+          className="flex-1 justify-end bg-black/40"
+          onPress={() => setExtendDeadlineOpen(false)}
+        >
+          <Pressable
+            accessibilityRole="none"
+            onPress={(event) => event.stopPropagation()}
+            className="gap-5 rounded-t-3xl bg-surface p-5 pb-10"
+          >
+            <Text className="text-xl font-bold text-ink">New response deadline</Text>
+            <Text className="text-base text-muted">
+              People nearby can respond again until this time. Your task date stays the same.
+            </Text>
+            <Text className="text-base font-semibold text-ink">{extendDeadlineLabel}</Text>
+            <View className="flex-row gap-3">
+              <Button
+                label="Pick date"
+                variant="secondary"
+                className="flex-1"
+                onPress={() => setShowExtendDatePicker(true)}
+              />
+              <Button
+                label="Pick time"
+                variant="secondary"
+                className="flex-1"
+                onPress={() => setShowExtendTimePicker(true)}
+              />
+            </View>
+            {showExtendDatePicker ? (
+              <DateTimePicker
+                value={extendDeadlineAt}
+                mode="date"
+                minimumDate={new Date()}
+                onChange={onExtendDateChange}
+              />
+            ) : null}
+            {showExtendTimePicker ? (
+              <DateTimePicker value={extendDeadlineAt} mode="time" onChange={onExtendTimeChange} />
+            ) : null}
+            <Button
+              label="Extend request"
+              size="lg"
+              onPress={submitExtendDeadline}
+              loading={extendRequest.isPending}
+            />
+            <Button
+              label="Cancel"
+              variant="ghost"
+              onPress={() => setExtendDeadlineOpen(false)}
+            />
+          </Pressable>
+        </Pressable>
+      </Modal>
 
       <ReportIssueModal
         visible={reportIssueOpen}

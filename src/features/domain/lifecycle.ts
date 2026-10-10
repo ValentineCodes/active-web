@@ -1,6 +1,6 @@
 import type { RequestStatus } from '@/features/domain/model';
 import { normalizeRequestStatus } from '@/features/domain/transitions';
-import { isExpiredRequestView } from '@/features/requests/reuse';
+import { isAwaitingReviewRequestView, isExpiredRequestView } from '@/features/requests/reuse';
 
 /**
  * Product lifecycle stages. `responses` and `posted` both store `posted` in the database.
@@ -15,6 +15,7 @@ export type RequestLifecycleStage =
   | 'completion_pending'
   | 'completed'
   | 'cancelled'
+  | 'awaiting_review'
   | 'expired'
   | 'disputed'
   | 'no_show';
@@ -29,6 +30,10 @@ const REQUESTER_COPY: Record<Exclude<RequestLifecycleStage, 'draft' | 'no_show'>
   completion_pending: { title: 'Confirm', hint: 'Confirm when the work is done.' },
   completed: { title: 'Completed', hint: 'Done.' },
   cancelled: { title: 'Cancelled', hint: 'This request was cancelled.' },
+  awaiting_review: {
+    title: 'Awaiting review',
+    hint: 'The response window ended. Review responses or extend the deadline.',
+  },
   expired: { title: 'Expired', hint: 'This request expired before anyone was chosen.' },
   disputed: { title: 'Issue open', hint: 'There is an open issue on this request.' },
 };
@@ -45,6 +50,10 @@ export function resolveRequestLifecycleStage(input: {
   pendingResponseCount: number;
   expiresAt?: string | null;
 }): RequestLifecycleStage {
+  if (isAwaitingReviewRequestView(input.status, input.expiresAt ?? null)) {
+    return 'awaiting_review';
+  }
+
   if (isExpiredRequestView(input.status, input.expiresAt ?? null)) {
     return 'expired';
   }
@@ -67,6 +76,8 @@ export function resolveRequestLifecycleStage(input: {
       return 'completed';
     case 'cancelled':
       return 'cancelled';
+    case 'awaiting_review':
+      return 'awaiting_review';
     case 'expired':
       return 'expired';
     case 'disputed':
@@ -114,6 +125,8 @@ export function requestLifecycleBadge(
         return 'warning';
       case 'responses':
         return 'brand';
+      case 'awaiting_review':
+        return 'warning';
       case 'selected':
       case 'in_progress':
       case 'completion_pending':

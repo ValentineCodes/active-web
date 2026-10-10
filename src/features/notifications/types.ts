@@ -30,6 +30,7 @@ export const NOTIFICATION_TYPES = [
   'new_responses',
   'matching_request',
   'request_expiring',
+  'request_awaiting_review',
   'request_expired',
   'response_accepted',
   'response_not_selected',

@@ -353,6 +353,46 @@ export function useUpdateRequest(requestId: string) {
   });
 }
 
+export function useExtendRequest(requestId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (expiresAt: Date) => {
+      const { error } = await supabase.rpc('extend_request', {
+        p_request_id: requestId,
+        p_expires_at: expiresAt.toISOString(),
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.myRequest(requestId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.myRequests });
+      queryClient.invalidateQueries({ queryKey: queryKeys.requestResponses(requestId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.browseNearbyAll });
+      queryClient.invalidateQueries({ queryKey: queryKeys.requestSearchAll });
+    },
+  });
+}
+
+export function useOwnerExpireRequest(requestId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.rpc('owner_expire_request', { p_request_id: requestId });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.myRequest(requestId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.myRequests });
+      queryClient.invalidateQueries({ queryKey: queryKeys.requestResponses(requestId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.myResponses });
+      queryClient.invalidateQueries({ queryKey: queryKeys.browseNearbyAll });
+      queryClient.invalidateQueries({ queryKey: queryKeys.requestSearchAll });
+    },
+  });
+}
+
 export function useCancelRequest(requestId: string) {
   const queryClient = useQueryClient();
 

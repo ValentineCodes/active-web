@@ -33,7 +33,7 @@ export function Screen({
       {isOffline ? (
         <View className="border-b border-hairline bg-warning-soft px-5 py-2">
           <Text className="text-center text-sm font-medium text-warning">
-            You&apos;re offline. Showing the last information we have.
+            You&apos;re offline.
           </Text>
         </View>
       ) : null}

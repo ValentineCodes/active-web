@@ -2003,8 +2003,16 @@ export type Database = {
         Args: { p_requester_id: string; p_selected_user_id: string }
         Returns: boolean
       }
+      conversation_requester_initiated_chat: {
+        Args: { p_conversation_id: string }
+        Returns: boolean
+      }
       conversation_sending_allowed: {
         Args: { p_conversation_id: string }
+        Returns: boolean
+      }
+      conversation_sending_allowed_for_participant: {
+        Args: { p_conversation_id: string; p_user_id: string }
         Returns: boolean
       }
       count_available_responses: {
@@ -2078,6 +2086,10 @@ export type Database = {
       ensure_wallet_account: { Args: { p_user_id: string }; Returns: undefined }
       expire_due_requests: { Args: { p_limit?: number }; Returns: number }
       expire_request: { Args: { p_request_id: string }; Returns: boolean }
+      extend_request: {
+        Args: { p_expires_at: string; p_request_id: string }
+        Returns: undefined
+      }
       finalize_client_no_show_resolution: {
         Args: {
           p_actor_id: string
@@ -2424,6 +2436,10 @@ export type Database = {
         Args: never
         Returns: Database["public"]["Enums"]["request_status"][]
       }
+      owner_expire_request: {
+        Args: { p_request_id: string }
+        Returns: undefined
+      }
       post_wallet_ledger: {
         Args: {
           p_available_delta: number
@@ -2517,7 +2533,21 @@ export type Database = {
         Args: { p_request_id: string; p_user_id: string }
         Returns: boolean
       }
+      request_effective_status: {
+        Args: {
+          p_expires_at: string
+          p_status: Database["public"]["Enums"]["request_status"]
+        }
+        Returns: Database["public"]["Enums"]["request_status"]
+      }
       request_expires_at: { Args: { p_scheduled_for: string }; Returns: string }
+      request_in_awaiting_review: {
+        Args: {
+          p_expires_at: string
+          p_status: Database["public"]["Enums"]["request_status"]
+        }
+        Returns: boolean
+      }
       request_lifetime_interval: { Args: never; Returns: string }
       request_media_visible_to_party: {
         Args: { p_name: string; p_user_id: string }
@@ -2698,6 +2728,10 @@ export type Database = {
         Args: { p_request_id: string; p_requester_id: string }
         Returns: string[]
       }
+      transition_request_to_awaiting_review: {
+        Args: { p_request_id: string }
+        Returns: boolean
+      }
       update_request: {
         Args: {
           p_attachment_path?: string
@@ -2867,6 +2901,7 @@ export type Database = {
         | "funds_released_after_resolution"
         | "rate_experience"
         | "matching_request"
+        | "request_awaiting_review"
       payment_lock_bucket: "locked" | "pending"
       payment_lock_status: "active" | "released" | "refunded"
       payment_status:
@@ -2890,6 +2925,7 @@ export type Database = {
         | "disputed"
         | "no_show"
         | "posted"
+        | "awaiting_review"
       response_status:
         | "pending"
         | "accepted"
@@ -3081,6 +3117,7 @@ export const Constants = {
         "funds_released_after_resolution",
         "rate_experience",
         "matching_request",
+        "request_awaiting_review",
       ],
       payment_lock_bucket: ["locked", "pending"],
       payment_lock_status: ["active", "released", "refunded"],
@@ -3106,6 +3143,7 @@ export const Constants = {
         "disputed",
         "no_show",
         "posted",
+        "awaiting_review",
       ],
       response_status: [
         "pending",

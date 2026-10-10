@@ -285,13 +285,20 @@ select pg_temp.act_as_owner() as _ \gset
 select is(
   public.expire_request(:'expired_request_id'::uuid),
   true,
-  'expire_request persists a due posted request as expired'
+  'expire_request moves a due posted request into awaiting review'
 );
 
 select is(
   (select status::text from public.requests where id = :'expired_request_id'::uuid),
-  'expired',
-  'expiration writes the expired status on the request row'
+  'awaiting_review',
+  'response window closure writes awaiting_review on the request row'
+);
+
+select is(
+  (select count(*)::int from public.request_responses
+   where request_id = :'expired_request_id'::uuid and status = 'pending'),
+  0,
+  'awaiting review keeps pending responses available when none were submitted'
 );
 
 select pg_temp.act_as('66666666-6666-6666-6666-666666666666') as _ \gset
@@ -346,7 +353,7 @@ where id = :'funded_expired_request_id'::uuid;
 
 select ok(
   public.expire_request(:'funded_expired_request_id'::uuid),
-  'expiration closes a posted request that was never accepted'
+  'response window closure moves a posted request into awaiting review'
 );
 
 select is(
@@ -1525,14 +1532,14 @@ select ok(
 select pg_temp.act_as_owner() as _ \gset
 select ok(
   not public.expire_request(:'expired_request_id'::uuid),
-  'expire_request is idempotent once the row is already expired'
+  'expire_request is idempotent once the row is already awaiting review'
 );
 
 select is(
   (select count(*) from public.request_status_events
-   where request_id = :'expired_request_id'::uuid and to_status = 'expired'),
+   where request_id = :'expired_request_id'::uuid and to_status = 'awaiting_review'),
   1::bigint,
-  'expiration records a single status event'
+  'response window closure records a single awaiting_review status event'
 );
 
 select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
@@ -1561,11 +1568,14 @@ set expires_at = now() - interval '1 minute'
 where id = :'past_window_request_id'::uuid;
 
 select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
-select throws_ok(
+select lives_ok(
   format('select accept_response(%L)', :'past_window_response_id'),
-  '55000',
-  null,
-  'selection is rejected once the request open window has ended'
+  'the requester can still accept a response while the request awaits review'
+);
+
+select lives_ok(
+  format('select cancel_request(%L)', :'past_window_request_id'),
+  'cancel the accepted past-window request so later fixtures stay under the open-request limit'
 );
 
 select pg_temp.act_as_owner() as _ \gset

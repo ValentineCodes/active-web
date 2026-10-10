@@ -1,5 +1,5 @@
 import type { Database } from '@/lib/supabase/database.types';
-import { isExpiredRequestView } from '@/features/requests/reuse';
+import { isAwaitingReviewRequestView, isExpiredRequestView } from '@/features/requests/reuse';
 
 type RequestStatus = Database['public']['Enums']['request_status'];
 
@@ -30,6 +30,10 @@ export function isRequestEditable(input: RequestEditEligibilityInput): boolean {
   }
 
   if (isExpiredRequestView(input.status, input.expires_at)) {
+    return false;
+  }
+
+  if (isAwaitingReviewRequestView(input.status, input.expires_at)) {
     return false;
   }
 
