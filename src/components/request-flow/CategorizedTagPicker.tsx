@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type ComponentRef } from 'react';
 import { ScrollView, Text, TextInput, View } from 'react-native';
 
 import { TagPill } from '@/components/request-flow/TagPill';
@@ -37,6 +37,14 @@ export function CategorizedTagPicker({
 }: CategorizedTagPickerProps) {
   const colors = useColors();
   const [query, setQuery] = useState('');
+  const searchRef = useRef<ComponentRef<typeof TextInput>>(null);
+
+  useEffect(() => {
+    if (loading || error) return;
+
+    const focusTimer = setTimeout(() => searchRef.current?.focus(), 50);
+    return () => clearTimeout(focusTimer);
+  }, [error, loading]);
 
   const selectedIds = useMemo(() => new Set(selected.map((tag) => tag.id)), [selected]);
   const atLimit = selected.length >= maxSelected;
@@ -91,6 +99,7 @@ export function CategorizedTagPicker({
   return (
     <View className="gap-4">
       <TextInput
+        ref={searchRef}
         accessibilityLabel="Search tags"
         value={query}
         onChangeText={setQuery}

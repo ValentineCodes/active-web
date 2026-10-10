@@ -13,6 +13,7 @@ type HomeRequestCardProps = {
   proximity: string;
   onPress: () => void;
   disabled?: boolean;
+  showImage?: boolean;
 };
 
 /** Home feed tile — serif title, preview, proximity, when, and offer (matches home mock). */
@@ -24,6 +25,7 @@ export function HomeRequestCard({
   proximity,
   onPress,
   disabled = false,
+  showImage = false,
 }: HomeRequestCardProps) {
   const { colors, shadow } = useTheme();
   return (
@@ -41,6 +43,12 @@ export function HomeRequestCard({
       <Text className="text-xl font-bold leading-7 text-ink" numberOfLines={1}>
         {title}
       </Text>
+
+      {showImage ? (
+        <View className="h-32 w-full items-center justify-center rounded-xl bg-surface">
+          <Ionicons name="image-outline" size={28} color={colors.subtle} />
+        </View>
+      ) : null}
 
       {description ? (
         <Text className="text-base leading-6 text-muted" numberOfLines={2}>
