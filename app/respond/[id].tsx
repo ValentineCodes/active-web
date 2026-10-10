@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, ScrollView, Text, View } from 'react-native';
+import { Alert, RefreshControl, ScrollView, Text, View } from 'react-native';
 import { Redirect, router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import type { BottomSheetModal } from '@gorhom/bottom-sheet';
@@ -16,7 +16,7 @@ import { ResponseCreationFlow } from '@/components/ResponseCreationFlow';
 import { hasProfilePhotoReady, useProfile } from '@/features/profile/api';
 import { Button } from '@/components/ui/Button';
 import { Screen } from '@/components/ui/Screen';
-import { EmptyState, ErrorState, InlineError, LoadingState } from '@/components/ui/StateView';
+import { EmptyState, ErrorState, InlineError } from '@/components/ui/StateView';
 import {
   canRespondToRequest,
   responseWizardInitialOffer,
@@ -74,13 +74,22 @@ export default function RespondScreen() {
     existingResponse,
     declinedParticipation,
     needsLocation,
-    isFetchingMatch,
     isPending,
     isError,
     error,
     refetch,
   } = useRequestForResponse(id, position);
   const preHandshakeConversation = useResponderPreHandshakeConversation(id);
+  const [pullRefreshing, setPullRefreshing] = useState(false);
+
+  const onPullRefresh = useCallback(async () => {
+    setPullRefreshing(true);
+    try {
+      await Promise.all([refetch(), profile.refetch(), preHandshakeConversation.refetch()]);
+    } finally {
+      setPullRefreshing(false);
+    }
+  }, [preHandshakeConversation.refetch, profile.refetch, refetch]);
 
   useFocusEffect(
     useCallback(() => {
@@ -201,11 +210,20 @@ export default function RespondScreen() {
     if (payload) mutateResponse(result.position, payload);
   };
 
-  if (!locationChecked || isPending || profile.isPending || myResponses.isPending) {
+  if (!locationChecked || (isPending && !request)) {
     return (
       <Screen edges={['top', 'bottom']}>
         <RequestFlowHeader title="Request" onBack={() => router.back()} />
-        <LoadingState label="Opening this request" />
+        <ScrollView
+          className="flex-1"
+          contentContainerClassName="flex-grow"
+          refreshControl={
+            <RefreshControl
+              refreshing={pullRefreshing}
+              onRefresh={() => void onPullRefresh()}
+            />
+          }
+        />
       </Screen>
     );
   }
@@ -239,7 +257,7 @@ export default function RespondScreen() {
     return (
       <Screen edges={['top', 'bottom']}>
         <RequestFlowHeader title="Request" onBack={() => router.back()} />
-        <ErrorState error={error ?? profile.error} onRetry={() => refetch()} />
+        <ErrorState error={error ?? profile.error} onRetry={() => void onPullRefresh()} />
       </Screen>
     );
   }
@@ -315,11 +333,32 @@ export default function RespondScreen() {
     ]);
   };
 
+  const responseMenuActions =
+    existingResponse && !declinedParticipation
+      ? [
+          { label: 'Update response', onPress: beginFlow },
+          { label: 'Cancel response', destructive: true, onPress: confirmWithdraw },
+        ]
+      : undefined;
+
   return (
     <Screen edges={['top', 'bottom']}>
-      <RequestFlowHeader title="Request" onBack={() => router.back()} />
+      <RequestFlowHeader
+        title="Request"
+        onBack={() => router.back()}
+        menuActions={responseMenuActions}
+      />
 
-      <ScrollView contentContainerClassName="gap-6 p-5 pb-12" keyboardShouldPersistTaps="handled">
+      <ScrollView
+        contentContainerClassName="gap-6 p-5 pb-12"
+        keyboardShouldPersistTaps="handled"
+        refreshControl={
+          <RefreshControl
+            refreshing={pullRefreshing}
+            onRefresh={() => void onPullRefresh()}
+          />
+        }
+      >
         <RequestHelpSummary
           request={request}
           existingResponse={Boolean(existingResponse)}
@@ -361,8 +400,6 @@ export default function RespondScreen() {
           </RequestCallout>
         ) : null}
 
-        {isFetchingMatch ? <LoadingState label="Checking this request" /> : null}
-
         {declinedParticipation ? null : existingResponse ? (
           <RequestCallout tone="warning" title="Response awaiting acceptance">
             <Text className="text-sm text-muted">
@@ -383,15 +420,7 @@ export default function RespondScreen() {
         {respond.isError ? <InlineError error={respond.error} /> : null}
         {withdrawResponse.isError ? <InlineError error={withdrawResponse.error} /> : null}
 
-        {declinedParticipation ? null : existingResponse ? (
-          <Button
-            label="Cancel response"
-            variant="danger"
-            size="lg"
-            loading={withdrawResponse.isPending}
-            onPress={confirmWithdraw}
-          />
-        ) : respondAllowed ? (
+        {!declinedParticipation && !existingResponse && respondAllowed ? (
           <Button
             label="Respond to request"
             variant="active"
@@ -399,10 +428,6 @@ export default function RespondScreen() {
             corner="2xl"
             onPress={beginFlow}
           />
-        ) : null}
-
-        {declinedParticipation ? null : existingResponse ? (
-          <Button label="Update response" variant="secondary" size="lg" onPress={beginFlow} />
         ) : null}
 
       </ScrollView>

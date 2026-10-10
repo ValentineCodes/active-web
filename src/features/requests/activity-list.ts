@@ -361,7 +361,6 @@ export function notificationNavigationPath(input: {
     input.type === 'funds_released_after_resolution' ||
     input.type === 'request_cancelled' ||
     input.type === 'cancellation_confirmed' ||
-    input.type === 'helper_cancelled' ||
     input.type === 'funds_returned'
   ) {
     return `/request/${input.requestId}`;

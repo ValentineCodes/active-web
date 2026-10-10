@@ -88,10 +88,9 @@ export function useMyRequests() {
   });
 }
 
-export function useMyRequest(requestId: string) {
-  return useQuery({
+export function myRequestQueryOptions(requestId: string) {
+  return {
     queryKey: queryKeys.myRequest(requestId),
-    enabled: requestId.length > 0,
     queryFn: async (): Promise<MyRequest> => {
       const { data, error } = await supabase
         .from('my_requests')
@@ -102,6 +101,13 @@ export function useMyRequest(requestId: string) {
       if (error) throw error;
       return data as MyRequest;
     },
+  };
+}
+
+export function useMyRequest(requestId: string) {
+  return useQuery({
+    ...myRequestQueryOptions(requestId),
+    enabled: requestId.length > 0,
   });
 }
 

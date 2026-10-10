@@ -2,11 +2,12 @@ import Constants from 'expo-constants';
 import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
 import { Linking, Platform } from 'react-native';
-import { useEffect } from 'react';
-import { router } from 'expo-router';
+import { useCallback, useEffect, useRef } from 'react';
+import { router, useRootNavigationState } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
+import type { NotificationResponse } from 'expo-notifications';
 
-import { resolveNotificationHrefFromPushData } from '@/features/notifications/presentation';
+import { resolveNotificationHrefFromPushDataForOpen } from '@/features/notifications/presentation';
 import { queryKeys } from '@/lib/query/keys';
 import { supabase } from '@/lib/supabase/client';
 
@@ -109,36 +110,74 @@ export async function syncPushToken({
   return 'registered';
 }
 
+function notificationResponseKey(response: NotificationResponse): string {
+  return `${response.notification.request.identifier}:${response.actionIdentifier}`;
+}
+
 export function useNotificationBridge() {
   const queryClient = useQueryClient();
+  const navigationReady = Boolean(useRootNavigationState()?.key);
+  const pendingHrefRef = useRef<string | null>(null);
+  const handledResponseKeyRef = useRef<string | null>(null);
+
+  const refreshInbox = useCallback(() => {
+    void queryClient.invalidateQueries({ queryKey: queryKeys.notificationInbox });
+    void queryClient.invalidateQueries({ queryKey: queryKeys.notificationUnreadCount });
+  }, [queryClient]);
+
+  const navigateFromNotification = useCallback(
+    (href: string) => {
+      if (!navigationReady) {
+        pendingHrefRef.current = href;
+        return;
+      }
+      router.push(href as never);
+    },
+    [navigationReady],
+  );
+
+  const openNotificationResponse = useCallback(
+    (response: NotificationResponse) => {
+      const responseKey = notificationResponseKey(response);
+      if (handledResponseKeyRef.current === responseKey) return;
+      handledResponseKeyRef.current = responseKey;
+
+      refreshInbox();
+
+      const data = response.notification.request.content.data;
+      if (data && typeof data === 'object' && !Array.isArray(data)) {
+        void resolveNotificationHrefFromPushDataForOpen(
+          queryClient,
+          data as Record<string, unknown>,
+        ).then((href) => {
+          if (href) navigateFromNotification(href);
+        });
+      }
+    },
+    [navigateFromNotification, queryClient, refreshInbox],
+  );
 
   useEffect(() => {
-    const refreshInbox = () => {
-      void queryClient.invalidateQueries({ queryKey: queryKeys.notificationInbox });
-      void queryClient.invalidateQueries({ queryKey: queryKeys.notificationUnreadCount });
-    };
+    if (!navigationReady || !pendingHrefRef.current) return;
+    const href = pendingHrefRef.current;
+    pendingHrefRef.current = null;
+    router.push(href as never);
+  }, [navigationReady]);
 
+  useEffect(() => {
     void syncPushToken({ mode: 'silent' });
 
     const received = Notifications.addNotificationReceivedListener(() => {
       refreshInbox();
-      queryClient.invalidateQueries();
     });
 
     const tapped = Notifications.addNotificationResponseReceivedListener((response) => {
-      refreshInbox();
-      queryClient.invalidateQueries();
-
-      const data = response.notification.request.content.data;
-      if (data && typeof data === 'object' && !Array.isArray(data)) {
-        const href = resolveNotificationHrefFromPushData(data as Record<string, unknown>);
-        if (href) router.push(href as never);
-      }
+      openNotificationResponse(response);
     });
 
     return () => {
       received.remove();
       tapped.remove();
     };
-  }, [queryClient]);
+  }, [openNotificationResponse, refreshInbox]);
 }

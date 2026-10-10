@@ -28,7 +28,7 @@ import {
   readPushBannerDismissed,
   setPushBannerDismissed,
 } from '@/features/notifications/preferences';
-import { resolveNotificationHref } from '@/features/notifications/presentation';
+import { resolveNotificationHrefForOpen } from '@/features/notifications/presentation';
 import type { InboxNotification } from '@/features/notifications/types';
 import { useProfile } from '@/features/profile/api';
 import { queryKeys } from '@/lib/query/keys';
@@ -101,18 +101,19 @@ export default function NotificationsScreen() {
     }
   };
 
-  const openNotification = async (item: InboxNotification) => {
-    if (item.readAt === null) {
-      await markNotificationInboxItemRead(item.id);
-      invalidateInbox();
-    }
-
-    const href = resolveNotificationHref({
+  const openNotification = (item: InboxNotification) => {
+    void resolveNotificationHrefForOpen(queryClient, {
       type: item.type,
       requestId: item.requestId,
       metadata: item.metadata,
+      url: item.url,
+    }).then((href) => {
+      if (href) router.push(href as never);
     });
-    if (href) router.push(href as never);
+
+    if (item.readAt === null) {
+      void markNotificationInboxItemRead(item.id).then(invalidateInbox);
+    }
   };
 
   const filteredItems = useMemo(() => {
@@ -222,7 +223,7 @@ export default function NotificationsScreen() {
             )
           }
           renderItem={({ item }) => (
-            <NotificationListItem item={item} onPress={() => void openNotification(item)} />
+            <NotificationListItem item={item} onPress={() => openNotification(item)} />
           )}
           ListFooterComponent={
             showPushBanner ? (

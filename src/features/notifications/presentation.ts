@@ -1,9 +1,15 @@
 import { format, formatDistanceToNowStrict, isToday, isYesterday, subDays } from 'date-fns';
 import type { Ionicons } from '@expo/vector-icons';
 
+import type { QueryClient } from '@tanstack/react-query';
+
 import type { InboxNotification, NotificationType } from '@/features/notifications/types';
 import { NOTIFICATION_TYPES } from '@/features/notifications/types';
-import { notificationNavigationPath } from '@/features/requests/activity-list';
+import {
+  notificationNavigationPath,
+  requestNavigationPath,
+} from '@/features/requests/activity-list';
+import { myRequestQueryOptions } from '@/features/requests/requester-api';
 import { getColors } from '@/theme';
 
 const CANONICAL_TYPES = new Set<string>(NOTIFICATION_TYPES);
@@ -157,11 +163,32 @@ export function notificationVisual(type: NotificationType): NotificationVisual {
 
 export type NotificationNavigationInput = Pick<
   InboxNotification,
-  'type' | 'requestId' | 'metadata'
+  'type' | 'requestId' | 'metadata' | 'url'
 >;
+
+const NOTIFICATION_ROUTE_PATTERN =
+  /^\/(request|respond|engagement|conversation|rate)\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** Server-authored deep link from inbox rows or push payloads. */
+export function normalizeNotificationHref(url: string | null | undefined): string | null {
+  if (!url) return null;
+
+  const trimmed = url.trim();
+  if (trimmed === '/wallet' || trimmed.startsWith('/wallet/')) return trimmed;
+  if (NOTIFICATION_ROUTE_PATTERN.test(trimmed)) return trimmed;
+
+  return null;
+}
 
 /** Deep link target when opening a notification (inbox row or push payload). */
 export function resolveNotificationHref(item: NotificationNavigationInput): string | null {
+  if (item.type === 'payment_released' && item.requestId) {
+    return `/request/${item.requestId}`;
+  }
+
+  const storedHref = normalizeNotificationHref(item.url);
+  if (storedHref) return storedHref;
+
   if (item.type === 'new_message' && item.requestId) {
     const conversationId = item.metadata?.conversation_id;
     if (typeof conversationId === 'string' && conversationId.length > 0) {
@@ -193,7 +220,64 @@ export function resolveNotificationHref(item: NotificationNavigationInput): stri
   return null;
 }
 
+function isHelperNotification(item: NotificationNavigationInput): boolean {
+  return item.metadata?.role === 'helper' || item.metadata?.link === 'respond';
+}
+
+/**
+ * Resolves the screen to open after a single network round-trip when needed.
+ * Requester alerts keep a fixed `url` in the inbox that can lag behind the live request
+ * (e.g. “Someone responded” while you are already in engagement, or payment released
+ * pointing at engagement when the summary lives on the request screen).
+ */
+export async function resolveNotificationHrefForOpen(
+  queryClient: QueryClient,
+  item: NotificationNavigationInput,
+): Promise<string | null> {
+  if (item.type === 'new_message' || !item.requestId || isHelperNotification(item)) {
+    return resolveNotificationHref(item);
+  }
+
+  try {
+    const request = await queryClient.fetchQuery(myRequestQueryOptions(item.requestId));
+    return requestNavigationPath({
+      role: 'requester',
+      requestId: item.requestId,
+      requestStatus: request.status,
+    });
+  } catch {
+    return resolveNotificationHref(item);
+  }
+}
+
+export async function resolveNotificationHrefFromPushDataForOpen(
+  queryClient: QueryClient,
+  data: Record<string, unknown>,
+): Promise<string | null> {
+  const type = data.type;
+  if (typeof type !== 'string' || !CANONICAL_TYPES.has(type)) {
+    return null;
+  }
+
+  const metadata =
+    data.metadata !== null && typeof data.metadata === 'object' && !Array.isArray(data.metadata)
+      ? (data.metadata as Record<string, unknown>)
+      : null;
+
+  return resolveNotificationHrefForOpen(queryClient, {
+    type: type as NotificationType,
+    requestId: parsePushRequestId(data.request_id),
+    metadata,
+    url: typeof data.url === 'string' ? data.url : null,
+  });
+}
+
 export function resolveNotificationHrefFromPushData(data: Record<string, unknown>): string | null {
+  const storedHref = normalizeNotificationHref(
+    typeof data.url === 'string' ? data.url : null,
+  );
+  if (storedHref) return storedHref;
+
   const type = data.type;
   if (typeof type !== 'string' || !CANONICAL_TYPES.has(type)) {
     return null;
@@ -208,6 +292,7 @@ export function resolveNotificationHrefFromPushData(data: Record<string, unknown
     type: type as NotificationType,
     requestId: parsePushRequestId(data.request_id),
     metadata,
+    url: null,
   });
 }
 

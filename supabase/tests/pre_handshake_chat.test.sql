@@ -124,9 +124,35 @@ select is(
 );
 
 select pg_temp.act_as('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb') as _ \gset
+select throws_ok(
+  format($$select public.send_request_message(%L, %L)$$, :'pre_conversation_a_id', 'Happy to help'),
+  '55000',
+  'this conversation is read-only',
+  'responder cannot message before the requester sends first'
+);
+
+select is(
+  public.get_responder_pre_handshake_conversation(:'pre_request_id'::uuid),
+  null,
+  'responder discuss entry stays hidden until the requester has messaged'
+);
+
+select pg_temp.act_as('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa') as _ \gset
+select lives_ok(
+  format($$select public.send_request_message(%L, %L)$$, :'pre_conversation_a_id', 'Hi, are you free Saturday?'),
+  'requester can send the first message'
+);
+
+select pg_temp.act_as('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb') as _ \gset
+select is(
+  public.get_responder_pre_handshake_conversation(:'pre_request_id'::uuid)::text,
+  :'pre_conversation_a_id',
+  'responder sees discuss after the requester has messaged'
+);
+
 select lives_ok(
   format($$select public.send_request_message(%L, %L)$$, :'pre_conversation_a_id', 'Happy to help'),
-  'responder can reply after requester opens chat'
+  'responder can reply after the requester message'
 );
 
 select pg_temp.act_as('cccccccc-cccc-cccc-cccc-cccccccccccc') as _ \gset

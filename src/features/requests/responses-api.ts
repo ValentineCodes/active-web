@@ -182,9 +182,11 @@ export function useRequestForResponse(requestId: string, position: Position | nu
     isPending: mine.isPending || (browseEnabled && position !== null && browse.isPending),
     isError: browse.isError || mine.isError,
     error: browse.error ?? mine.error,
-    refetch: () => {
-      void browse.refetch();
-      void mine.refetch();
+    refetch: async () => {
+      await mine.refetch();
+      if (browseEnabled && position !== null) {
+        await browse.refetch();
+      }
     },
   };
 }
@@ -298,10 +300,7 @@ export function responseWizardInitialOffer(
 ): string {
   const quoted = quotedAmount != null ? Number(quotedAmount) : null;
   const offered = Number(requesterOffer);
-  const amount =
-    quoted != null && Number.isFinite(quoted) && quoted > 0
-      ? quoted
-      : offered;
+  const amount = quoted != null && Number.isFinite(quoted) && quoted > 0 ? quoted : offered;
   if (!Number.isFinite(amount) || amount <= 0) return '';
   return String(Math.trunc(amount));
 }

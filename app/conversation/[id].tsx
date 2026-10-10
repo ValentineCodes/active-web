@@ -422,8 +422,15 @@ export default function ConversationScreen() {
 
   const thread = conversation.data;
   const counterpartyId = thread.counterpartyId;
+  const viewerIsResponder = userId === thread.selectedUserId;
+  const awaitingRequesterMessage =
+    thread.isPreHandshake && !thread.messagingEnabled && viewerIsResponder;
   const headerStatusLabel =
-    thread.isPreHandshake && !thread.messagingEnabled ? 'This discussion is closed' : null;
+    thread.isPreHandshake && !thread.messagingEnabled
+      ? awaitingRequesterMessage
+        ? 'Waiting for them to message you'
+        : 'This discussion is closed'
+      : null;
 
   return (
     <Screen edges={['top']} className="flex-1">
@@ -456,7 +463,11 @@ export default function ConversationScreen() {
             sending={composerSending}
             disabled={!thread.messagingEnabled}
             disabledHint={
-              thread.isPreHandshake ? 'This discussion is closed' : 'This request is closed'
+              awaitingRequesterMessage
+                ? 'You can reply after they send a message'
+                : thread.isPreHandshake
+                  ? 'This discussion is closed'
+                  : 'This request is closed'
             }
           />
         }
@@ -494,7 +505,9 @@ export default function ConversationScreen() {
                 <Text className="text-center text-base text-muted">
                   {messagingEnabled
                     ? 'Coordinate timing, location, and any last details for this request.'
-                    : 'No messages in this conversation yet.'}
+                    : awaitingRequesterMessage
+                      ? 'They will message you here when they want to discuss this request.'
+                      : 'No messages in this conversation yet.'}
                 </Text>
               </View>
             }
