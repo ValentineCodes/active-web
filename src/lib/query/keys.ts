@@ -16,6 +16,8 @@ export const queryKeys = {
   myResponses: ['my-responses'] as const,
   engagement: (requestId: string) => ['engagement', requestId] as const,
   requestConversation: (requestId: string) => ['request-conversation', requestId] as const,
+  resolvedRequestConversation: (lookupId: string) =>
+    ['resolved-request-conversation', lookupId] as const,
   requestMessages: (conversationId: string) => ['request-messages', conversationId] as const,
   conversationInbox: ['conversation-inbox'] as const,
   conversationInboxUnreadCount: ['conversation-inbox-unread-count'] as const,

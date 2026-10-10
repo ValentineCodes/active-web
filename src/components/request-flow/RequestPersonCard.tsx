@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { View } from 'react-native';
 
+import { PreHandshakeDiscussButton } from '@/components/PreHandshakeDiscussButton';
 import { PersonRow } from '@/components/ui/PersonRow';
 import { useTheme } from '@/theme';
 
@@ -11,6 +12,8 @@ export function RequestPersonCard({
   ratingCount,
   completionPercent,
   onPress,
+  onDiscussPress,
+  discussLoading,
 }: {
   avatarPath: string | null | undefined;
   name: string | null;
@@ -18,6 +21,8 @@ export function RequestPersonCard({
   ratingCount?: number | null;
   completionPercent?: number | null;
   onPress?: () => void;
+  onDiscussPress?: () => void;
+  discussLoading?: boolean;
 }) {
   const { colors, shadow } = useTheme();
   const inlineStat = completionPercent != null ? `${completionPercent}% completion` : undefined;
@@ -34,7 +39,18 @@ export function RequestPersonCard({
         ratingCount={ratingCount}
         inlineStat={inlineStat}
         onPress={onPress}
-        trailing={<Ionicons name="chevron-forward" size={18} color={colors.subtle} />}
+        trailing={
+          <View className="flex-row items-center gap-1">
+            {onDiscussPress ? (
+              <PreHandshakeDiscussButton
+                compact
+                onPress={onDiscussPress}
+                loading={discussLoading}
+              />
+            ) : null}
+            <Ionicons name="chevron-forward" size={18} color={colors.subtle} />
+          </View>
+        }
       />
     </View>
   );

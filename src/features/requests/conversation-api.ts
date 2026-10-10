@@ -41,11 +41,40 @@ export type RequestConversation = {
   requestId: string;
   requesterId: string;
   selectedUserId: string;
+  responseId: string;
   requestStatus: Database['public']['Enums']['request_status'];
   messagingEnabled: boolean;
+  isPreHandshake: boolean;
+  requestTitle: string;
+  requestDescription: string;
+  counterpartyId: string;
+  counterpartyDisplayName: string | null;
+  counterpartyAvatarPath: string | null;
   createdAt: string;
   updatedAt: string;
 };
+
+function mapResolvedConversationRow(
+  row: Database['public']['Functions']['resolve_request_conversation_for_viewer']['Returns'][number],
+): RequestConversation {
+  return {
+    conversationId: row.conversation_id,
+    requestId: row.request_id,
+    requesterId: row.requester_id,
+    selectedUserId: row.selected_user_id,
+    responseId: row.response_id,
+    requestStatus: row.request_status,
+    messagingEnabled: row.messaging_enabled,
+    isPreHandshake: row.is_pre_handshake,
+    requestTitle: row.request_title,
+    requestDescription: row.request_description ?? '',
+    counterpartyId: row.counterparty_id,
+    counterpartyDisplayName: row.counterparty_display_name,
+    counterpartyAvatarPath: row.counterparty_avatar_path,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
 
 type ConversationMessageType = Database['public']['Enums']['conversation_message_type'];
 
@@ -419,7 +448,26 @@ function replacePendingInCache(
   upsertMessageInCache(queryClient, conversationId, confirmed);
 }
 
-/** Available only after selection; empty when the caller is not a party. */
+/** Resolves a conversation by conversation id or engaged request id. */
+export function useResolvedRequestConversation(lookupId: string) {
+  return useQuery({
+    queryKey: queryKeys.resolvedRequestConversation(lookupId),
+    enabled: Boolean(lookupId),
+    queryFn: async (): Promise<RequestConversation | null> => {
+      const { data, error } = await supabase.rpc('resolve_request_conversation_for_viewer', {
+        p_lookup_id: lookupId,
+      });
+
+      if (error) throw error;
+      const row = data?.[0];
+      if (!row) return null;
+
+      return mapResolvedConversationRow(row);
+    },
+  });
+}
+
+/** Engaged chat for a request (post-selection); empty when the caller is not a party. */
 export function useRequestConversation(requestId: string, enabled = true) {
   return useQuery({
     queryKey: queryKeys.requestConversation(requestId),
@@ -433,16 +481,35 @@ export function useRequestConversation(requestId: string, enabled = true) {
       const row = data?.[0];
       if (!row) return null;
 
-      return {
-        conversationId: row.conversation_id,
-        requestId: row.request_id,
-        requesterId: row.requester_id,
-        selectedUserId: row.selected_user_id,
-        requestStatus: row.request_status,
-        messagingEnabled: row.messaging_enabled,
-        createdAt: row.created_at,
-        updatedAt: row.updated_at,
-      };
+      const { data: resolved, error: resolveError } = await supabase.rpc(
+        'resolve_request_conversation_for_viewer',
+        { p_lookup_id: row.conversation_id },
+      );
+      if (resolveError) throw resolveError;
+      const detail = resolved?.[0];
+      if (!detail) return null;
+
+      return mapResolvedConversationRow(detail);
+    },
+  });
+}
+
+export function useOpenPreHandshakeConversation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (responseId: string) => {
+      const { data, error } = await supabase.rpc('open_pre_handshake_conversation', {
+        p_response_id: responseId,
+      });
+      if (error) throw error;
+      return data as string;
+    },
+    onSuccess: (conversationId) => {
+      invalidateConversationInboxQueries(queryClient);
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.resolvedRequestConversation(conversationId),
+      });
     },
   });
 }

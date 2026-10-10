@@ -8,12 +8,14 @@ export function ConversationHeader({
   counterpartyName,
   counterpartyAvatarPath,
   requestTitle,
+  statusLabel,
   onBack,
   actions,
 }: {
   counterpartyName: string | null;
   counterpartyAvatarPath: string | null;
   requestTitle: string;
+  statusLabel?: string | null;
   onBack: () => void;
   actions?: ReactNode;
 }) {
@@ -35,6 +37,11 @@ export function ConversationHeader({
             <Text className="text-sm text-muted" numberOfLines={2}>
               {requestTitle}
             </Text>
+            {statusLabel ? (
+              <Text className="text-xs text-muted" numberOfLines={1}>
+                {statusLabel}
+              </Text>
+            ) : null}
           </View>
         </Pressable>
         {actions ? <View className="shrink-0 flex-row items-center">{actions}</View> : null}

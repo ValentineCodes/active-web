@@ -517,10 +517,10 @@ export function useCloneRequestFromPrior() {
   });
 }
 
-export function useEngagement(requestId: string) {
+export function useEngagement(requestId: string, enabled = true) {
   return useQuery({
     queryKey: queryKeys.engagement(requestId),
-    enabled: Boolean(requestId),
+    enabled: Boolean(requestId) && enabled,
     queryFn: async (): Promise<Engagement | null> => {
       const { data, error } = await supabase.rpc('get_engagement', { p_request_id: requestId });
       if (error) throw error;

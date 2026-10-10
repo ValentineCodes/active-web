@@ -28,7 +28,10 @@ import {
   useMyRequest,
   useRequestResponses,
 } from '@/features/requests/requester-api';
-import { useRequestConversation } from '@/features/requests/conversation-api';
+import {
+  useOpenPreHandshakeConversation,
+  useRequestConversation,
+} from '@/features/requests/conversation-api';
 import { chooseResponderDialog } from '@/features/requests/selection-copy';
 import { myRequestActivityBadge } from '@/features/requests/activity-list';
 import { isRequestEditable } from '@/features/requests/edit-eligibility';
@@ -83,6 +86,7 @@ export default function RequestDetailScreen() {
   const cancelRequest = useCancelRequest(id);
   const acceptResponse = useAcceptResponse(id);
   const declineResponse = useDeclineResponse(id);
+  const openPreHandshakeChat = useOpenPreHandshakeConversation();
   const queryClient = useQueryClient();
   const wallet = useMyWallet();
 
@@ -109,6 +113,18 @@ export default function RequestDetailScreen() {
       ]);
     },
     [id, wallet.data?.available],
+  );
+
+  const discussResponse = useCallback(
+    (responseId: string) => {
+      openPreHandshakeChat.mutate(responseId, {
+        onSuccess: (conversationId) => {
+          dismissProfileSheet();
+          router.push(`/conversation/${conversationId}`);
+        },
+      });
+    },
+    [dismissProfileSheet, openPreHandshakeChat],
   );
 
   const acceptResponder = useCallback(
@@ -412,6 +428,11 @@ export default function RequestDetailScreen() {
                 currency={data.currency}
                 createdAt={response.created_at}
                 responderAvailable={response.responder_available}
+                onDiscussPress={() => discussResponse(response.response_id)}
+                discussLoading={
+                  openPreHandshakeChat.isPending &&
+                  openPreHandshakeChat.variables === response.response_id
+                }
               />
             ))}
 

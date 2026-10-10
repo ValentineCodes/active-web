@@ -694,6 +694,7 @@ export type Database = {
           id: string
           request_id: string
           requester_id: string
+          response_id: string
           selected_user_id: string
           updated_at: string
         }
@@ -702,6 +703,7 @@ export type Database = {
           id?: string
           request_id: string
           requester_id: string
+          response_id: string
           selected_user_id: string
           updated_at?: string
         }
@@ -710,6 +712,7 @@ export type Database = {
           id?: string
           request_id?: string
           requester_id?: string
+          response_id?: string
           selected_user_id?: string
           updated_at?: string
         }
@@ -717,14 +720,14 @@ export type Database = {
           {
             foreignKeyName: "request_conversations_request_id_fkey"
             columns: ["request_id"]
-            isOneToOne: true
+            isOneToOne: false
             referencedRelation: "my_requests"
             referencedColumns: ["request_id"]
           },
           {
             foreignKeyName: "request_conversations_request_id_fkey"
             columns: ["request_id"]
-            isOneToOne: true
+            isOneToOne: false
             referencedRelation: "requests"
             referencedColumns: ["id"]
           },
@@ -733,6 +736,13 @@ export type Database = {
             columns: ["requester_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "request_conversations_response_id_fkey"
+            columns: ["response_id"]
+            isOneToOne: true
+            referencedRelation: "request_responses"
             referencedColumns: ["id"]
           },
           {
@@ -1993,6 +2003,10 @@ export type Database = {
         Args: { p_requester_id: string; p_selected_user_id: string }
         Returns: boolean
       }
+      conversation_sending_allowed: {
+        Args: { p_conversation_id: string }
+        Returns: boolean
+      }
       count_available_responses: {
         Args: { p_request_id: string }
         Returns: number
@@ -2056,6 +2070,7 @@ export type Database = {
         Args: {
           p_request_id: string
           p_requester_id: string
+          p_response_id: string
           p_selected_user_id: string
         }
         Returns: string
@@ -2184,6 +2199,10 @@ export type Database = {
           sender_id: string
         }[]
       }
+      get_responder_pre_handshake_conversation: {
+        Args: { p_request_id: string }
+        Returns: string
+      }
       kobo_to_ngn_major: { Args: { p_kobo: number }; Returns: number }
       list_my_request_conversations: {
         Args: never
@@ -2295,6 +2314,14 @@ export type Database = {
         Args: { p_idempotency_key: string; p_request_id: string }
         Returns: undefined
       }
+      lock_request_escrow_for_amount: {
+        Args: {
+          p_idempotency_key: string
+          p_offer_amount: number
+          p_request_id: string
+        }
+        Returns: undefined
+      }
       map_wallet_kind_to_type: {
         Args: { p_kind: string }
         Returns: Database["public"]["Enums"]["wallet_transaction_type"]
@@ -2388,6 +2415,10 @@ export type Database = {
       notify_tag_interest_subscribers: {
         Args: { p_request_id: string }
         Returns: undefined
+      }
+      open_pre_handshake_conversation: {
+        Args: { p_response_id: string }
+        Returns: string
       }
       open_request_statuses: {
         Args: never
@@ -2536,6 +2567,26 @@ export type Database = {
         Args: { p_limit?: number }
         Returns: number
       }
+      resolve_request_conversation_for_viewer: {
+        Args: { p_lookup_id: string }
+        Returns: {
+          conversation_id: string
+          counterparty_avatar_path: string
+          counterparty_display_name: string
+          counterparty_id: string
+          created_at: string
+          is_pre_handshake: boolean
+          messaging_enabled: boolean
+          request_description: string
+          request_id: string
+          request_status: Database["public"]["Enums"]["request_status"]
+          request_title: string
+          requester_id: string
+          response_id: string
+          selected_user_id: string
+          updated_at: string
+        }[]
+      }
       resolve_service_problem: {
         Args: { p_problem_id: string }
         Returns: boolean
@@ -2642,6 +2693,10 @@ export type Database = {
           p_to: Database["public"]["Enums"]["payment_status"]
         }
         Returns: undefined
+      }
+      tag_interest_notification_recipients: {
+        Args: { p_request_id: string; p_requester_id: string }
+        Returns: string[]
       }
       update_request: {
         Args: {

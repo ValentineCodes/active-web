@@ -20,6 +20,8 @@ export function ResponseCard({
   currency,
   createdAt,
   responderAvailable,
+  onDiscussPress,
+  discussLoading,
 }: {
   displayName: string | null;
   avatarPath: string | null;
@@ -32,6 +34,8 @@ export function ResponseCard({
   currency: string;
   createdAt: string;
   responderAvailable: boolean;
+  onDiscussPress?: () => void;
+  discussLoading?: boolean;
 }) {
   const { shadow } = useTheme();
   const offerLabel = quotedAmount !== null ? formatMoney(quotedAmount, currency) : null;
@@ -45,6 +49,8 @@ export function ResponseCard({
         ratingCount={ratingCount}
         completionPercent={completionPercent}
         onPress={onViewProfile}
+        onDiscussPress={onDiscussPress}
+        discussLoading={discussLoading}
       />
 
       {message || offerLabel ? (

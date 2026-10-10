@@ -57,6 +57,20 @@ export function canRespondToRequest(request: RespondableRequest): boolean {
   return request.respond_allowed;
 }
 
+export function useResponderPreHandshakeConversation(requestId: string) {
+  return useQuery({
+    queryKey: ['responder-pre-handshake-conversation', requestId],
+    enabled: requestId.length > 0,
+    queryFn: async (): Promise<string | null> => {
+      const { data, error } = await supabase.rpc('get_responder_pre_handshake_conversation', {
+        p_request_id: requestId,
+      });
+      if (error) throw error;
+      return data ?? null;
+    },
+  });
+}
+
 function fromBrowseRequest(row: BrowseRequestDetail): RespondableRequest {
   return {
     request_id: row.request_id,

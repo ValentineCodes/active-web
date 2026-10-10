@@ -21,9 +21,9 @@ import {
   createPendingMessageId,
   removeMessageFromCache,
   useLiveConversationMessages,
-  useRequestConversation,
   useRequestConversationFocus,
   useRequestMessages,
+  useResolvedRequestConversation,
   useSendRequestMessage,
   useSendRequestMessageAttachment,
   type RequestMessage,
@@ -58,13 +58,17 @@ export default function ConversationScreen() {
   const queryClient = useQueryClient();
   const navigation = useNavigation();
 
-  const engagement = useEngagement(id);
-  const conversation = useRequestConversation(id);
+  const conversation = useResolvedRequestConversation(id);
   const conversationId = conversation.data?.conversationId;
+  const requestId = conversation.data?.requestId ?? '';
+  const engagement = useEngagement(
+    requestId,
+    Boolean(conversation.data && !conversation.data.isPreHandshake),
+  );
 
   const messagesQuery = useRequestMessages(conversationId);
-  const sendMessage = useSendRequestMessage(conversationId ?? '', id);
-  const sendAttachment = useSendRequestMessageAttachment(conversationId ?? '', id);
+  const sendMessage = useSendRequestMessage(conversationId ?? '', requestId);
+  const sendAttachment = useSendRequestMessageAttachment(conversationId ?? '', requestId);
   const [threadFocused, setThreadFocused] = useState(false);
 
   const threadVisible =
@@ -72,9 +76,9 @@ export default function ConversationScreen() {
 
   useLiveConversationMessages(
     conversationId,
-    id,
+    requestId,
     threadVisible,
-    engagement.data?.counterparty_display_name,
+    conversation.data?.counterpartyDisplayName ?? engagement.data?.counterparty_display_name,
   );
   useMarkConversationReadWhenVisible(conversationId, userId, threadVisible);
   useRequestConversationFocus(conversationId, threadVisible);
@@ -301,6 +305,7 @@ export default function ConversationScreen() {
   );
 
   const messagingEnabled = conversation.data?.messagingEnabled ?? false;
+  const isPreHandshake = conversation.data?.isPreHandshake ?? false;
   const composerSending = sendMessage.isPending;
   const messages = messagesQuery.messages;
 
@@ -331,7 +336,9 @@ export default function ConversationScreen() {
         {!messagingEnabled ? (
           <View className="mb-2 rounded-xl border border-hairline bg-elevated px-4 py-3">
             <Text className="text-center text-sm text-muted">
-              This request is closed. You can read past messages here.
+              {isPreHandshake
+                ? 'This discussion is closed. You can read past messages here.'
+                : 'This request is closed. You can read past messages here.'}
             </Text>
           </View>
         ) : null}
@@ -342,10 +349,13 @@ export default function ConversationScreen() {
         ) : null}
       </View>
     ),
-    [colors.active, messagesQuery.isFetchingNextPage, messagingEnabled],
+    [colors.active, isPreHandshake, messagesQuery.isFetchingNextPage, messagingEnabled],
   );
 
-  if (engagement.isPending || conversation.isPending) {
+  const awaitingEngagement =
+    conversation.data && !conversation.data.isPreHandshake && engagement.isPending;
+
+  if (conversation.isPending || awaitingEngagement) {
     return (
       <Screen edges={['top']}>
         <ConversationHeader
@@ -359,31 +369,13 @@ export default function ConversationScreen() {
     );
   }
 
-  if (engagement.isError) {
-    return (
-      <Screen edges={['top']}>
-        <ConversationHeader
-          counterpartyName={null}
-          counterpartyAvatarPath={null}
-          requestTitle="Chat"
-          onBack={() => router.back()}
-        />
-        <ErrorState error={engagement.error} onRetry={() => engagement.refetch()} />
-      </Screen>
-    );
-  }
-
-  if (!engagement.data) {
-    return <Redirect href={`/request/${id}`} />;
-  }
-
   if (conversation.isError) {
     return (
       <Screen edges={['top']}>
         <ConversationHeader
-          counterpartyName={engagement.data.counterparty_display_name}
-          counterpartyAvatarPath={engagement.data.counterparty_avatar_path}
-          requestTitle={engagement.data.title}
+          counterpartyName={conversation.data?.counterpartyDisplayName ?? null}
+          counterpartyAvatarPath={conversation.data?.counterpartyAvatarPath ?? null}
+          requestTitle={conversation.data?.requestTitle ?? 'Chat'}
           onBack={() => router.back()}
         />
         <ErrorState error={conversation.error} onRetry={() => conversation.refetch()} />
@@ -395,42 +387,66 @@ export default function ConversationScreen() {
     return (
       <Screen edges={['top']}>
         <ConversationHeader
-          counterpartyName={engagement.data.counterparty_display_name}
-          counterpartyAvatarPath={engagement.data.counterparty_avatar_path}
-          requestTitle={engagement.data.title}
+          counterpartyName={null}
+          counterpartyAvatarPath={null}
+          requestTitle="Chat"
           onBack={() => router.back()}
         />
         <EmptyState
           icon="lock-closed-outline"
           title="Chat not available"
-          message="Chat opens once you’ve selected someone to help with this request."
+          message="This conversation is not available or you do not have access to it."
           action={{ label: 'Go back', onPress: () => router.back() }}
         />
       </Screen>
     );
   }
 
-  const data = engagement.data;
+  if (!conversation.data.isPreHandshake && engagement.isError) {
+    return (
+      <Screen edges={['top']}>
+        <ConversationHeader
+          counterpartyName={conversation.data.counterpartyDisplayName}
+          counterpartyAvatarPath={conversation.data.counterpartyAvatarPath}
+          requestTitle={conversation.data.requestTitle}
+          onBack={() => router.back()}
+        />
+        <ErrorState error={engagement.error} onRetry={() => engagement.refetch()} />
+      </Screen>
+    );
+  }
+
+  if (!conversation.data.isPreHandshake && !engagement.data) {
+    return <Redirect href={`/request/${requestId}`} />;
+  }
+
   const thread = conversation.data;
-  const counterpartyId = userId === thread.requesterId ? thread.selectedUserId : thread.requesterId;
+  const counterpartyId = thread.counterpartyId;
+  const headerStatusLabel =
+    thread.isPreHandshake && !thread.messagingEnabled ? 'This discussion is closed' : null;
 
   return (
     <Screen edges={['top']} className="flex-1">
       <ConversationHeader
-        counterpartyName={data.counterparty_display_name}
-        counterpartyAvatarPath={data.counterparty_avatar_path}
-        requestTitle={data.title}
+        counterpartyName={thread.counterpartyDisplayName}
+        counterpartyAvatarPath={thread.counterpartyAvatarPath}
+        requestTitle={thread.requestTitle}
+        statusLabel={headerStatusLabel}
         onBack={() => router.back()}
         actions={
-          <ConversationHeaderActions
-            conversationId={thread.conversationId}
-            requestId={id}
-            counterpartyId={counterpartyId}
-          />
+          thread.isPreHandshake ? null : (
+            <ConversationHeaderActions
+              conversationId={thread.conversationId}
+              requestId={requestId}
+              counterpartyId={counterpartyId}
+            />
+          )
         }
       />
 
-      <RequestOutcomeContext description={data.description} />
+      {thread.isPreHandshake ? null : (
+        <RequestOutcomeContext description={thread.requestDescription} />
+      )}
 
       <KeyboardStickyFooter
         className="flex-1"
@@ -439,7 +455,9 @@ export default function ConversationScreen() {
             onSend={onComposerSend}
             sending={composerSending}
             disabled={!thread.messagingEnabled}
-            disabledHint="This request is closed"
+            disabledHint={
+              thread.isPreHandshake ? 'This discussion is closed' : 'This request is closed'
+            }
           />
         }
       >

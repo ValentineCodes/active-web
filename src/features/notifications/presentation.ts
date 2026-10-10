@@ -163,6 +163,10 @@ export type NotificationNavigationInput = Pick<
 /** Deep link target when opening a notification (inbox row or push payload). */
 export function resolveNotificationHref(item: NotificationNavigationInput): string | null {
   if (item.type === 'new_message' && item.requestId) {
+    const conversationId = item.metadata?.conversation_id;
+    if (typeof conversationId === 'string' && conversationId.length > 0) {
+      return `/conversation/${conversationId}`;
+    }
     return `/conversation/${item.requestId}`;
   }
 

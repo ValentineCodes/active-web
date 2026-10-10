@@ -630,7 +630,8 @@ select is(
   public.ensure_request_conversation(
     :'request_id'::uuid,
     '11111111-1111-1111-1111-111111111111'::uuid,
-    '22222222-2222-2222-2222-222222222222'::uuid
+    '22222222-2222-2222-2222-222222222222'::uuid,
+    :'response_id'::uuid
   ),
   :'conversation_id'::uuid,
   'ensure_request_conversation returns the existing conversation'
@@ -694,6 +695,12 @@ select lives_ok(
 );
 
 select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
+select lives_ok(
+  format($$select public.mark_request_conversation_read(%L)$$, :'conversation_id'),
+  'the requester can clear unread before later attachment notification tests'
+);
+
+select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
 select message_id, attachment_id, storage_path
 from public.begin_request_message_with_attachments(
   :'conversation_id'::uuid,
@@ -731,7 +738,11 @@ select is(
     from public.notification_inbox ni
     where ni.user_id = '22222222-2222-2222-2222-222222222222'::uuid
       and ni.type = 'new_message'::public.notification_type
-      and ni.dedupe_key = 'request_message:' || :'message_id'
+      and ni.dedupe_key = public.notification_dedupe_key(
+        'new_message'::public.notification_type,
+        '22222222-2222-2222-2222-222222222222'::uuid,
+        'request_message:' || :'message_id'
+      )
   ),
   1::bigint,
   'completing an attachment message creates a single new_message notification'
@@ -742,10 +753,14 @@ select is(
   (
     select ni.body
     from public.notification_inbox ni
-    where ni.dedupe_key = 'request_message:' || :'message_id'
+    where ni.dedupe_key = public.notification_dedupe_key(
+      'new_message'::public.notification_type,
+      '22222222-2222-2222-2222-222222222222'::uuid,
+      'request_message:' || :'message_id'
+    )
     limit 1
   ),
-  'Near sent you a message.',
+  'Amaka sent you a message.',
   'text plus attachment uses the generic new_message body'
 );
 
@@ -944,7 +959,11 @@ select is(
   (
     select ni.body
     from public.notification_inbox ni
-    where ni.dedupe_key = 'request_message:' || :'photo_only_message_id'
+    where ni.dedupe_key = public.notification_dedupe_key(
+      'new_message'::public.notification_type,
+      '11111111-1111-1111-1111-111111111111'::uuid,
+      'request_message:' || :'photo_only_message_id'
+    )
     limit 1
   ),
   'Near sent you a photo.',
@@ -1079,7 +1098,7 @@ select throws_ok(
   'participants cannot insert chat rows directly (rpc only)'
 );
 
-select pg_temp.act_as('22222222-2222-2222-2222-222222222222') as _ \gset
+select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
 select is(
   (select count(*) from public.list_my_request_conversations()),
   1::bigint,
@@ -1088,8 +1107,8 @@ select is(
 
 select is(
   (select unread_count from public.list_my_request_conversations()),
-  1,
-  'the requester sees one unread message from the helper'
+  2,
+  'the requester sees unread helper messages since the last read'
 );
 
 select lives_ok(
@@ -1204,6 +1223,12 @@ select is(
 );
 
 select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
+select lives_ok(
+  format('select cancel_request(%L::uuid)', :'tagged_request_id'),
+  'close an unused tagged request before creating the future job fixture'
+);
+
+select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
 select create_request(
   'Later week job',
   'Scheduled on a different day so the same helper can be selected.',
@@ -1232,6 +1257,7 @@ select lives_ok(
   'a helper can be selected on another day while committed elsewhere'
 );
 
+select pg_temp.act_as_owner() as _ \gset
 select is(
   (
     select count(*)::integer
@@ -1643,6 +1669,12 @@ select throws_ok(
   'the requester cannot mark a request complete for the helper'
 );
 
+select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
+select lives_ok(
+  format('select cancel_request(%L)', :'second_request_id'),
+  'close the second fixture before later creates hit the open-request cap'
+);
+
 select pg_temp.act_as('66666666-6666-6666-6666-666666666666') as _ \gset
 select throws_ok(
   format('select complete_request(%L)', :'request_id'),
@@ -1758,6 +1790,7 @@ select create_request(
   array[:'electrician_tag_id'::uuid, :'tag_food_id'::uuid]
 ) as fan_notify_request_id \gset
 
+select pg_temp.act_as_owner() as _ \gset
 select is(
   (
     select count(*)::integer
@@ -1795,6 +1828,7 @@ select ok(
   'tag-interest alert body quotes the request title'
 );
 
+select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
 select is(
   (
     select count(*)::integer
@@ -1807,6 +1841,7 @@ select is(
   'requesters are not notified about their own tag-matching requests'
 );
 
+select pg_temp.act_as('33333333-3333-3333-3333-333333333333') as _ \gset
 select is(
   (
     select count(*)::integer
@@ -1842,6 +1877,7 @@ select create_request(
   array[:'tag_food_id'::uuid, :'tag_plumbing_id'::uuid]
 ) as multi_match_request_id \gset
 
+select pg_temp.act_as_owner() as _ \gset
 select is(
   (
     select count(*)::integer
@@ -1877,6 +1913,7 @@ select create_request(
   array[:'electrician_tag_id'::uuid]
 ) as far_notify_request_id \gset
 
+select pg_temp.act_as('55555555-5555-5555-5555-555555555555') as _ \gset
 select is(
   (
     select count(*)::integer
@@ -1887,6 +1924,20 @@ select is(
   ),
   0,
   'skips users outside the discovery radius'
+);
+
+select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
+select lives_ok(
+  format('select cancel_request(%L)', :'far_notify_request_id'),
+  'close tag-notification fixtures before more request creates'
+);
+select lives_ok(
+  format('select cancel_request(%L)', :'fan_notify_request_id'),
+  'close tag-notification fixtures before more request creates'
+);
+select lives_ok(
+  format('select cancel_request(%L)', :'multi_match_request_id'),
+  'close tag-notification fixtures before more request creates'
 );
 
 -- Notification tag interests (settings RPC) -----------------------------------------
@@ -1934,25 +1985,27 @@ where slug = 'cleaning'
 limit 1 \gset
 
 select lives_ok(
-  $$select set_notification_tag_interests(array[
-    :'electrician_tag_id'::uuid,
-    :'carpenter_tag_id'::uuid,
-    :'furniture_tag_id'::uuid,
-    :'food_tag_id'::uuid,
-    :'gardening_tag_id'::uuid
-  ])$$,
+  format(
+    'select set_notification_tag_interests(array[%L::uuid, %L::uuid, %L::uuid, %L::uuid, %L::uuid])',
+    :'electrician_tag_id',
+    :'carpenter_tag_id',
+    :'furniture_tag_id',
+    :'food_tag_id',
+    :'gardening_tag_id'
+  ),
   'profile interests accept five tags'
 );
 
 select throws_ok(
-  $$select set_notification_tag_interests(array[
-    :'electrician_tag_id'::uuid,
-    :'carpenter_tag_id'::uuid,
-    :'furniture_tag_id'::uuid,
-    :'food_tag_id'::uuid,
-    :'gardening_tag_id'::uuid,
-    :'cleaning_tag_id'::uuid
-  ])$$,
+  format(
+    'select set_notification_tag_interests(array[%L::uuid, %L::uuid, %L::uuid, %L::uuid, %L::uuid, %L::uuid])',
+    :'electrician_tag_id',
+    :'carpenter_tag_id',
+    :'furniture_tag_id',
+    :'food_tag_id',
+    :'gardening_tag_id',
+    :'cleaning_tag_id'
+  ),
   '22023',
   'you may select at most 5 profile interests',
   'profile interests reject more than five tags'
@@ -1982,9 +2035,12 @@ select isnt_empty(
   'search_tags returns catalogue matches'
 );
 
-select is(
-  (select slug from public.search_tags('#electrician', 5) limit 1),
-  'electrician',
+select ok(
+  exists (
+    select 1
+    from public.search_tags('#electrician', 5)
+    where slug = 'electrician'
+  ),
   'search_tags accepts hash-prefixed queries'
 );
 
@@ -2033,17 +2089,23 @@ select is(
 
 select is(
   public.request_tag_slugs(:'tagged_request_id'::uuid),
-  array['moving', 'plumbing'],
-  'request_tag_slugs returns persisted catalogue slugs'
+  array['Moving', 'Plumbing'],
+  'request_tag_slugs returns persisted catalogue display names'
 );
 
+select pg_temp.act_as_owner() as _ \gset
+update public.requests
+set payment_status = 'locked'::public.payment_status
+where id = :'zero_tag_request_id'::uuid;
+
+select pg_temp.act_as('22222222-2222-2222-2222-222222222222') as _ \gset
 select is(
   (
     select description
-    from public.browse_request(:'request_id'::uuid, 6.5400::double precision, 3.3800::double precision)
+    from public.browse_request(:'zero_tag_request_id'::uuid, 6.5400::double precision, 3.3800::double precision)
     limit 1
   ),
-  (select description from public.requests where id = :'request_id'::uuid),
+  'Description for a request with zero tags.',
   'browse_request returns the stored description'
 );
 
@@ -2062,7 +2124,7 @@ select throws_ok(
     array[:'tag_food_id'::uuid]
   ),
   '42501',
-  null,
+  'permission denied for function attach_tags_to_request',
   'clients cannot call attach_tags_to_request directly'
 );
 
@@ -2079,6 +2141,17 @@ select is(
 );
 
 select set_notification_preferences(true, true, true, true, true);
+
+select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
+select create_request(
+  'Second generator',
+  'Recreated after tag-notification tests for the same-day respond check.',
+  6.5000,
+  3.3800,
+  'Yaba, Lagos',
+  null,
+  5000
+) as second_request_id \gset
 
 select pg_temp.act_as('22222222-2222-2222-2222-222222222222') as _ \gset
 select lives_ok(

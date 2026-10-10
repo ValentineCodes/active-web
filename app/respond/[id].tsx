@@ -23,6 +23,7 @@ import {
   useMyResponses,
   useRequestForResponse,
   useRespondToRequest,
+  useResponderPreHandshakeConversation,
   useWithdrawResponse,
 } from '@/features/requests/responses-api';
 import {
@@ -79,6 +80,7 @@ export default function RespondScreen() {
     error,
     refetch,
   } = useRequestForResponse(id, position);
+  const preHandshakeConversation = useResponderPreHandshakeConversation(id);
 
   useFocusEffect(
     useCallback(() => {
@@ -322,6 +324,11 @@ export default function RespondScreen() {
           request={request}
           existingResponse={Boolean(existingResponse)}
           onRequesterPress={() => profileSheetRef.current?.present()}
+          onRequesterDiscussPress={
+            existingResponse && preHandshakeConversation.data
+              ? () => router.push(`/conversation/${preHandshakeConversation.data}`)
+              : undefined
+          }
         />
 
         {declinedParticipation ? (
@@ -397,6 +404,7 @@ export default function RespondScreen() {
         {declinedParticipation ? null : existingResponse ? (
           <Button label="Update response" variant="secondary" size="lg" onPress={beginFlow} />
         ) : null}
+
       </ScrollView>
 
       <PersonProfileBottomSheet
