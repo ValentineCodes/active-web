@@ -1,4 +1,4 @@
-import { type ReactNode, useState } from 'react';
+import { type ReactNode, useCallback, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import { router } from 'expo-router';
@@ -18,8 +18,11 @@ import { MARKET } from '@/config';
 import { signOut } from '@/features/auth/api';
 import { useNotificationTagInterests } from '@/features/notifications/tag-interests';
 import { useProfile } from '@/features/profile/api';
-import { formatPhoneDisplay } from '@/lib/format';
+import { useMyWallet } from '@/features/wallet/api';
+import { formatMoney, formatPhoneDisplay } from '@/lib/format';
 import { APP_REPORT_ISSUES } from '@/features/support/report-issue-options';
+import { usePullToRefresh } from '@/lib/query/use-pull-to-refresh';
+import { showQuerySkeleton } from '@/lib/query/show-skeleton';
 import { showAppToast } from '@/lib/toast';
 import { useMyResponses } from '@/features/requests/responses-api';
 import { useMyRequests } from '@/features/requests/requester-api';
@@ -93,9 +96,24 @@ export default function ProfileScreen() {
   const attendance = useAttendance();
   const myRequests = useMyRequests();
   const myResponses = useMyResponses();
+  const wallet = useMyWallet();
   const leave = useMutation({ mutationFn: signOut });
 
-  if (profile.isPending || tagInterests.isPending) {
+  const onPullRefresh = useCallback(
+    () =>
+      Promise.all([
+        profile.refetch(),
+        tagInterests.refetch(),
+        attendance.refetch(),
+        myRequests.refetch(),
+        myResponses.refetch(),
+        wallet.refetch(),
+      ]),
+    [attendance, myRequests, myResponses, profile, tagInterests, wallet],
+  );
+  const { refreshing, onRefresh } = usePullToRefresh(onPullRefresh);
+
+  if (showQuerySkeleton(profile) || showQuerySkeleton(tagInterests)) {
     return (
       <Screen>
         <Header title="Profile" onBack={() => router.back()} />
@@ -119,7 +137,15 @@ export default function ProfileScreen() {
     );
   }
 
-  const { data } = profile;
+  const data = profile.data;
+  if (!data) {
+    return (
+      <Screen>
+        <Header title="Profile" onBack={() => router.back()} />
+        <LoadingState />
+      </Screen>
+    );
+  }
   const hasCommitments = hasProviderCommitments(attendance.data);
   const completed = data.jobs_completed + data.requests_completed;
   const activeRequests =
@@ -139,20 +165,7 @@ export default function ProfileScreen() {
 
       <ScrollView
         contentContainerClassName="gap-6 px-5 pb-12 pt-2"
-        refreshControl={
-          <RefreshControl
-            refreshing={
-              profile.isRefetching || tagInterests.isRefetching || attendance.isRefetching
-            }
-            onRefresh={() => {
-              profile.refetch();
-              tagInterests.refetch();
-              attendance.refetch();
-              myRequests.refetch();
-              myResponses.refetch();
-            }}
-          />
-        }
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
         <View className="items-center gap-2">
           <Avatar
@@ -195,17 +208,32 @@ export default function ProfileScreen() {
           onPress={() => router.push('/wallet')}
           accessibilityRole="button"
           accessibilityLabel="Wallet"
-          accessibilityHint="Balance, locked money, and activity"
+          accessibilityHint="Opens your wallet"
+          accessibilityValue={
+            wallet.data
+              ? { text: formatMoney(wallet.data.available, wallet.data.currency) }
+              : undefined
+          }
           className="flex-row items-center gap-3 rounded-2xl border border-hairline bg-elevated px-4 py-4 active:opacity-90"
         >
-          <View className="h-11 w-11 items-center justify-center rounded-xl bg-active-soft">
+          <View className="h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-active-soft">
             <Text className="text-lg font-bold text-active">{MARKET.currencySymbol}</Text>
           </View>
-          <View className="min-w-0 flex-1 gap-0.5">
-            <Text className="text-lg font-semibold text-ink">Wallet</Text>
-            <Text className="text-sm text-muted">Available balance and history</Text>
+          <Text className="min-w-0 flex-1 text-lg font-semibold text-ink" numberOfLines={1}>
+            Wallet
+          </Text>
+          <View className="shrink-0 flex-row items-center gap-0.5">
+            {wallet.data ? (
+              <Text className="text-sm font-semibold text-ink" numberOfLines={1}>
+                {formatMoney(wallet.data.available, wallet.data.currency)}
+              </Text>
+            ) : wallet.isError ? (
+              <Text className="text-sm text-danger">—</Text>
+            ) : (
+              <Text className="text-sm text-muted">—</Text>
+            )}
+            <Ionicons name="chevron-forward" size={20} color={colors.subtle} />
           </View>
-          <Ionicons name="chevron-forward" size={20} color={colors.subtle} />
         </Pressable>
 
         {data.phone ? (

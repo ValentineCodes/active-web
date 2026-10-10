@@ -15,6 +15,8 @@ import { Screen } from '@/components/ui/Screen';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/StateView';
 import { useMyWallet, useWalletActivityInfinite } from '@/features/wallet/api';
 import { groupWalletActivityByMonth } from '@/features/wallet/presentation';
+import { usePullToRefresh } from '@/lib/query/use-pull-to-refresh';
+import { showQuerySkeleton } from '@/lib/query/show-skeleton';
 
 export default function WalletHistoryScreen() {
   const wallet = useMyWallet();
@@ -29,6 +31,12 @@ export default function WalletHistoryScreen() {
       void refetchHistory();
     }, [refetchWallet, refetchHistory]),
   );
+
+  const onPullRefresh = useCallback(
+    () => Promise.all([refetchWallet(), refetchHistory()]),
+    [refetchHistory, refetchWallet],
+  );
+  const { refreshing, onRefresh } = usePullToRefresh(onPullRefresh);
 
   const rows = useMemo(
     () => history.data?.pages.flatMap((page) => page.items) ?? [],
@@ -51,7 +59,7 @@ export default function WalletHistoryScreen() {
     [loadMore],
   );
 
-  if (wallet.isPending && history.isPending) {
+  if (showQuerySkeleton(wallet) && showQuerySkeleton(history)) {
     return (
       <Screen>
         <Header title="Transaction history" onBack={() => router.back()} />
@@ -91,15 +99,7 @@ export default function WalletHistoryScreen() {
         }
         onScroll={onScroll}
         scrollEventThrottle={200}
-        refreshControl={
-          <RefreshControl
-            refreshing={wallet.isRefetching || history.isRefetching}
-            onRefresh={() => {
-              void wallet.refetch();
-              void history.refetch();
-            }}
-          />
-        }
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
         {sections.length === 0 ? (
           history.isPending ? (

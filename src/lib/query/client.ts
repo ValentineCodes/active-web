@@ -8,8 +8,7 @@ import { isNetworkError } from '@/lib/supabase/errors';
 // exists here, so both are wired to the React Native equivalents.
 onlineManager.setEventListener((setOnline) =>
   NetInfo.addEventListener((state) => {
-    // Android reports `null` while it is still deciding. Treating that as offline
-    // pauses the profile query, and the boot screen waits on that query forever.
+    // Android reports `null` while it is still deciding; treat that as offline for refetch pausing.
     setOnline(state.isConnected !== false);
   }),
 );

@@ -1,92 +1,68 @@
 import '../global.css';
 
-import { useState } from 'react';
-import { ActivityIndicator, Text, View } from 'react-native';
+import { useEffect } from 'react';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { Image } from 'expo-image';
-import { Stack } from 'expo-router';
-import { QueryClientProvider, useQuery } from '@tanstack/react-query';
+import { router, Stack } from 'expo-router';
+import { useQuery } from '@tanstack/react-query';
+import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 
-import { ErrorState } from '@/components/ui/StateView';
 import { ToastProvider } from '@/components/ui/ToastProvider';
+import { consumeSessionExpiredOnEntryToast } from '@/features/auth/session-expired-toast';
 import { SessionProvider, useSession } from '@/features/auth/session';
+import { AppReadyGate } from '@/features/auth/splash-gate';
+import { showAppToast } from '@/lib/toast';
 import { profileQueryOptions } from '@/features/profile/api';
 import '@/features/requests/tag-catalogue-storage';
 import { queryClient } from '@/lib/query/client';
-import { AppFontsProvider } from '@/theme/AppFontsProvider';
-import { ThemeProvider, useColors } from '@/theme';
+import { queryPersistOptions } from '@/lib/query/persist';
+import { ThemeProvider } from '@/theme';
 import { ThemeStatusBar } from '@/theme/ThemeStatusBar';
 
-function BootScreen() {
-  const colors = useColors();
-  return (
-    <View className="flex-1 items-center justify-center gap-4 bg-canvas">
-      <Image
-        source={require('../assets/images/icon.png')}
-        accessibilityLabel="Active"
-        style={{ width: 80, height: 80, borderRadius: 18 }}
-      />
-      <Text className="text-2xl font-bold text-ink">Active</Text>
-      <ActivityIndicator color={colors.brand} />
-    </View>
-  );
-}
-
-/**
- * Three shells: sign-in, onboarding (profile loaded but no name), and the signed-in app.
- * The profile query chooses between onboarding and the app. Until it settles, stay on the
- * screen already showing — boot during session restore, or the verification screen after
- * OTP — so home does not mount and then get replaced.
- */
 function RootNavigator() {
-  const { session, isRestoring } = useSession();
-  const [sawSignedOutShell, setSawSignedOutShell] = useState(false);
+  const { session } = useSession();
 
   const profileQuery = useQuery({
     ...profileQueryOptions(session?.user.id ?? ''),
     enabled: Boolean(session),
   });
 
-  if (!isRestoring && !session && !sawSignedOutShell) {
-    setSawSignedOutShell(true);
-  }
+  useEffect(() => {
+    if (session) return;
+    if (consumeSessionExpiredOnEntryToast()) {
+      showAppToast('Your session has expired', { type: 'info' });
+    }
+  }, [session]);
 
-  const waitingForProfile = Boolean(session) && profileQuery.isPending;
+  useEffect(() => {
+    if (!session || !profileQuery.isSuccess) return;
+    if (!profileQuery.data.display_name) {
+      router.replace('/onboarding');
+    }
+  }, [profileQuery.data?.display_name, profileQuery.isSuccess, session]);
 
-  if (isRestoring || (waitingForProfile && !sawSignedOutShell)) return <BootScreen />;
-
-  if (session && profileQuery.isError) {
-    return (
-      <View className="flex-1 bg-canvas">
-        <ErrorState error={profileQuery.error} onRetry={() => profileQuery.refetch()} />
-      </View>
-    );
-  }
-
-  const profile = profileQuery.data;
-
-  const needsProfile = Boolean(session) && profileQuery.isSuccess && !profile?.display_name;
-  const showSignedInApp =
-    Boolean(session) && profileQuery.isSuccess && Boolean(profile?.display_name);
+  const showSignedInApp = Boolean(session);
 
   return (
     <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Protected guard={!session || waitingForProfile}>
+      <Stack.Protected guard={!session}>
         <Stack.Screen name="(auth)" />
       </Stack.Protected>
 
-      <Stack.Protected guard={needsProfile}>
-        <Stack.Screen name="onboarding" />
-      </Stack.Protected>
-
       <Stack.Protected guard={showSignedInApp}>
+        <Stack.Screen name="onboarding" />
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="profile" />
         <Stack.Screen name="profile/edit" />
         <Stack.Screen name="wallet" />
-        <Stack.Screen name="search" />
+        <Stack.Screen
+          name="search"
+          options={{
+            presentation: 'transparentModal',
+            animation: 'fade',
+          }}
+        />
         <Stack.Screen name="request/new" options={{ presentation: 'modal' }} />
         <Stack.Screen name="request/edit/[id]" options={{ presentation: 'modal' }} />
         <Stack.Screen name="request/[id]" />
@@ -104,20 +80,20 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView className="flex-1">
       <SafeAreaProvider>
-        <QueryClientProvider client={queryClient}>
+        <PersistQueryClientProvider client={queryClient} persistOptions={queryPersistOptions}>
           <ThemeProvider>
-            <AppFontsProvider fallback={<BootScreen />}>
-              <SessionProvider>
+            <SessionProvider>
+              <AppReadyGate>
                 <ToastProvider>
                   <BottomSheetModalProvider>
                     <ThemeStatusBar />
                     <RootNavigator />
                   </BottomSheetModalProvider>
                 </ToastProvider>
-              </SessionProvider>
-            </AppFontsProvider>
+              </AppReadyGate>
+            </SessionProvider>
           </ThemeProvider>
-        </QueryClientProvider>
+        </PersistQueryClientProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );

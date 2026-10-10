@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
-import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -15,23 +15,22 @@ import {
   useTabBarScrollPadding,
 } from '@/components/ui/tab-bar-insets';
 import { Screen } from '@/components/ui/Screen';
+import { ErrorState } from '@/components/ui/StateView';
 import { hasProviderCommitments, useAttendance } from '@/features/attendance/api';
 import { useProfile } from '@/features/profile/api';
 import { pickHomeActiveRequest } from '@/features/requests/home-active-request';
 import { useMyResponses } from '@/features/requests/responses-api';
-import { useMyWallet } from '@/features/wallet/api';
 import { useMyRequests } from '@/features/requests/requester-api';
-import { formatGreeting, formatMoney } from '@/lib/format';
+import { formatGreeting } from '@/lib/format';
 import { queryKeys } from '@/lib/query/keys';
+import { usePullToRefresh } from '@/lib/query/use-pull-to-refresh';
 import { showQuerySkeleton } from '@/lib/query/show-skeleton';
 import { useTheme } from '@/theme';
 
 const CREATE_FAB_SIZE = 56;
-const SEARCH_FAB_SIZE = 48;
-const FAB_STACK_GAP = 8;
 
 export default function HomeScreen() {
-  const { colors, shadow } = useTheme();
+  const { colors } = useTheme();
   const { q } = useLocalSearchParams<{ q?: string }>();
   const activeSearchQuery = q?.trim() ?? '';
 
@@ -39,28 +38,45 @@ export default function HomeScreen() {
   const attendance = useAttendance();
   const requests = useMyRequests();
   const responses = useMyResponses();
-  const wallet = useMyWallet();
   const queryClient = useQueryClient();
-  const { refetch: refetchWallet } = wallet;
 
   const activeRequest = pickHomeActiveRequest(requests.data, responses.data);
   const profileSkeleton = showQuerySkeleton(profile);
-  const walletSkeleton = showQuerySkeleton(wallet);
 
   const fabBottom = useFabBottomOffset();
-  const searchFabBottom = fabBottom + CREATE_FAB_SIZE + FAB_STACK_GAP;
   const tabBarScrollPadding = useTabBarScrollPadding();
-  const listBottomPadding = searchFabBottom + SEARCH_FAB_SIZE + 12;
+  const listBottomPadding = fabBottom + CREATE_FAB_SIZE + 12;
 
-  useFocusEffect(
-    useCallback(() => {
-      void refetchWallet();
-    }, [refetchWallet]),
-  );
+  const openSearch = useCallback(() => {
+    router.push({
+      pathname: '/search',
+      params: activeSearchQuery ? { q: activeSearchQuery } : undefined,
+    });
+  }, [activeSearchQuery]);
+
+  const onPullRefresh = useCallback(async () => {
+    await Promise.all([
+      requests.refetch(),
+      responses.refetch(),
+      attendance.refetch(),
+      queryClient.invalidateQueries({ queryKey: queryKeys.browseNearbyAll }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.requestSearchAll }),
+    ]);
+  }, [attendance, queryClient, requests, responses]);
+
+  const { refreshing, onRefresh } = usePullToRefresh(onPullRefresh);
 
   const clearSearch = () => {
     router.setParams({ q: '' });
   };
+
+  if (profile.isError) {
+    return (
+      <Screen>
+        <ErrorState error={profile.error} onRetry={() => profile.refetch()} />
+      </Screen>
+    );
+  }
 
   return (
     <Screen>
@@ -69,19 +85,7 @@ export default function HomeScreen() {
         contentContainerClassName="gap-4 px-5 pt-3"
         contentContainerStyle={{ paddingBottom: listBottomPadding }}
         scrollIndicatorInsets={{ bottom: tabBarScrollPadding }}
-        refreshControl={
-          <RefreshControl
-            refreshing={requests.isRefetching || attendance.isRefetching}
-            onRefresh={() => {
-              requests.refetch();
-              responses.refetch();
-              attendance.refetch();
-              refetchWallet();
-              queryClient.invalidateQueries({ queryKey: queryKeys.browseNearbyAll });
-              queryClient.invalidateQueries({ queryKey: queryKeys.requestSearchAll });
-            }}
-          />
-        }
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
         <View className="flex-row items-start justify-between gap-3 pb-1">
           {profileSkeleton ? (
@@ -91,7 +95,6 @@ export default function HomeScreen() {
                 <SkeletonBlock className="h-5 w-44 max-w-full rounded-lg" />
               </View>
               <View className="flex-row items-center gap-2.5 pt-0.5">
-                {walletSkeleton ? <SkeletonBlock className="h-5 w-16 rounded-md" /> : null}
                 <SkeletonBlock className="h-10 w-10 rounded-full" />
               </View>
             </>
@@ -108,29 +111,15 @@ export default function HomeScreen() {
                 <Text className="text-base leading-6 text-muted">Get help or Get money</Text>
               </View>
               <View className="flex-row items-center gap-2.5 pt-0.5">
-                {wallet.data ? (
-                  <Pressable
-                    onPress={() => router.push('/wallet')}
-                    accessibilityRole="button"
-                    accessibilityLabel="Open wallet"
-                    hitSlop={8}
-                  >
-                    <Text className="text-sm font-semibold text-ink">
-                      {formatMoney(wallet.data.available, wallet.data.currency)}
-                    </Text>
-                  </Pressable>
-                ) : walletSkeleton ? (
-                  <SkeletonBlock className="h-5 w-16 rounded-md" />
-                ) : wallet.isError ? (
-                  <Pressable
-                    onPress={() => router.push('/wallet')}
-                    accessibilityRole="button"
-                    accessibilityLabel="Open wallet"
-                    hitSlop={8}
-                  >
-                    <Text className="text-sm font-semibold text-danger">Wallet</Text>
-                  </Pressable>
-                ) : null}
+                <Pressable
+                  onPress={openSearch}
+                  accessibilityRole="button"
+                  accessibilityLabel="Search requests"
+                  hitSlop={8}
+                  className="h-10 w-10 items-center justify-center rounded-full active:opacity-80"
+                >
+                  <Ionicons name="search-outline" size={24} color={colors.ink} />
+                </Pressable>
                 <Pressable
                   onPress={() => router.push('/profile')}
                   accessibilityRole="button"
@@ -186,30 +175,6 @@ export default function HomeScreen() {
 
         <NearbyRequests variant="home" searchQuery={activeSearchQuery || null} />
       </ScrollView>
-
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Search requests"
-        onPress={() =>
-          router.push({
-            pathname: '/search',
-            params: activeSearchQuery ? { q: activeSearchQuery } : undefined,
-          })
-        }
-        style={[
-          shadow.raised,
-          {
-            position: 'absolute',
-            right: FAB_EDGE_INSET,
-            bottom: searchFabBottom,
-            width: SEARCH_FAB_SIZE,
-            height: SEARCH_FAB_SIZE,
-          },
-        ]}
-        className="items-center justify-center rounded-full bg-surface active:opacity-90"
-      >
-        <Ionicons name="search-outline" size={24} color={colors.ink} />
-      </Pressable>
 
       <FloatingActionButton
         variant="create"

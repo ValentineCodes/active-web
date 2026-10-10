@@ -15,6 +15,7 @@ export function useAvatarUrl(path: string | null | undefined) {
     enabled: Boolean(path),
     staleTime: (SIGNED_URL_TTL_SECONDS - 300) * 1000,
     gcTime: SIGNED_URL_TTL_SECONDS * 1000,
+    networkMode: 'always',
     queryFn: async () => {
       const { data, error } = await supabase.storage
         .from(AVATAR_BUCKET)

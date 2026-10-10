@@ -32,6 +32,7 @@ import { resolveNotificationHrefForOpen } from '@/features/notifications/present
 import type { InboxNotification } from '@/features/notifications/types';
 import { useProfile } from '@/features/profile/api';
 import { queryKeys } from '@/lib/query/keys';
+import { usePullToRefresh } from '@/lib/query/use-pull-to-refresh';
 import { showQuerySkeleton } from '@/lib/query/show-skeleton';
 import {
   openNotificationSettings,
@@ -71,6 +72,9 @@ export default function NotificationsScreen() {
     void queryClient.invalidateQueries({ queryKey: queryKeys.notificationInbox });
     void queryClient.invalidateQueries({ queryKey: queryKeys.notificationUnreadCount });
   }, [queryClient]);
+
+  const onPullRefresh = useCallback(() => inbox.refetch(), [inbox]);
+  const { refreshing, onRefresh } = usePullToRefresh(onPullRefresh);
 
   const pushPrefEnabled = profile.data?.push_notifications_enabled !== false;
   const osGranted = permission?.granted ?? false;
@@ -196,14 +200,7 @@ export default function NotificationsScreen() {
             ...(inboxEmpty ? { flexGrow: 1, justifyContent: 'center' as const } : undefined),
           }}
           scrollIndicatorInsets={{ bottom: tabBarScrollPadding }}
-          refreshControl={
-            <RefreshControl
-              refreshing={inbox.isRefetching}
-              onRefresh={() => {
-                void inbox.refetch();
-              }}
-            />
-          }
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
           ItemSeparatorComponent={() => <View className="h-px bg-hairline" />}
           ListEmptyComponent={
             filter === 'unread' && (inbox.data?.length ?? 0) > 0 ? (

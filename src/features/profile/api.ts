@@ -3,6 +3,7 @@ import * as ImagePicker from 'expo-image-picker';
 
 import { useUserId } from '@/features/auth/session';
 import { queryKeys } from '@/lib/query/keys';
+import { isSupabaseAuthError, recoverSessionOnAuthError } from '@/lib/supabase/auth-recovery';
 import { supabase } from '@/lib/supabase/client';
 
 import { AVATAR_BUCKET, readUriBytes, uploadPrivateObject } from './storage';
@@ -16,6 +17,8 @@ export { useAvatarUrl } from './avatar-url';
 export function profileQueryOptions(userId: string) {
   return {
     queryKey: queryKeys.profile,
+    // Fail with a network error instead of staying pending while React Query thinks we're offline.
+    networkMode: 'always' as const,
     queryFn: async () => {
       const { data, error } = await supabase
         .from('profiles')
@@ -28,8 +31,10 @@ export function profileQueryOptions(userId: string) {
       if (error) {
         // A device can keep a session across a local db reset; signing out is clearer
         // than leaving someone on a boot error they cannot fix.
-        if (error.code === 'PGRST116' || error.code === 'PGRST301' || error.code === '42501') {
+        if (error.code === 'PGRST116') {
           await supabase.auth.signOut();
+        } else if (isSupabaseAuthError(error)) {
+          await recoverSessionOnAuthError();
         }
         throw error;
       }

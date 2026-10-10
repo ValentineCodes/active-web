@@ -65,7 +65,7 @@ export function toUserMessage(error: unknown): string {
         code === 'PGRST301' ||
         message.toLowerCase().includes('invalid authentication credentials')
       ) {
-        return 'Session expired or Supabase keys are wrong. Sign out, check EXPO_PUBLIC_SUPABASE_ANON_KEY (eyJ…), and sign in again.';
+        return 'Please sign in again.';
       }
       if (INTENTIONAL_ERROR_CODES.has(code)) {
         if (message.toLowerCase().includes('insufficient wallet balance')) {

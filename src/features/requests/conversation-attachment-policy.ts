@@ -226,7 +226,7 @@ function mapKnownInfrastructureError(message: string): string | null {
     lower.includes('invalid claim') ||
     lower.includes('401')
   ) {
-    return 'Your session expired. Sign in again, then retry.';
+    return 'Please sign in again, then retry.';
   }
   if (
     lower.includes('network') ||

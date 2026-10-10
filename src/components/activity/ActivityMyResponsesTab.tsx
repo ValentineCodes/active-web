@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { RefreshControl, ScrollView, View } from 'react-native';
 import { router } from 'expo-router';
 
@@ -19,10 +19,14 @@ import {
 
 import { useTabBarScrollPadding } from '@/components/ui/tab-bar-insets';
 
+import { usePullToRefresh } from '@/lib/query/use-pull-to-refresh';
+
 import { useActivityFeed } from './useActivityFeed';
 
 export function ActivityMyResponsesTab() {
-  const { myResponses, isLoading, isError, error, isRefetching, refetchAll } = useActivityFeed();
+  const { myResponses, isLoading, isError, error, refetchAll } = useActivityFeed();
+  const onPullRefresh = useCallback(() => refetchAll(), [refetchAll]);
+  const { refreshing, onRefresh } = usePullToRefresh(onPullRefresh);
   const tabBarScrollPadding = useTabBarScrollPadding();
   const [filter, setFilter] = useState<MyResponseActivityFilter>('all');
 
@@ -63,7 +67,7 @@ export function ActivityMyResponsesTab() {
           ...(listEmpty ? { flexGrow: 1, justifyContent: 'center' as const } : undefined),
         }}
         scrollIndicatorInsets={{ bottom: tabBarScrollPadding }}
-        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetchAll} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
         {myResponses.length === 0 ? (
           <EmptyState

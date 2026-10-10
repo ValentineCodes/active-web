@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import {
   Alert,
   Linking,
@@ -44,6 +44,8 @@ import {
   useLiveRequest,
 } from '@/features/requests/requester-api';
 import { REQUEST_REPORT_ISSUES } from '@/features/support/report-issue-options';
+import { usePullToRefresh } from '@/lib/query/use-pull-to-refresh';
+import { showQuerySkeleton } from '@/lib/query/show-skeleton';
 import {
   formatAgo,
   formatMoney,
@@ -89,7 +91,10 @@ export default function EngagementScreen() {
 
   useLiveRequest(id);
 
-  if (engagement.isPending) {
+  const onPullRefresh = useCallback(() => engagement.refetch(), [engagement]);
+  const { refreshing, onRefresh } = usePullToRefresh(onPullRefresh);
+
+  if (showQuerySkeleton(engagement)) {
     return (
       <Screen>
         <RequestFlowHeader title="Your request" onBack={() => router.back()} />
@@ -294,14 +299,7 @@ export default function EngagementScreen() {
           contentContainerStyle={{
             paddingBottom: hasFloatingFooter ? footerHeight + 16 : 48,
           }}
-          refreshControl={
-            <RefreshControl
-              refreshing={engagement.isRefetching}
-              onRefresh={() => {
-                void engagement.refetch();
-              }}
-            />
-          }
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         >
           <RequestMetaRow
             badgeLabel={statusBadge.label}

@@ -159,6 +159,7 @@ export function useMyWallet() {
   return useQuery({
     queryKey: queryKeys.wallet,
     enabled: Boolean(session),
+    networkMode: 'always',
     queryFn: fetchMyWallet,
   });
 }

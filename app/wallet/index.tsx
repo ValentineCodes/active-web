@@ -16,6 +16,8 @@ import { WALLET } from '@/config';
 import { useWalletLockedCommitments } from '@/features/wallet/locked-commitments';
 import { useMyWallet, useWalletActivity } from '@/features/wallet/api';
 import { formatMoney } from '@/lib/format';
+import { usePullToRefresh } from '@/lib/query/use-pull-to-refresh';
+import { showQuerySkeleton } from '@/lib/query/show-skeleton';
 import { useColors } from '@/theme';
 
 export default function WalletHomeScreen() {
@@ -35,11 +37,17 @@ export default function WalletHomeScreen() {
     }, [refetchWallet, refetchActivity]),
   );
 
+  const onPullRefresh = useCallback(
+    () => Promise.all([refetchWallet(), refetchActivity()]),
+    [refetchActivity, refetchWallet],
+  );
+  const { refreshing, onRefresh } = usePullToRefresh(onPullRefresh);
+
   const openLockedSheet = () => {
     lockedSheetRef.current?.present();
   };
 
-  if (wallet.isPending) {
+  if (showQuerySkeleton(wallet)) {
     return (
       <Screen>
         <Header title="Wallet" onBack={() => router.back()} />
@@ -57,6 +65,15 @@ export default function WalletHomeScreen() {
     );
   }
 
+  if (!wallet.data) {
+    return (
+      <Screen>
+        <Header title="Wallet" onBack={() => router.back()} />
+        <LoadingState />
+      </Screen>
+    );
+  }
+
   const { available, locked, pending, currency } = wallet.data;
   const total = available + locked + pending;
   const preview = (activity.data ?? []).slice(0, WALLET.previewActivityCount);
@@ -68,15 +85,7 @@ export default function WalletHomeScreen() {
 
       <ScrollView
         contentContainerClassName="gap-6 px-5 pb-12 pt-2"
-        refreshControl={
-          <RefreshControl
-            refreshing={wallet.isRefetching || activity.isRefetching}
-            onRefresh={() => {
-              void wallet.refetch();
-              void activity.refetch();
-            }}
-          />
-        }
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
         <View className="overflow-hidden rounded-3xl border border-hairline bg-elevated">
           <View className="gap-2 px-5 pb-4 pt-5">

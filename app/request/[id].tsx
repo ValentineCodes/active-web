@@ -49,6 +49,8 @@ import {
 } from '@/lib/format';
 import { markRequestResponseNotificationsRead } from '@/features/notifications/inbox';
 import { REQUEST_REPORT_ISSUES } from '@/features/support/report-issue-options';
+import { usePullToRefresh } from '@/lib/query/use-pull-to-refresh';
+import { showQuerySkeleton } from '@/lib/query/show-skeleton';
 import { showAppToast } from '@/lib/toast';
 import { queryKeys } from '@/lib/query/keys';
 import { useQueryClient } from '@tanstack/react-query';
@@ -170,6 +172,12 @@ export default function RequestDetailScreen() {
     }, [id, queryClient, wallet.refetch]),
   );
 
+  const onPullRefresh = useCallback(
+    () => Promise.all([request.refetch(), responses.refetch()]),
+    [request, responses],
+  );
+  const { refreshing, onRefresh } = usePullToRefresh(onPullRefresh);
+
   useEffect(() => {
     if (profilePreview) profileSheetRef.current?.present();
   }, [profilePreview]);
@@ -178,7 +186,7 @@ export default function RequestDetailScreen() {
     setProfilePreview(preview);
   };
 
-  if (request.isPending) {
+  if (showQuerySkeleton(request)) {
     return (
       <Screen>
         <RequestFlowHeader title="Your request" onBack={() => router.back()} />
@@ -196,7 +204,15 @@ export default function RequestDetailScreen() {
     );
   }
 
-  const { data } = request;
+  const data = request.data;
+  if (!data) {
+    return (
+      <Screen>
+        <RequestFlowHeader title="Your request" onBack={() => router.back()} />
+        <LoadingState />
+      </Screen>
+    );
+  }
   const badge = myRequestActivityBadge({
     status: data.status,
     expires_at: data.expires_at,
@@ -266,15 +282,7 @@ export default function RequestDetailScreen() {
 
       <ScrollView
         contentContainerClassName="gap-6 p-5 pb-12"
-        refreshControl={
-          <RefreshControl
-            refreshing={request.isRefetching || responses.isRefetching}
-            onRefresh={() => {
-              request.refetch();
-              responses.refetch();
-            }}
-          />
-        }
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
         <RequestMetaRow badgeLabel={badge.label} badgeTone={badge.tone} trailing={metaTime} />
 

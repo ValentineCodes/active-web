@@ -25,13 +25,8 @@ export function useActivityFeed() {
 
   const isLoading = requests.isPending || responses.isPending || attendance.isPending;
   const isError = requests.isError || responses.isError;
-  const isRefetching = requests.isRefetching || responses.isRefetching || attendance.isRefetching;
-
-  const refetchAll = () => {
-    void requests.refetch();
-    void responses.refetch();
-    void attendance.refetch();
-  };
+  const refetchAll = () =>
+    Promise.all([requests.refetch(), responses.refetch(), attendance.refetch()]);
 
   return {
     attendingRequestId,
@@ -43,7 +38,6 @@ export function useActivityFeed() {
     isLoading,
     isError,
     error: requests.error ?? responses.error,
-    isRefetching,
     refetchAll,
   };
 }

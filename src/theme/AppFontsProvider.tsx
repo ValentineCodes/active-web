@@ -4,10 +4,9 @@ import { usePoppinsFonts } from '@/theme/fonts';
 
 type Props = {
   children: ReactNode;
-  fallback: ReactNode;
 };
 
-export function AppFontsProvider({ children, fallback }: Props) {
+export function AppFontsProvider({ children }: Props) {
   const { loaded, error } = usePoppinsFonts();
 
   if (error) {
@@ -15,7 +14,7 @@ export function AppFontsProvider({ children, fallback }: Props) {
   }
 
   if (!loaded) {
-    return fallback;
+    return null;
   }
 
   return children;
