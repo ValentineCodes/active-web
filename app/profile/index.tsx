@@ -11,6 +11,7 @@ import { ReportIssueModal } from '@/components/ReportIssueModal';
 import { Avatar } from '@/components/ui/Avatar';
 import { Header } from '@/components/ui/Header';
 import { Screen } from '@/components/ui/Screen';
+import { StarRating } from '@/components/ui/Stars';
 import { ErrorState, InlineError, LoadingState } from '@/components/ui/StateView';
 import { hasProviderCommitments, useAttendance } from '@/features/attendance/api';
 import { MARKET } from '@/config';
@@ -164,12 +165,7 @@ export default function ProfileScreen() {
           {ratingAverage !== null || completed > 0 ? (
             <View className="flex-row flex-wrap items-center justify-center gap-x-1.5">
               {ratingAverage !== null ? (
-                <>
-                  <Ionicons name="star" size={16} color={colors.warning} />
-                  <Text className="text-base font-medium text-warning">
-                    {ratingAverage.toFixed(1)}
-                  </Text>
-                </>
+                <StarRating average={ratingAverage} count={data.rating_count} size="md" />
               ) : null}
               {ratingAverage !== null && completed > 0 ? (
                 <Text className="text-base text-muted">·</Text>
