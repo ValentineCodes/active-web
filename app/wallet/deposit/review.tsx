@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -6,7 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Button } from '@/components/ui/Button';
 import { Header } from '@/components/ui/Header';
 import { Screen } from '@/components/ui/Screen';
-import { ErrorState, InlineError } from '@/components/ui/StateView';
+import { InlineError } from '@/components/ui/StateView';
 import { MARKET } from '@/config';
 import {
   initializeWalletDeposit,
@@ -37,12 +37,25 @@ export default function WalletDepositReviewScreen() {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
+  const validationToastShown = useRef(false);
+
+  useEffect(() => {
+    if (!validationError) {
+      validationToastShown.current = false;
+      return;
+    }
+    if (validationToastShown.current) return;
+    validationToastShown.current = true;
+    showAppToast(validationError, 'warning');
+  }, [validationError]);
 
   if (validationError) {
     return (
       <Screen>
         <Header title="Complete payment" onBack={() => router.back()} />
-        <ErrorState error={new Error(validationError)} onRetry={() => router.back()} />
+        <View className="flex-1 justify-end gap-3 p-5">
+          <Button label="Go back" variant="secondary" size="lg" onPress={() => router.back()} />
+        </View>
       </Screen>
     );
   }

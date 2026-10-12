@@ -14,7 +14,8 @@ import { ProfileTagInterestPicker } from '@/components/profile/ProfileTagInteres
 import { Avatar } from '@/components/ui/Avatar';
 import { Header } from '@/components/ui/Header';
 import { Screen } from '@/components/ui/Screen';
-import { ErrorState, InlineError, LoadingState } from '@/components/ui/StateView';
+import { EmptyState, InlineError, LoadingState } from '@/components/ui/StateView';
+import { useQueryErrorToast } from '@/lib/query/use-query-error-toast';
 import {
   useNotificationTagInterests,
   useUpdateNotificationTagInterests,
@@ -275,6 +276,8 @@ function EditProfileForm({
 export default function EditProfileScreen() {
   const profile = useProfile();
   const tagInterests = useNotificationTagInterests();
+  useQueryErrorToast(profile, { enabled: profile.isError && !profile.data });
+  useQueryErrorToast(tagInterests, { enabled: tagInterests.isError && !tagInterests.data });
 
   if (profile.isPending || tagInterests.isPending) {
     return (
@@ -285,22 +288,21 @@ export default function EditProfileScreen() {
     );
   }
 
-  if (profile.isError || tagInterests.isError) {
+  const { data } = profile;
+  if (!data) {
     return (
       <Screen>
         <Header title="Edit profile" onBack={() => router.back()} />
-        <ErrorState
-          error={profile.error ?? tagInterests.error}
-          onRetry={() => {
-            void profile.refetch();
-            void tagInterests.refetch();
-          }}
+        <EmptyState
+          icon="person-outline"
+          title="Profile unavailable"
+          message="Go back and open this screen again when you are online."
+          action={{ label: 'Go back', onPress: () => router.back() }}
         />
       </Screen>
     );
   }
 
-  const { data } = profile;
   const initialTags = tagInterests.data ?? [];
   const formKey = `${data.id}:${initialTags.map((tag) => tag.id).join(',')}`;
 

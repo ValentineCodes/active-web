@@ -28,7 +28,8 @@ import { RequestTagsLine } from '@/components/request-flow/RequestTagsLine';
 import { RequestTitleSection } from '@/components/request-flow/RequestTitleSection';
 import { Button } from '@/components/ui/Button';
 import { Screen } from '@/components/ui/Screen';
-import { EmptyState, ErrorState, InlineError, LoadingState } from '@/components/ui/StateView';
+import { EmptyState, InlineError, LoadingState } from '@/components/ui/StateView';
+import { useQueryErrorToast } from '@/lib/query/use-query-error-toast';
 import { resolveAgreedAmount } from '@/features/requests/payment-display';
 import { requestEngagementStatusBadge } from '@/features/requests/status';
 import {
@@ -78,6 +79,7 @@ export default function EngagementScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
 
   const engagement = useEngagement(id);
+  useQueryErrorToast(engagement, { enabled: engagement.isError && !engagement.data });
   const myResponses = useMyResponses();
   const markServiceComplete = useMarkServiceComplete(id);
   const completeRequest = useCompleteRequest(id);
@@ -103,25 +105,25 @@ export default function EngagementScreen() {
     );
   }
 
-  if (engagement.isError) {
-    return (
-      <Screen>
-        <RequestFlowHeader title="Your request" onBack={() => router.back()} />
-        <ErrorState error={engagement.error} onRetry={() => engagement.refetch()} />
-      </Screen>
-    );
-  }
-
   if (!engagement.data) {
     return (
       <Screen>
         <RequestFlowHeader title="Your request" onBack={() => router.back()} />
-        <EmptyState
-          icon="lock-closed-outline"
-          title="Nothing to show here"
-          message="Choose someone on your request first. Then you will see contact details and the exact location here."
-          action={{ label: 'Go back', onPress: () => router.back() }}
-        />
+        {engagement.isError ? (
+          <EmptyState
+            icon="document-text-outline"
+            title="Could not load"
+            message="Go back and open this screen again."
+            action={{ label: 'Go back', onPress: () => router.back() }}
+          />
+        ) : (
+          <EmptyState
+            icon="lock-closed-outline"
+            title="Nothing to show here"
+            message="Choose someone on your request first. Then you will see contact details and the exact location here."
+            action={{ label: 'Go back', onPress: () => router.back() }}
+          />
+        )}
       </Screen>
     );
   }

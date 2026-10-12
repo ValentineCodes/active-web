@@ -14,7 +14,8 @@ import { ConversationHeaderActions } from '@/components/conversation/Conversatio
 import { ConversationMessageItem } from '@/components/conversation/ConversationMessageItem';
 import { KeyboardStickyFooter } from '@/components/ui/KeyboardStickyFooter';
 import { Screen } from '@/components/ui/Screen';
-import { EmptyState, ErrorState, LoadingState } from '@/components/ui/StateView';
+import { EmptyState, LoadingState } from '@/components/ui/StateView';
+import { useQueryErrorToast } from '@/lib/query/use-query-error-toast';
 import { useUserId } from '@/features/auth/session';
 import { useMarkConversationReadWhenVisible } from '@/features/requests/conversation-inbox-api';
 import {
@@ -67,6 +68,13 @@ export default function ConversationScreen() {
   );
 
   const messagesQuery = useRequestMessages(conversationId);
+  useQueryErrorToast(conversation, { enabled: conversation.isError });
+  useQueryErrorToast(engagement, {
+    enabled: Boolean(conversation.data && !conversation.data.isPreHandshake && engagement.isError),
+  });
+  useQueryErrorToast(messagesQuery, {
+    enabled: Boolean(conversationId && messagesQuery.isError),
+  });
   const sendMessage = useSendRequestMessage(conversationId ?? '', requestId);
   const sendAttachment = useSendRequestMessageAttachment(conversationId ?? '', requestId);
   const [threadFocused, setThreadFocused] = useState(false);
@@ -369,20 +377,6 @@ export default function ConversationScreen() {
     );
   }
 
-  if (conversation.isError) {
-    return (
-      <Screen edges={['top']}>
-        <ConversationHeader
-          counterpartyName={conversation.data?.counterpartyDisplayName ?? null}
-          counterpartyAvatarPath={conversation.data?.counterpartyAvatarPath ?? null}
-          requestTitle={conversation.data?.requestTitle ?? 'Chat'}
-          onBack={() => router.back()}
-        />
-        <ErrorState error={conversation.error} onRetry={() => conversation.refetch()} />
-      </Screen>
-    );
-  }
-
   if (!conversation.data) {
     return (
       <Screen edges={['top']}>
@@ -394,29 +388,19 @@ export default function ConversationScreen() {
         />
         <EmptyState
           icon="lock-closed-outline"
-          title="Chat not available"
-          message="This conversation is not available or you do not have access to it."
+          title={conversation.isError ? 'Could not load chat' : 'Chat not available'}
+          message={
+            conversation.isError
+              ? 'Go back and open this conversation again.'
+              : 'This conversation is not available or you do not have access to it.'
+          }
           action={{ label: 'Go back', onPress: () => router.back() }}
         />
       </Screen>
     );
   }
 
-  if (!conversation.data.isPreHandshake && engagement.isError) {
-    return (
-      <Screen edges={['top']}>
-        <ConversationHeader
-          counterpartyName={conversation.data.counterpartyDisplayName}
-          counterpartyAvatarPath={conversation.data.counterpartyAvatarPath}
-          requestTitle={conversation.data.requestTitle}
-          onBack={() => router.back()}
-        />
-        <ErrorState error={engagement.error} onRetry={() => engagement.refetch()} />
-      </Screen>
-    );
-  }
-
-  if (!conversation.data.isPreHandshake && !engagement.data) {
+  if (!conversation.data.isPreHandshake && engagement.isSuccess && !engagement.data) {
     return <Redirect href={`/request/${requestId}`} />;
   }
 
@@ -474,8 +458,6 @@ export default function ConversationScreen() {
       >
         {messagesQuery.isPending ? (
           <LoadingState label="Loading messages" />
-        ) : messagesQuery.isError ? (
-          <ErrorState error={messagesQuery.error} onRetry={() => messagesQuery.refetch()} />
         ) : (
           <FlatList
             ref={listRef}

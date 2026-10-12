@@ -1,10 +1,13 @@
+import { useEffect, useRef } from 'react';
 import { ScrollView, Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 import { Header } from '@/components/ui/Header';
 import { Screen } from '@/components/ui/Screen';
-import { ErrorState, LoadingState } from '@/components/ui/StateView';
+import { EmptyState, LoadingState } from '@/components/ui/StateView';
+import { useQueryErrorToast } from '@/lib/query/use-query-error-toast';
+import { showAppToast } from '@/lib/toast';
 import { useEngagement } from '@/features/requests/requester-api';
 import { walletActivityAmount, walletActivityTitle } from '@/features/wallet/activity';
 import { useMyWallet, useWalletActivityInfinite } from '@/features/wallet/api';
@@ -61,8 +64,20 @@ export default function WalletTransactionScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const wallet = useMyWallet();
   const history = useWalletActivityInfinite();
+  useQueryErrorToast(wallet);
+  useQueryErrorToast(history);
   const item = history.data?.pages.flatMap((page) => page.items).find((row) => row.id === id);
   const engagement = useEngagement(item?.request_id ?? '');
+  const notifiedNotFound = useRef(false);
+
+  useEffect(() => {
+    if (wallet.isPending || history.isPending) return;
+    if (wallet.isError || history.isError) return;
+    if (item?.id) return;
+    if (notifiedNotFound.current) return;
+    notifiedNotFound.current = true;
+    showAppToast('Transaction not found', 'warning');
+  }, [history.isError, history.isPending, item?.id, wallet.isError, wallet.isPending]);
 
   if (wallet.isPending && history.isPending) {
     return (
@@ -73,29 +88,16 @@ export default function WalletTransactionScreen() {
     );
   }
 
-  if (wallet.isError) {
+  if (!item?.id) {
     return (
       <Screen>
         <Header title="Transaction" onBack={() => router.back()} />
-        <ErrorState error={wallet.error} onRetry={() => wallet.refetch()} />
-      </Screen>
-    );
-  }
-
-  if (history.isError) {
-    return (
-      <Screen>
-        <Header title="Transaction" onBack={() => router.back()} />
-        <ErrorState error={history.error} onRetry={() => history.refetch()} />
-      </Screen>
-    );
-  }
-
-  if (!item || !item.id) {
-    return (
-      <Screen>
-        <Header title="Transaction" onBack={() => router.back()} />
-        <ErrorState error={new Error('Transaction not found')} onRetry={() => history.refetch()} />
+        <EmptyState
+          icon="receipt-outline"
+          title="Transaction not found"
+          message="It may have been removed or is still loading."
+          action={{ label: 'Go back', onPress: () => router.back() }}
+        />
       </Screen>
     );
   }

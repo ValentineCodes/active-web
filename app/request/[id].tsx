@@ -24,7 +24,8 @@ import { RequestTitleSection } from '@/components/request-flow/RequestTitleSecti
 import { ResponseCard } from '@/components/ResponseCard';
 import { Button } from '@/components/ui/Button';
 import { Screen } from '@/components/ui/Screen';
-import { ErrorState, InlineError, LoadingState } from '@/components/ui/StateView';
+import { EmptyState, InlineError, LoadingState } from '@/components/ui/StateView';
+import { useQueryErrorToast } from '@/lib/query/use-query-error-toast';
 import {
   useAcceptResponse,
   useCancelRequest,
@@ -95,6 +96,8 @@ export default function RequestDetailScreen() {
 
   const request = useMyRequest(id);
   const responses = useRequestResponses(id);
+  useQueryErrorToast(request, { enabled: request.isError && !request.data });
+  useQueryErrorToast(responses, { enabled: responses.isError && !responses.data });
   const conversation = useRequestConversation(id, Boolean(request.data?.selected_user_id));
 
   const cancelRequest = useCancelRequest(id);
@@ -328,21 +331,21 @@ export default function RequestDetailScreen() {
     );
   }
 
-  if (request.isError) {
-    return (
-      <Screen>
-        <RequestFlowHeader title="Your request" onBack={() => router.back()} />
-        <ErrorState error={request.error} onRetry={() => request.refetch()} />
-      </Screen>
-    );
-  }
-
   const data = request.data;
   if (!data) {
     return (
       <Screen>
         <RequestFlowHeader title="Your request" onBack={() => router.back()} />
-        <LoadingState />
+        {request.isError ? (
+          <EmptyState
+            icon="document-text-outline"
+            title="Request unavailable"
+            message="Pull to refresh from the activity tab or go back and try again."
+            action={{ label: 'Go back', onPress: () => router.back() }}
+          />
+        ) : (
+          <LoadingState />
+        )}
       </Screen>
     );
   }
@@ -593,10 +596,6 @@ export default function RequestDetailScreen() {
 
             {responses.isPending && !responses.data ? (
               <LoadingState label="Loading responses" />
-            ) : null}
-
-            {responses.isError ? (
-              <ErrorState error={responses.error} onRetry={() => responses.refetch()} />
             ) : null}
 
             {responses.isSuccess && pending.length === 0 ? (

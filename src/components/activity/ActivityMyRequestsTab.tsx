@@ -4,7 +4,8 @@ import { router } from 'expo-router';
 
 import { ActivityStatusFilter } from '@/components/activity/ActivityStatusFilter';
 import { ActivityMyRequestCard } from '@/components/ActivityTabCards';
-import { EmptyState, ErrorState, LoadingState } from '@/components/ui/StateView';
+import { EmptyState, LoadingState } from '@/components/ui/StateView';
+import { useQueryErrorToast } from '@/lib/query/use-query-error-toast';
 import {
   activityAmountLabel,
   myRequestActivityBadge,
@@ -24,7 +25,8 @@ import { usePullToRefresh } from '@/lib/query/use-pull-to-refresh';
 import { useActivityFeed } from './useActivityFeed';
 
 export function ActivityMyRequestsTab() {
-  const { myRequests, isLoading, isError, error, refetchAll } = useActivityFeed();
+  const { myRequests, isLoading, isError, isFetching, error, refetchAll } = useActivityFeed();
+  useQueryErrorToast({ isError, isFetching, error });
   const onPullRefresh = useCallback(() => refetchAll(), [refetchAll]);
   const { refreshing, onRefresh } = usePullToRefresh(onPullRefresh);
   const tabBarScrollPadding = useTabBarScrollPadding();
@@ -40,14 +42,6 @@ export function ActivityMyRequestsTab() {
     return (
       <View className="flex-1">
         <LoadingState label="Loading activity" />
-      </View>
-    );
-  }
-
-  if (isError) {
-    return (
-      <View className="flex-1">
-        <ErrorState error={error} onRetry={refetchAll} />
       </View>
     );
   }

@@ -7,7 +7,8 @@ import { Avatar } from '@/components/ui/Avatar';
 import { Button } from '@/components/ui/Button';
 import { Header } from '@/components/ui/Header';
 import { Screen } from '@/components/ui/Screen';
-import { ErrorState, InlineError, LoadingState } from '@/components/ui/StateView';
+import { EmptyState, InlineError, LoadingState } from '@/components/ui/StateView';
+import { useQueryErrorToast } from '@/lib/query/use-query-error-toast';
 import { StarPicker } from '@/components/ui/Stars';
 import { TextField } from '@/components/ui/TextField';
 import { useEngagement, useRateRequest } from '@/features/requests/requester-api';
@@ -26,6 +27,7 @@ export default function RateScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
 
   const engagement = useEngagement(id);
+  useQueryErrorToast(engagement, { enabled: engagement.isError && !engagement.data });
   const rate = useRateRequest(id);
 
   const [stars, setStars] = useState<number | null>(null);
@@ -39,10 +41,20 @@ export default function RateScreen() {
     );
   }
 
-  if (engagement.isError || !engagement.data) {
+  if (!engagement.data) {
     return (
       <Screen edges={['top', 'bottom']}>
-        <ErrorState error={engagement.error} onRetry={() => engagement.refetch()} />
+        <Header title="" onClose={() => router.back()} />
+        {engagement.isError ? (
+          <EmptyState
+            icon="star-outline"
+            title="Could not load"
+            message="Go back and try rating again."
+            action={{ label: 'Go back', onPress: () => router.back() }}
+          />
+        ) : (
+          <LoadingState />
+        )}
       </Screen>
     );
   }

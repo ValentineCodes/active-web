@@ -16,7 +16,8 @@ import { ResponseCreationFlow } from '@/components/ResponseCreationFlow';
 import { hasProfilePhotoReady, useProfile } from '@/features/profile/api';
 import { Button } from '@/components/ui/Button';
 import { Screen } from '@/components/ui/Screen';
-import { EmptyState, ErrorState, InlineError } from '@/components/ui/StateView';
+import { EmptyState, InlineError } from '@/components/ui/StateView';
+import { useQueryErrorToast } from '@/lib/query/use-query-error-toast';
 import {
   canRespondToRequest,
   responseWizardInitialOffer,
@@ -79,6 +80,8 @@ export default function RespondScreen() {
     error,
     refetch,
   } = useRequestForResponse(id, position);
+  useQueryErrorToast({ isError, isFetching: isPending, error: isError ? error : undefined });
+  useQueryErrorToast(profile, { enabled: profile.isError && !profile.data });
   const preHandshakeConversation = useResponderPreHandshakeConversation(id);
   const [pullRefreshing, setPullRefreshing] = useState(false);
 
@@ -249,15 +252,6 @@ export default function RespondScreen() {
             },
           }}
         />
-      </Screen>
-    );
-  }
-
-  if (isError || profile.isError) {
-    return (
-      <Screen edges={['top', 'bottom']}>
-        <RequestFlowHeader title="Request" onBack={() => router.back()} />
-        <ErrorState error={error ?? profile.error} onRetry={() => void onPullRefresh()} />
       </Screen>
     );
   }

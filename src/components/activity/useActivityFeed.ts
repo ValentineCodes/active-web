@@ -24,6 +24,7 @@ export function useActivityFeed() {
   );
 
   const isLoading = requests.isPending || responses.isPending || attendance.isPending;
+  const isFetching = requests.isFetching || responses.isFetching || attendance.isFetching;
   const isError = requests.isError || responses.isError;
   const refetchAll = () =>
     Promise.all([requests.refetch(), responses.refetch(), attendance.refetch()]);
@@ -36,6 +37,7 @@ export function useActivityFeed() {
     myRequests,
     myResponses,
     isLoading,
+    isFetching,
     isError,
     error: requests.error ?? responses.error,
     refetchAll,

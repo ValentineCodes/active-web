@@ -52,22 +52,6 @@ export function EmptyState({
   );
 }
 
-export function ErrorState({ error, onRetry }: { error: unknown; onRetry?: () => void }) {
-  const colors = useColors();
-  return (
-    <View className="flex-1 items-center justify-center gap-3 p-8">
-      <View className="h-16 w-16 items-center justify-center rounded-full bg-danger-soft">
-        <Ionicons name="alert-circle-outline" size={28} color={colors.danger} />
-      </View>
-      <Text className="text-center text-lg font-semibold text-ink">That didn&apos;t work</Text>
-      <Text className="max-w-xs text-center text-base text-muted">{toUserMessage(error)}</Text>
-      {onRetry ? (
-        <Button label="Try again" onPress={onRetry} variant="secondary" className="mt-2" />
-      ) : null}
-    </View>
-  );
-}
-
 /** Short confirmation after a successful action (submit, save, fund, etc.). */
 export function SuccessBanner({ message }: { message: string }) {
   const colors = useColors();

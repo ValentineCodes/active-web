@@ -24,7 +24,7 @@ import {
   useTabBarScrollPadding,
 } from '@/components/ui/tab-bar-insets';
 import { Screen } from '@/components/ui/Screen';
-import { ErrorState } from '@/components/ui/StateView';
+import { useQueryErrorToast } from '@/lib/query/use-query-error-toast';
 import { hasProviderCommitments, useAttendance } from '@/features/attendance/api';
 import { useProfile } from '@/features/profile/api';
 import { pickHomeActiveRequest } from '@/features/requests/home-active-request';
@@ -50,6 +50,7 @@ export default function HomeScreen() {
   const [showScrollTop, setShowScrollTop] = useState(false);
 
   const profile = useProfile();
+  useQueryErrorToast(profile, { enabled: profile.isError && !profile.data });
   const attendance = useAttendance();
   const requests = useMyRequests();
   const responses = useMyResponses();
@@ -95,14 +96,6 @@ export default function HomeScreen() {
   const scrollToTop = useCallback(() => {
     scrollRef.current?.scrollTo({ y: 0, animated: true });
   }, []);
-
-  if (profile.isError) {
-    return (
-      <Screen>
-        <ErrorState error={profile.error} onRetry={() => profile.refetch()} />
-      </Screen>
-    );
-  }
 
   return (
     <Screen>

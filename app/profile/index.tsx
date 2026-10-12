@@ -12,7 +12,8 @@ import { Avatar } from '@/components/ui/Avatar';
 import { Header } from '@/components/ui/Header';
 import { Screen } from '@/components/ui/Screen';
 import { StarRating } from '@/components/ui/Stars';
-import { ErrorState, InlineError, LoadingState } from '@/components/ui/StateView';
+import { EmptyState, InlineError, LoadingState } from '@/components/ui/StateView';
+import { useQueryErrorToast } from '@/lib/query/use-query-error-toast';
 import { hasProviderCommitments, useAttendance } from '@/features/attendance/api';
 import { MARKET } from '@/config';
 import { signOut } from '@/features/auth/api';
@@ -93,6 +94,8 @@ export default function ProfileScreen() {
   const colors = useColors();
   const profile = useProfile();
   const tagInterests = useNotificationTagInterests();
+  useQueryErrorToast(profile, { enabled: profile.isError && !profile.data });
+  useQueryErrorToast(tagInterests, { enabled: tagInterests.isError && !tagInterests.data });
   const attendance = useAttendance();
   const myRequests = useMyRequests();
   const myResponses = useMyResponses();
@@ -122,27 +125,21 @@ export default function ProfileScreen() {
     );
   }
 
-  if (profile.isError || tagInterests.isError) {
-    return (
-      <Screen>
-        <Header title="Profile" onBack={() => router.back()} />
-        <ErrorState
-          error={profile.error ?? tagInterests.error}
-          onRetry={() => {
-            void profile.refetch();
-            void tagInterests.refetch();
-          }}
-        />
-      </Screen>
-    );
-  }
-
   const data = profile.data;
   if (!data) {
     return (
       <Screen>
         <Header title="Profile" onBack={() => router.back()} />
-        <LoadingState />
+        <ScrollView
+          contentContainerClassName="flex-grow justify-center px-5 pb-12"
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        >
+          <EmptyState
+            icon="person-outline"
+            title="Profile unavailable"
+            message="Pull to refresh when you are back online."
+          />
+        </ScrollView>
       </Screen>
     );
   }

@@ -12,7 +12,8 @@ import { router, useFocusEffect } from 'expo-router';
 import { WalletActivityRow, WalletHistoryListFooter } from '@/components/wallet/WalletActivityRow';
 import { Header } from '@/components/ui/Header';
 import { Screen } from '@/components/ui/Screen';
-import { EmptyState, ErrorState, LoadingState } from '@/components/ui/StateView';
+import { EmptyState, LoadingState } from '@/components/ui/StateView';
+import { useQueryErrorToast } from '@/lib/query/use-query-error-toast';
 import { useMyWallet, useWalletActivityInfinite } from '@/features/wallet/api';
 import { groupWalletActivityByMonth } from '@/features/wallet/presentation';
 import { usePullToRefresh } from '@/lib/query/use-pull-to-refresh';
@@ -21,6 +22,8 @@ import { showQuerySkeleton } from '@/lib/query/show-skeleton';
 export default function WalletHistoryScreen() {
   const wallet = useMyWallet();
   const history = useWalletActivityInfinite();
+  useQueryErrorToast(wallet);
+  useQueryErrorToast(history);
 
   const { refetch: refetchWallet } = wallet;
   const { refetch: refetchHistory } = history;
@@ -64,24 +67,6 @@ export default function WalletHistoryScreen() {
       <Screen>
         <Header title="Transaction history" onBack={() => router.back()} />
         <LoadingState />
-      </Screen>
-    );
-  }
-
-  if (wallet.isError) {
-    return (
-      <Screen>
-        <Header title="Transaction history" onBack={() => router.back()} />
-        <ErrorState error={wallet.error} onRetry={() => wallet.refetch()} />
-      </Screen>
-    );
-  }
-
-  if (history.isError) {
-    return (
-      <Screen>
-        <Header title="Transaction history" onBack={() => router.back()} />
-        <ErrorState error={history.error} onRetry={() => history.refetch()} />
       </Screen>
     );
   }

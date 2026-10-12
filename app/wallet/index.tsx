@@ -11,7 +11,8 @@ import { WalletActivityRow } from '@/components/wallet/WalletActivityRow';
 import { Button } from '@/components/ui/Button';
 import { Header } from '@/components/ui/Header';
 import { Screen } from '@/components/ui/Screen';
-import { EmptyState, ErrorState, InlineError, LoadingState } from '@/components/ui/StateView';
+import { EmptyState, InlineError, LoadingState } from '@/components/ui/StateView';
+import { useQueryErrorToast } from '@/lib/query/use-query-error-toast';
 import { WALLET } from '@/config';
 import { useWalletLockedCommitments } from '@/features/wallet/locked-commitments';
 import { useMyWallet, useWalletActivity } from '@/features/wallet/api';
@@ -23,6 +24,7 @@ import { useColors } from '@/theme';
 export default function WalletHomeScreen() {
   const colors = useColors();
   const wallet = useMyWallet();
+  useQueryErrorToast(wallet);
   const activity = useWalletActivity();
   const lockedCommitments = useWalletLockedCommitments();
   const lockedSheetRef = useRef<WalletLockedFundsSheetHandle>(null);
@@ -56,20 +58,20 @@ export default function WalletHomeScreen() {
     );
   }
 
-  if (wallet.isError) {
-    return (
-      <Screen>
-        <Header title="Wallet" onBack={() => router.back()} />
-        <ErrorState error={wallet.error} onRetry={() => wallet.refetch()} />
-      </Screen>
-    );
-  }
-
   if (!wallet.data) {
     return (
       <Screen>
         <Header title="Wallet" onBack={() => router.back()} />
-        <LoadingState />
+        <ScrollView
+          contentContainerClassName="flex-grow justify-center px-5 pb-12"
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        >
+          <EmptyState
+            icon="wallet-outline"
+            title="Wallet unavailable"
+            message="Pull to refresh when you are back online."
+          />
+        </ScrollView>
       </Screen>
     );
   }

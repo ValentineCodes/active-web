@@ -7,7 +7,6 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/Button';
 import { Header } from '@/components/ui/Header';
 import { Screen } from '@/components/ui/Screen';
-import { ErrorState } from '@/components/ui/StateView';
 import {
   consumeCheckoutSession,
   depositCallbackUrl,
@@ -66,6 +65,20 @@ export default function WalletDepositCheckoutScreen() {
   const [retrying, setRetrying] = useState(false);
   const openedBrowserRef = useRef(false);
   const browserResolvedRef = useRef(false);
+  const failedToastShown = useRef(false);
+
+  useEffect(() => {
+    if (phase !== 'failed') {
+      failedToastShown.current = false;
+      return;
+    }
+    if (failedToastShown.current) return;
+    failedToastShown.current = true;
+    showAppToast(
+      toUserMessage(error ?? new Error('Payment could not be confirmed')),
+      'warning',
+    );
+  }, [error, phase]);
 
   useEffect(() => {
     if (!session && !referenceFromRoute) {
@@ -317,12 +330,33 @@ export default function WalletDepositCheckoutScreen() {
 
   if (phase === 'failed') {
     return (
-      <Screen>
+      <Screen edges={['top', 'bottom']}>
         <Header title="Payment" onBack={() => exitWalletDepositLeaving(returnTo)} />
-        <ErrorState
-          error={error ?? new Error('Payment could not be confirmed')}
-          onRetry={() => void retryConfirmation()}
-        />
+        <View className="flex-1 items-center justify-center gap-4 px-8">
+          <Text className="text-center text-lg font-semibold text-ink">Payment not confirmed</Text>
+          <Text className="text-center text-base leading-6 text-muted">
+            Nothing was added to your wallet. You can try confirming again or go back.
+          </Text>
+        </View>
+        <View className="gap-3 p-5">
+          <Button
+            label="Try again"
+            variant="active"
+            size="lg"
+            corner="2xl"
+            className="w-full"
+            loading={retrying}
+            onPress={() => void retryConfirmation()}
+          />
+          <Button
+            label={returnTo ? 'Back to request' : 'Back to wallet'}
+            variant="secondary"
+            size="lg"
+            corner="2xl"
+            className="w-full"
+            onPress={() => exitWalletDepositLeaving(returnTo)}
+          />
+        </View>
       </Screen>
     );
   }

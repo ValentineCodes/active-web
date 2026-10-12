@@ -5,7 +5,8 @@ import { Header } from '@/components/ui/Header';
 import { Button } from '@/components/ui/Button';
 import { Screen } from '@/components/ui/Screen';
 import { TextField } from '@/components/ui/TextField';
-import { EmptyState, ErrorState, LoadingState } from '@/components/ui/StateView';
+import { EmptyState, LoadingState } from '@/components/ui/StateView';
+import { useQueryErrorToast } from '@/lib/query/use-query-error-toast';
 import {
   MAX_SAVED_LOCATIONS,
   savedLocationDisplayTitle,
@@ -30,6 +31,7 @@ const SAVE_PLACE_SETTINGS_HINT = 'Turn it on in Settings to save a place.';
 
 export default function SavedLocationsScreen() {
   const saved = useMySavedLocations();
+  useQueryErrorToast(saved);
   const upsert = useUpsertSavedLocation();
   const remove = useDeleteSavedLocation();
   const [adding, setAdding] = useState(false);
@@ -140,16 +142,7 @@ export default function SavedLocationsScreen() {
     );
   }
 
-  if (saved.isError) {
-    return (
-      <Screen edges={['top']}>
-        <Header title="Saved places" onBack={() => router.back()} />
-        <ErrorState error={saved.error} onRetry={() => void saved.refetch()} />
-      </Screen>
-    );
-  }
-
-  const rows = saved.data ?? [];
+  const rows = saved.isError ? [] : (saved.data ?? []);
 
   return (
     <Screen edges={['top']}>

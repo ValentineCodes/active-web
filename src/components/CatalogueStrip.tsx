@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { CatalogueViewer } from '@/components/CatalogueViewer';
 import { useCatalogueMediaUrl, useUserCatalogue } from '@/features/profile/catalogue-api';
-import { ErrorState } from '@/components/ui/StateView';
+import { useQueryErrorToast } from '@/lib/query/use-query-error-toast';
 import { useColors } from '@/theme';
 
 function CatalogueThumb({
@@ -75,6 +75,7 @@ export function CatalogueStrip({
 }) {
   const colors = useColors();
   const catalogue = useUserCatalogue(userId);
+  useQueryErrorToast(catalogue);
   const [viewerIndex, setViewerIndex] = useState<number | null>(null);
 
   if (catalogue.isPending) {
@@ -86,7 +87,7 @@ export function CatalogueStrip({
   }
 
   if (catalogue.isError) {
-    return <ErrorState error={catalogue.error} onRetry={() => catalogue.refetch()} />;
+    return emptyLabel ? <Text className="text-sm text-muted">{emptyLabel}</Text> : null;
   }
 
   const photos = catalogue.data.filter((row) => row.kind === 'photo');

@@ -17,7 +17,8 @@ import { IconButton } from '@/components/ui/IconButton';
 import { Screen } from '@/components/ui/Screen';
 import { useTabBarScrollPadding } from '@/components/ui/tab-bar-insets';
 import { SkeletonBlock } from '@/components/ui/Skeleton';
-import { EmptyState, ErrorState } from '@/components/ui/StateView';
+import { EmptyState } from '@/components/ui/StateView';
+import { useQueryErrorToast } from '@/lib/query/use-query-error-toast';
 import {
   markNotificationInboxItemRead,
   markNotificationInboxRead,
@@ -45,6 +46,7 @@ export default function NotificationsScreen() {
   const queryClient = useQueryClient();
   const profile = useProfile();
   const inbox = useNotificationInbox();
+  useQueryErrorToast(inbox);
   const unread = useNotificationUnreadCount();
   const unreadCount = unread.data ?? 0;
   const [filter, setFilter] = useState<InboxFilter>('all');
@@ -134,7 +136,7 @@ export default function NotificationsScreen() {
         : `${unreadCount} unread updates`;
 
   const tabBarScrollPadding = useTabBarScrollPadding();
-  const inboxEmpty = inbox.isSuccess && filteredItems.length === 0;
+  const inboxEmpty = (inbox.isSuccess || inbox.isError) && filteredItems.length === 0;
   const inboxSkeleton = showQuerySkeleton(inbox);
   const INBOX_SKELETON_ROWS = 6;
 
@@ -187,9 +189,7 @@ export default function NotificationsScreen() {
         </View>
       ) : null}
 
-      {inbox.isError ? <ErrorState error={inbox.error} onRetry={() => inbox.refetch()} /> : null}
-
-      {inbox.isSuccess ? (
+      {inbox.isSuccess || inbox.isError ? (
         <FlatList
           className="flex-1"
           data={filteredItems}

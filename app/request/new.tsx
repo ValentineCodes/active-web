@@ -23,7 +23,8 @@ import { MoneyAmountInput } from '@/components/ui/MoneyAmountInput';
 import { IconButton } from '@/components/ui/IconButton';
 import { KeyboardStickyFooter } from '@/components/ui/KeyboardStickyFooter';
 import { Screen } from '@/components/ui/Screen';
-import { ErrorState, InlineError, LoadingState } from '@/components/ui/StateView';
+import { EmptyState, InlineError, LoadingState } from '@/components/ui/StateView';
+import { useQueryErrorToast } from '@/lib/query/use-query-error-toast';
 import {
   CREATE_TITLE_LIMITS,
   DESCRIPTION_LIMITS,
@@ -334,6 +335,7 @@ export function NewRequestForm({
   const userId = useUserId();
   const isEdit = Boolean(editRequestId);
   const editRequest = useMyRequest(editRequestId ?? '');
+  useQueryErrorToast(editRequest, { enabled: isEdit && editRequest.isError });
   const seeded = newRequestFormState(reuseSeed);
   const create = useCreateRequest();
   const update = useUpdateRequest(editRequestId ?? '');
@@ -833,7 +835,7 @@ export function NewRequestForm({
     );
   }
 
-  if (isEdit && editRequest.isError) {
+  if (isEdit && editRequest.isError && !editRequest.data) {
     return (
       <Screen edges={['top']}>
         <WizardHeader
@@ -842,7 +844,12 @@ export function NewRequestForm({
           stepCount={stepCount}
           onClose={() => router.back()}
         />
-        <ErrorState error={editRequest.error} onRetry={() => editRequest.refetch()} />
+        <EmptyState
+          icon="document-text-outline"
+          title="Could not load request"
+          message="Go back and try again."
+          action={{ label: 'Go back', onPress: () => router.back() }}
+        />
       </Screen>
     );
   }
@@ -1134,6 +1141,15 @@ export default function NewRequestScreen() {
   const { from } = useLocalSearchParams<{ from?: string | string[] }>();
   const sourceRequestId = typeof from === 'string' ? from : undefined;
   const sourceRequest = useMyRequest(sourceRequestId ?? '');
+  useQueryErrorToast(sourceRequest, {
+    enabled: Boolean(sourceRequestId && sourceRequest.isError),
+  });
+
+  const cannotReuse =
+    Boolean(sourceRequestId) &&
+    sourceRequest.isSuccess &&
+    sourceRequest.data != null &&
+    !canReuseRequest(sourceRequest.data.status, sourceRequest.data.expires_at);
 
   if (sourceRequestId && sourceRequest.isPending) {
     return (
@@ -1143,7 +1159,7 @@ export default function NewRequestScreen() {
     );
   }
 
-  if (sourceRequestId && sourceRequest.isError) {
+  if (sourceRequestId && sourceRequest.isError && !sourceRequest.data) {
     return (
       <Screen edges={['top']}>
         <WizardHeader
@@ -1152,16 +1168,17 @@ export default function NewRequestScreen() {
           stepCount={STEP_COUNT}
           onClose={() => router.back()}
         />
-        <ErrorState error={sourceRequest.error} onRetry={() => sourceRequest.refetch()} />
+        <EmptyState
+          icon="document-text-outline"
+          title="Could not load request"
+          message="Go back and try again."
+          action={{ label: 'Go back', onPress: () => router.back() }}
+        />
       </Screen>
     );
   }
 
-  if (
-    sourceRequestId &&
-    sourceRequest.isSuccess &&
-    !canReuseRequest(sourceRequest.data.status, sourceRequest.data.expires_at)
-  ) {
+  if (cannotReuse) {
     return (
       <Screen edges={['top']}>
         <WizardHeader
@@ -1170,13 +1187,11 @@ export default function NewRequestScreen() {
           stepCount={STEP_COUNT}
           onClose={() => router.back()}
         />
-        <ErrorState
-          error={
-            new Error(
-              'This request cannot be sent again. Only finished or expired requests can be reused.',
-            )
-          }
-          onRetry={() => router.back()}
+        <EmptyState
+          icon="document-text-outline"
+          title="Cannot reuse this request"
+          message="Only finished or expired requests can be sent again."
+          action={{ label: 'Go back', onPress: () => router.back() }}
         />
       </Screen>
     );

@@ -4,7 +4,8 @@ import { router, useFocusEffect } from 'expo-router';
 
 import { Header } from '@/components/ui/Header';
 import { Screen } from '@/components/ui/Screen';
-import { ErrorState, InlineError, LoadingState } from '@/components/ui/StateView';
+import { EmptyState, InlineError, LoadingState } from '@/components/ui/StateView';
+import { useQueryErrorToast } from '@/lib/query/use-query-error-toast';
 import {
   useUpdateNotificationPreferences,
   setPushBannerDismissed,
@@ -58,6 +59,7 @@ function SettingsToggleRow({
 
 export default function NotificationSettingsScreen() {
   const profile = useProfile();
+  useQueryErrorToast(profile, { enabled: profile.isError && !profile.data });
   const updatePrefs = useUpdateNotificationPreferences();
   const [permission, setPermission] = useState<PushPermissionState | null>(null);
 
@@ -80,11 +82,16 @@ export default function NotificationSettingsScreen() {
     );
   }
 
-  if (profile.isError) {
+  if (!profile.data) {
     return (
       <Screen>
         <Header title="Notification settings" onBack={() => router.back()} />
-        <ErrorState error={profile.error} onRetry={() => profile.refetch()} />
+        <EmptyState
+          icon="notifications-outline"
+          title="Settings unavailable"
+          message="Go back and open this screen again when you are online."
+          action={{ label: 'Go back', onPress: () => router.back() }}
+        />
       </Screen>
     );
   }
