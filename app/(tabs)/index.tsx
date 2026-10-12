@@ -77,6 +77,7 @@ export default function HomeScreen() {
       attendance.refetch(),
       wallet.refetch(),
       queryClient.invalidateQueries({ queryKey: queryKeys.browseNearbyAll }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.browseOpenAll }),
       queryClient.invalidateQueries({ queryKey: queryKeys.requestSearchAll }),
     ]);
   }, [attendance, queryClient, requests, responses, wallet]);

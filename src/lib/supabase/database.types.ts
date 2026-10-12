@@ -1865,6 +1865,27 @@ export type Database = {
           title: string
         }[]
       }
+      browse_open_requests: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          currency: string
+          description: string
+          distance_m: number
+          location_label: string
+          offered_amount: number
+          request_id: string
+          requester_avatar_path: string
+          requester_display_name: string
+          requester_rating_average: number
+          requester_rating_count: number
+          scheduled_for: string
+          title: string
+        }[]
+      }
+      delete_saved_location: {
+        Args: { p_saved_location_id: string }
+        Returns: undefined
+      }
       browse_request: {
         Args: { p_latitude: number; p_longitude: number; p_request_id: string }
         Returns: {
@@ -2270,6 +2291,18 @@ export type Database = {
               type: Database["public"]["Enums"]["wallet_transaction_type"]
             }[]
           }
+      list_my_saved_locations: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          alias: string
+          is_default: boolean
+          last_used_at: string
+          latitude: number
+          location_label: string
+          longitude: number
+          saved_location_id: string
+        }[]
+      }
       list_notification_tag_interests: {
         Args: never
         Returns: {
@@ -2701,6 +2734,21 @@ export type Database = {
           p_push_tips_reminders_enabled: boolean
         }
         Returns: undefined
+      }
+      touch_saved_location: {
+        Args: { p_saved_location_id: string }
+        Returns: undefined
+      }
+      upsert_saved_location: {
+        Args: {
+          p_alias?: string | null
+          p_is_default?: boolean
+          p_latitude: number
+          p_location_label: string
+          p_longitude: number
+          p_saved_location_id?: string | null
+        }
+        Returns: string
       }
       set_notification_tag_interests: {
         Args: { p_tag_ids: string[] }

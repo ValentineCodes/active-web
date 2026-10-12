@@ -215,6 +215,7 @@ function invalidateLiveResponseQueries(
   queryClient.invalidateQueries({ queryKey: queryKeys.attendance });
   queryClient.invalidateQueries({ queryKey: queryKeys.myResponses });
   queryClient.invalidateQueries({ queryKey: queryKeys.browseNearbyAll });
+  queryClient.invalidateQueries({ queryKey: queryKeys.browseOpenAll });
   queryClient.invalidateQueries({ queryKey: queryKeys.requestSearchAll });
   if (next.request_id) {
     queryClient.invalidateQueries({ queryKey: queryKeys.engagement(next.request_id) });
@@ -341,6 +342,7 @@ export function useRespondToRequest() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.browseNearbyAll });
+      queryClient.invalidateQueries({ queryKey: queryKeys.browseOpenAll });
       queryClient.invalidateQueries({ queryKey: queryKeys.requestSearchAll });
       queryClient.invalidateQueries({ queryKey: queryKeys.myResponses });
     },
@@ -359,6 +361,7 @@ export function useWithdrawResponse() {
       queryClient.invalidateQueries({ queryKey: queryKeys.myResponses });
       queryClient.invalidateQueries({ queryKey: queryKeys.myRequests });
       queryClient.invalidateQueries({ queryKey: queryKeys.browseNearbyAll });
+      queryClient.invalidateQueries({ queryKey: queryKeys.browseOpenAll });
       queryClient.invalidateQueries({ queryKey: queryKeys.requestSearchAll });
     },
   });
@@ -432,6 +435,7 @@ export function useCancelService(requestId: string) {
       queryClient.invalidateQueries({ queryKey: queryKeys.myResponses });
       queryClient.invalidateQueries({ queryKey: queryKeys.myRequests });
       queryClient.invalidateQueries({ queryKey: queryKeys.browseNearbyAll });
+      queryClient.invalidateQueries({ queryKey: queryKeys.browseOpenAll });
       queryClient.invalidateQueries({ queryKey: queryKeys.requestSearchAll });
       queryClient.invalidateQueries({ queryKey: queryKeys.attendance });
     },

@@ -234,6 +234,12 @@ select is(
 );
 
 select is(
+  (select count(*) from browse_open_requests() where request_id = :'request_id'),
+  1::bigint,
+  'browse_open_requests lists posted open requests without coordinates'
+);
+
+select is(
   (select respond_allowed from browse_request(:'request_id', 7.5000::double precision, 3.3800::double precision)),
   false,
   'browsing a far request is allowed but responding is not'

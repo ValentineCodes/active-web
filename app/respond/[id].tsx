@@ -304,10 +304,12 @@ export default function RespondScreen() {
           body="We use your location once to confirm this request is near you. Nobody sees your exact address — only roughly how close you are — until you are selected."
           loading={locationModalLoading}
           errorMessage={locationModalError}
+          showSaveForFuture={false}
           onDismiss={() => {
             pendingSubmitRef.current = null;
             setLocationModalError(null);
           }}
+          onSelectSavedPlace={() => {}}
           onShareLocation={() => void shareLocationForResponse()}
         />
       </>

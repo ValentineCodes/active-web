@@ -56,7 +56,14 @@ export function toUserMessage(error: unknown): string {
     const { code, message } = error as { code: unknown; message: unknown };
     if (typeof code === 'string' && typeof message === 'string') {
       if (code === 'PGRST202') {
-        return 'Wallet is unavailable until the latest database migrations are applied.';
+        const lower = message.toLowerCase();
+        if (lower.includes('wallet')) {
+          return 'Wallet is unavailable until the latest database migrations are applied.';
+        }
+        if (lower.includes('saved_location') || lower.includes('browse_open_requests')) {
+          return 'Saved places are unavailable until the latest database migrations are applied.';
+        }
+        return 'This action is unavailable until the latest database migrations are applied.';
       }
       if (code === '25006') {
         return 'Something could not load. Restart the app and run the latest database migrations.';

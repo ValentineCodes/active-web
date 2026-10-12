@@ -12,6 +12,7 @@ export type PublicRequest = Nullable<
   RpcRow<Functions['browse_nearby_requests']['Returns']>,
   | 'scheduled_for'
   | 'offered_amount'
+  | 'distance_m'
   | 'requester_display_name'
   | 'requester_avatar_path'
   | 'requester_rating_average'
@@ -41,6 +42,22 @@ async function recordDiscoveryCoordinates(position: Position) {
     p_longitude: position.longitude,
   });
   if (error) throw error;
+}
+
+export function useBrowseOpenRequests(options?: { enabled?: boolean }) {
+  const enabled = options?.enabled ?? true;
+
+  return useQuery({
+    queryKey: queryKeys.browseOpen,
+    enabled,
+    staleTime: 15_000,
+    placeholderData: keepPreviousData,
+    queryFn: async (): Promise<PublicRequest[]> => {
+      const { data, error } = await supabase.rpc('browse_open_requests');
+      if (error) throw error;
+      return data;
+    },
+  });
 }
 
 export function useBrowseNearbyRequests(position: Position | null) {

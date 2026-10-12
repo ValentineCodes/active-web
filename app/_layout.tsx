@@ -55,6 +55,7 @@ function RootNavigator() {
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="profile" />
         <Stack.Screen name="profile/edit" />
+        <Stack.Screen name="profile/locations" />
         <Stack.Screen name="wallet" />
         <Stack.Screen
           name="search"

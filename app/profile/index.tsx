@@ -1,7 +1,7 @@
 import { type ReactNode, useCallback, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
-import { router } from 'expo-router';
+import { type Href, router } from 'expo-router';
 import { useMutation } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -257,6 +257,11 @@ export default function ProfileScreen() {
 
         <SettingsGroup title="Account">
           <SettingsRow label="Edit profile" onPress={() => router.push('/profile/edit')} />
+          <SettingsRow
+            label="Saved places"
+            onPress={() => router.push('/profile/locations' as Href)}
+            showDivider
+          />
           <SettingsRow label="Payment details" onPress={() => router.push('/wallet')} showDivider />
           <SettingsRow label="Verify identity" onPress={() => {}} showDivider />
         </SettingsGroup>

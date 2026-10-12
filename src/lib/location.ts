@@ -17,7 +17,14 @@ export type PositionResult =
   | { ok: true; position: Position }
   | { ok: false; reason: 'permission-denied' | 'services-disabled' | 'unavailable' };
 
-export async function requestPosition(): Promise<PositionResult> {
+async function ensureForegroundPositionAccess(): Promise<
+  Extract<PositionResult, { ok: false }> | null
+> {
+  const permissionBefore = await readForegroundPermission();
+  if (permissionBefore === 'denied') {
+    return { ok: false, reason: 'permission-denied' };
+  }
+
   const { granted } = await Location.requestForegroundPermissionsAsync();
 
   if (!granted) {
@@ -28,16 +35,28 @@ export async function requestPosition(): Promise<PositionResult> {
     return { ok: false, reason: 'services-disabled' };
   }
 
-  try {
-    const last = await Location.getLastKnownPositionAsync();
-    if (last) {
-      return {
-        ok: true,
-        position: { latitude: last.coords.latitude, longitude: last.coords.longitude },
-      };
+  return null;
+}
+
+type RequestPositionOptions = {
+  /** Skip the last-known fix and wait for a live GPS read (e.g. saving a place). */
+  fresh?: boolean;
+};
+
+export async function requestPosition(options?: RequestPositionOptions): Promise<PositionResult> {
+  const blocked = await ensureForegroundPositionAccess();
+  if (blocked) return blocked;
+
+  if (!options?.fresh) {
+    try {
+      const last = await Location.getLastKnownPositionAsync();
+      const cached = positionFromLocationObject(last);
+      if (cached) {
+        return { ok: true, position: cached };
+      }
+    } catch {
+      // Fall through to a live read.
     }
-  } catch {
-    // Fall through to a live read.
   }
 
   const position = await readCurrentPosition();
@@ -61,17 +80,51 @@ export async function readForegroundPermission(): Promise<ForegroundPermission> 
 
 const POSITION_READ_TIMEOUT_MS = 12_000;
 
-async function readCurrentPosition(): Promise<Position | null> {
+let positionReadInFlight: Promise<Position | null> | null = null;
+
+function positionFromLocationObject(
+  fix: Location.LocationObject | null | undefined,
+): Position | null {
+  if (!fix) return null;
+
+  const { latitude, longitude } = fix.coords;
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return null;
+  if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) return null;
+  // Some devices report (0, 0) before a real fix.
+  if (latitude === 0 && longitude === 0) return null;
+
+  return { latitude, longitude };
+}
+
+async function readCurrentPositionOnce(accuracy: Location.Accuracy): Promise<Position | null> {
   try {
     const fix = await Promise.race([
-      Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }),
+      Location.getCurrentPositionAsync({ accuracy }),
       new Promise<never>((_, reject) => {
         setTimeout(() => reject(new Error('location-timeout')), POSITION_READ_TIMEOUT_MS);
       }),
     ]);
-    return { latitude: fix.coords.latitude, longitude: fix.coords.longitude };
+    return positionFromLocationObject(fix);
   } catch {
     return null;
+  }
+}
+
+async function readCurrentPosition(): Promise<Position | null> {
+  if (positionReadInFlight) {
+    return positionReadInFlight;
+  }
+
+  positionReadInFlight = (async () => {
+    const balanced = await readCurrentPositionOnce(Location.Accuracy.Balanced);
+    if (balanced) return balanced;
+    return readCurrentPositionOnce(Location.Accuracy.Low);
+  })();
+
+  try {
+    return await positionReadInFlight;
+  } finally {
+    positionReadInFlight = null;
   }
 }
 
@@ -85,9 +138,8 @@ export async function readPositionIfPermitted(): Promise<Position | null> {
 
   try {
     const last = await Location.getLastKnownPositionAsync();
-    if (last) {
-      return { latitude: last.coords.latitude, longitude: last.coords.longitude };
-    }
+    const cached = positionFromLocationObject(last);
+    if (cached) return cached;
   } catch {
     // Fall through to a live read.
   }

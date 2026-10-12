@@ -63,9 +63,18 @@ import {
 import { cn } from '@/lib/cn';
 import { formatMoney, formatWhenHome } from '@/lib/format';
 import {
+  savedLocationPosition,
+  type SavedLocation,
+  useMySavedLocations,
+  useTouchSavedLocation,
+  useUpsertSavedLocation,
+} from '@/features/profile/saved-locations-api';
+import {
   positionErrorMessage,
+  readForegroundPermission,
   requestPosition,
   suggestAreaLabel,
+  type ForegroundPermission,
   type Position,
 } from '@/lib/location';
 import { syncPushToken } from '@/lib/notifications';
@@ -332,10 +341,13 @@ export function NewRequestForm({
   const wallet = useMyWallet();
   const { refetch: refetchWallet } = wallet;
   const tagCatalogue = useTagCatalogue();
+  const [foregroundPermission, setForegroundPermission] =
+    useState<ForegroundPermission>('undetermined');
 
   useFocusEffect(
     useCallback(() => {
       void refetchWallet();
+      void readForegroundPermission().then(setForegroundPermission);
     }, [refetchWallet]),
   );
 
@@ -352,6 +364,10 @@ export function NewRequestForm({
   const [laterTimeError, setLaterTimeError] = useState(false);
   const [locationModalLoading, setLocationModalLoading] = useState(false);
   const [locationModalError, setLocationModalError] = useState<string | null>(null);
+  const [saveLocationForFuture, setSaveLocationForFuture] = useState(true);
+  const savedLocations = useMySavedLocations();
+  const touchSavedLocation = useTouchSavedLocation();
+  const upsertSavedLocation = useUpsertSavedLocation();
   const [attachmentUri, setAttachmentUri] = useState<string | null>(null);
   const [attachmentMimeType, setAttachmentMimeType] = useState<string | null>(null);
   const [attachmentUploading, setAttachmentUploading] = useState(false);
@@ -691,33 +707,94 @@ export function NewRequestForm({
       return;
     }
 
+    void (async () => {
+      const permission = await readForegroundPermission();
+      setForegroundPermission(permission);
+      if (permission === 'denied') {
+        showAppToast('Location access is off. Turn it on in Settings to post this request.', 'warning');
+        return;
+      }
+
+      setLocationModalError(null);
+      setTimeout(() => {
+        locationSheetRef.current?.present();
+      }, 0);
+    })();
+  };
+
+  const finishPostWithPlace = async (postPosition: Position, locationLabel: string) => {
+    setPosition(postPosition);
+    setAreaLabel(locationLabel);
+    setLocationModalLoading(false);
+    locationSheetRef.current?.dismiss();
+    await postWithLocation(postPosition, locationLabel);
+  };
+
+  const selectSavedPlaceForPost = (place: SavedLocation) => {
+    if (locationModalLoading) return;
+    setLocationModalLoading(true);
     setLocationModalError(null);
-    setTimeout(() => {
-      locationSheetRef.current?.present();
-    }, 0);
+    void touchSavedLocation
+      .mutateAsync(place.saved_location_id)
+      .then(() =>
+        finishPostWithPlace(savedLocationPosition(place), place.location_label.trim()),
+      )
+      .catch((error: unknown) => {
+        setLocationModalError(
+          error instanceof Error ? error.message : 'Could not use this saved place.',
+        );
+        setLocationModalLoading(false);
+      });
   };
 
   const shareLocationForPost = async () => {
-    setLocationModalLoading(true);
-    setLocationModalError(null);
+    if (locationModalLoading) return;
 
-    const result = await requestPosition();
-    if (!result.ok) {
+    const permission = await readForegroundPermission();
+    setForegroundPermission(permission);
+    if (permission === 'denied') {
       setLocationModalError(
-        positionErrorMessage(result, 'Turn it on in Settings to post this request.'),
+        positionErrorMessage(
+          { ok: false, reason: 'permission-denied' },
+          'Turn it on in Settings to post this request.',
+        ),
       );
-      setLocationModalLoading(false);
       return;
     }
 
-    const suggestion = await suggestAreaLabel(result.position);
-    const locationLabel = suggestion?.trim() || 'My location';
-    setPosition(result.position);
-    setAreaLabel(locationLabel);
+    setLocationModalLoading(true);
+    setLocationModalError(null);
 
-    setLocationModalLoading(false);
-    locationSheetRef.current?.dismiss();
-    await postWithLocation(result.position, locationLabel);
+    try {
+      const result = await requestPosition();
+      setForegroundPermission(await readForegroundPermission());
+      if (!result.ok) {
+        setLocationModalError(
+          positionErrorMessage(result, 'Turn it on in Settings to post this request.'),
+        );
+        return;
+      }
+
+      const suggestion = await suggestAreaLabel(result.position);
+      const locationLabel = suggestion?.trim() || 'My location';
+
+      await finishPostWithPlace(result.position, locationLabel);
+
+      if (saveLocationForFuture) {
+        try {
+          await upsertSavedLocation.mutateAsync({
+            locationLabel,
+            position: result.position,
+          });
+        } catch {
+          showAppToast('Could not save this place for later.', 'warning');
+        }
+      }
+    } catch {
+      setLocationModalError('Could not get your location. Try again.');
+    } finally {
+      setLocationModalLoading(false);
+    }
   };
 
   const pickAttachment = async (source: 'camera' | 'library') => {
@@ -1040,7 +1117,13 @@ export function NewRequestForm({
         ref={locationSheetRef}
         loading={locationModalLoading}
         errorMessage={locationModalError}
+        locationPermissionDenied={foregroundPermission === 'denied'}
+        savedPlaces={savedLocations.data ?? []}
+        savedPlacesLoading={savedLocations.isPending}
+        saveForFuture={saveLocationForFuture}
+        onSaveForFutureChange={setSaveLocationForFuture}
         onDismiss={() => setLocationModalError(null)}
+        onSelectSavedPlace={selectSavedPlaceForPost}
         onShareLocation={() => void shareLocationForPost()}
       />
     </>

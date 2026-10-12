@@ -1,12 +1,16 @@
-import { useCallback, useMemo, useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { AppState, Linking, Pressable, Text, View } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
 
 import { DiscoverRequestCard, DiscoverRequestCardSkeleton } from '@/components/DiscoverRequestCard';
 import { HomeRequestCard, HomeRequestCardSkeleton } from '@/components/HomeRequestCard';
 import { SectionHeader } from '@/components/ui/SectionHeader';
 import { EmptyState, InlineError } from '@/components/ui/StateView';
-import { useBrowseNearbyRequests, useSearchRequests } from '@/features/requests/browse-api';
+import {
+  useBrowseNearbyRequests,
+  useBrowseOpenRequests,
+  useSearchRequests,
+} from '@/features/requests/browse-api';
 import { useMyRequests } from '@/features/requests/requester-api';
 import { useMyResponses } from '@/features/requests/responses-api';
 import { requestOutcomeDescription } from '@/features/requests/outcome';
@@ -24,6 +28,7 @@ import {
   readForegroundPermission,
   readPositionIfPermitted,
   requestPosition,
+  type ForegroundPermission,
   type Position,
 } from '@/lib/location';
 
@@ -45,18 +50,35 @@ function NearbyFeedSkeleton({ home }: { home: boolean }) {
   );
 }
 
+function SortByNearestButton({
+  loading,
+  onPress,
+}: {
+  loading: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={loading}
+      accessibilityRole="button"
+      accessibilityLabel="Sort by nearest"
+      className="self-start py-1"
+    >
+      <Text className="text-sm font-semibold text-brand">
+        {loading ? 'Getting location…' : 'Sort by nearest'}
+      </Text>
+    </Pressable>
+  );
+}
+
 type NearbyRequestsProps = {
-  /** Cap list length on dense screens (e.g. Home). */
   limit?: number;
   sectionTitle?: string;
-  /** When set, shows a footer action after the list. */
   seeAllLabel?: string;
   onSeeAll?: () => void;
-  /** Shorter copy when embedded under the home hero. */
   compact?: boolean;
-  /** Home feed styling — no section chrome, serif cards. */
   variant?: 'default' | 'home';
-  /** Committed home search query; when set, runs server search instead of browse-only. */
   searchQuery?: string | null;
 };
 
@@ -70,11 +92,18 @@ export function NearbyRequests({
   searchQuery = null,
 }: NearbyRequestsProps) {
   const isHome = variant === 'home';
+  const screenFocusedRef = useRef(false);
   const activeSearch = searchQuery?.trim() ?? '';
   const [position, setPosition] = useState<Position | null>(null);
-  const [locating, setLocating] = useState(false);
+  const [locating, setLocating] = useState(true);
+  const [foregroundPermission, setForegroundPermission] = useState<ForegroundPermission | null>(
+    null,
+  );
   const [blocked, setBlocked] = useState<'denied' | 'unavailable' | null>(null);
+  const [sortingNearest, setSortingNearest] = useState(false);
 
+  const openBrowseEnabled = isHome && position === null && activeSearch.length === 0;
+  const open = useBrowseOpenRequests({ enabled: openBrowseEnabled });
   const nearby = useBrowseNearbyRequests(position);
   const search = useSearchRequests(activeSearch, position);
   const myRequests = useMyRequests();
@@ -90,40 +119,60 @@ export function NearbyRequests({
     return ids;
   }, [myResponses.data]);
 
+  const syncLocationAccess = useCallback(async () => {
+    const permission = await readForegroundPermission();
+    setForegroundPermission(permission);
+
+    if (permission !== 'granted') {
+      return { permission, position: null as Position | null };
+    }
+
+    const next = await readPositionIfPermitted();
+    if (next) {
+      setPosition(next);
+    }
+
+    return { permission, position: next };
+  }, []);
+
   useFocusEffect(
     useCallback(() => {
+      screenFocusedRef.current = true;
       let cancelled = false;
 
       async function ensurePosition() {
         setLocating(true);
         setBlocked(null);
 
-        const permission = await readForegroundPermission();
+        const access = await syncLocationAccess();
         if (cancelled) return;
+        setLocating(false);
 
-        if (permission === 'granted') {
-          const next = await readPositionIfPermitted();
-          if (cancelled) return;
-          setLocating(false);
-          if (next) {
-            setPosition(next);
-          } else {
+        if (access.permission === 'granted') {
+          if (!isHome && !access.position) {
             setBlocked('unavailable');
           }
           return;
         }
 
-        if (permission === 'denied') {
-          setLocating(false);
+        if (isHome) {
+          return;
+        }
+
+        if (access.permission === 'denied') {
           setBlocked('denied');
           return;
         }
 
         const result = await requestPosition();
         if (cancelled) return;
-        setLocating(false);
-        if (result.ok) {
-          setPosition(result.position);
+        const afterPrompt = await syncLocationAccess();
+        if (cancelled) return;
+
+        if (afterPrompt.permission === 'granted' || result.ok) {
+          if (result.ok) {
+            setPosition(result.position);
+          }
           return;
         }
 
@@ -133,10 +182,44 @@ export function NearbyRequests({
       void ensurePosition();
 
       return () => {
+        screenFocusedRef.current = false;
         cancelled = true;
       };
-    }, []),
+    }, [isHome, syncLocationAccess]),
   );
+
+  useEffect(() => {
+    if (!isHome) return;
+
+    const subscription = AppState.addEventListener('change', (state) => {
+      if (state === 'active' && screenFocusedRef.current) {
+        void syncLocationAccess();
+      }
+    });
+
+    return () => subscription.remove();
+  }, [isHome, syncLocationAccess]);
+
+  const sortByNearest = useCallback(async () => {
+    setSortingNearest(true);
+    setBlocked(null);
+
+    const permission = await readForegroundPermission();
+    setForegroundPermission(permission);
+    if (permission === 'denied') {
+      setSortingNearest(false);
+      void Linking.openSettings();
+      return;
+    }
+
+    const result = await requestPosition();
+    await syncLocationAccess();
+    setSortingNearest(false);
+
+    if (result.ok) {
+      setPosition(result.position);
+    }
+  }, [syncLocationAccess]);
 
   const ownOpenRequestIds = useMemo(() => {
     const ids = new Set<string>();
@@ -149,10 +232,10 @@ export function NearbyRequests({
   }, [myRequests.data]);
 
   const browseRows = useMemo(() => {
-    const rows = nearby.data ?? [];
+    const rows = position ? (nearby.data ?? []) : isHome ? (open.data ?? []) : [];
     if (isHome) return rows;
     return rows.filter((request) => !engagedRequestIds.has(request.request_id));
-  }, [nearby.data, engagedRequestIds, isHome]);
+  }, [nearby.data, open.data, position, engagedRequestIds, isHome]);
 
   const searchRows = search.data ?? [];
   const searchHasResults = activeSearch.length > 0 && searchRows.length > 0;
@@ -169,7 +252,15 @@ export function NearbyRequests({
   const visible = limit !== undefined ? rows.slice(0, limit) : rows;
   const hasMore = limit !== undefined && rows.length > limit;
 
-  const browseSkeleton = !activeSearch && showQuerySkeleton(nearby);
+  const browseSkeleton = position
+    ? !activeSearch && showQuerySkeleton(nearby)
+    : isHome && openBrowseEnabled && showQuerySkeleton(open);
+
+  const showHomeSortButton =
+    isHome &&
+    position === null &&
+    !searchHasResults &&
+    foregroundPermission === 'undetermined';
 
   const renderRequestList = () => (
     <>
@@ -229,7 +320,11 @@ export function NearbyRequests({
             badge={nearbyRequestBadge(Boolean(waiting))}
             amount={formatMoney(request.offered_amount!, request.currency)}
             whenLine={formatWhenDiscover(request.scheduled_for)}
-            proximity={formatProximity(request.distance_m)}
+            proximity={
+              request.distance_m != null
+                ? formatProximity(request.distance_m)
+                : formatCoarseLocationLabel(request.location_label ?? '')
+            }
             onOpen={() => openDetail(false)}
             onHelp={() => openDetail(true)}
           />
@@ -248,43 +343,75 @@ export function NearbyRequests({
     </>
   );
 
-  const nearbyFeed =
-    position === null ? (
-      locating ? (
+  const homeSearchNeedsLocation =
+    isHome && activeSearch.length > 0 && position === null && !searchHasResults;
+
+  const nearbyFeed = homeSearchNeedsLocation ? (
+    <View className="gap-3">
+      {showHomeSortButton ? (
+        <SortByNearestButton
+          loading={sortingNearest || locating}
+          onPress={() => void sortByNearest()}
+        />
+      ) : null}
+      {sortingNearest || locating ? (
         <NearbyFeedSkeleton home={isHome} />
-      ) : blocked === 'denied' ? (
-        <EmptyState
-          layout="list"
-          icon="location-outline"
-          title="Turn on location"
-          message="Enable location in Settings to see open requests sorted by distance."
-        />
+      ) : foregroundPermission === 'granted' ? (
+        <Text className="text-sm text-muted">
+          We could not get your location. Pull to refresh to try again.
+        </Text>
       ) : (
-        <EmptyState
-          layout="list"
-          icon="navigate-outline"
-          title="Location unavailable"
-          message="Pull to refresh and try again."
-        />
-      )
-    ) : searchLoading ? (
+        <Text className="text-sm text-muted">
+          Allow location to search open requests near you.
+        </Text>
+      )}
+    </View>
+  ) : position === null && !isHome ? (
+    locating ? (
       <NearbyFeedSkeleton home={isHome} />
-    ) : activeSearch && search.isError ? (
-      <InlineError error={search.error} />
-    ) : browseSkeleton && !searchNoResults ? (
-      <NearbyFeedSkeleton home={isHome} />
-    ) : !activeSearch && nearby.isError ? (
-      <InlineError error={nearby.error} />
-    ) : rows.length === 0 ? (
+    ) : blocked === 'denied' ? (
       <EmptyState
         layout="list"
-        icon="compass-outline"
-        title="Nothing open right now"
-        message="New requests show up here when people need help. Check back soon."
+        icon="location-outline"
+        title="Turn on location"
+        message="Enable location in Settings to see open requests sorted by distance."
       />
     ) : (
-      renderRequestList()
-    );
+      <EmptyState
+        layout="list"
+        icon="navigate-outline"
+        title="Location unavailable"
+        message="Pull to refresh and try again."
+      />
+    )
+  ) : searchLoading ? (
+    <NearbyFeedSkeleton home={isHome} />
+  ) : activeSearch && search.isError ? (
+    <InlineError error={search.error} />
+  ) : browseSkeleton && !searchNoResults ? (
+    <NearbyFeedSkeleton home={isHome} />
+  ) : !activeSearch && position && nearby.isError ? (
+    <InlineError error={nearby.error} />
+  ) : !activeSearch && !position && isHome && open.isError ? (
+    <InlineError error={open.error} />
+  ) : rows.length === 0 ? (
+    <EmptyState
+      layout="list"
+      icon="compass-outline"
+      title="Nothing open right now"
+      message="New requests show up here when people need help. Check back soon."
+    />
+  ) : (
+    <View className="gap-3">
+      {showHomeSortButton ? (
+        <SortByNearestButton
+          loading={sortingNearest}
+          onPress={() => void sortByNearest()}
+        />
+      ) : null}
+      {renderRequestList()}
+    </View>
+  );
 
   return (
     <View className="gap-3">
