@@ -1,20 +1,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import {
-  Alert,
-  Modal,
-  Platform,
-  Pressable,
-  RefreshControl,
-  ScrollView,
-  Text,
-  View,
-} from 'react-native';
-import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker';
+import { Alert, Modal, Platform, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
+import DateTimePicker, { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
 import { Redirect, router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { addHours, format, set } from 'date-fns';
 import type { BottomSheetModal } from '@gorhom/bottom-sheet';
 
 import { PersonProfileBottomSheet } from '@/components/PersonProfileBottomSheet';
+import {
+  ExtendResponseDeadlineSheet,
+  type ExtendResponseDeadlineSheetHandle,
+} from '@/components/request-flow/ExtendResponseDeadlineSheet';
 import { ReportIssueModal } from '@/components/ReportIssueModal';
 import { RequestAttachmentSection } from '@/components/request-flow/RequestAttachmentSection';
 import { RequestCallout } from '@/components/request-flow/RequestCallout';
@@ -68,6 +63,7 @@ import { showQuerySkeleton } from '@/lib/query/show-skeleton';
 import { showAppToast } from '@/lib/toast';
 import { queryKeys } from '@/lib/query/keys';
 import { useQueryClient } from '@tanstack/react-query';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useMyWallet } from '@/features/wallet/api';
 import {
   isInsufficientWalletBalanceError,
@@ -92,6 +88,8 @@ type ResponderProfilePreview = {
 export default function RequestDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const profileSheetRef = useRef<BottomSheetModal>(null);
+  const extendDeadlineSheetRef = useRef<ExtendResponseDeadlineSheetHandle>(null);
+  const reopenExtendSheetAfterPickerRef = useRef(false);
   const [profilePreview, setProfilePreview] = useState<ResponderProfilePreview | null>(null);
   const [reportIssueOpen, setReportIssueOpen] = useState(false);
 
@@ -104,15 +102,21 @@ export default function RequestDetailScreen() {
   const ownerExpireRequest = useOwnerExpireRequest(id);
   const acceptResponse = useAcceptResponse(id);
   const declineResponse = useDeclineResponse(id);
-  const [extendDeadlineOpen, setExtendDeadlineOpen] = useState(false);
   const [extendDeadlineAt, setExtendDeadlineAt] = useState(() =>
     addHours(new Date(), REQUEST_MAX_LIFETIME_HOURS),
   );
-  const [showExtendDatePicker, setShowExtendDatePicker] = useState(false);
-  const [showExtendTimePicker, setShowExtendTimePicker] = useState(false);
+  const [extendIosPicker, setExtendIosPicker] = useState<'date' | 'time' | null>(null);
+  const [extendIosPickerDraft, setExtendIosPickerDraft] = useState(() =>
+    addHours(new Date(), REQUEST_MAX_LIFETIME_HOURS),
+  );
+  const safeInsets = useSafeAreaInsets();
 
-  const extendDeadlineLabel = useMemo(
-    () => format(extendDeadlineAt, "EEEE, d MMM 'at' h:mm a"),
+  const extendDeadlineDateLabel = useMemo(
+    () => format(extendDeadlineAt, 'EEEE, d MMM'),
+    [extendDeadlineAt],
+  );
+  const extendDeadlineTimeLabel = useMemo(
+    () => format(extendDeadlineAt, 'h:mm a'),
     [extendDeadlineAt],
   );
   const openPreHandshakeChat = useOpenPreHandshakeConversation();
@@ -213,6 +217,108 @@ export default function RequestDetailScreen() {
     setProfilePreview(preview);
   };
 
+  const finishExtendPickerFlow = useCallback(() => {
+    setExtendIosPicker(null);
+    if (!reopenExtendSheetAfterPickerRef.current) return;
+    reopenExtendSheetAfterPickerRef.current = false;
+    requestAnimationFrame(() => {
+      extendDeadlineSheetRef.current?.present();
+    });
+  }, []);
+
+  const runAfterExtendSheetDismissed = useCallback((run: () => void) => {
+    reopenExtendSheetAfterPickerRef.current = true;
+    extendDeadlineSheetRef.current?.dismiss();
+    setTimeout(run, 350);
+  }, []);
+
+  const openExtendDatePicker = useCallback(() => {
+    runAfterExtendSheetDismissed(() => {
+      if (Platform.OS === 'android') {
+        DateTimePickerAndroid.open({
+          value: extendDeadlineAt,
+          mode: 'date',
+          minimumDate: new Date(),
+          maximumDate: addHours(new Date(), REQUEST_MAX_LIFETIME_HOURS),
+          onDismiss: finishExtendPickerFlow,
+          onChange: (event, date) => {
+            if (event.type === 'dismissed') {
+              finishExtendPickerFlow();
+              return;
+            }
+            if (event.type !== 'set' || !date) return;
+            setExtendDeadlineAt((prev) =>
+              set(prev, {
+                year: date.getFullYear(),
+                month: date.getMonth(),
+                date: date.getDate(),
+              }),
+            );
+            finishExtendPickerFlow();
+          },
+        });
+        return;
+      }
+
+      setExtendIosPickerDraft(extendDeadlineAt);
+      setExtendIosPicker('date');
+    });
+  }, [extendDeadlineAt, finishExtendPickerFlow, runAfterExtendSheetDismissed]);
+
+  const openExtendTimePicker = useCallback(() => {
+    runAfterExtendSheetDismissed(() => {
+      if (Platform.OS === 'android') {
+        DateTimePickerAndroid.open({
+          value: extendDeadlineAt,
+          mode: 'time',
+          onDismiss: finishExtendPickerFlow,
+          onChange: (event, date) => {
+            if (event.type === 'dismissed') {
+              finishExtendPickerFlow();
+              return;
+            }
+            if (event.type !== 'set' || !date) return;
+            setExtendDeadlineAt((prev) =>
+              set(prev, {
+                hours: date.getHours(),
+                minutes: date.getMinutes(),
+                seconds: 0,
+                milliseconds: 0,
+              }),
+            );
+            finishExtendPickerFlow();
+          },
+        });
+        return;
+      }
+
+      setExtendIosPickerDraft(extendDeadlineAt);
+      setExtendIosPicker('time');
+    });
+  }, [extendDeadlineAt, finishExtendPickerFlow, runAfterExtendSheetDismissed]);
+
+  const confirmExtendIosPicker = useCallback(() => {
+    if (extendIosPicker === 'date') {
+      setExtendDeadlineAt((prev) =>
+        set(prev, {
+          year: extendIosPickerDraft.getFullYear(),
+          month: extendIosPickerDraft.getMonth(),
+          date: extendIosPickerDraft.getDate(),
+        }),
+      );
+    } else if (extendIosPicker === 'time') {
+      setExtendDeadlineAt((prev) =>
+        set(prev, {
+          hours: extendIosPickerDraft.getHours(),
+          minutes: extendIosPickerDraft.getMinutes(),
+          seconds: 0,
+          milliseconds: 0,
+        }),
+      );
+    }
+    finishExtendPickerFlow();
+  }, [extendIosPicker, extendIosPickerDraft, finishExtendPickerFlow]);
+
   if (showQuerySkeleton(request)) {
     return (
       <Screen>
@@ -303,28 +409,7 @@ export default function RequestDetailScreen() {
 
   const openExtendDeadline = () => {
     setExtendDeadlineAt(addHours(new Date(), REQUEST_MAX_LIFETIME_HOURS));
-    setExtendDeadlineOpen(true);
-  };
-
-  const onExtendDateChange = (event: DateTimePickerEvent, date?: Date) => {
-    if (Platform.OS === 'android') setShowExtendDatePicker(false);
-    if (event.type === 'dismissed' || !date) return;
-    setExtendDeadlineAt((prev) =>
-      set(prev, { year: date.getFullYear(), month: date.getMonth(), date: date.getDate() }),
-    );
-  };
-
-  const onExtendTimeChange = (event: DateTimePickerEvent, date?: Date) => {
-    if (Platform.OS === 'android') setShowExtendTimePicker(false);
-    if (event.type === 'dismissed' || !date) return;
-    setExtendDeadlineAt((prev) =>
-      set(prev, {
-        hours: date.getHours(),
-        minutes: date.getMinutes(),
-        seconds: 0,
-        milliseconds: 0,
-      }),
-    );
+    extendDeadlineSheetRef.current?.present();
   };
 
   const submitExtendDeadline = () => {
@@ -335,7 +420,7 @@ export default function RequestDetailScreen() {
 
     extendRequest.mutate(extendDeadlineAt, {
       onSuccess: () => {
-        setExtendDeadlineOpen(false);
+        extendDeadlineSheetRef.current?.dismiss();
         showAppToast('Request extended for new responses');
       },
     });
@@ -481,19 +566,21 @@ export default function RequestDetailScreen() {
         ) : null}
 
         {isAwaitingReview ? (
-          <View className="gap-3">
+          <View className="flex-row gap-3">
             <Button
-              label="Extend request"
+              label="Close request"
+              variant="secondary"
+              className="flex-1"
+              size="lg"
+              onPress={confirmExpireRequest}
+              loading={ownerExpireRequest.isPending}
+            />
+            <Button
+              label="Extend"
+              className="flex-1"
               size="lg"
               onPress={openExtendDeadline}
               loading={extendRequest.isPending}
-            />
-            <Button
-              label="Close request"
-              size="lg"
-              variant="secondary"
-              onPress={confirmExpireRequest}
-              loading={ownerExpireRequest.isPending}
             />
           </View>
         ) : null}
@@ -570,66 +657,72 @@ export default function RequestDetailScreen() {
         ) : null}
       </ScrollView>
 
-      <Modal
-        visible={extendDeadlineOpen}
-        animationType="slide"
-        transparent
-        onRequestClose={() => setExtendDeadlineOpen(false)}
-      >
-        <Pressable
-          accessibilityRole="button"
-          className="flex-1 justify-end bg-black/40"
-          onPress={() => setExtendDeadlineOpen(false)}
+      <ExtendResponseDeadlineSheet
+        ref={extendDeadlineSheetRef}
+        deadlineDateLabel={extendDeadlineDateLabel}
+        deadlineTimeLabel={extendDeadlineTimeLabel}
+        onRequestDatePicker={openExtendDatePicker}
+        onRequestTimePicker={openExtendTimePicker}
+        onDismiss={() => {
+          if (!reopenExtendSheetAfterPickerRef.current) {
+            setExtendIosPicker(null);
+          }
+        }}
+        onExtend={submitExtendDeadline}
+        extendLoading={extendRequest.isPending}
+      />
+
+      {extendIosPicker ? (
+        <Modal
+          transparent
+          visible
+          animationType="slide"
+          onRequestClose={finishExtendPickerFlow}
         >
           <Pressable
-            accessibilityRole="none"
-            onPress={(event) => event.stopPropagation()}
-            className="gap-5 rounded-t-3xl bg-surface p-5 pb-10"
+            accessibilityRole="button"
+            className="flex-1 justify-end bg-black/40"
+            onPress={finishExtendPickerFlow}
           >
-            <Text className="text-xl font-bold text-ink">New response deadline</Text>
-            <Text className="text-base text-muted">
-              People nearby can respond again until this time. Your task date stays the same.
-            </Text>
-            <Text className="text-base font-semibold text-ink">{extendDeadlineLabel}</Text>
-            <View className="flex-row gap-3">
-              <Button
-                label="Pick date"
-                variant="secondary"
-                className="flex-1"
-                onPress={() => setShowExtendDatePicker(true)}
-              />
-              <Button
-                label="Pick time"
-                variant="secondary"
-                className="flex-1"
-                onPress={() => setShowExtendTimePicker(true)}
-              />
-            </View>
-            {showExtendDatePicker ? (
+            <Pressable
+              accessibilityRole="none"
+              onPress={(event) => event.stopPropagation()}
+              className="gap-4 rounded-t-3xl bg-surface px-5 pt-4"
+              style={{ paddingBottom: safeInsets.bottom + 20 }}
+            >
               <DateTimePicker
-                value={extendDeadlineAt}
-                mode="date"
-                minimumDate={new Date()}
-                onChange={onExtendDateChange}
+                value={extendIosPickerDraft}
+                mode={extendIosPicker}
+                display="spinner"
+                minimumDate={extendIosPicker === 'date' ? new Date() : undefined}
+                maximumDate={
+                  extendIosPicker === 'date'
+                    ? addHours(new Date(), REQUEST_MAX_LIFETIME_HOURS)
+                    : undefined
+                }
+                onChange={(_, date) => {
+                  if (date) setExtendIosPickerDraft(date);
+                }}
               />
-            ) : null}
-            {showExtendTimePicker ? (
-              <DateTimePicker value={extendDeadlineAt} mode="time" onChange={onExtendTimeChange} />
-            ) : null}
-            <Button
-              label="Extend request"
-              size="lg"
-              onPress={submitExtendDeadline}
-              loading={extendRequest.isPending}
-            />
-            <Button
-              label="Cancel"
-              variant="ghost"
-              onPress={() => setExtendDeadlineOpen(false)}
-            />
+              <View className="flex-row gap-3">
+                <Button
+                  label="Cancel"
+                  variant="secondary"
+                  className="flex-1"
+                  size="lg"
+                  onPress={finishExtendPickerFlow}
+                />
+                <Button
+                  label="Done"
+                  className="flex-1"
+                  size="lg"
+                  onPress={confirmExtendIosPicker}
+                />
+              </View>
+            </Pressable>
           </Pressable>
-        </Pressable>
-      </Modal>
+        </Modal>
+      ) : null}
 
       <ReportIssueModal
         visible={reportIssueOpen}
