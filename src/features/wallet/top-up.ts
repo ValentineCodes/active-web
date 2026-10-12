@@ -79,7 +79,7 @@ export function readWalletTopUpShortfall(
   return Math.trunc(major);
 }
 
-/** Params to thread through add → review → processing for a contextual top-up. */
+/** Params to thread through add → review → checkout for a contextual top-up. */
 export function walletDepositFlowParams(options: {
   returnTo?: string;
   prefillAmountMajor?: number;

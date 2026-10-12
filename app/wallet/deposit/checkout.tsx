@@ -1,17 +1,33 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Text, View } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
+import { useQueryClient } from '@tanstack/react-query';
 
+import { Button } from '@/components/ui/Button';
 import { Header } from '@/components/ui/Header';
 import { Screen } from '@/components/ui/Screen';
+import { ErrorState } from '@/components/ui/StateView';
 import {
   consumeCheckoutSession,
   depositCallbackUrl,
   isDepositCallbackUrl,
+  readPendingDepositReturnTo,
   referenceFromCallbackUrl,
+  verifyWalletDeposit,
+  waitForWalletDepositSettlement,
 } from '@/features/wallet/deposit-api';
+import { invalidateWalletQueries } from '@/features/wallet/api';
+import { formatMoney } from '@/lib/format';
+import { MARKET } from '@/config';
 import { showAppToast } from '@/lib/toast';
+import { koboToMajor } from '@/features/wallet/kobo';
+import { isNetworkError, toUserMessage } from '@/lib/supabase/errors';
+import {
+  exitWalletDepositAfterSuccess,
+  exitWalletDepositLeaving,
+  readWalletReturnTo,
+} from '@/features/wallet/deposit-navigation';
 import { useColors } from '@/theme';
 
 /** iOS closes ASWebAuthenticationSession after redirect; dismiss then throws. */
@@ -19,66 +35,81 @@ function dismissBrowserSafely(): void {
   void WebBrowser.dismissBrowser().catch(() => undefined);
 }
 
+type Phase = 'browser' | 'processing' | 'success' | 'failed' | 'still_processing';
+
 export default function WalletDepositCheckoutScreen() {
   const colors = useColors();
+  const queryClient = useQueryClient();
+  const { reference: referenceParam, returnTo: returnToParam } = useLocalSearchParams<{
+    reference?: string;
+    returnTo?: string;
+  }>();
+  const returnTo =
+    readWalletReturnTo(returnToParam) ??
+    readWalletReturnTo(readPendingDepositReturnTo() ?? undefined);
+  const referenceFromRoute =
+    typeof referenceParam === 'string' ? referenceParam : referenceParam?.[0];
+
   const [session] = useState(() => consumeCheckoutSession());
-  const [handedOff, setHandedOff] = useState(false);
+  const [settlementReference, setSettlementReference] = useState<string | null>(
+    () => referenceFromRoute ?? null,
+  );
+  const [phase, setPhase] = useState<Phase>(() => {
+    if (referenceFromRoute) return 'processing';
+    if (session) return 'browser';
+    return 'browser';
+  });
+  const [error, setError] = useState<Error | null>(() =>
+    referenceFromRoute || session ? null : new Error('Missing payment reference'),
+  );
+  const [amountMajor, setAmountMajor] = useState<number | null>(null);
+  const [retrying, setRetrying] = useState(false);
   const openedBrowserRef = useRef(false);
+  const browserResolvedRef = useRef(false);
 
   useEffect(() => {
-    if (!session && !handedOff) {
+    if (!session && !referenceFromRoute) {
       router.replace('/wallet/add');
     }
-  }, [session, handedOff]);
+  }, [referenceFromRoute, session]);
 
-  const goToProcessing = useCallback(
-    (reference: string, returnTo?: string) => {
-      if (handedOff) return;
-      setHandedOff(true);
-      router.replace({
-        pathname: '/wallet/deposit/processing',
-        params: {
-          reference,
-          ...(returnTo ? { returnTo } : {}),
-        },
-      });
-    },
-    [handedOff],
-  );
+  const beginSettlement = useCallback((reference: string) => {
+    browserResolvedRef.current = true;
+    setSettlementReference(reference);
+    setPhase('processing');
+    setError(null);
+  }, []);
 
   const tryHandleCallbackUrl = useCallback(
     (url: string): boolean => {
-      if (handedOff || !session || !isDepositCallbackUrl(url)) return false;
+      if (browserResolvedRef.current || !session || !isDepositCallbackUrl(url)) return false;
       const reference = referenceFromCallbackUrl(url) ?? session.reference;
-      goToProcessing(reference, session?.returnTo);
+      beginSettlement(reference);
       return true;
     },
-    [goToProcessing, handedOff, session],
+    [beginSettlement, session],
   );
 
   const finishWithoutCallback = useCallback(() => {
-    if (handedOff) return;
+    if (browserResolvedRef.current) return;
 
     if (session?.reference) {
-      goToProcessing(session.reference, session.returnTo);
+      beginSettlement(session.reference);
       return;
     }
 
     showAppToast('Payment cancelled');
     router.back();
-  }, [goToProcessing, handedOff, session]);
+  }, [beginSettlement, session]);
 
-  const leaveCheckout = useCallback(() => {
+  const leaveBrowser = useCallback(() => {
     dismissBrowserSafely();
-    if (handedOff) {
-      router.back();
-      return;
-    }
+    if (browserResolvedRef.current) return;
     finishWithoutCallback();
-  }, [finishWithoutCallback, handedOff]);
+  }, [finishWithoutCallback]);
 
   useEffect(() => {
-    if (!session || handedOff || openedBrowserRef.current) return;
+    if (!session || phase !== 'browser' || openedBrowserRef.current) return;
     openedBrowserRef.current = true;
 
     let cancelled = false;
@@ -89,7 +120,7 @@ export default function WalletDepositCheckoutScreen() {
         depositCallbackUrl(),
       );
 
-      if (cancelled || handedOff) return;
+      if (cancelled || browserResolvedRef.current) return;
 
       if (result.type === 'success' && result.url) {
         if (!tryHandleCallbackUrl(result.url)) {
@@ -104,9 +135,110 @@ export default function WalletDepositCheckoutScreen() {
     return () => {
       cancelled = true;
     };
-  }, [finishWithoutCallback, handedOff, session, tryHandleCallbackUrl]);
+  }, [finishWithoutCallback, phase, session, tryHandleCallbackUrl]);
 
-  if (!session) {
+  const applySettlementResult = useCallback(
+    async (result: Awaited<ReturnType<typeof waitForWalletDepositSettlement>>) => {
+      if (result.wallet_credited) {
+        setAmountMajor(koboToMajor(result.amount_kobo));
+        setPhase('success');
+        await invalidateWalletQueries(queryClient);
+        showAppToast('Money added');
+        return;
+      }
+
+      if (result.fulfillment_rejected) {
+        setError(
+          new Error(
+            'We could not match this payment to your deposit. Contact support if you were charged.',
+          ),
+        );
+        setPhase('failed');
+        return;
+      }
+
+      if (result.timed_out && result.status === 'success') {
+        setPhase('still_processing');
+        return;
+      }
+
+      if (result.deposit_status === 'failed' || result.status === 'failed') {
+        setError(new Error('Payment failed. Your wallet was not charged.'));
+        setPhase('failed');
+        return;
+      }
+
+      setError(new Error('Payment was not confirmed. Your wallet was not charged.'));
+      setPhase('failed');
+    },
+    [queryClient],
+  );
+
+  useEffect(() => {
+    if (phase !== 'processing' || !settlementReference) return;
+
+    let cancelled = false;
+
+    void (async () => {
+      try {
+        const result = await waitForWalletDepositSettlement(settlementReference);
+        if (cancelled) return;
+        await applySettlementResult(result);
+      } catch (err) {
+        if (cancelled) return;
+        const message = isNetworkError(err)
+          ? 'You appear to be offline. Check your connection and try again.'
+          : toUserMessage(err);
+        setError(new Error(message));
+        setPhase('failed');
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [applySettlementResult, phase, settlementReference]);
+
+  const retryConfirmation = async () => {
+    if (!settlementReference) return;
+    setRetrying(true);
+    setError(null);
+    setPhase('processing');
+    try {
+      const result = await waitForWalletDepositSettlement(settlementReference, {
+        maxAttempts: 10,
+        intervalMs: 2000,
+      });
+      await applySettlementResult(result);
+    } catch (err) {
+      const message = isNetworkError(err)
+        ? 'You appear to be offline. Check your connection and try again.'
+        : toUserMessage(err);
+      setError(new Error(message));
+      setPhase('failed');
+    } finally {
+      setRetrying(false);
+    }
+  };
+
+  const checkOnce = async () => {
+    if (!settlementReference) return;
+    setRetrying(true);
+    try {
+      const result = await verifyWalletDeposit(settlementReference);
+      await applySettlementResult({ ...result, timed_out: false });
+    } catch (err) {
+      const message = isNetworkError(err)
+        ? 'You appear to be offline. Check your connection and try again.'
+        : toUserMessage(err);
+      setError(new Error(message));
+      setPhase('failed');
+    } finally {
+      setRetrying(false);
+    }
+  };
+
+  if (!session && !referenceFromRoute) {
     return (
       <Screen>
         <Header title="Payment" onBack={() => router.back()} />
@@ -117,15 +249,106 @@ export default function WalletDepositCheckoutScreen() {
     );
   }
 
+  if (phase === 'browser' && session) {
+    return (
+      <Screen edges={['top', 'bottom']}>
+        <Header title="Payment" onBack={leaveBrowser} />
+        <View className="flex-1 items-center justify-center gap-4 bg-canvas px-5">
+          <ActivityIndicator color={colors.brand} />
+          <Text className="text-center text-sm leading-5 text-muted">
+            Complete payment in the browser. After Paystack shows success, return here—we will confirm
+            your deposit. You can also use the back arrow and we will check the payment for you.
+          </Text>
+        </View>
+      </Screen>
+    );
+  }
+
+  if (phase === 'processing') {
+    return (
+      <Screen>
+        <Header title="Processing" />
+        <View className="flex-1 items-center justify-center gap-4 px-8">
+          <ActivityIndicator size="large" color={colors.brand} />
+          <Text className="text-center text-lg font-semibold text-ink">Payment processing</Text>
+          <Text className="text-center text-base leading-6 text-muted">
+            We&apos;re confirming your payment before updating your balance. This can take a little
+            while.
+          </Text>
+        </View>
+      </Screen>
+    );
+  }
+
+  if (phase === 'still_processing') {
+    return (
+      <Screen edges={['top', 'bottom']}>
+        <Header title="Processing" onBack={() => exitWalletDepositLeaving(returnTo)} />
+        <View className="flex-1 items-center justify-center gap-4 px-8">
+          <ActivityIndicator size="large" color={colors.brand} />
+          <Text className="text-center text-lg font-semibold text-ink">Still confirming</Text>
+          <Text className="text-center text-base leading-6 text-muted">
+            Your payment may still be on its way. Your available balance will update only after we
+            confirm it—nothing has been added yet.
+          </Text>
+        </View>
+        <View className="gap-3 p-5">
+          <Button
+            label="Check again"
+            variant="active"
+            size="lg"
+            corner="2xl"
+            className="w-full"
+            loading={retrying}
+            onPress={() => void checkOnce()}
+          />
+          <Button
+            label={returnTo ? 'Back to request' : 'Back to wallet'}
+            variant="secondary"
+            size="lg"
+            corner="2xl"
+            className="w-full"
+            onPress={() => exitWalletDepositLeaving(returnTo)}
+          />
+        </View>
+      </Screen>
+    );
+  }
+
+  if (phase === 'failed') {
+    return (
+      <Screen>
+        <Header title="Payment" onBack={() => exitWalletDepositLeaving(returnTo)} />
+        <ErrorState
+          error={error ?? new Error('Payment could not be confirmed')}
+          onRetry={() => void retryConfirmation()}
+        />
+      </Screen>
+    );
+  }
+
   return (
     <Screen edges={['top', 'bottom']}>
-      <Header title="Payment" onBack={leaveCheckout} />
-      <View className="flex-1 items-center justify-center gap-4 bg-canvas px-5">
-        <ActivityIndicator color={colors.brand} />
-        <Text className="text-center text-sm leading-5 text-muted">
-          Complete payment in the browser. After Paystack shows success, return here—we will confirm
-          your deposit. You can also use the back arrow and we will check the payment for you.
+      <View className="flex-1 items-center justify-center gap-3 px-8">
+        <Text className="text-center text-2xl font-bold text-ink">Payment successful</Text>
+        {amountMajor !== null ? (
+          <Text className="text-center text-4xl font-bold text-active">
+            {formatMoney(amountMajor, MARKET.currency)}
+          </Text>
+        ) : null}
+        <Text className="text-center text-base leading-6 text-muted">
+          Your available balance has been updated.
         </Text>
+      </View>
+      <View className="p-5">
+        <Button
+          label={returnTo ? 'Continue' : 'Back to wallet'}
+          variant="active"
+          size="lg"
+          corner="2xl"
+          className="w-full"
+          onPress={() => exitWalletDepositAfterSuccess(returnTo)}
+        />
       </View>
     </Screen>
   );

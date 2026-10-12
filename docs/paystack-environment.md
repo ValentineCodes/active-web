@@ -45,7 +45,7 @@ Expo app (existing):
    - `POST /functions/v1/paystack-initialize` — body `{ "amount_naira": 1000, "callback_url": "active://wallet/deposit/callback" }`
    - `POST /functions/v1/paystack-verify` — body `{ "reference": "<active or paystack reference>" }` (JWT). Calls Paystack Verify API server-side and runs the same idempotent settlement as the webhook.
 
-The app **Payment processing** screen only polls `paystack-verify`; it never credits locally from the WebView callback alone.
+The app **checkout** screen only polls `paystack-verify` after Paystack returns; it never credits locally from the redirect alone.
 
 - `POST /functions/v1/paystack-webhook` — Paystack server only (no JWT); configure in Paystack dashboard
 

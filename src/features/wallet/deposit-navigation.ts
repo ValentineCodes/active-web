@@ -2,7 +2,7 @@ import { type Href, router } from 'expo-router';
 
 import { clearPendingDepositContext } from '@/features/wallet/deposit-api';
 
-/** add → review → processing (checkout is always replaced, not left on stack). */
+/** add → review → checkout (browser + confirmation on one screen). */
 const WALLET_DEPOSIT_STACK_DEPTH = 3;
 
 export const WALLET_RETURN_TO_PARAM = 'returnTo';

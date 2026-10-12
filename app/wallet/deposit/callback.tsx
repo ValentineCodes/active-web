@@ -20,7 +20,7 @@ export default function WalletDepositCallbackScreen() {
     }
 
     router.replace({
-      pathname: '/wallet/deposit/processing',
+      pathname: '/wallet/deposit/checkout',
       params: { reference },
     });
   }, [reference]);

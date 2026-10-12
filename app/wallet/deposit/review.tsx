@@ -75,7 +75,7 @@ export default function WalletDepositReviewScreen() {
       return;
     }
     router.replace({
-      pathname: '/wallet/deposit/processing',
+      pathname: '/wallet/deposit/checkout',
       params: {
         reference,
         ...(returnTo ? { [WALLET_RETURN_TO_PARAM]: returnTo } : {}),
