@@ -277,7 +277,7 @@ export function requestNavigationPath(input: {
   const status = input.requestStatus;
 
   if (input.role === 'requester') {
-    if (['accepted', 'in_progress', 'completion_pending', 'disputed', 'no_show'].includes(status)) {
+    if (['completion_pending', 'disputed', 'no_show'].includes(status)) {
       return `/engagement/${input.requestId}`;
     }
     return `/request/${input.requestId}`;

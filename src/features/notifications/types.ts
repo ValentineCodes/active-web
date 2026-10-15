@@ -47,6 +47,8 @@ export const NOTIFICATION_TYPES = [
   'request_cancelled',
   'helper_cancelled',
   'cancellation_confirmed',
+  'engagement_cancellation_requested',
+  'engagement_cancellation_declined',
   'problem_reported',
   'dispute_opened',
   'dispute_resolved',

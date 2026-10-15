@@ -4,29 +4,24 @@ import { useEffect } from 'react';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { router, Stack } from 'expo-router';
-import { useQuery } from '@tanstack/react-query';
-import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
+import { Stack } from 'expo-router';
 
 import { ToastProvider } from '@/components/ui/ToastProvider';
 import { consumeSessionExpiredOnEntryToast } from '@/features/auth/session-expired-toast';
+import { SignInFlowProvider, useSignInFlow } from '@/features/auth/sign-in-flow';
 import { SessionProvider, useSession } from '@/features/auth/session';
 import { AppReadyGate } from '@/features/auth/splash-gate';
 import { showAppToast } from '@/lib/toast';
-import { profileQueryOptions } from '@/features/profile/api';
 import '@/features/requests/tag-catalogue-storage';
 import { queryClient } from '@/lib/query/client';
 import { queryPersistOptions } from '@/lib/query/persist';
 import { ThemeProvider } from '@/theme';
 import { ThemeStatusBar } from '@/theme/ThemeStatusBar';
+import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 
 function RootNavigator() {
   const { session } = useSession();
-
-  const profileQuery = useQuery({
-    ...profileQueryOptions(session?.user.id ?? ''),
-    enabled: Boolean(session),
-  });
+  const { completingPhoneOtp } = useSignInFlow();
 
   useEffect(() => {
     if (session) return;
@@ -35,18 +30,12 @@ function RootNavigator() {
     }
   }, [session]);
 
-  useEffect(() => {
-    if (!session || !profileQuery.isSuccess) return;
-    if (!profileQuery.data.display_name) {
-      router.replace('/onboarding');
-    }
-  }, [profileQuery.data?.display_name, profileQuery.isSuccess, session]);
-
-  const showSignedInApp = Boolean(session);
+  const showAuthStack = !session || completingPhoneOtp;
+  const showSignedInApp = Boolean(session) && !completingPhoneOtp;
 
   return (
     <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Protected guard={!session}>
+      <Stack.Protected guard={showAuthStack}>
         <Stack.Screen name="(auth)" />
       </Stack.Protected>
 
@@ -79,19 +68,21 @@ function RootNavigator() {
 
 export default function RootLayout() {
   return (
-    <GestureHandlerRootView className="flex-1">
+    <GestureHandlerRootView className="flex-1 bg-canvas">
       <SafeAreaProvider>
         <PersistQueryClientProvider client={queryClient} persistOptions={queryPersistOptions}>
           <ThemeProvider>
             <SessionProvider>
-              <AppReadyGate>
-                <ToastProvider>
-                  <BottomSheetModalProvider>
-                    <ThemeStatusBar />
-                    <RootNavigator />
-                  </BottomSheetModalProvider>
-                </ToastProvider>
-              </AppReadyGate>
+              <SignInFlowProvider>
+                <AppReadyGate>
+                  <ToastProvider>
+                    <BottomSheetModalProvider>
+                      <ThemeStatusBar />
+                      <RootNavigator />
+                    </BottomSheetModalProvider>
+                  </ToastProvider>
+                </AppReadyGate>
+              </SignInFlowProvider>
             </SessionProvider>
           </ThemeProvider>
         </PersistQueryClientProvider>

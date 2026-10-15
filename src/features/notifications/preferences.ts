@@ -38,7 +38,7 @@ export function useUpdateNotificationPreferences() {
       if (error) throw error;
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: queryKeys.profile });
+      void queryClient.invalidateQueries({ queryKey: ['profile'] });
     },
   });
 }

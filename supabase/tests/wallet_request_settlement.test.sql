@@ -274,7 +274,26 @@ select is(
 
 select lives_ok(
   format('select cancel_request(%L)', :'cancel_after_accept_id'),
-  'cancel after accept refunds held funds'
+  'cancel after accept opens a pending cancellation request'
+);
+
+select is(
+  (
+    select available_balance
+    from public.wallets
+    where user_id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'::uuid
+  ),
+  100000::bigint,
+  'funds stay locked while client cancellation awaits provider consent'
+);
+
+select pg_temp.act_as('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb') as _ \gset
+select lives_ok(
+  format(
+    $$select respond_engagement_cancellation(%L::uuid, true, null)$$,
+    :'cancel_after_accept_id'
+  ),
+  'provider agrees to client cancellation and triggers refund'
 );
 
 select is(
@@ -284,7 +303,7 @@ select is(
     where user_id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'::uuid
   ),
   500000::bigint,
-  'cancellation after accept returns held amount to available balance'
+  'agreed cancellation after accept returns held amount to available balance'
 );
 
 select is(

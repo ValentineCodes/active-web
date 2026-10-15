@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
-import { Alert, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
-import { router } from 'expo-router';
+import { Alert, Keyboard, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { router } from 'expo-router';
 
 import { AuthFooterButton } from '@/components/auth/AuthFooterButton';
 import { OtpDashedInput } from '@/components/auth/OtpDashedInput';
@@ -11,7 +11,9 @@ import { Screen } from '@/components/ui/Screen';
 import { InlineError } from '@/components/ui/StateView';
 import { MARKET } from '@/config';
 import { isPlausiblePhone, sendPhoneOtp, toE164, verifyPhoneOtp } from '@/features/auth/api';
-import { useSession } from '@/features/auth/session';
+import { useSignInFlow } from '@/features/auth/sign-in-flow';
+import { profileQueryOptions } from '@/features/profile/api';
+import { supabase } from '@/lib/supabase/client';
 import { poppinsInputTypography } from '@/theme/fonts';
 import { useColors } from '@/theme';
 
@@ -22,7 +24,8 @@ const RESEND_COOLDOWN_SEC = 30;
 
 export default function PhoneScreen() {
   const colors = useColors();
-  const { session } = useSession();
+  const queryClient = useQueryClient();
+  const { setCompletingPhoneOtp } = useSignInFlow();
   const [phone, setPhone] = useState('');
   const [otpSent, setOtpSent] = useState(false);
   const [otp, setOtp] = useState('');
@@ -38,7 +41,27 @@ export default function PhoneScreen() {
   });
 
   const verify = useMutation({
-    mutationFn: () => verifyPhoneOtp(phone, otp),
+    mutationFn: async () => {
+      await verifyPhoneOtp(phone, otp);
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const userId = session?.user.id;
+      if (!userId) {
+        throw new Error('Sign-in did not complete. Try again.');
+      }
+      return queryClient.fetchQuery(profileQueryOptions(userId));
+    },
+    onMutate: () => {
+      setCompletingPhoneOtp(true);
+    },
+    onSuccess: (profile) => {
+      setCompletingPhoneOtp(false);
+      router.replace(profile.display_name ? '/(tabs)' : '/onboarding');
+    },
+    onError: () => {
+      setCompletingPhoneOtp(false);
+    },
   });
 
   const resend = useMutation({
@@ -75,11 +98,15 @@ export default function PhoneScreen() {
     );
   };
 
-  const primaryLoading = otpSent ? verify.isPending || Boolean(session) : sendCode.isPending;
+  const primaryLoading = otpSent ? verify.isPending : sendCode.isPending;
   const primaryDisabled = otpSent ? !isOtpComplete : !canSend;
   const primaryAction = () => {
-    if (otpSent) verify.mutate();
-    else sendCode.mutate();
+    if (otpSent) {
+      Keyboard.dismiss();
+      verify.mutate();
+      return;
+    }
+    sendCode.mutate();
   };
 
   const mutationError = otpSent ? verify.error : sendCode.error;

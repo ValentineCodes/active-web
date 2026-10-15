@@ -62,11 +62,13 @@ export function myResponseLifecycleBadge(
     return { label: badge.label, tone: badge.tone };
   }
 
-  if (
-    responseStatus === 'pending' &&
-    (requestStatus === 'posted' || requestStatus === 'searching')
-  ) {
-    return { label: 'Responded', tone: 'brand' };
+  if (responseStatus === 'pending') {
+    if (requestStatus === 'accepted' || requestStatus === 'in_progress') {
+      return { label: 'Offer waiting', tone: 'info' };
+    }
+    if (requestStatus === 'posted' || requestStatus === 'searching') {
+      return { label: 'Responded', tone: 'brand' };
+    }
   }
 
   return responseStatusBadge(responseStatus);

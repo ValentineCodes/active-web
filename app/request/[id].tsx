@@ -17,7 +17,6 @@ import { RequestCompletionCard } from '@/components/request-flow/RequestCompleti
 import { RequestFlowHeader } from '@/components/request-flow/RequestFlowHeader';
 import { RequestMetaRow } from '@/components/request-flow/RequestMetaRow';
 import { RequestOfferWhenCard } from '@/components/request-flow/RequestOfferWhenCard';
-import { RequestConnectionActions } from '@/components/request-flow/RequestConnectionActions';
 import { RequestPersonCard } from '@/components/request-flow/RequestPersonCard';
 import { RequestTagsLine } from '@/components/request-flow/RequestTagsLine';
 import { RequestTitleSection } from '@/components/request-flow/RequestTitleSection';
@@ -36,12 +35,11 @@ import {
   useOwnerExpireRequest,
   useRequestResponses,
 } from '@/features/requests/requester-api';
-import {
-  useOpenPreHandshakeConversation,
-  useRequestConversation,
-} from '@/features/requests/conversation-api';
+import { useOpenPreHandshakeConversation } from '@/features/requests/conversation-api';
 import { chooseResponderDialog } from '@/features/requests/selection-copy';
 import { myRequestActivityBadge } from '@/features/requests/activity-list';
+import { partitionRequestResponsesForRequester } from '@/features/requests/request-response-sections';
+import { responseStatusBadge } from '@/features/requests/status';
 import { isRequestEditable } from '@/features/requests/edit-eligibility';
 import {
   canReuseRequest,
@@ -98,8 +96,6 @@ export default function RequestDetailScreen() {
   const responses = useRequestResponses(id);
   useQueryErrorToast(request, { enabled: request.isError && !request.data });
   useQueryErrorToast(responses, { enabled: responses.isError && !responses.data });
-  const conversation = useRequestConversation(id, Boolean(request.data?.selected_user_id));
-
   const cancelRequest = useCancelRequest(id);
   const extendRequest = useExtendRequest(id);
   const ownerExpireRequest = useOwnerExpireRequest(id);
@@ -175,8 +171,7 @@ export default function RequestDetailScreen() {
       acceptResponse.mutate(responseId, {
         onSuccess: () => {
           onAccepted?.();
-          showAppToast('Payment is being confirmed', 'info');
-          router.replace(`/engagement/${id}`);
+          showAppToast('Helper confirmed — open the engagement for chat and details', 'info');
         },
         onError: (error) => {
           if (isInsufficientWalletBalanceError(error)) {
@@ -189,7 +184,6 @@ export default function RequestDetailScreen() {
     [
       acceptResponse,
       dismissProfileSheet,
-      id,
       request.data?.offered_amount,
       responses.data,
       showInsufficientWalletAlert,
@@ -203,7 +197,7 @@ export default function RequestDetailScreen() {
         void queryClient.invalidateQueries({ queryKey: queryKeys.notificationUnreadCount });
         void queryClient.invalidateQueries({ queryKey: queryKeys.notificationInbox });
       });
-    }, [id, queryClient, wallet.refetch]),
+    }, [id, queryClient, wallet]),
   );
 
   const onPullRefresh = useCallback(
@@ -354,20 +348,18 @@ export default function RequestDetailScreen() {
     expires_at: data.expires_at,
     pending_response_count: data.pending_response_count,
   });
-  const pending = responses.data?.filter((response) => response.status === 'pending') ?? [];
   const isAwaitingReview = isAwaitingReviewRequestView(data.status, data.expires_at);
   const isExpiredRequest = isExpiredRequestView(data.status, data.expires_at);
   const isOpen =
     (data.status === 'posted' || data.status === 'searching') &&
     !isAwaitingReview &&
     !isExpiredRequest;
-  const redirectsToEngagement = [
-    'accepted',
-    'in_progress',
-    'completion_pending',
-    'disputed',
-    'no_show',
-  ].includes(data.status);
+  const responseSections = partitionRequestResponsesForRequester(responses.data ?? [], data.status, {
+    isAwaitingReview,
+    isExpiredRequest,
+  });
+  const pending = responseSections.selectablePending;
+  const redirectsToEngagement = ['completion_pending', 'disputed', 'no_show'].includes(data.status);
   const reuseLabel = canReuseRequest(data.status, data.expires_at)
     ? reuseRequestButtonLabelForRequest(data.status, data.expires_at)
     : null;
@@ -375,8 +367,7 @@ export default function RequestDetailScreen() {
   const amount =
     data.offered_amount !== null ? formatMoney(data.offered_amount, data.currency) : null;
   const metaTime = formatAgo(data.updated_at ?? data.created_at);
-  const acceptedProvider =
-    responses.data?.find((response) => response.status === 'accepted') ?? null;
+  const acceptedProvider = responseSections.accepted;
 
   const confirmCancel = () =>
     Alert.alert('Cancel request?', 'Anyone who responded will be told it is no longer open.', [
@@ -445,6 +436,66 @@ export default function RequestDetailScreen() {
         },
       ],
     );
+
+  type ListedResponse = NonNullable<typeof responses.data>[number];
+
+  const responderProfileFromResponse = (
+    response: ListedResponse,
+    allowSelection: boolean,
+  ): ResponderProfilePreview => ({
+    userId: response.responder_id,
+    displayName: response.display_name,
+    avatarPath: response.avatar_path,
+    bio: response.bio,
+    ratingAverage: response.rating_average,
+    ratingCount: response.rating_count,
+    completionPercent: response.completion_percent,
+    pendingResponse: allowSelection
+      ? {
+          responseId: response.response_id,
+          responderAvailable: response.responder_available,
+        }
+      : undefined,
+  });
+
+  const renderResponseCard = (
+    response: ListedResponse,
+    options: { allowSelection: boolean; statusLabel?: string; statusTone?: 'neutral' | 'brand' | 'active' | 'danger' | 'warning' | 'info' },
+  ) => (
+    <ResponseCard
+      key={response.response_id}
+      displayName={response.display_name}
+      avatarPath={response.avatar_path}
+      ratingAverage={response.rating_average}
+      ratingCount={response.rating_count}
+      completionPercent={response.completion_percent}
+      onViewProfile={() =>
+        openResponderProfile(responderProfileFromResponse(response, options.allowSelection))
+      }
+      message={response.message}
+      quotedAmount={response.quoted_amount}
+      currency={data.currency}
+      createdAt={response.created_at}
+      responderAvailable={response.responder_available}
+      statusLabel={options.statusLabel}
+      statusTone={options.statusTone}
+      onDiscussPress={
+        options.allowSelection ? () => discussResponse(response.response_id) : undefined
+      }
+      discussLoading={
+        options.allowSelection &&
+        openPreHandshakeChat.isPending &&
+        openPreHandshakeChat.variables === response.response_id
+      }
+    />
+  );
+
+  const showResponsePanels =
+    isOpen ||
+    isAwaitingReview ||
+    responseSections.hasActiveEngagement ||
+    responseSections.withdrawn.length > 0 ||
+    responseSections.declined.length > 0;
 
   if (redirectsToEngagement) {
     return <Redirect href={`/engagement/${id}`} />;
@@ -522,16 +573,6 @@ export default function RequestDetailScreen() {
           />
         ) : null}
 
-        {conversation.data ? (
-          <RequestConnectionActions
-            chatOnly
-            onChat={() => router.push(`/conversation/${id}`)}
-            onCall={() => {}}
-            onViewMap={() => {}}
-            callDisabled
-          />
-        ) : null}
-
         {reuseLabel && (data.status === 'completed' || isExpiredRequest) ? (
           <Button
             label={reuseLabel}
@@ -588,69 +629,99 @@ export default function RequestDetailScreen() {
           </View>
         ) : null}
 
-        {isOpen || isAwaitingReview ? (
+        {responseSections.hasActiveEngagement && acceptedProvider ? (
           <View className="gap-4">
-            <Text className="text-lg font-bold text-ink">
-              {pending.length === 1 ? '1 Response' : `${pending.length} Responses`}
-            </Text>
+            <Button
+              label="Open engagement"
+              size="lg"
+              corner="2xl"
+              onPress={() => router.push(`/engagement/${id}`)}
+            />
+            {renderResponseCard(acceptedProvider, {
+              allowSelection: false,
+              statusLabel: 'Active helper',
+              statusTone: 'active',
+            })}
+          </View>
+        ) : null}
 
-            {responses.isPending && !responses.data ? (
-              <LoadingState label="Loading responses" />
+        {showResponsePanels ? (
+          <View className="gap-6">
+            {isOpen || isAwaitingReview ? (
+              <View className="gap-4">
+                <Text className="text-lg font-bold text-ink">
+                  {pending.length === 1 ? '1 Response' : `${pending.length} Responses`}
+                </Text>
+
+                {responses.isPending && !responses.data ? (
+                  <LoadingState label="Loading responses" />
+                ) : null}
+
+                {responses.isSuccess && pending.length === 0 && !responseSections.hasActiveEngagement ? (
+                  <Text className="text-base text-muted">
+                    Your request is visible to people nearby. They see approximate distance, not your
+                    exact location.
+                  </Text>
+                ) : null}
+
+                {acceptResponse.isError &&
+                acceptResponse.error &&
+                !isInsufficientWalletBalanceError(acceptResponse.error) ? (
+                  <InlineError error={acceptResponse.error} />
+                ) : null}
+
+                {pending.map((response) => renderResponseCard(response, { allowSelection: true }))}
+
+                {cancelRequest.isError ? <InlineError error={cancelRequest.error} /> : null}
+                {extendRequest.isError ? <InlineError error={extendRequest.error} /> : null}
+                {ownerExpireRequest.isError ? (
+                  <InlineError error={ownerExpireRequest.error} />
+                ) : null}
+              </View>
             ) : null}
 
-            {responses.isSuccess && pending.length === 0 ? (
-              <Text className="text-base text-muted">
-                Your request is visible to people nearby. They see approximate distance, not your
-                exact location.
-              </Text>
+            {responseSections.referencePending.length > 0 ? (
+              <View className="gap-4">
+                <Text className="text-lg font-bold text-ink">Other offers</Text>
+                <Text className="text-base text-muted">
+                  These helpers responded earlier. You can choose one if your engagement ends.
+                </Text>
+                {responseSections.referencePending.map((response) =>
+                  renderResponseCard(response, {
+                    allowSelection: false,
+                    statusLabel: 'Saved offer',
+                    statusTone: 'info',
+                  }),
+                )}
+              </View>
             ) : null}
 
-            {acceptResponse.isError &&
-            acceptResponse.error &&
-            !isInsufficientWalletBalanceError(acceptResponse.error) ? (
-              <InlineError error={acceptResponse.error} />
+            {responseSections.withdrawn.length > 0 ? (
+              <View className="gap-4">
+                <Text className="text-lg font-bold text-ink">Withdrawn offers</Text>
+                {responseSections.withdrawn.map((response) => {
+                  const badge = responseStatusBadge('withdrawn');
+                  return renderResponseCard(response, {
+                    allowSelection: false,
+                    statusLabel: badge.label,
+                    statusTone: badge.tone,
+                  });
+                })}
+              </View>
             ) : null}
 
-            {pending.map((response) => (
-              <ResponseCard
-                key={response.response_id}
-                displayName={response.display_name}
-                avatarPath={response.avatar_path}
-                ratingAverage={response.rating_average}
-                ratingCount={response.rating_count}
-                completionPercent={response.completion_percent}
-                onViewProfile={() =>
-                  openResponderProfile({
-                    userId: response.responder_id,
-                    displayName: response.display_name,
-                    avatarPath: response.avatar_path,
-                    bio: response.bio,
-                    ratingAverage: response.rating_average,
-                    ratingCount: response.rating_count,
-                    completionPercent: response.completion_percent,
-                    pendingResponse: {
-                      responseId: response.response_id,
-                      responderAvailable: response.responder_available,
-                    },
-                  })
-                }
-                message={response.message}
-                quotedAmount={response.quoted_amount}
-                currency={data.currency}
-                createdAt={response.created_at}
-                responderAvailable={response.responder_available}
-                onDiscussPress={() => discussResponse(response.response_id)}
-                discussLoading={
-                  openPreHandshakeChat.isPending &&
-                  openPreHandshakeChat.variables === response.response_id
-                }
-              />
-            ))}
-
-            {cancelRequest.isError ? <InlineError error={cancelRequest.error} /> : null}
-            {extendRequest.isError ? <InlineError error={extendRequest.error} /> : null}
-            {ownerExpireRequest.isError ? (
-              <InlineError error={ownerExpireRequest.error} />
+            {responseSections.declined.length > 0 ? (
+              <View className="gap-4">
+                <Text className="text-lg font-bold text-ink">Declined offers</Text>
+                {responseSections.declined.map((response) => {
+                  const badge = responseStatusBadge('declined');
+                  return renderResponseCard(response, {
+                    allowSelection: false,
+                    statusLabel: badge.label,
+                    statusTone: badge.tone,
+                  });
+                })}
+              </View>
             ) : null}
           </View>
         ) : null}
@@ -745,7 +816,7 @@ export default function RequestDetailScreen() {
           ratingCount={profilePreview.ratingCount}
           completionPercent={profilePreview.completionPercent}
           responseActions={
-            profilePreview.pendingResponse
+            profilePreview.pendingResponse && responseSections.canAccept
               ? {
                   responderAvailable: profilePreview.pendingResponse.responderAvailable,
                   acceptLoading: acceptResponse.isPending,

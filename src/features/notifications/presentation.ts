@@ -138,6 +138,8 @@ export function notificationVisual(type: NotificationType): NotificationVisual {
     case 'request_cancelled':
     case 'helper_cancelled':
     case 'cancellation_confirmed':
+    case 'engagement_cancellation_requested':
+    case 'engagement_cancellation_declined':
       return {
         icon: 'checkmark',
         ...amber,

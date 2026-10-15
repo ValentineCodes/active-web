@@ -1920,8 +1920,18 @@ export type Database = {
         Args: { p_name: string }
         Returns: boolean
       }
-      cancel_request: { Args: { p_request_id: string }; Returns: undefined }
-      cancel_service: { Args: { p_request_id: string }; Returns: undefined }
+      cancel_engagement_as_provider: {
+        Args: { p_request_id: string; p_reason?: string }
+        Returns: undefined
+      }
+      cancel_request: {
+        Args: { p_request_id: string; p_reason?: string }
+        Returns: undefined
+      }
+      cancel_service: {
+        Args: { p_request_id: string; p_reason?: string }
+        Returns: undefined
+      }
       catalogue_media_is_published: {
         Args: { p_name: string }
         Returns: boolean
@@ -2192,6 +2202,21 @@ export type Database = {
           tag_slugs: string[]
           title: string
           viewer_has_rated: boolean
+          viewer_is_requester: boolean
+        }[]
+      }
+      get_engagement_cancellation: {
+        Args: { p_request_id: string }
+        Returns: {
+          cancellation_request_id: string
+          initiated_by: string
+          initiator_role: string
+          provider_response_reason: string
+          reason: string
+          respond_by: string
+          resolved_at: string
+          status: Database["public"]["Enums"]["engagement_cancellation_request_status"]
+          viewer_can_respond: boolean
           viewer_is_requester: boolean
         }[]
       }
@@ -2545,6 +2570,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      request_engagement_cancellation: {
+        Args: { p_request_id: string; p_reason?: string }
+        Returns: string
+      }
       request_allows_requester_edit: {
         Args: {
           p_accepted_at: string
@@ -2653,6 +2682,14 @@ export type Database = {
       resolve_service_problem: {
         Args: { p_problem_id: string }
         Returns: boolean
+      }
+      respond_engagement_cancellation: {
+        Args: {
+          p_agree: boolean
+          p_reason?: string
+          p_request_id: string
+        }
+        Returns: undefined
       }
       respond_to_request: {
         Args: {
@@ -2915,6 +2952,12 @@ export type Database = {
       withdraw_response: { Args: { p_response_id: string }; Returns: undefined }
     }
     Enums: {
+      engagement_cancellation_request_status:
+        | "pending"
+        | "agreed"
+        | "declined"
+        | "expired"
+        | "superseded"
       conversation_attachment_type: "image" | "video" | "file"
       conversation_message_type: "text" | "system" | "attachment"
       deposit_transaction_status:
@@ -2943,6 +2986,8 @@ export type Database = {
         | "request_cancelled"
         | "helper_cancelled"
         | "cancellation_confirmed"
+        | "engagement_cancellation_requested"
+        | "engagement_cancellation_declined"
         | "problem_reported"
         | "dispute_opened"
         | "dispute_resolved"
@@ -3130,6 +3175,13 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      engagement_cancellation_request_status: [
+        "pending",
+        "agreed",
+        "declined",
+        "expired",
+        "superseded",
+      ],
       conversation_attachment_type: ["image", "video", "file"],
       conversation_message_type: ["text", "system", "attachment"],
       deposit_transaction_status: [
@@ -3159,6 +3211,8 @@ export const Constants = {
         "request_cancelled",
         "helper_cancelled",
         "cancellation_confirmed",
+        "engagement_cancellation_requested",
+        "engagement_cancellation_declined",
         "problem_reported",
         "dispute_opened",
         "dispute_resolved",

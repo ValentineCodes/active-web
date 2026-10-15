@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
+import { router } from 'expo-router';
 
 import { Avatar } from '@/components/ui/Avatar';
 import { Button } from '@/components/ui/Button';
@@ -23,6 +24,11 @@ export default function OnboardingScreen() {
 
   const trimmedName = name.trim();
   const isNameValid = trimmedName.length >= 2 && trimmedName.length <= 60;
+
+  useEffect(() => {
+    if (!profile?.display_name) return;
+    router.replace('/(tabs)');
+  }, [profile?.display_name]);
 
   return (
     <Screen edges={['top', 'bottom']}>
@@ -85,7 +91,18 @@ export default function OnboardingScreen() {
           corner="2xl"
           disabled={!isNameValid}
           loading={save.isPending}
-          onPress={() => save.mutate({ display_name: trimmedName, bio: bio.trim() || null })}
+          onPress={() =>
+            save.mutate(
+              { display_name: trimmedName, bio: bio.trim() || null },
+              {
+                onSuccess: () => {
+                  requestAnimationFrame(() => {
+                    router.replace('/(tabs)');
+                  });
+                },
+              },
+            )
+          }
         />
       </ScrollView>
     </Screen>

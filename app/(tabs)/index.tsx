@@ -153,6 +153,13 @@ export default function HomeScreen() {
             </>
           )}
         </View>
+
+        {activeRequest ? (
+          <HomeActiveRequestBanner
+            title={activeRequest.title}
+            onPress={() => router.push(`/engagement/${activeRequest.id}`)}
+          />
+        ) : null}
       </View>
 
       <ScrollView
@@ -196,14 +203,7 @@ export default function HomeScreen() {
 
         {!activeSearchQuery ? <HomeCommunityHero /> : null}
 
-        {activeRequest ? (
-          <HomeActiveRequestBanner
-            title={activeRequest.title}
-            onPress={() => router.push(`/engagement/${activeRequest.id}`)}
-          />
-        ) : null}
-
-        <View className={!activeSearchQuery && !activeRequest ? '-mt-28' : undefined}>
+        <View className={!activeSearchQuery ? '-mt-28' : undefined}>
           <NearbyRequests variant="home" searchQuery={activeSearchQuery || null} />
         </View>
       </ScrollView>

@@ -145,6 +145,8 @@ function invalidateLiveRequestQueries(
 
   queryClient.invalidateQueries({ queryKey: queryKeys.myRequest(requestId) });
   queryClient.invalidateQueries({ queryKey: queryKeys.engagement(requestId) });
+  queryClient.invalidateQueries({ queryKey: queryKeys.engagementCancellation(requestId) });
+  queryClient.invalidateQueries({ queryKey: queryKeys.requestResponses(requestId) });
 }
 
 function createLiveRequestChannel(requestId: string, queryClient: QueryClient) {
@@ -163,6 +165,16 @@ function createLiveRequestChannel(requestId: string, queryClient: QueryClient) {
     .on(
       'postgres_changes',
       { event: 'UPDATE', schema: 'public', table: 'requests', filter: `id=eq.${requestId}` },
+      () => invalidateLiveRequestQueries(queryClient, requestId, 'request'),
+    )
+    .on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'engagement_cancellation_requests',
+        filter: `request_id=eq.${requestId}`,
+      },
       () => invalidateLiveRequestQueries(queryClient, requestId, 'request'),
     )
     .subscribe();
@@ -401,14 +413,18 @@ export function useCancelRequest(requestId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async () => {
-      const { error } = await supabase.rpc('cancel_request', { p_request_id: requestId });
+    mutationFn: async (input?: { reason?: string | null }) => {
+      const { error } = await supabase.rpc('cancel_request', {
+        p_request_id: requestId,
+        p_reason: input?.reason ?? undefined,
+      });
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.myRequest(requestId) });
       queryClient.invalidateQueries({ queryKey: queryKeys.myRequests });
       queryClient.invalidateQueries({ queryKey: queryKeys.engagement(requestId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.engagementCancellation(requestId) });
       queryClient.invalidateQueries({ queryKey: queryKeys.myResponses });
       queryClient.invalidateQueries({ queryKey: queryKeys.browseNearbyAll });
       queryClient.invalidateQueries({ queryKey: queryKeys.browseOpenAll });
@@ -474,7 +490,7 @@ export function useCompleteRequest(requestId: string) {
       queryClient.invalidateQueries({ queryKey: queryKeys.myRequest(requestId) });
       queryClient.invalidateQueries({ queryKey: queryKeys.myRequests });
       queryClient.invalidateQueries({ queryKey: queryKeys.engagement(requestId) });
-      queryClient.invalidateQueries({ queryKey: queryKeys.profile });
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
       void invalidateWalletQueries(queryClient);
     },
   });

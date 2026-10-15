@@ -2,6 +2,7 @@ import { Text, View } from 'react-native';
 
 import { ResponderScheduleAvailability } from '@/components/ResponderScheduleAvailability';
 import { RequestPersonCard } from '@/components/request-flow/RequestPersonCard';
+import { Badge } from '@/components/ui/Badge';
 import { formatAgo, formatMoney } from '@/lib/format';
 import { useTheme } from '@/theme';
 
@@ -22,6 +23,8 @@ export function ResponseCard({
   responderAvailable,
   onDiscussPress,
   discussLoading,
+  statusLabel,
+  statusTone,
 }: {
   displayName: string | null;
   avatarPath: string | null;
@@ -36,22 +39,27 @@ export function ResponseCard({
   responderAvailable: boolean;
   onDiscussPress?: () => void;
   discussLoading?: boolean;
+  statusLabel?: string;
+  statusTone?: 'neutral' | 'brand' | 'active' | 'danger' | 'warning' | 'info';
 }) {
   const { shadow } = useTheme();
   const offerLabel = quotedAmount !== null ? formatMoney(quotedAmount, currency) : null;
 
   return (
     <View style={shadow.card} className="gap-4 rounded-2xl border border-hairline bg-elevated p-4">
-      <RequestPersonCard
-        avatarPath={avatarPath}
-        name={displayName}
-        ratingAverage={ratingAverage}
-        ratingCount={ratingCount}
-        completionPercent={completionPercent}
-        onPress={onViewProfile}
-        onDiscussPress={onDiscussPress}
-        discussLoading={discussLoading}
-      />
+      <View className="gap-2">
+        {statusLabel ? <Badge label={statusLabel} tone={statusTone ?? 'neutral'} /> : null}
+        <RequestPersonCard
+          avatarPath={avatarPath}
+          name={displayName}
+          ratingAverage={ratingAverage}
+          ratingCount={ratingCount}
+          completionPercent={completionPercent}
+          onPress={onViewProfile}
+          onDiscussPress={onDiscussPress}
+          discussLoading={discussLoading}
+        />
+      </View>
 
       {message || offerLabel ? (
         <View className="gap-2 rounded-2xl bg-surface p-3">

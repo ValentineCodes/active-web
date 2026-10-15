@@ -16,7 +16,7 @@ export { useAvatarUrl } from './avatar-url';
  */
 export function profileQueryOptions(userId: string) {
   return {
-    queryKey: queryKeys.profile,
+    queryKey: queryKeys.profile(userId),
     // Fail with a network error instead of staying pending while React Query thinks we're offline.
     networkMode: 'always' as const,
     queryFn: async () => {
@@ -67,8 +67,14 @@ export function useSaveProfile() {
     mutationFn: async (patch: { display_name?: string; bio?: string | null }) => {
       const { error } = await supabase.from('profiles').update(patch).eq('id', userId);
       if (error) throw error;
+      return patch;
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.profile }),
+    onSuccess: (patch) => {
+      queryClient.setQueryData(queryKeys.profile(userId), (current) =>
+        current ? { ...current, ...patch } : current,
+      );
+      void queryClient.invalidateQueries({ queryKey: queryKeys.profile(userId) });
+    },
   });
 }
 
@@ -113,7 +119,7 @@ export function useCaptureProfilePhoto() {
     },
     onSuccess: (changed) => {
       if (!changed) return;
-      queryClient.invalidateQueries({ queryKey: queryKeys.profile });
+      queryClient.invalidateQueries({ queryKey: queryKeys.profile(userId) });
       queryClient.invalidateQueries({ queryKey: queryKeys.avatarUrl(`${userId}/avatar.jpg`) });
     },
   });

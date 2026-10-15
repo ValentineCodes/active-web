@@ -1,7 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
+import { Redirect } from 'expo-router';
 import { NativeTabs } from 'expo-router/native-tabs';
 
 import { useNotificationUnreadCount } from '@/features/notifications/inbox';
+import { useProfile } from '@/features/profile/api';
 import { useNotificationBridge } from '@/lib/notifications';
 import { useMyRequests } from '@/features/requests/requester-api';
 import { useColors } from '@/theme';
@@ -9,6 +11,16 @@ import { useColors } from '@/theme';
 const VectorIcon = NativeTabs.Trigger.VectorIcon;
 
 export default function TabsLayout() {
+  const profile = useProfile();
+
+  if (profile.isSuccess && !profile.data.display_name) {
+    return <Redirect href="/onboarding" />;
+  }
+
+  return <TabsNavigator />;
+}
+
+function TabsNavigator() {
   const colors = useColors();
   const { data: requests } = useMyRequests();
   const unreadNotifications = useNotificationUnreadCount();
