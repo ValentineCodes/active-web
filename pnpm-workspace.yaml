@@ -1,3 +1,6 @@
+packages:
+  - apps/*
+
 # Metro resolves transitive dependencies (NativeWind's jsx runtime, for one) as if they
 # were top level, which pnpm's default strict layout does not expose. React Native needs
 # a flat node_modules.

@@ -1,8 +1,8 @@
 node_modules
-.expo
+**/.expo
 dist
-android
-ios
+apps/mobile/android
+apps/mobile/ios
 pnpm-lock.yaml
 pnpm-workspace.yaml
-src/lib/supabase/database.types.ts
+apps/mobile/src/lib/supabase/database.types.ts

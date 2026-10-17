@@ -28,7 +28,7 @@ Expo app (existing):
 
 ## Local development
 
-1. Copy `.env.example` to `.env` in the project root and fill in Supabase + Paystack **test** keys from the Paystack dashboard.
+1. Copy `.env.example` to `.env` in the project root and fill in Supabase + Paystack **test** keys from the Paystack dashboard. Link it into the Expo app: `ln -sf ../../.env apps/mobile/.env`.
 2. Start Supabase: `pnpm db:start`
 3. Serve functions with the same env file:
 

@@ -10,7 +10,7 @@ module.exports = defineConfig([
       'android/**',
       'ios/**',
       'dist/**',
-      'supabase/functions/**',
+      '../../../supabase/functions/**',
     ],
   },
   {
