@@ -260,21 +260,23 @@ select lives_ok(
   'accept helper before cancellation'
 );
 
-select lives_ok(
+select throws_ok(
   format('select cancel_request(%L::uuid)', :'accepted_cancel_id'),
-  'cancel request after acceptance'
+  '55000',
+  null,
+  'cancel request rejected after acceptance'
 );
 
 select is(
   (select accepted_at is not null from public.requests where id = :'accepted_cancel_id'::uuid),
   true,
-  'accepted_at preserved after cancellation'
+  'accepted_at preserved when cancel after acceptance is rejected'
 );
 
 select is(
   (select is_editable from public.my_requests where request_id = :'accepted_cancel_id'::uuid),
   false,
-  'not editable after acceptance even when later cancelled'
+  'not editable after acceptance'
 );
 
 select throws_ok(

@@ -234,17 +234,17 @@ select is(
   'no refund wallet transaction when funds were never locked'
 );
 
--- Cancellation after acceptance refunds held funds ----------------------------------
+-- Active engagements cannot be cancelled (report/dispute instead) ---------------------
 
 select pg_temp.act_as('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa') as _ \gset
 select create_request(
-  'Cancel after accept',
-  'Held funds return on cancel.',
+  'Cancel after accept blocked',
+  'Held funds stay locked.',
   6.5000,
   3.3800,
   'Yaba, Lagos',
   null,
-  4000
+  4001
 ) as cancel_after_accept_id \gset
 
 select pg_temp.act_as('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb') as _ \gset
@@ -259,22 +259,14 @@ select respond_to_request(
 select pg_temp.act_as('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa') as _ \gset
 select lives_ok(
   format('select accept_response(%L)', :'cancel_after_accept_response_id'),
-  'accept locks funds before cancellation test'
+  'accept locks funds before cancel attempt'
 );
 
-select is(
-  (
-    select available_balance
-    from public.wallets
-    where user_id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'::uuid
-  ),
-  100000::bigint,
-  'accept locks funds for the cancellable engagement'
-);
-
-select lives_ok(
+select throws_ok(
   format('select cancel_request(%L)', :'cancel_after_accept_id'),
-  'cancel after accept opens a pending cancellation request'
+  '55000',
+  null,
+  'cancel_request rejected while someone is helping'
 );
 
 select is(
@@ -284,47 +276,7 @@ select is(
     where user_id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'::uuid
   ),
   100000::bigint,
-  'funds stay locked while client cancellation awaits provider consent'
-);
-
-select pg_temp.act_as('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb') as _ \gset
-select lives_ok(
-  format(
-    $$select respond_engagement_cancellation(%L::uuid, true, null)$$,
-    :'cancel_after_accept_id'
-  ),
-  'provider agrees to client cancellation and triggers refund'
-);
-
-select is(
-  (
-    select available_balance
-    from public.wallets
-    where user_id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'::uuid
-  ),
-  500000::bigint,
-  'agreed cancellation after accept returns held amount to available balance'
-);
-
-select is(
-  (
-    select status::text
-    from public.payment_locks
-    where request_id = :'cancel_after_accept_id'::uuid
-  ),
-  'refunded',
-  'cancelled engagement lock marked refunded'
-);
-
-select is(
-  (
-    select count(*)::int
-    from public.wallet_transactions wt
-    where wt.request_id = :'cancel_after_accept_id'::uuid
-      and wt.type = 'refund'::public.wallet_transaction_type
-  ),
-  1,
-  'one refund wallet transaction after accepted cancellation'
+  'funds stay locked when cancel after accept is rejected'
 );
 
 select * from finish();

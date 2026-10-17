@@ -421,27 +421,3 @@ export function useReportClientNoShow(requestId: string) {
     },
   });
 }
-
-export function useCancelService(requestId: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (input?: { reason?: string | null }) => {
-      const { error } = await supabase.rpc('cancel_service', {
-        p_request_id: requestId,
-        p_reason: input?.reason ?? undefined,
-      });
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.engagement(requestId) });
-      queryClient.invalidateQueries({ queryKey: queryKeys.engagementCancellation(requestId) });
-      queryClient.invalidateQueries({ queryKey: queryKeys.myResponses });
-      queryClient.invalidateQueries({ queryKey: queryKeys.myRequests });
-      queryClient.invalidateQueries({ queryKey: queryKeys.browseNearbyAll });
-      queryClient.invalidateQueries({ queryKey: queryKeys.browseOpenAll });
-      queryClient.invalidateQueries({ queryKey: queryKeys.requestSearchAll });
-      queryClient.invalidateQueries({ queryKey: queryKeys.attendance });
-    },
-  });
-}

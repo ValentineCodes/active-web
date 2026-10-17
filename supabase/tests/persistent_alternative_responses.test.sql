@@ -1,4 +1,4 @@
--- Alternative responses stay available across accept, withdraw, and engagement cancellation.
+-- Alternative responses stay available across accept and withdraw during an engagement.
 
 begin;
 
@@ -170,67 +170,6 @@ select throws_ok(
   '55000',
   null,
   'withdrawn offer cannot be accepted'
-);
-
-select pg_temp.act_as('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb') as _ \gset
-select lives_ok(
-  format(
-    $$select cancel_engagement_as_provider(%L::uuid, %L)$$,
-    :'alt_request_id',
-    'Cannot make it'
-  ),
-  'provider A cancels engagement'
-);
-
-select is(
-  (
-    select status::text
-    from public.requests
-    where id = :'alt_request_id'::uuid
-  ),
-  'posted',
-  'request reopens without reposting'
-);
-
-select pg_temp.act_as('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa') as _ \gset
-select lives_ok(
-  format('select open_pre_handshake_conversation(%L)', :'alt_response_b'),
-  'pre-handshake chat works after prior engagement ended'
-);
-
-select lives_ok(
-  format('select accept_response(%L)', :'alt_response_b'),
-  'accept helper B from preserved offer'
-);
-
-select is(
-  (
-    select count(*)::int
-    from public.payment_locks
-    where request_id = :'alt_request_id'::uuid
-  ),
-  1,
-  're-accept reuses the same payment lock row after cancellation refund'
-);
-
-select is(
-  (
-    select status::text
-    from public.payment_locks
-    where request_id = :'alt_request_id'::uuid
-  ),
-  'active',
-  'payment lock is active again after re-accept'
-);
-
-select is(
-  (
-    select quoted_amount
-    from public.request_responses
-    where id = :'alt_response_b'::uuid
-  ),
-  6.2500::numeric,
-  'preserved quoted amount used on fallback accept'
 );
 
 -- Insufficient wallet balance on a fresh open request -------------------------------------

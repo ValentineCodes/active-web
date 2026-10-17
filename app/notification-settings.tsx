@@ -149,7 +149,7 @@ export default function NotificationSettingsScreen() {
         <View className="overflow-hidden rounded-3xl border border-hairline bg-elevated">
           <SettingsToggleRow
             label="Requests & responses"
-            description="Offers, acceptances, cancellations, and completion"
+            description="Offers, acceptances, and completion"
             value={prefs.requestsResponsesEnabled}
             disabled={updatePrefs.isPending}
             onValueChange={(next) => savePrefs({ requestsResponsesEnabled: next })}

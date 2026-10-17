@@ -145,7 +145,6 @@ function invalidateLiveRequestQueries(
 
   queryClient.invalidateQueries({ queryKey: queryKeys.myRequest(requestId) });
   queryClient.invalidateQueries({ queryKey: queryKeys.engagement(requestId) });
-  queryClient.invalidateQueries({ queryKey: queryKeys.engagementCancellation(requestId) });
   queryClient.invalidateQueries({ queryKey: queryKeys.requestResponses(requestId) });
 }
 
@@ -165,16 +164,6 @@ function createLiveRequestChannel(requestId: string, queryClient: QueryClient) {
     .on(
       'postgres_changes',
       { event: 'UPDATE', schema: 'public', table: 'requests', filter: `id=eq.${requestId}` },
-      () => invalidateLiveRequestQueries(queryClient, requestId, 'request'),
-    )
-    .on(
-      'postgres_changes',
-      {
-        event: '*',
-        schema: 'public',
-        table: 'engagement_cancellation_requests',
-        filter: `request_id=eq.${requestId}`,
-      },
       () => invalidateLiveRequestQueries(queryClient, requestId, 'request'),
     )
     .subscribe();
@@ -424,7 +413,6 @@ export function useCancelRequest(requestId: string) {
       queryClient.invalidateQueries({ queryKey: queryKeys.myRequest(requestId) });
       queryClient.invalidateQueries({ queryKey: queryKeys.myRequests });
       queryClient.invalidateQueries({ queryKey: queryKeys.engagement(requestId) });
-      queryClient.invalidateQueries({ queryKey: queryKeys.engagementCancellation(requestId) });
       queryClient.invalidateQueries({ queryKey: queryKeys.myResponses });
       queryClient.invalidateQueries({ queryKey: queryKeys.browseNearbyAll });
       queryClient.invalidateQueries({ queryKey: queryKeys.browseOpenAll });

@@ -15,7 +15,6 @@ import { format } from 'date-fns';
 import type { BottomSheetModal } from '@gorhom/bottom-sheet';
 
 import { PersonProfileBottomSheet } from '@/components/PersonProfileBottomSheet';
-import { EngagementCancellationReasonModal } from '@/components/request-flow/EngagementCancellationReasonModal';
 import { ReportIssueModal } from '@/components/ReportIssueModal';
 import { RequestCallout } from '@/components/request-flow/RequestCallout';
 import { RequestCompletionCard } from '@/components/request-flow/RequestCompletionCard';
@@ -33,16 +32,6 @@ import { EmptyState, InlineError, LoadingState } from '@/components/ui/StateView
 import { useQueryErrorToast } from '@/lib/query/use-query-error-toast';
 import { resolveAgreedAmount } from '@/features/requests/payment-display';
 import { requestEngagementStatusBadge } from '@/features/requests/status';
-import {
-  useCancelEngagementAsProvider,
-  useEngagementCancellation,
-  useRequestEngagementCancellation,
-  useRespondEngagementCancellation,
-} from '@/features/requests/engagement-cancellation-api';
-import {
-  canShowEngagementCancelAction,
-  isEngagementCancellationPending,
-} from '@/features/requests/engagement-cancellation-ui';
 import { useMarkServiceComplete, useMyResponses } from '@/features/requests/responses-api';
 import {
   myRequestQueryOptions,
@@ -52,7 +41,6 @@ import {
   useLiveRequest,
 } from '@/features/requests/requester-api';
 import { useQuery } from '@tanstack/react-query';
-import type { EngagementCancellationReasonMode } from '@/components/request-flow/EngagementCancellationReasonModal';
 import { REQUEST_REPORT_ISSUES } from '@/features/support/report-issue-options';
 import { usePullToRefresh } from '@/lib/query/use-pull-to-refresh';
 import { showQuerySkeleton } from '@/lib/query/show-skeleton';
@@ -66,8 +54,7 @@ import {
   formatWhenRequestCard,
 } from '@/lib/format';
 import { showAppToast } from '@/lib/toast';
-import { toUserMessage } from '@/lib/supabase/errors';
-import { TextField } from '@/components/ui/TextField';
+
 function openInMaps(latitude: number, longitude: number, label: string) {
   const url = Platform.select({
     ios: `maps://?ll=${latitude},${longitude}&q=${encodeURIComponent(label)}`,
@@ -99,16 +86,8 @@ export default function EngagementScreen() {
     ...myRequestQueryOptions(id),
     enabled: Boolean(engagement.data?.viewer_is_requester) && id.length > 0,
   });
-  const cancellation = useEngagementCancellation(id, Boolean(engagement.data));
-  const requestCancellation = useRequestEngagementCancellation(id);
-  const respondCancellation = useRespondEngagementCancellation(id);
-  const cancelAsProvider = useCancelEngagementAsProvider(id);
   const profileSheetRef = useRef<BottomSheetModal>(null);
   const [reportIssueOpen, setReportIssueOpen] = useState(false);
-  const [cancellationModalMode, setCancellationModalMode] =
-    useState<EngagementCancellationReasonMode | null>(null);
-  const [providerDeclineOpen, setProviderDeclineOpen] = useState(false);
-  const [providerDeclineReason, setProviderDeclineReason] = useState('');
   const [footerHeight, setFooterHeight] = useState(0);
   const insets = useSafeAreaInsets();
   const viewerIsRequesterRef = useRef(false);
@@ -232,106 +211,6 @@ export default function EngagementScreen() {
     }
   };
 
-  const pendingCancellation = isEngagementCancellationPending(cancellation.data?.status);
-  const cancellationRow = cancellation.data;
-  const showDeclinedCancellation =
-    cancellationRow?.status === 'declined' && !pendingCancellation;
-
-  const openClientCancellationFlow = () => setCancellationModalMode('client_request');
-  const openProviderCancellationFlow = () => setCancellationModalMode('provider_immediate');
-
-  const submitCancellationReason = (reason: string | null) => {
-    if (cancellationModalMode === 'client_request') {
-      requestCancellation.mutate(reason, {
-        onSuccess: () => {
-          setCancellationModalMode(null);
-          showAppToast('Cancellation requested — waiting for your helper', 'info');
-        },
-        onError: (error) => showAppToast(toUserMessage(error), 'warning'),
-      });
-      return;
-    }
-
-    if (cancellationModalMode === 'provider_immediate') {
-      Alert.alert(
-        'Cancel now?',
-        'This ends the engagement immediately. Held payment will be returned to the client.',
-        [
-          { text: 'Keep helping', style: 'cancel' },
-          {
-            text: 'Cancel engagement',
-            style: 'destructive',
-            onPress: () =>
-              cancelAsProvider.mutate(reason, {
-                onSuccess: () => {
-                  setCancellationModalMode(null);
-                  showAppToast('Engagement cancelled');
-                  if (data.viewer_is_requester) {
-                    router.replace(`/request/${id}`);
-                  } else {
-                    router.back();
-                  }
-                },
-                onError: (error) => showAppToast(toUserMessage(error), 'warning'),
-              }),
-          },
-        ],
-      );
-    }
-  };
-
-  const confirmAgreeCancellation = () =>
-    Alert.alert(
-      'Agree to cancel?',
-      'The engagement will end and held payment will be returned to the client. You can respond to other requests.',
-      [
-        { text: 'Not now', style: 'cancel' },
-        {
-          text: 'Agree to cancel',
-          style: 'destructive',
-          onPress: () =>
-            respondCancellation.mutate(
-              { agree: true },
-              {
-                onSuccess: () => {
-                  showAppToast('Engagement cancelled');
-                  if (data.viewer_is_requester) {
-                    router.replace(`/request/${id}`);
-                  } else {
-                    router.back();
-                  }
-                },
-                onError: (error) => showAppToast(toUserMessage(error), 'warning'),
-              },
-            ),
-        },
-      ],
-    );
-
-  const submitProviderDecline = () => {
-    const reason = providerDeclineReason.trim() || null;
-    if (reason && reason.length > 500) {
-      showAppToast('Keep your response to 500 characters.', 'warning');
-      return;
-    }
-    respondCancellation.mutate(
-      { agree: false, reason },
-      {
-        onSuccess: () => {
-          setProviderDeclineOpen(false);
-          setProviderDeclineReason('');
-          showAppToast('You declined the cancellation request', 'info');
-        },
-        onError: (error) => showAppToast(toUserMessage(error), 'warning'),
-      },
-    );
-  };
-
-  const canCancelEngagement = canShowEngagementCancelAction({
-    requestStatus: data.request_status,
-    viewerIsRequester: data.viewer_is_requester,
-    pendingCancellation,
-  });
   const canReportActiveProblem =
     data.request_status === 'accepted' || data.request_status === 'in_progress';
   const canReportHelperProblem =
@@ -343,22 +222,6 @@ export default function EngagementScreen() {
     !data.service_problem_reported_by_me &&
     data.service_problem_respond_by !== null &&
     new Date(data.service_problem_respond_by) > new Date();
-
-  const menuActions: { label: string; onPress: () => void; destructive?: boolean }[] = [];
-  if (canCancelEngagement && data.viewer_is_requester) {
-    menuActions.push({
-      label: 'Request cancellation',
-      destructive: true,
-      onPress: openClientCancellationFlow,
-    });
-  }
-  if (canCancelEngagement && !data.viewer_is_requester) {
-    menuActions.push({
-      label: 'Cancel engagement',
-      destructive: true,
-      onPress: openProviderCancellationFlow,
-    });
-  }
 
   const helperActive =
     !data.viewer_is_requester &&
@@ -382,11 +245,7 @@ export default function EngagementScreen() {
 
   return (
     <Screen>
-      <RequestFlowHeader
-        title={screenTitle}
-        onBack={() => router.back()}
-        menuActions={menuActions.length ? menuActions : undefined}
-      />
+      <RequestFlowHeader title={screenTitle} onBack={() => router.back()} />
 
       <View className="flex-1">
         <ScrollView
@@ -450,106 +309,10 @@ export default function EngagementScreen() {
             <RequestExactLocationCard address={data.location_label} onDirections={openMaps} />
           </View>
 
-          {pendingCancellation && cancellationRow ? (
-            <RequestCallout tone="warning" title="Cancellation requested">
-              {data.viewer_is_requester ? (
-                <Text className="text-sm text-muted">
-                  Waiting for your helper to respond. Payment stays locked until this is resolved.
-                  {cancellationRow.reason ? (
-                    <> You said: “{cancellationRow.reason}”</>
-                  ) : null}
-                </Text>
-              ) : (
-                <Text className="text-sm text-muted">
-                  The client asked to cancel this engagement.
-                  {cancellationRow.reason ? (
-                    <> They said: “{cancellationRow.reason}”</>
-                  ) : null}
-                </Text>
-              )}
-              {cancellationRow.respond_by ? (
-                <Text className="text-sm text-muted">
-                  Respond by {formatWhen(cancellationRow.respond_by)}. If you do not respond in
-                  time, the engagement will be cancelled automatically.
-                </Text>
-              ) : null}
-              {respondCancellation.isError ? (
-                <InlineError error={respondCancellation.error} />
-              ) : null}
-              {cancellationRow.viewer_can_respond ? (
-                <View className="gap-2 pt-2">
-                  {providerDeclineOpen ? (
-                    <>
-                      <TextField
-                        label="Reason (optional)"
-                        value={providerDeclineReason}
-                        onChangeText={setProviderDeclineReason}
-                        placeholder="e.g. I can still complete the job."
-                        multiline
-                        numberOfLines={2}
-                        maxLength={500}
-                        counterMax={500}
-                      />
-                      <View className="flex-row gap-2">
-                        <Button
-                          label="Back"
-                          variant="secondary"
-                          className="flex-1"
-                          onPress={() => {
-                            setProviderDeclineOpen(false);
-                            setProviderDeclineReason('');
-                          }}
-                        />
-                        <Button
-                          label="Send decline"
-                          variant="danger"
-                          className="flex-1"
-                          loading={respondCancellation.isPending}
-                          onPress={submitProviderDecline}
-                        />
-                      </View>
-                    </>
-                  ) : (
-                    <View className="flex-row gap-2">
-                      <Button
-                        label="Decline request"
-                        variant="secondary"
-                        className="flex-1"
-                        disabled={respondCancellation.isPending}
-                        onPress={() => setProviderDeclineOpen(true)}
-                      />
-                      <Button
-                        label="Agree to cancel"
-                        variant="danger"
-                        className="flex-1"
-                        loading={respondCancellation.isPending}
-                        onPress={confirmAgreeCancellation}
-                      />
-                    </View>
-                  )}
-                </View>
-              ) : null}
-            </RequestCallout>
-          ) : null}
-
-          {showDeclinedCancellation && data.viewer_is_requester ? (
-            <RequestCallout tone="info" title="Cancellation declined">
-              <Text className="text-sm text-muted">
-                Your helper declined the cancellation request. The engagement is still active and
-                payment remains locked.
-                {cancellationRow?.provider_response_reason ? (
-                  <> They said: “{cancellationRow.provider_response_reason}”</>
-                ) : null}
-              </Text>
-            </RequestCallout>
-          ) : null}
-
           {showPaymentSecured ? (
             <RequestCallout tone="info" title="Payment secured">
               <Text className="text-sm text-muted">
-                {pendingCancellation
-                  ? 'Payment stays locked while the cancellation request is pending.'
-                  : 'Release payment only after the request is complete.'}
+                Release payment only after the request is complete.
               </Text>
             </RequestCallout>
           ) : null}
@@ -655,9 +418,6 @@ export default function EngagementScreen() {
               ratingComment={data.rating_comment}
             />
           ) : null}
-
-          {requestCancellation.isError ? <InlineError error={requestCancellation.error} /> : null}
-          {cancelAsProvider.isError ? <InlineError error={cancelAsProvider.error} /> : null}
         </ScrollView>
 
         {hasFloatingFooter ? (
@@ -777,21 +537,6 @@ export default function EngagementScreen() {
           setReportIssueOpen(false);
           showAppToast('Thanks — we received your report');
         }}
-      />
-
-      <EngagementCancellationReasonModal
-        visible={cancellationModalMode !== null}
-        mode={cancellationModalMode ?? 'client_request'}
-        loading={
-          cancellationModalMode === 'client_request'
-            ? requestCancellation.isPending
-            : cancelAsProvider.isPending
-        }
-        onClose={() => {
-          if (requestCancellation.isPending || cancelAsProvider.isPending) return;
-          setCancellationModalMode(null);
-        }}
-        onSubmit={submitCancellationReason}
       />
     </Screen>
   );

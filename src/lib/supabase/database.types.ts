@@ -1920,10 +1920,6 @@ export type Database = {
         Args: { p_name: string }
         Returns: boolean
       }
-      cancel_engagement_as_provider: {
-        Args: { p_request_id: string; p_reason?: string }
-        Returns: undefined
-      }
       cancel_request: {
         Args: { p_request_id: string; p_reason?: string }
         Returns: undefined
@@ -2202,21 +2198,6 @@ export type Database = {
           tag_slugs: string[]
           title: string
           viewer_has_rated: boolean
-          viewer_is_requester: boolean
-        }[]
-      }
-      get_engagement_cancellation: {
-        Args: { p_request_id: string }
-        Returns: {
-          cancellation_request_id: string
-          initiated_by: string
-          initiator_role: string
-          provider_response_reason: string
-          reason: string
-          respond_by: string
-          resolved_at: string
-          status: Database["public"]["Enums"]["engagement_cancellation_request_status"]
-          viewer_can_respond: boolean
           viewer_is_requester: boolean
         }[]
       }
@@ -2570,10 +2551,6 @@ export type Database = {
         }
         Returns: undefined
       }
-      request_engagement_cancellation: {
-        Args: { p_request_id: string; p_reason?: string }
-        Returns: string
-      }
       request_allows_requester_edit: {
         Args: {
           p_accepted_at: string
@@ -2682,14 +2659,6 @@ export type Database = {
       resolve_service_problem: {
         Args: { p_problem_id: string }
         Returns: boolean
-      }
-      respond_engagement_cancellation: {
-        Args: {
-          p_agree: boolean
-          p_reason?: string
-          p_request_id: string
-        }
-        Returns: undefined
       }
       respond_to_request: {
         Args: {

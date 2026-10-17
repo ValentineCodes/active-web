@@ -18,7 +18,6 @@ export const queryKeys = {
     ['browse-request', requestId, latitude, longitude] as const,
   myResponses: ['my-responses'] as const,
   engagement: (requestId: string) => ['engagement', requestId] as const,
-  engagementCancellation: (requestId: string) => ['engagement-cancellation', requestId] as const,
   requestConversation: (requestId: string) => ['request-conversation', requestId] as const,
   resolvedRequestConversation: (lookupId: string) =>
     ['resolved-request-conversation', lookupId] as const,
