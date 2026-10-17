@@ -30,9 +30,13 @@
     "db:reset": "supabase db reset",
     "db:migrate": "supabase migration up --local",
     "db:types": "supabase gen types typescript --local --schema public > apps/mobile/src/lib/supabase/database.types.ts",
+    "db:seed-admin": "supabase db query --local -f supabase/seed.sql",
     "db:test": "supabase test db",
     "functions:test": "PATH=\"${PWD}/.deno/bin:${PATH}\" deno test supabase/functions/_shared/deposit/settle_test.ts",
-    "validate": "pnpm --filter @active/mobile validate && pnpm format"
+    "admin:dev": "pnpm --filter @active/admin dev",
+    "admin:build": "pnpm --filter @active/admin build",
+    "admin:typecheck": "pnpm --filter @active/admin typecheck",
+    "validate": "pnpm --filter @active/mobile validate && pnpm --filter @active/admin typecheck && pnpm format"
   },
   "devDependencies": {
     "prettier": "^3.9.6",
