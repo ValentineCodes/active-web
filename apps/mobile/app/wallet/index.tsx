@@ -1,6 +1,6 @@
 import { useCallback, useRef } from 'react';
 import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
-import { router, useFocusEffect } from 'expo-router';
+import { type Href, router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 import {
@@ -129,7 +129,7 @@ export default function WalletHomeScreen() {
             </View>
           </View>
 
-          <View className="border-t border-hairline p-4">
+          <View className="gap-3 border-t border-hairline p-4">
             <Button
               label="Add Money"
               variant="active"
@@ -138,6 +138,16 @@ export default function WalletHomeScreen() {
               className="w-full"
               onPress={() => router.push('/wallet/add')}
             />
+            {available > 0 ? (
+              <Button
+                label="Withdraw"
+                variant="secondary"
+                size="lg"
+                corner="2xl"
+                className="w-full"
+                onPress={() => router.push('/wallet/withdraw' as Href)}
+              />
+            ) : null}
           </View>
         </View>
 

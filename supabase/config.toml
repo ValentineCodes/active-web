@@ -404,6 +404,18 @@ verify_jwt = true
 [functions.paystack-webhook]
 verify_jwt = false
 
+[functions.paystack-banks]
+verify_jwt = true
+
+[functions.paystack-resolve-account]
+verify_jwt = true
+
+[functions.bank-account-save]
+verify_jwt = true
+
+[functions.wallet-withdraw-request]
+verify_jwt = true
+
 [analytics]
 enabled = true
 port = 54327

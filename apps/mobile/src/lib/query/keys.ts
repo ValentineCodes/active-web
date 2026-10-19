@@ -10,6 +10,8 @@ export const queryKeys = {
   browseOpenAll: ['browse-open'] as const,
   browseOpen: ['browse-open'] as const,
   savedLocations: ['saved-locations'] as const,
+  bankAccounts: ['bank-accounts'] as const,
+  paystackBanks: ['paystack-banks'] as const,
   requestSearchAll: ['request-search'] as const,
   requestSearch: (query: string, latitude: number | null, longitude: number | null) =>
     ['request-search', query, latitude, longitude] as const,

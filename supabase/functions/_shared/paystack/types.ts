@@ -42,3 +42,29 @@ export type VerifyTransactionData = {
   transaction_date?: string;
   gateway_response?: string;
 };
+
+export type PaystackBank = {
+  name: string;
+  code: string;
+};
+
+export type ResolveAccountData = {
+  account_number: string;
+  account_name: string;
+};
+
+export type CreateTransferRecipientInput = {
+  name: string;
+  accountNumber: string;
+  bankCode: string;
+};
+
+export type TransferRecipientData = {
+  recipient_code: string;
+  details: {
+    account_number: string;
+    account_name: string | null;
+    bank_code: string;
+    bank_name: string;
+  };
+};

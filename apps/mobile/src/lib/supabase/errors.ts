@@ -63,6 +63,9 @@ export function toUserMessage(error: unknown): string {
         if (lower.includes('saved_location') || lower.includes('browse_open_requests')) {
           return 'Saved places are unavailable until the latest database migrations are applied.';
         }
+        if (lower.includes('bank_account')) {
+          return 'Bank accounts are unavailable until the latest database migrations are applied.';
+        }
         return 'This action is unavailable until the latest database migrations are applied.';
       }
       if (code === '25006') {
@@ -97,6 +100,13 @@ export function toUserMessage(error: unknown): string {
       typeof message === 'string'
     ) {
       return message;
+    }
+  }
+
+  if (error instanceof Error) {
+    const lower = error.message.toLowerCase();
+    if (lower.includes('edge function returned a non-2xx')) {
+      return 'Could not complete this request. Try again in a moment.';
     }
   }
 

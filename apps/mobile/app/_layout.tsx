@@ -1,9 +1,9 @@
 import '../global.css';
 
-import { useEffect } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Stack } from 'expo-router';
 
 import { ToastProvider } from '@/components/ui/ToastProvider';
@@ -18,6 +18,15 @@ import { queryPersistOptions } from '@/lib/query/persist';
 import { ThemeProvider } from '@/theme';
 import { ThemeStatusBar } from '@/theme/ThemeStatusBar';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
+
+function AppBottomSheetProvider({ children }: { children: ReactNode }) {
+  const insets = useSafeAreaInsets();
+  return (
+    <BottomSheetModalProvider topInset={insets.top} bottomInset={insets.bottom}>
+      {children}
+    </BottomSheetModalProvider>
+  );
+}
 
 function RootNavigator() {
   const { session } = useSession();
@@ -45,6 +54,8 @@ function RootNavigator() {
         <Stack.Screen name="profile" />
         <Stack.Screen name="profile/edit" />
         <Stack.Screen name="profile/locations" />
+        <Stack.Screen name="profile/bank-accounts/index" />
+        <Stack.Screen name="profile/bank-accounts/add" />
         <Stack.Screen name="wallet" />
         <Stack.Screen
           name="search"
@@ -76,10 +87,10 @@ export default function RootLayout() {
               <SignInFlowProvider>
                 <AppReadyGate>
                   <ToastProvider>
-                    <BottomSheetModalProvider>
+                    <AppBottomSheetProvider>
                       <ThemeStatusBar />
                       <RootNavigator />
-                    </BottomSheetModalProvider>
+                    </AppBottomSheetProvider>
                   </ToastProvider>
                 </AppReadyGate>
               </SignInFlowProvider>

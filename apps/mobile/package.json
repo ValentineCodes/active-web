@@ -23,6 +23,7 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint . --max-warnings 0",
     "test:request-response-sections": "node --experimental-strip-types src/features/requests/request-response-sections.test.ts",
+    "test:bank-account-lookup": "node --experimental-strip-types src/features/profile/use-bank-account-lookup.test.ts",
     "validate": "pnpm typecheck && pnpm lint"
   },
   "dependencies": {

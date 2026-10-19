@@ -38,6 +38,8 @@ Expo app (existing):
 
    `supabase/config.toml` maps Paystack keys through `[edge_runtime.secrets]` using `env(PAYSTACK_…)`.
 
+   Shortcut: `pnpm db:serve` runs the same command. **`supabase start` alone does not serve Edge Functions** — without `db:serve`, bank picker and other `functions/v1/*` calls return 404 until this is running.
+
 4. In the app: **Wallet → Add money → review → Paystack checkout → confirming**. The app never credits the wallet locally; it polls `paystack-verify` until the server reports `wallet_credited`.
 
    Edge API (authenticated JWT):
@@ -83,7 +85,10 @@ Implementation lives under `supabase/functions/_shared/paystack/`:
 
 - `env.ts` — configuration and test-mode guard
 - `types.ts` — API payloads
-- `client.ts` — `PaystackClient.initializeTransaction()` and `PaystackClient.verifyTransaction()`
+- `client.ts` — `initializeTransaction`, `verifyTransaction`, `listBanks`, `resolveAccount` (plus `createTransferRecipient` for save flow only)
+- `nuban.ts` — NUBAN / bank-code validation
+- `resolution-response.ts` — normalized Edge error mapping
+- `bank-list-cache.ts` — in-memory bank list cache (per isolate)
 - `webhook.ts` — signature verification
 
 Deposit settlement: `supabase/functions/_shared/deposit/settle.ts`
@@ -94,4 +99,47 @@ Edge entrypoints:
 - `supabase/functions/paystack-verify/`
 - `supabase/functions/paystack-webhook/`
 
-Not implemented: transfers, Dedicated Virtual Accounts, live (`sk_live_`) keys.
+## Bank list and account resolution (payout setup)
+
+Authenticated Edge APIs (JWT required; `PAYSTACK_SECRET_KEY` never sent to the client):
+
+| Function | Body | Success |
+| -------- | ---- | ------- |
+| `POST /functions/v1/paystack-banks` | `{}` | `{ "status": "ok", "banks": [{ "code", "name" }] }` |
+| `POST /functions/v1/paystack-resolve-account` | `{ "bank_code", "account_number" }` | `{ "status": "resolved", "bank_code", "account_number", "account_name" }` |
+
+Paystack endpoints used server-side:
+
+- `GET /bank?currency=NGN` — supported Nigerian banks (cached ~1h per Edge isolate).
+- `GET /bank/resolve?account_number=…&bank_code=…` — account name enquiry (10-digit NUBAN).
+
+Error payloads use `{ "status": "error", "code", "error" }` with `code` one of:
+
+- `invalid_input` — missing/invalid bank code or account number (400).
+- `not_found` — Paystack could not resolve the account (422); **not** used for timeouts or outages.
+- `rate_limited` — Paystack 429 or per-user Edge throttle (429).
+- `provider_unavailable` — network, timeout, or Paystack 5xx (503).
+
+Deploy:
+
+```bash
+supabase functions deploy paystack-banks
+supabase functions deploy paystack-resolve-account
+```
+
+### Paystack dashboard configuration
+
+- **Test keys** (`sk_test_` / `pk_test_`) are required in this repo today.
+- **Resolve account** and **List banks** use standard Paystack API access on the secret key; no separate mobile public key is needed for resolution.
+- For **live** payouts later, enable **Transfers** on your Paystack business account and switch to live keys outside test mode (not supported in this codebase yet).
+- In test mode, use Paystack’s documented test account numbers for successful resolution; invalid combinations return `not_found`.
+
+Withdrawal requests (ledger only; no Paystack transfer from the mobile app):
+
+| Function | Body | Success |
+| -------- | ---- | ------- |
+| `POST /functions/v1/wallet-withdraw-request` | `{ "amount_naira", "bank_account_id", "idempotency_key" }` | `{ "status": "pending", "withdrawal_transaction_id", "transfer_settlement": "pending" }` |
+
+Server RPC `request_wallet_withdrawal` (service_role) debits available balance into a **pending** `withdrawal` ledger row and sends `withdrawal_processing` only. **Paystack transfer initiation and completion/failure settlement are not implemented yet** — that remains a backend job using stored `paystack_recipient_code`.
+
+Not implemented in this document’s scope: Paystack transfer API calls, Dedicated Virtual Accounts, live (`sk_live_`) keys in production guardrails.

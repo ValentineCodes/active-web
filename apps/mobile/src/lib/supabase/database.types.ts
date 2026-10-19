@@ -9,6 +9,130 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      admin_audit_events: {
+        Row: {
+          action: string
+          actor_admin_id: string
+          created_at: string
+          entity_id: string | null
+          entity_type: Database["public"]["Enums"]["admin_audit_entity_type"]
+          id: string
+          idempotency_key: string
+          metadata: Json
+          reason: string | null
+        }
+        Insert: {
+          action: string
+          actor_admin_id: string
+          created_at?: string
+          entity_id?: string | null
+          entity_type: Database["public"]["Enums"]["admin_audit_entity_type"]
+          id?: string
+          idempotency_key: string
+          metadata?: Json
+          reason?: string | null
+        }
+        Update: {
+          action?: string
+          actor_admin_id?: string
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: Database["public"]["Enums"]["admin_audit_entity_type"]
+          id?: string
+          idempotency_key?: string
+          metadata?: Json
+          reason?: string | null
+        }
+        Relationships: []
+      }
+      admin_members: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          role: Database["public"]["Enums"]["admin_role"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          role: Database["public"]["Enums"]["admin_role"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          role?: Database["public"]["Enums"]["admin_role"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      admin_service_problem_notes: {
+        Row: {
+          author_admin_id: string
+          body: string
+          created_at: string
+          id: string
+          service_problem_id: string
+        }
+        Insert: {
+          author_admin_id: string
+          body: string
+          created_at?: string
+          id?: string
+          service_problem_id: string
+        }
+        Update: {
+          author_admin_id?: string
+          body?: string
+          created_at?: string
+          id?: string
+          service_problem_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_service_problem_notes_service_problem_id_fkey"
+            columns: ["service_problem_id"]
+            isOneToOne: false
+            referencedRelation: "service_problems"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      admin_user_notes: {
+        Row: {
+          author_admin_id: string
+          body: string
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          author_admin_id: string
+          body: string
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          author_admin_id?: string
+          body?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_user_notes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       deposit_transactions: {
         Row: {
           amount: number
@@ -145,6 +269,142 @@ export type Database = {
           },
         ]
       }
+      engagement_cancellation_events: {
+        Row: {
+          actor_id: string
+          cancellation_request_id: string | null
+          created_at: string
+          id: string
+          idempotency_key: string
+          kind: Database["public"]["Enums"]["engagement_cancellation_event_kind"]
+          reason: string | null
+          request_id: string
+        }
+        Insert: {
+          actor_id: string
+          cancellation_request_id?: string | null
+          created_at?: string
+          id?: string
+          idempotency_key: string
+          kind: Database["public"]["Enums"]["engagement_cancellation_event_kind"]
+          reason?: string | null
+          request_id: string
+        }
+        Update: {
+          actor_id?: string
+          cancellation_request_id?: string | null
+          created_at?: string
+          id?: string
+          idempotency_key?: string
+          kind?: Database["public"]["Enums"]["engagement_cancellation_event_kind"]
+          reason?: string | null
+          request_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "engagement_cancellation_events_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "engagement_cancellation_events_cancellation_request_id_fkey"
+            columns: ["cancellation_request_id"]
+            isOneToOne: false
+            referencedRelation: "engagement_cancellation_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "engagement_cancellation_events_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "my_requests"
+            referencedColumns: ["request_id"]
+          },
+          {
+            foreignKeyName: "engagement_cancellation_events_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      engagement_cancellation_requests: {
+        Row: {
+          created_at: string
+          id: string
+          initiated_by: string
+          initiator_role: string
+          provider_response_reason: string | null
+          reason: string | null
+          request_id: string
+          resolved_at: string | null
+          resolved_by: string | null
+          respond_by: string | null
+          settlement_idempotency_key: string | null
+          status: Database["public"]["Enums"]["engagement_cancellation_request_status"]
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          initiated_by: string
+          initiator_role: string
+          provider_response_reason?: string | null
+          reason?: string | null
+          request_id: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          respond_by?: string | null
+          settlement_idempotency_key?: string | null
+          status?: Database["public"]["Enums"]["engagement_cancellation_request_status"]
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          initiated_by?: string
+          initiator_role?: string
+          provider_response_reason?: string | null
+          reason?: string | null
+          request_id?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          respond_by?: string | null
+          settlement_idempotency_key?: string | null
+          status?: Database["public"]["Enums"]["engagement_cancellation_request_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "engagement_cancellation_requests_initiated_by_fkey"
+            columns: ["initiated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "engagement_cancellation_requests_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "my_requests"
+            referencedColumns: ["request_id"]
+          },
+          {
+            foreignKeyName: "engagement_cancellation_requests_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "engagement_cancellation_requests_resolved_by_fkey"
+            columns: ["resolved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       handshakes: {
         Row: {
           created_at: string
@@ -181,14 +441,14 @@ export type Database = {
           {
             foreignKeyName: "handshakes_request_id_fkey"
             columns: ["request_id"]
-            isOneToOne: true
+            isOneToOne: false
             referencedRelation: "my_requests"
             referencedColumns: ["request_id"]
           },
           {
             foreignKeyName: "handshakes_request_id_fkey"
             columns: ["request_id"]
-            isOneToOne: true
+            isOneToOne: false
             referencedRelation: "requests"
             referencedColumns: ["id"]
           },
@@ -1172,6 +1432,79 @@ export type Database = {
           },
         ]
       }
+      saved_locations: {
+        Row: {
+          alias: string | null
+          created_at: string
+          id: string
+          is_default: boolean
+          last_used_at: string
+          location: unknown
+          location_label: string
+          user_id: string
+        }
+        Insert: {
+          alias?: string | null
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          last_used_at?: string
+          location: unknown
+          location_label: string
+          user_id: string
+        }
+        Update: {
+          alias?: string | null
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          last_used_at?: string
+          location?: unknown
+          location_label?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "saved_locations_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      service_problem_investigations: {
+        Row: {
+          assigned_admin_id: string | null
+          queue_status: Database["public"]["Enums"]["service_problem_investigation_status"]
+          service_problem_id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          assigned_admin_id?: string | null
+          queue_status?: Database["public"]["Enums"]["service_problem_investigation_status"]
+          service_problem_id: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          assigned_admin_id?: string | null
+          queue_status?: Database["public"]["Enums"]["service_problem_investigation_status"]
+          service_problem_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_problem_investigations_service_problem_id_fkey"
+            columns: ["service_problem_id"]
+            isOneToOne: true
+            referencedRelation: "service_problems"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       service_problems: {
         Row: {
           created_at: string
@@ -1269,6 +1602,53 @@ export type Database = {
         }
         Relationships: []
       }
+      user_account_restrictions: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          idempotency_key: string
+          lift_reason: string | null
+          lifted_at: string | null
+          lifted_by: string | null
+          reason: string
+          scope: Database["public"]["Enums"]["user_restriction_scope"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          idempotency_key: string
+          lift_reason?: string | null
+          lifted_at?: string | null
+          lifted_by?: string | null
+          reason: string
+          scope?: Database["public"]["Enums"]["user_restriction_scope"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          idempotency_key?: string
+          lift_reason?: string | null
+          lifted_at?: string | null
+          lifted_by?: string | null
+          reason?: string
+          scope?: Database["public"]["Enums"]["user_restriction_scope"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_account_restrictions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_attendance: {
         Row: {
           request_id: string
@@ -1302,6 +1682,56 @@ export type Database = {
           },
           {
             foreignKeyName: "user_attendance_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_bank_accounts: {
+        Row: {
+          account_name: string
+          account_number: string
+          bank_code: string
+          bank_name: string
+          created_at: string
+          id: string
+          is_default: boolean
+          paystack_recipient_code: string
+          resolved_at: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          account_name: string
+          account_number: string
+          bank_code: string
+          bank_name: string
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          paystack_recipient_code: string
+          resolved_at?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          account_name?: string
+          account_number?: string
+          bank_code?: string
+          bank_name?: string
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          paystack_recipient_code?: string
+          resolved_at?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_bank_accounts_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
@@ -1769,6 +2199,177 @@ export type Database = {
         Returns: undefined
       }
       accept_response: { Args: { p_response_id: string }; Returns: string }
+      admin_add_report_note: {
+        Args: { p_body: string; p_report_id: string }
+        Returns: undefined
+      }
+      admin_add_user_note: {
+        Args: { p_body: string; p_user_id: string }
+        Returns: string
+      }
+      admin_assign_report: {
+        Args: { p_admin_id: string; p_report_id: string }
+        Returns: undefined
+      }
+      admin_execute_operational_recovery: {
+        Args: {
+          p_action: string
+          p_idempotency_key: string
+          p_reason: string
+          p_request_id: string
+        }
+        Returns: Json
+      }
+      admin_financial_exceptions: { Args: never; Returns: Json }
+      admin_get_audit_event: { Args: { p_event_id: string }; Returns: Json }
+      admin_get_deposit: { Args: { p_deposit_id: string }; Returns: Json }
+      admin_get_finance_summary: {
+        Args: { p_period_end?: string; p_period_start?: string }
+        Returns: Json
+      }
+      admin_get_overview: {
+        Args: { p_period_end: string; p_period_start: string }
+        Returns: Json
+      }
+      admin_get_report: { Args: { p_report_id: string }; Returns: Json }
+      admin_get_request: { Args: { p_request_id: string }; Returns: Json }
+      admin_get_transaction: {
+        Args: { p_transaction_id: string }
+        Returns: Json
+      }
+      admin_get_user: { Args: { p_user_id: string }; Returns: Json }
+      admin_get_wallet: { Args: { p_user_id: string }; Returns: Json }
+      admin_grant_member: {
+        Args: {
+          p_role: Database["public"]["Enums"]["admin_role"]
+          p_user_id: string
+        }
+        Returns: undefined
+      }
+      admin_list_audit_events: {
+        Args: {
+          p_action?: string
+          p_entity_type?: string
+          p_limit?: number
+          p_offset?: number
+          p_query?: string
+        }
+        Returns: Json
+      }
+      admin_list_deposits: {
+        Args: {
+          p_limit?: number
+          p_offset?: number
+          p_query?: string
+          p_status?: string
+        }
+        Returns: Json
+      }
+      admin_list_members: { Args: never; Returns: Json }
+      admin_list_reports: {
+        Args: {
+          p_filter?: string
+          p_limit?: number
+          p_offset?: number
+          p_query?: string
+        }
+        Returns: Json
+      }
+      admin_list_requests: {
+        Args: {
+          p_limit?: number
+          p_offset?: number
+          p_query?: string
+          p_status_group?: string
+        }
+        Returns: Json
+      }
+      admin_list_transactions: {
+        Args: {
+          p_limit?: number
+          p_offset?: number
+          p_query?: string
+          p_status?: string
+          p_type_group?: string
+        }
+        Returns: Json
+      }
+      admin_list_users: {
+        Args: {
+          p_filter?: string
+          p_limit?: number
+          p_offset?: number
+          p_query?: string
+        }
+        Returns: Json
+      }
+      admin_list_wallets: {
+        Args: { p_limit?: number; p_offset?: number; p_query?: string }
+        Returns: Json
+      }
+      admin_list_withdrawals: {
+        Args: {
+          p_limit?: number
+          p_offset?: number
+          p_query?: string
+          p_status?: string
+        }
+        Returns: Json
+      }
+      admin_operational_issues: { Args: never; Returns: Json }
+      admin_provision_member: {
+        Args: {
+          p_role: Database["public"]["Enums"]["admin_role"]
+          p_user_id: string
+        }
+        Returns: undefined
+      }
+      admin_record_audit_event: {
+        Args: {
+          p_action: string
+          p_entity_id: string
+          p_entity_type: Database["public"]["Enums"]["admin_audit_entity_type"]
+          p_idempotency_key: string
+          p_metadata?: Json
+          p_reason: string
+        }
+        Returns: string
+      }
+      admin_redact_json: { Args: { p_value: Json }; Returns: Json }
+      admin_reinstate_user: {
+        Args: { p_idempotency_key: string; p_reason: string; p_user_id: string }
+        Returns: undefined
+      }
+      admin_report_filter_matches: {
+        Args: {
+          p_actor: string
+          p_filter: string
+          p_inv_assigned: string
+          p_inv_queue: string
+          p_respond_by: string
+          p_sp_status: string
+        }
+        Returns: boolean
+      }
+      admin_report_queue_label: {
+        Args: {
+          p_inv_assigned: string
+          p_inv_queue: string
+          p_respond_by: string
+          p_sp_status: string
+        }
+        Returns: string
+      }
+      admin_require_permission: { Args: { p_key: string }; Returns: Json }
+      admin_resolve_report: {
+        Args: {
+          p_admin_note: string
+          p_idempotency_key: string
+          p_outcome: string
+          p_report_id: string
+        }
+        Returns: undefined
+      }
       admin_resolve_service_problem: {
         Args: {
           p_admin_note: string
@@ -1777,6 +2378,47 @@ export type Database = {
           p_problem_id: string
         }
         Returns: undefined
+      }
+      admin_revoke_member: { Args: { p_user_id: string }; Returns: undefined }
+      admin_suspend_user: {
+        Args: { p_idempotency_key: string; p_reason: string; p_user_id: string }
+        Returns: undefined
+      }
+      admin_transaction_filter_matches: {
+        Args: {
+          p_status: string
+          p_type_group: string
+          wt: Database["public"]["Tables"]["wallet_transactions"]["Row"]
+        }
+        Returns: boolean
+      }
+      admin_update_report_investigation: {
+        Args: {
+          p_queue_status: Database["public"]["Enums"]["service_problem_investigation_status"]
+          p_reason?: string
+          p_report_id: string
+        }
+        Returns: undefined
+      }
+      admin_upsert_service_problem_investigation: {
+        Args: {
+          p_assigned_admin_id: string
+          p_queue_status: Database["public"]["Enums"]["service_problem_investigation_status"]
+          p_service_problem_id: string
+        }
+        Returns: undefined
+      }
+      admin_wallet_locked_engagement_kobo: {
+        Args: { p_user_id: string }
+        Returns: number
+      }
+      admin_wallet_pending_kobo: {
+        Args: { p_user_id: string }
+        Returns: number
+      }
+      admin_wallet_type_group: {
+        Args: { p_type: Database["public"]["Enums"]["wallet_transaction_type"] }
+        Returns: string
       }
       align_request_escrow_to_agreed_amount: {
         Args: {
@@ -1816,6 +2458,10 @@ export type Database = {
       assert_onboarded: { Args: never; Returns: string }
       assert_responder_available_for_selection: {
         Args: { p_provider_id: string; p_target_request_id: string }
+        Returns: undefined
+      }
+      assert_user_marketplace_listing_allowed: {
+        Args: { p_user_id: string }
         Returns: undefined
       }
       attach_tags_to_request: {
@@ -1866,7 +2512,7 @@ export type Database = {
         }[]
       }
       browse_open_requests: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           currency: string
           description: string
@@ -1881,10 +2527,6 @@ export type Database = {
           scheduled_for: string
           title: string
         }[]
-      }
-      delete_saved_location: {
-        Args: { p_saved_location_id: string }
-        Returns: undefined
       }
       browse_request: {
         Args: { p_latitude: number; p_longitude: number; p_request_id: string }
@@ -1920,14 +2562,18 @@ export type Database = {
         Args: { p_name: string }
         Returns: boolean
       }
-      cancel_request: {
-        Args: { p_request_id: string; p_reason?: string }
-        Returns: undefined
-      }
-      cancel_service: {
-        Args: { p_request_id: string; p_reason?: string }
-        Returns: undefined
-      }
+      cancel_request:
+        | { Args: { p_request_id: string }; Returns: undefined }
+        | {
+            Args: { p_reason?: string; p_request_id: string }
+            Returns: undefined
+          }
+      cancel_service:
+        | { Args: { p_request_id: string }; Returns: undefined }
+        | {
+            Args: { p_reason?: string; p_request_id: string }
+            Returns: undefined
+          }
       catalogue_media_is_published: {
         Args: { p_name: string }
         Returns: boolean
@@ -2083,6 +2729,14 @@ export type Database = {
         Args: { p_reason?: string; p_response_id: string }
         Returns: undefined
       }
+      delete_saved_location: {
+        Args: { p_saved_location_id: string }
+        Returns: undefined
+      }
+      delete_user_bank_account: {
+        Args: { p_bank_account_id: string }
+        Returns: undefined
+      }
       deliver_expo_push: {
         Args: {
           p_body: string
@@ -2201,6 +2855,7 @@ export type Database = {
           viewer_is_requester: boolean
         }[]
       }
+      get_my_admin_permissions: { Args: never; Returns: Json }
       get_my_wallet: {
         Args: never
         Returns: {
@@ -2242,7 +2897,41 @@ export type Database = {
         Args: { p_request_id: string }
         Returns: string
       }
+      get_user_bank_account_id_if_owned: {
+        Args: {
+          p_account_number: string
+          p_bank_code: string
+          p_user_id: string
+        }
+        Returns: string
+      }
+      insert_user_bank_account: {
+        Args: {
+          p_account_name: string
+          p_account_number: string
+          p_bank_code: string
+          p_bank_name: string
+          p_paystack_recipient_code: string
+          p_user_id: string
+        }
+        Returns: string
+      }
       kobo_to_ngn_major: { Args: { p_kobo: number }; Returns: number }
+      list_my_bank_accounts: {
+        Args: never
+        Returns: {
+          account_name: string
+          account_number: string
+          bank_account_id: string
+          bank_code: string
+          bank_name: string
+          can_delete: boolean
+          created_at: string
+          is_default: boolean
+          resolved_at: string
+          updated_at: string
+        }[]
+      }
       list_my_request_conversations: {
         Args: never
         Returns: {
@@ -2260,6 +2949,18 @@ export type Database = {
           request_title: string
           unread_count: number
           updated_at: string
+        }[]
+      }
+      list_my_saved_locations: {
+        Args: never
+        Returns: {
+          alias: string
+          is_default: boolean
+          last_used_at: string
+          latitude: number
+          location_label: string
+          longitude: number
+          saved_location_id: string
         }[]
       }
       list_my_wallet_transactions:
@@ -2297,18 +2998,6 @@ export type Database = {
               type: Database["public"]["Enums"]["wallet_transaction_type"]
             }[]
           }
-      list_my_saved_locations: {
-        Args: Record<PropertyKey, never>
-        Returns: {
-          alias: string
-          is_default: boolean
-          last_used_at: string
-          latitude: number
-          location_label: string
-          longitude: number
-          saved_location_id: string
-        }[]
-      }
       list_notification_tag_interests: {
         Args: never
         Returns: {
@@ -2628,6 +3317,15 @@ export type Database = {
         Returns: boolean
       }
       request_tag_slugs: { Args: { p_request_id: string }; Returns: string[] }
+      request_wallet_withdrawal: {
+        Args: {
+          p_amount_major: number
+          p_bank_account_id: string
+          p_idempotency_key: string
+          p_user_id: string
+        }
+        Returns: string
+      }
       requester_completion_percent: {
         Args: { p_user_id: string }
         Returns: number
@@ -2731,6 +3429,10 @@ export type Database = {
         Returns: boolean
       }
       service_problem_response_interval: { Args: never; Returns: string }
+      set_default_user_bank_account: {
+        Args: { p_bank_account_id: string }
+        Returns: undefined
+      }
       set_notification_preferences: {
         Args: {
           p_message_push_enabled: boolean
@@ -2740,21 +3442,6 @@ export type Database = {
           p_push_tips_reminders_enabled: boolean
         }
         Returns: undefined
-      }
-      touch_saved_location: {
-        Args: { p_saved_location_id: string }
-        Returns: undefined
-      }
-      upsert_saved_location: {
-        Args: {
-          p_alias?: string | null
-          p_is_default?: boolean
-          p_latitude: number
-          p_location_label: string
-          p_longitude: number
-          p_saved_location_id?: string | null
-        }
-        Returns: string
       }
       set_notification_tag_interests: {
         Args: { p_tag_ids: string[] }
@@ -2781,6 +3468,10 @@ export type Database = {
       tag_interest_notification_recipients: {
         Args: { p_request_id: string; p_requester_id: string }
         Returns: string[]
+      }
+      touch_saved_location: {
+        Args: { p_saved_location_id: string }
+        Returns: undefined
       }
       transition_request_to_awaiting_review: {
         Args: { p_request_id: string }
@@ -2810,6 +3501,21 @@ export type Database = {
           p_requester_id: string
         }
         Returns: undefined
+      }
+      upsert_saved_location: {
+        Args: {
+          p_alias: string
+          p_is_default?: boolean
+          p_latitude: number
+          p_location_label: string
+          p_longitude: number
+          p_saved_location_id: string
+        }
+        Returns: string
+      }
+      user_bank_account_pending_withdrawal_exists: {
+        Args: { p_bank_account_id: string; p_user_id: string }
+        Returns: boolean
       }
       user_push_delivery_allowed: {
         Args: {
@@ -2921,12 +3627,12 @@ export type Database = {
       withdraw_response: { Args: { p_response_id: string }; Returns: undefined }
     }
     Enums: {
-      engagement_cancellation_request_status:
-        | "pending"
-        | "agreed"
-        | "declined"
-        | "expired"
-        | "superseded"
+      admin_audit_entity_type:
+        | "user"
+        | "request"
+        | "admin_member"
+        | "service_problem"
+      admin_role: "super_admin" | "support_admin" | "finance_admin"
       conversation_attachment_type: "image" | "video" | "file"
       conversation_message_type: "text" | "system" | "attachment"
       deposit_transaction_status:
@@ -2935,6 +3641,18 @@ export type Database = {
         | "completed"
         | "failed"
         | "cancelled"
+      engagement_cancellation_event_kind:
+        | "provider_immediate"
+        | "requester_requested"
+        | "provider_agreed"
+        | "provider_declined"
+        | "auto_expired"
+      engagement_cancellation_request_status:
+        | "pending"
+        | "agreed"
+        | "declined"
+        | "expired"
+        | "superseded"
       notification_type:
         | "response_received"
         | "new_responses"
@@ -2955,8 +3673,6 @@ export type Database = {
         | "request_cancelled"
         | "helper_cancelled"
         | "cancellation_confirmed"
-        | "engagement_cancellation_requested"
-        | "engagement_cancellation_declined"
         | "problem_reported"
         | "dispute_opened"
         | "dispute_resolved"
@@ -2964,6 +3680,8 @@ export type Database = {
         | "rate_experience"
         | "matching_request"
         | "request_awaiting_review"
+        | "engagement_cancellation_requested"
+        | "engagement_cancellation_declined"
       payment_lock_bucket: "locked" | "pending"
       payment_lock_status: "active" | "released" | "refunded"
       payment_status:
@@ -2994,6 +3712,11 @@ export type Database = {
         | "declined"
         | "withdrawn"
         | "expired"
+      service_problem_investigation_status:
+        | "triage"
+        | "under_review"
+        | "awaiting_info"
+        | "escalated"
       service_problem_kind:
         | "completion_issue"
         | "provider_no_show"
@@ -3002,6 +3725,7 @@ export type Database = {
         | "service_not_completed"
         | "service_differs_from_request"
         | "other"
+      user_restriction_scope: "new_marketplace_listings"
       wallet_transaction_status: "pending" | "completed" | "failed" | "reversed"
       wallet_transaction_type:
         | "deposit"
@@ -3144,13 +3868,13 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      engagement_cancellation_request_status: [
-        "pending",
-        "agreed",
-        "declined",
-        "expired",
-        "superseded",
+      admin_audit_entity_type: [
+        "user",
+        "request",
+        "admin_member",
+        "service_problem",
       ],
+      admin_role: ["super_admin", "support_admin", "finance_admin"],
       conversation_attachment_type: ["image", "video", "file"],
       conversation_message_type: ["text", "system", "attachment"],
       deposit_transaction_status: [
@@ -3159,6 +3883,20 @@ export const Constants = {
         "completed",
         "failed",
         "cancelled",
+      ],
+      engagement_cancellation_event_kind: [
+        "provider_immediate",
+        "requester_requested",
+        "provider_agreed",
+        "provider_declined",
+        "auto_expired",
+      ],
+      engagement_cancellation_request_status: [
+        "pending",
+        "agreed",
+        "declined",
+        "expired",
+        "superseded",
       ],
       notification_type: [
         "response_received",
@@ -3180,8 +3918,6 @@ export const Constants = {
         "request_cancelled",
         "helper_cancelled",
         "cancellation_confirmed",
-        "engagement_cancellation_requested",
-        "engagement_cancellation_declined",
         "problem_reported",
         "dispute_opened",
         "dispute_resolved",
@@ -3189,6 +3925,8 @@ export const Constants = {
         "rate_experience",
         "matching_request",
         "request_awaiting_review",
+        "engagement_cancellation_requested",
+        "engagement_cancellation_declined",
       ],
       payment_lock_bucket: ["locked", "pending"],
       payment_lock_status: ["active", "released", "refunded"],
@@ -3223,6 +3961,12 @@ export const Constants = {
         "withdrawn",
         "expired",
       ],
+      service_problem_investigation_status: [
+        "triage",
+        "under_review",
+        "awaiting_info",
+        "escalated",
+      ],
       service_problem_kind: [
         "completion_issue",
         "provider_no_show",
@@ -3232,6 +3976,7 @@ export const Constants = {
         "service_differs_from_request",
         "other",
       ],
+      user_restriction_scope: ["new_marketplace_listings"],
       wallet_transaction_status: ["pending", "completed", "failed", "reversed"],
       wallet_transaction_type: [
         "deposit",

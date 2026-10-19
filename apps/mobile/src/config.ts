@@ -38,6 +38,8 @@ export const WALLET = {
   /** Min/max whole-naira deposit (server validates again in kobo). */
   depositMinMajor: 100,
   depositMaxMajor: 1_000_000,
+  withdrawMinMajor: 100,
+  withdrawMaxMajor: 1_000_000,
   /** Max rows per history page (server cap 200). */
   historyPageSize: 25,
   /** Max transaction rows loaded for wallet home preview query. */
