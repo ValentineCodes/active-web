@@ -264,8 +264,6 @@ export default function ProfileScreen() {
             onPress={() => router.push('/profile/bank-accounts' as Href)}
             showDivider
           />
-          <SettingsRow label="Payment details" onPress={() => router.push('/wallet')} showDivider />
-          <SettingsRow label="Verify identity" onPress={() => {}} showDivider />
         </SettingsGroup>
 
         <SettingsGroup title="Preferences">
@@ -276,7 +274,6 @@ export default function ProfileScreen() {
           <View className="mx-4 h-px bg-hairline" />
           <AppearancePreferenceSection />
           <SettingsRow label="Privacy" onPress={() => {}} showDivider />
-          <SettingsRow label="Language" onPress={() => {}} showDivider />
         </SettingsGroup>
 
         <SettingsGroup title="Support">
