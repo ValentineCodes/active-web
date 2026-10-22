@@ -59,12 +59,16 @@ export default function WalletWithdrawScreen() {
 
   const available = wallet.data?.available ?? 0;
   const currency = wallet.data?.currency ?? MARKET.currency;
+  const withdrawalsDisabled = withdrawalPolicy.data?.withdrawalsEnabled === false;
+  const maxWithdrawMajor = Math.min(available, amountLimits.maxMajor);
+  const canUseMax =
+    !withdrawalsDisabled &&
+    maxWithdrawMajor >= amountLimits.minMajor &&
+    validateWithdrawAmountMajor(maxWithdrawMajor, available, amountLimits) === null;
   const parsedAmount = Number(amount.replace(/[^\d]/g, ''));
   const validationError = wallet.data
     ? validateWithdrawAmountMajor(parsedAmount, available, amountLimits)
     : null;
-
-  const withdrawalsDisabled = withdrawalPolicy.data?.withdrawalsEnabled === false;
 
   const accounts = useMemo(() => bankAccounts.data ?? [], [bankAccounts.data]);
 
@@ -172,6 +176,18 @@ export default function WalletWithdrawScreen() {
                 accessibilityLabel="Withdrawal amount"
                 value={amount}
                 onChangeText={(text) => setAmount(text.replace(/[^\d]/g, ''))}
+                trailing={
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Use maximum withdrawable amount"
+                    hitSlop={8}
+                    disabled={!canUseMax}
+                    onPress={() => setAmount(String(maxWithdrawMajor))}
+                    className={cn('pl-3 active:opacity-80', !canUseMax && 'opacity-40')}
+                  >
+                    <Text className="text-base font-semibold text-active">Max</Text>
+                  </Pressable>
+                }
               />
             </View>
             {validationError ? (
