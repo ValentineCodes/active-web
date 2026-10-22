@@ -139,13 +139,13 @@ export default function WalletHomeScreen() {
             </View>
           </View>
 
-          <View className="gap-3 border-t border-hairline p-4">
+          <View className="flex-row gap-3 border-t border-hairline p-4">
             <Button
               label="Add Money"
               variant="active"
               size="lg"
               corner="2xl"
-              className="w-full"
+              className="flex-1"
               onPress={() => router.push('/wallet/add')}
             />
             {available > 0 ? (
@@ -154,7 +154,7 @@ export default function WalletHomeScreen() {
                 variant="secondary"
                 size="lg"
                 corner="2xl"
-                className="w-full"
+                className="flex-1"
                 onPress={() => router.push('/wallet/withdraw' as Href)}
               />
             ) : null}

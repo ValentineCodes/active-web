@@ -120,12 +120,12 @@ export default function WalletWithdrawScreen() {
   }
 
   return (
-    <Screen edges={['top', 'bottom']}>
+    <Screen edges={['top']}>
       <KeyboardStickyFooter
         footer={
           <View className="gap-3 p-5">
             <Button
-              label="Review withdrawal"
+              label="Continue"
               variant="active"
               size="lg"
               corner="2xl"

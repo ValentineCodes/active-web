@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { Button } from '@/components/ui/Button';
 import { Header } from '@/components/ui/Header';
+import { KeyboardStickyFooter } from '@/components/ui/KeyboardStickyFooter';
 import { Screen } from '@/components/ui/Screen';
 import { InlineError, LoadingState } from '@/components/ui/StateView';
 import { formatMaskedAccountNumber, useMyBankAccounts } from '@/features/profile/bank-accounts-api';
@@ -219,14 +220,30 @@ export default function WalletWithdrawReviewScreen() {
   const amountLabel = formatMoney(amountMajor, currency);
 
   return (
-    <Screen edges={['top', 'bottom']}>
-      <Header title="Review withdrawal" onBack={() => router.back()} />
-
-      <ScrollView
-        className="flex-1"
-        contentContainerClassName="gap-6 px-5 pb-8 pt-4"
-        showsVerticalScrollIndicator={false}
+    <Screen edges={['top']}>
+      <KeyboardStickyFooter
+        footer={
+          <View className="gap-3 p-5">
+            <Button
+              label="Confirm"
+              variant="active"
+              size="lg"
+              corner="2xl"
+              className="w-full"
+              loading={submitting}
+              disabled={submitting}
+              onPress={() => void submit()}
+            />
+          </View>
+        }
       >
+        <Header title="Review withdrawal" onBack={() => router.back()} />
+
+        <ScrollView
+          className="flex-1"
+          contentContainerClassName="gap-6 px-5 pb-8 pt-4"
+          showsVerticalScrollIndicator={false}
+        >
         <View className="items-center gap-2 py-4">
           <Text className="text-xs font-semibold uppercase tracking-wide text-subtle">
             You&apos;re withdrawing
@@ -270,40 +287,13 @@ export default function WalletWithdrawReviewScreen() {
           </View>
         </View>
 
-        <Text className="text-xs text-muted">
-          Min {formatMoney(amountLimits.minMajor, currency)} · Max{' '}
-          {formatMoney(amountLimits.maxMajor, currency)} · Available{' '}
-          {formatMoney(available, currency)}
-        </Text>
-
         {error ? (
           <InlineError
             error={new Error(withdrawErrorMessage(error))}
           />
         ) : null}
-      </ScrollView>
-
-      <View className="gap-3 border-t border-hairline p-5">
-        <Button
-          label="Confirm withdrawal request"
-          variant="active"
-          size="lg"
-          corner="2xl"
-          className="w-full"
-          loading={submitting}
-          disabled={submitting}
-          onPress={() => void submit()}
-        />
-        <Button
-          label="Edit amount or account"
-          variant="secondary"
-          size="lg"
-          corner="2xl"
-          className="w-full"
-          disabled={submitting}
-          onPress={() => router.back()}
-        />
-      </View>
+        </ScrollView>
+      </KeyboardStickyFooter>
     </Screen>
   );
 }

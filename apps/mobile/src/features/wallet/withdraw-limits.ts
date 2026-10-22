@@ -29,7 +29,7 @@ export function validateWithdrawAmountMajor(
   limits: WithdrawAmountLimits = resolveWithdrawAmountLimits(undefined),
 ): string | null {
   if (!Number.isFinite(amountMajor) || amountMajor <= 0) {
-    return 'Enter an amount to withdraw.';
+    return null;
   }
 
   if (!Number.isInteger(amountMajor)) {
