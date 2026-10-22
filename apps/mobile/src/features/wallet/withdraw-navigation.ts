@@ -1,4 +1,9 @@
-import { type Href } from 'expo-router';
+import { type Href, router } from 'expo-router';
+
+import { clearPendingWithdrawSubmission } from '@/features/wallet/withdraw-pending';
+
+/** wallet → withdraw → result (review is replaced by result). */
+const WALLET_WITHDRAW_STACK_DEPTH_FROM_RESULT = 2;
 
 export const WALLET_WITHDRAW_RETURN_TO = '/wallet/withdraw';
 
@@ -55,4 +60,24 @@ export function withdrawReviewHref(input: { amount: string; bankAccountId: strin
   params.set(WITHDRAW_AMOUNT_PARAM, input.amount.replace(/[^\d]/g, ''));
   params.set(WITHDRAW_BANK_ACCOUNT_ID_PARAM, input.bankAccountId);
   return `/wallet/withdraw/review?${params.toString()}` as Href;
+}
+
+/** Leaves withdraw + result off the stack so wallet back does not return to withdraw. */
+export function exitWalletWithdrawToHome(): void {
+  clearPendingWithdrawSubmission();
+  if (router.canDismiss()) {
+    router.dismiss(WALLET_WITHDRAW_STACK_DEPTH_FROM_RESULT);
+  }
+  router.replace('/wallet');
+}
+
+export function exitWalletWithdrawToDetail(withdrawalId: string): void {
+  clearPendingWithdrawSubmission();
+  const href = `/wallet/withdrawal/${withdrawalId}` as Href;
+  if (router.canDismiss()) {
+    router.dismiss(WALLET_WITHDRAW_STACK_DEPTH_FROM_RESULT);
+    router.push(href);
+    return;
+  }
+  router.replace(href);
 }

@@ -245,13 +245,9 @@ export function walletActivityListMeta(
   statusLabel: string;
 } {
   const meta = walletHistoryListMeta(row, currency);
-  const subtitle =
-    row.withdrawal != null
-      ? `${row.withdrawal.destinationBankName} · ${row.withdrawal.destinationAccountNumberMasked}`
-      : null;
   return {
     title: meta.title,
-    subtitle,
+    subtitle: null,
     amount: meta.amount,
     signedAmount: meta.signedAmount,
     when: row.created_at ? formatWalletActivityWhen(row.created_at) : '',

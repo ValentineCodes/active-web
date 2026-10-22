@@ -1,10 +1,14 @@
 import { Text, View } from 'react-native';
-import { type Href, router, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 import { Button } from '@/components/ui/Button';
 import { Header } from '@/components/ui/Header';
 import { Screen } from '@/components/ui/Screen';
+import {
+  exitWalletWithdrawToDetail,
+  exitWalletWithdrawToHome,
+} from '@/features/wallet/withdraw-navigation';
 import { useColors } from '@/theme';
 
 export default function WalletWithdrawResultScreen() {
@@ -18,7 +22,7 @@ export default function WalletWithdrawResultScreen() {
 
   return (
     <Screen edges={['top', 'bottom']}>
-      <Header title="Withdrawal requested" onBack={() => router.replace('/wallet')} />
+      <Header title="Withdrawal requested" onBack={() => exitWalletWithdrawToHome()} />
 
       <View className="flex-1 items-center justify-center gap-4 px-8">
         <View className="h-16 w-16 items-center justify-center rounded-full bg-active-soft">
@@ -39,7 +43,7 @@ export default function WalletWithdrawResultScreen() {
             size="lg"
             corner="2xl"
             className="w-full"
-            onPress={() => router.replace(`/wallet/withdrawal/${detailId}` as Href)}
+            onPress={() => exitWalletWithdrawToDetail(detailId)}
           />
         ) : null}
         <Button
@@ -48,7 +52,7 @@ export default function WalletWithdrawResultScreen() {
           size="lg"
           corner="2xl"
           className="w-full"
-          onPress={() => router.replace('/wallet')}
+          onPress={() => exitWalletWithdrawToHome()}
         />
       </View>
     </Screen>

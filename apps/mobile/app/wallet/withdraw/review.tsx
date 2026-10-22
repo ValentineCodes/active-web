@@ -13,7 +13,7 @@ import { KeyboardStickyFooter } from '@/components/ui/KeyboardStickyFooter';
 import { Screen } from '@/components/ui/Screen';
 import { InlineError, LoadingState } from '@/components/ui/StateView';
 import { fetchMyIdentityStatus, useMyIdentityStatus } from '@/features/identity/api';
-import { formatMaskedAccountNumber, useMyBankAccounts } from '@/features/profile/bank-accounts-api';
+import { useMyBankAccounts } from '@/features/profile/bank-accounts-api';
 import { useMyWallet, invalidateWalletQueries } from '@/features/wallet/api';
 import { MARKET } from '@/config';
 import { formatMoney } from '@/lib/format';
@@ -346,26 +346,8 @@ export default function WalletWithdrawReviewScreen() {
           </View>
 
           <View className="gap-4 rounded-2xl border border-hairline bg-elevated p-4">
-            <View className="flex-row items-start gap-3">
-              <View className="h-10 w-10 items-center justify-center rounded-xl bg-surface">
-                <Ionicons name="business-outline" size={22} color={colors.muted} />
-              </View>
-              <View className="min-w-0 flex-1 gap-1">
-                <Text className="text-xs font-semibold uppercase tracking-wide text-subtle">
-                  Destination
-                </Text>
-                <Text className="text-base font-semibold text-ink">{account.bank_name}</Text>
-                <Text className="text-sm text-muted">
-                  {formatMaskedAccountNumber(account.account_number)}
-                </Text>
-                <Text className="text-sm text-ink">{account.account_name}</Text>
-              </View>
-            </View>
-
             {withdrawalPolicy.data?.requireIdentityVerification ? (
-              <>
-                <View className="h-px bg-hairline" />
-                <View className="flex-row items-start gap-3">
+              <View className="flex-row items-start gap-3">
                   <View className="h-10 w-10 items-center justify-center rounded-xl bg-surface">
                     <Ionicons name="shield-checkmark-outline" size={22} color={colors.muted} />
                   </View>
@@ -392,10 +374,11 @@ export default function WalletWithdrawReviewScreen() {
                     )}
                   </View>
                 </View>
-              </>
             ) : null}
 
-            <View className="h-px bg-hairline" />
+            {withdrawalPolicy.data?.requireIdentityVerification ? (
+              <View className="h-px bg-hairline" />
+            ) : null}
 
             <View className="flex-row items-start gap-3">
               <View className="h-10 w-10 items-center justify-center rounded-xl bg-warning-soft">

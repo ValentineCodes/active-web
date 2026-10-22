@@ -136,10 +136,6 @@ export default function WalletTransactionScreen() {
     detailRows.push({ label: 'Request', value: `“${requestTitle}”` });
   }
   if (item.withdrawal) {
-    detailRows.push({
-      label: 'Bank',
-      value: `${item.withdrawal.destinationBankName} · ${item.withdrawal.destinationAccountNumberMasked}`,
-    });
     if (item.withdrawal.completedAt) {
       detailRows.push({
         label: 'Completed',

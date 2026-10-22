@@ -87,14 +87,6 @@ export default function WalletWithdrawalDetailScreen() {
       label: 'Submitted',
       value: formatWalletTransactionWhen(row.createdAt),
     },
-    {
-      label: 'Bank',
-      value: row.destinationBankName,
-    },
-    {
-      label: 'Account',
-      value: `${row.destinationAccountNumberMasked} · ${row.destinationAccountName}`,
-    },
   ];
 
   if (row.processingAt) {
