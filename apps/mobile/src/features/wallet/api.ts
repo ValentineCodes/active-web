@@ -209,4 +209,5 @@ export function useWalletTransactions() {
 export async function invalidateWalletQueries(queryClient: QueryClient) {
   await queryClient.invalidateQueries({ queryKey: queryKeys.wallet });
   await queryClient.invalidateQueries({ queryKey: queryKeys.walletActivity });
+  await queryClient.invalidateQueries({ queryKey: queryKeys.walletWithdrawals });
 }

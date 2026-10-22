@@ -84,3 +84,12 @@ BEGIN
 
   PERFORM public.admin_provision_member(v_user_id, 'super_admin'::public.admin_role);
 END $$;
+
+-- Local Supabase only (seed does not run on hosted production deploy).
+UPDATE public.platform_runtime_config
+SET deployment_environment = 'local'
+WHERE id = 1;
+
+UPDATE public.withdrawal_policy
+SET allow_withdraw_without_identity_in_development = true
+WHERE id = 1;

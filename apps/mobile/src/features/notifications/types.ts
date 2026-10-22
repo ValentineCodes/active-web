@@ -39,6 +39,7 @@ export const NOTIFICATION_TYPES = [
   'funds_returned',
   'payment_released',
   'payment_received',
+  'withdrawal_submitted',
   'withdrawal_processing',
   'withdrawal_successful',
   'withdrawal_failed',

@@ -30,14 +30,6 @@ export const DEPOSIT_STATUS_FILTERS = [
   { value: 'cancelled', label: 'Cancelled' },
 ] as const;
 
-export const WITHDRAWAL_STATUS_FILTERS = [
-  { value: 'all', label: 'All' },
-  { value: 'pending', label: 'Pending' },
-  { value: 'completed', label: 'Completed' },
-  { value: 'failed', label: 'Failed' },
-  { value: 'reversed', label: 'Reversed' },
-] as const;
-
 export type TransactionListItem = {
   id: string;
   type: string;
@@ -137,29 +129,6 @@ export async function fetchAdminWallet(userId: string) {
   const { data, error } = await supabase.rpc('admin_get_wallet', { p_user_id: userId });
   if (error) throw new Error(error.message);
   return data;
-}
-
-export async function fetchAdminWithdrawals(params: {
-  query: string;
-  status: string;
-  limit: number;
-  offset: number;
-}) {
-  const supabase = await createSupabaseServerClient();
-  const { data, error } = await supabase.rpc('admin_list_withdrawals', {
-    p_query: params.query,
-    p_status: params.status,
-    p_limit: params.limit,
-    p_offset: params.offset,
-  });
-  if (error) throw new Error(error.message);
-  const row = data as { total: number; limit: number; offset: number; items: unknown[] };
-  return {
-    total: row.total ?? 0,
-    limit: row.limit ?? params.limit,
-    offset: row.offset ?? params.offset,
-    items: Array.isArray(row.items) ? row.items : [],
-  };
 }
 
 export async function fetchFinanceSummary(periodStart: string, periodEnd: string) {

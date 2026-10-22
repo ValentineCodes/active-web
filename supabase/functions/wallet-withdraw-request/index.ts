@@ -51,6 +51,30 @@ Deno.serve(async (req) => {
     if (error) {
       const message = error.message ?? 'Could not request withdrawal';
       const lower = message.toLowerCase();
+      const pgCode = typeof error.code === 'string' ? error.code : '';
+
+      if (pgCode === 'PGRST202' || lower.includes('could not find the function')) {
+        return jsonResponse(
+          {
+            status: 'error',
+            code: 'unknown',
+            error:
+              'Withdrawals are unavailable until database migrations are applied. Run pnpm db:migrate locally.',
+          },
+          { status: 503 },
+        );
+      }
+
+      if (pgCode === '42501' || lower.includes('identity verification')) {
+        return jsonResponse(
+          {
+            status: 'error',
+            code: 'identity_verification_required',
+            error: message,
+          },
+          { status: 403 },
+        );
+      }
 
       if (lower.includes('insufficient available balance')) {
         return jsonResponse({ status: 'error', code: 'insufficient_balance', error: message }, {
@@ -64,9 +88,27 @@ Deno.serve(async (req) => {
         });
       }
 
-      if (lower.includes('minimum withdrawal') || lower.includes('per-operation limit')) {
+      if (
+        lower.includes('minimum withdrawal') ||
+        lower.includes('per-operation limit') ||
+        lower.includes('minimum withdrawal limit') ||
+        lower.includes('per-withdrawal limit') ||
+        lower.includes('daily withdrawal limit')
+      ) {
         return jsonResponse({ status: 'error', code: 'invalid_amount', error: message }, {
           status: 400,
+        });
+      }
+
+      if (lower.includes('withdrawals are temporarily disabled')) {
+        return jsonResponse({ status: 'error', code: 'withdrawals_disabled', error: message }, {
+          status: 503,
+        });
+      }
+
+      if (lower.includes('identity verification is required')) {
+        return jsonResponse({ status: 'error', code: 'identity_verification_required', error: message }, {
+          status: 403,
         });
       }
 
@@ -79,9 +121,20 @@ Deno.serve(async (req) => {
       return errorResponse(message, 500);
     }
 
+    const { data: withdrawalRow, error: withdrawalRowError } = await service
+      .from('wallet_withdrawals')
+      .select('wallet_transaction_id')
+      .eq('id', withdrawalId)
+      .single();
+
+    if (withdrawalRowError || !withdrawalRow?.wallet_transaction_id) {
+      return errorResponse('Could not load withdrawal record', 500);
+    }
+
     return jsonResponse({
       status: 'pending',
-      withdrawal_transaction_id: withdrawalId,
+      withdrawal_id: withdrawalId,
+      withdrawal_transaction_id: withdrawalRow.wallet_transaction_id,
       message:
         'Your withdrawal request was submitted. Funds will be sent after transfer processing completes.',
       transfer_settlement: 'pending',

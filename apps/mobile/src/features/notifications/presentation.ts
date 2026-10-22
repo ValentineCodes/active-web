@@ -116,6 +116,7 @@ export function notificationVisual(type: NotificationType): NotificationVisual {
     case 'funds_returned':
     case 'payment_released':
     case 'payment_received':
+    case 'withdrawal_submitted':
     case 'withdrawal_processing':
     case 'withdrawal_successful':
     case 'withdrawal_failed':
@@ -172,6 +173,17 @@ export type NotificationNavigationInput = Pick<
 const NOTIFICATION_ROUTE_PATTERN =
   /^\/(request|respond|engagement|conversation|rate)\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+const WALLET_WITHDRAWAL_ROUTE_PATTERN =
+  /^\/wallet\/withdrawal\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function withdrawalDetailHrefFromMetadata(
+  metadata: Record<string, unknown> | null | undefined,
+): string | null {
+  const withdrawalId = metadata?.withdrawal_id;
+  if (typeof withdrawalId !== 'string' || withdrawalId.length === 0) return null;
+  return `/wallet/withdrawal/${withdrawalId}`;
+}
+
 /** Server-authored deep link from inbox rows or push payloads. */
 export function normalizeNotificationHref(url: string | null | undefined): string | null {
   if (!url) return null;
@@ -179,6 +191,7 @@ export function normalizeNotificationHref(url: string | null | undefined): strin
   const trimmed = url.trim();
   if (trimmed === '/wallet' || trimmed.startsWith('/wallet/')) return trimmed;
   if (NOTIFICATION_ROUTE_PATTERN.test(trimmed)) return trimmed;
+  if (WALLET_WITHDRAWAL_ROUTE_PATTERN.test(trimmed)) return trimmed;
 
   return null;
 }
@@ -191,6 +204,9 @@ export function resolveNotificationHref(item: NotificationNavigationInput): stri
 
   const storedHref = normalizeNotificationHref(item.url);
   if (storedHref) return storedHref;
+
+  const withdrawalHref = withdrawalDetailHrefFromMetadata(item.metadata);
+  if (withdrawalHref) return withdrawalHref;
 
   if (item.type === 'new_message' && item.requestId) {
     const conversationId = item.metadata?.conversation_id;
@@ -209,6 +225,7 @@ export function resolveNotificationHref(item: NotificationNavigationInput): stri
   }
 
   if (
+    item.type === 'withdrawal_submitted' ||
     item.type === 'withdrawal_processing' ||
     item.type === 'withdrawal_successful' ||
     item.type === 'withdrawal_failed' ||

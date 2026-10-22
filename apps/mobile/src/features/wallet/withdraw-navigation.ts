@@ -49,3 +49,10 @@ export function readWithdrawDraftFromParams(params: {
     bankAccountId: params.bankAccountId ?? null,
   };
 }
+
+export function withdrawReviewHref(input: { amount: string; bankAccountId: string }): Href {
+  const params = new URLSearchParams();
+  params.set(WITHDRAW_AMOUNT_PARAM, input.amount.replace(/[^\d]/g, ''));
+  params.set(WITHDRAW_BANK_ACCOUNT_ID_PARAM, input.bankAccountId);
+  return `/wallet/withdraw/review?${params.toString()}` as Href;
+}

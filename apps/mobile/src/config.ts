@@ -38,6 +38,7 @@ export const WALLET = {
   /** Min/max whole-naira deposit (server validates again in kobo). */
   depositMinMajor: 100,
   depositMaxMajor: 1_000_000,
+  /** Fallback UI hints until `get_public_withdrawal_policy` loads; server enforces kobo limits. */
   withdrawMinMajor: 100,
   withdrawMaxMajor: 1_000_000,
   /** Max rows per history page (server cap 200). */

@@ -23,6 +23,18 @@ $$;
 
 select pg_temp.make_user('cccccccc-cccc-cccc-cccc-cccccccccccc', 'Withdrawer', '+2348000000301');
 
+select set_config('role', 'postgres', true);
+
+update public.platform_runtime_config
+set deployment_environment = 'local'
+where id = 1;
+
+update public.withdrawal_policy
+set
+  allow_withdraw_without_identity_in_development = true,
+  require_identity_verification_for_withdrawal = true
+where id = 1;
+
 select set_config('role', 'service_role', true);
 
 select lives_ok(
@@ -52,7 +64,16 @@ select public.request_wallet_withdrawal(
 ) as withdrawal_id \gset
 
 select is(
-  (select status::text from public.wallet_transactions where id = :'withdrawal_id'::uuid),
+  (select status::text from public.wallet_withdrawals where id = :'withdrawal_id'::uuid),
+  'pending',
+  'withdrawal queue row is pending'
+);
+
+select is(
+  (select status::text
+   from public.wallet_transactions wt
+   join public.wallet_withdrawals w on w.wallet_transaction_id = wt.id
+   where w.id = :'withdrawal_id'::uuid),
   'pending',
   'withdrawal ledger row is pending'
 );
@@ -65,7 +86,7 @@ select is(
     'idem-1'
   )::text,
   :'withdrawal_id',
-  'idempotent withdrawal request returns same transaction id'
+  'idempotent withdrawal request returns same withdrawal id'
 );
 
 select throws_ok(

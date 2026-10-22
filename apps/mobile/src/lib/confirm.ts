@@ -14,7 +14,7 @@ export function confirmWithdrawResponse(onConfirm: () => void) {
 export function confirmWalletWithdraw(amountLabel: string, onConfirm: () => void) {
   Alert.alert(
     'Withdraw from wallet?',
-    `${amountLabel} will be removed from your available balance. This stand-in does not send money to a bank yet.`,
+    `${amountLabel} will be reserved from your available balance while we process your bank transfer manually.`,
     [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Withdraw', style: 'destructive', onPress: onConfirm },

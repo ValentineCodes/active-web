@@ -171,8 +171,9 @@ enable_refresh_token_rotation = true
 # Allows refresh tokens to be reused after expiry, up to the specified interval in seconds.
 # Requires enable_refresh_token_rotation = true.
 refresh_token_reuse_interval = 10
-# Disallow public sign-up; staff accounts are created via seed or Supabase Dashboard.
-enable_signup = false
+# Marketplace users onboard via phone OTP (signInWithOtp creates new auth users).
+# Operations dashboard staff still use seeded email/password accounts; restrict roles in app logic.
+enable_signup = true
 # Allow/disallow anonymous sign-ins to your project.
 enable_anonymous_sign_ins = false
 # Allow/disallow testing manual linking of accounts

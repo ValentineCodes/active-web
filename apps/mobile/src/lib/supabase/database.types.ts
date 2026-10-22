@@ -2998,6 +2998,48 @@ export type Database = {
               type: Database["public"]["Enums"]["wallet_transaction_type"]
             }[]
           }
+      list_my_wallet_withdrawals: {
+        Args: { p_limit?: number; p_offset?: number }
+        Returns: {
+          amount_kobo: number
+          completed_at: string | null
+          created_at: string
+          currency: string
+          destination_account_name: string
+          destination_account_number_masked: string
+          destination_bank_name: string
+          status: string
+          updated_at: string
+          user_facing_reason: string | null
+          wallet_transaction_id: string
+          withdrawal_id: string
+        }[]
+      }
+      get_my_wallet_withdrawal: {
+        Args: { p_withdrawal_id: string }
+        Returns: Json
+      }
+      get_public_withdrawal_policy: {
+        Args: Record<string, never>
+        Returns: Json
+      }
+      admin_get_withdrawal_policy: {
+        Args: Record<string, never>
+        Returns: Json
+      }
+      admin_update_withdrawal_policy: {
+        Args: {
+          p_min_amount_kobo: number
+          p_max_amount_kobo: number
+          p_max_daily_amount_kobo: number
+          p_withdrawals_enabled: boolean
+          p_require_admin_review: boolean
+          p_require_identity_verification_for_withdrawal: boolean
+          p_allow_withdraw_without_identity_in_development: boolean
+          p_idempotency_key: string
+        }
+        Returns: Json
+      }
       list_notification_tag_interests: {
         Args: never
         Returns: {
@@ -3665,6 +3707,7 @@ export type Database = {
         | "funds_returned"
         | "payment_released"
         | "payment_received"
+        | "withdrawal_submitted"
         | "withdrawal_processing"
         | "withdrawal_successful"
         | "withdrawal_failed"
@@ -3910,6 +3953,7 @@ export const Constants = {
         "funds_returned",
         "payment_released",
         "payment_received",
+        "withdrawal_submitted",
         "withdrawal_processing",
         "withdrawal_successful",
         "withdrawal_failed",

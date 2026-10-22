@@ -1,7 +1,9 @@
+import { readEdgeFunctionPayload } from '@/lib/supabase/function-invoke';
 import { supabase } from '@/lib/supabase/client';
 
 export type WithdrawRequestResult = {
   status: 'pending';
+  withdrawal_id?: string;
   withdrawal_transaction_id: string;
   message: string;
   transfer_settlement: 'pending';
@@ -12,6 +14,8 @@ export type WithdrawRequestErrorCode =
   | 'invalid_bank_account'
   | 'invalid_amount'
   | 'withdrawal_in_progress'
+  | 'withdrawals_disabled'
+  | 'identity_verification_required'
   | 'unknown';
 
 type ErrorBody = {
@@ -19,35 +23,6 @@ type ErrorBody = {
   code?: WithdrawRequestErrorCode;
   error?: string;
 };
-
-async function parseInvokeError(error: unknown): Promise<Error | null> {
-  if (!error || typeof error !== 'object' || !('context' in error)) return null;
-  const response = (error as { context?: Response }).context;
-  if (!response?.json) return null;
-  try {
-    const body = (await response.json()) as ErrorBody;
-    if (!body.error) return null;
-    const err = new Error(body.error);
-    if (body.code) {
-      (err as Error & { code?: WithdrawRequestErrorCode }).code = body.code;
-    }
-    return err;
-  } catch {
-    return null;
-  }
-}
-
-function throwIfErrorBody(data: unknown): void {
-  if (!data || typeof data !== 'object') return;
-  const body = data as ErrorBody;
-  if (body.status === 'error' && body.error) {
-    const err = new Error(body.error);
-    if (body.code) {
-      (err as Error & { code?: WithdrawRequestErrorCode }).code = body.code;
-    }
-    throw err;
-  }
-}
 
 export async function requestWalletWithdrawal(input: {
   amountMajor: number;
@@ -62,18 +37,9 @@ export async function requestWalletWithdrawal(input: {
     },
   });
 
-  if (error) {
-    const parsed = await parseInvokeError(error);
-    throw parsed ?? error;
-  }
-
-  throwIfErrorBody(data);
-
-  if (!data || typeof data !== 'object' || (data as WithdrawRequestResult).status !== 'pending') {
-    throw new Error('Unexpected withdrawal response');
-  }
-
-  return data as WithdrawRequestResult;
+  return readEdgeFunctionPayload<WithdrawRequestResult>(data, error, {
+    functionName: 'wallet-withdraw-request',
+  });
 }
 
 export function withdrawErrorCode(error: unknown): WithdrawRequestErrorCode {
@@ -83,10 +49,29 @@ export function withdrawErrorCode(error: unknown): WithdrawRequestErrorCode {
       code === 'insufficient_balance' ||
       code === 'invalid_bank_account' ||
       code === 'invalid_amount' ||
-      code === 'withdrawal_in_progress'
+      code === 'withdrawal_in_progress' ||
+      code === 'withdrawals_disabled' ||
+      code === 'identity_verification_required'
     ) {
       return code;
     }
   }
+
+  if (error instanceof Error) {
+    const lower = error.message.toLowerCase();
+    if (lower.includes('insufficient available balance')) return 'insufficient_balance';
+    if (lower.includes('bank account not found')) return 'invalid_bank_account';
+    if (
+      lower.includes('minimum withdrawal') ||
+      lower.includes('per-withdrawal limit') ||
+      lower.includes('daily withdrawal limit')
+    ) {
+      return 'invalid_amount';
+    }
+    if (lower.includes('withdrawal in progress')) return 'withdrawal_in_progress';
+    if (lower.includes('withdrawals are temporarily disabled')) return 'withdrawals_disabled';
+    if (lower.includes('identity verification')) return 'identity_verification_required';
+  }
+
   return 'unknown';
 }

@@ -108,6 +108,17 @@ export default function NotificationsScreen() {
   };
 
   const openNotification = (item: InboxNotification) => {
+    if (
+      item.type === 'withdrawal_submitted' ||
+      item.type === 'withdrawal_processing' ||
+      item.type === 'withdrawal_successful' ||
+      item.type === 'withdrawal_failed'
+    ) {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.wallet });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.walletActivity });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.walletWithdrawals });
+    }
+
     void resolveNotificationHrefForOpen(queryClient, {
       type: item.type,
       requestId: item.requestId,

@@ -34,8 +34,30 @@ export function WalletActivityRow({ row, currency, onPress, showDivider }: Props
 
         <View className="min-w-0 flex-1 gap-1">
           <Text className="text-base font-semibold text-ink">{meta.title}</Text>
+          {meta.subtitle ? (
+            <Text className="text-sm text-muted" numberOfLines={1}>{meta.subtitle}</Text>
+          ) : null}
           <View className="flex-row flex-wrap items-center gap-x-1.5">
             <Text className="text-sm text-muted">{meta.when}</Text>
+            {row.withdrawal ? (
+              <>
+                <Text className="text-sm text-muted">·</Text>
+                <Text
+                  className={cn(
+                    'text-sm font-medium',
+                    row.withdrawal.queueStatus === 'completed' && 'text-active',
+                    (row.withdrawal.queueStatus === 'pending' ||
+                      row.withdrawal.queueStatus === 'processing') &&
+                      'text-warning',
+                    (row.withdrawal.queueStatus === 'rejected' ||
+                      row.withdrawal.queueStatus === 'failed') &&
+                      'text-danger',
+                  )}
+                >
+                  {meta.statusLabel}
+                </Text>
+              </>
+            ) : null}
             {visual.statusTag === 'locked' ? (
               <>
                 <Text className="text-sm text-muted">·</Text>

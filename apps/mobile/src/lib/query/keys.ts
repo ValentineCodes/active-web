@@ -35,6 +35,8 @@ export const queryKeys = {
   notificationUnreadCount: ['notification-unread-count'] as const,
   wallet: ['wallet'] as const,
   walletActivity: ['wallet-activity'] as const,
+  walletWithdrawals: ['wallet-withdrawals'] as const,
+  withdrawalPolicy: ['withdrawal-policy'] as const,
   requestTagsSearch: (query: string) => ['request-tags-search', query] as const,
   requestTagsCatalogue: ['request-tags-catalogue'] as const,
   notificationTagInterests: ['notification-tag-interests'] as const,

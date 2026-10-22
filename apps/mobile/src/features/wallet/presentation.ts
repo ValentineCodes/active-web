@@ -9,6 +9,8 @@ import {
   walletTransactionStatusLabel,
 } from './activity';
 import type { WalletTransactionStatus } from './types';
+import { walletWithdrawalStatusLabel } from './withdraw-status';
+import type { WalletWithdrawalStatus } from './withdrawals-api';
 
 export type WalletActivityStatusTag = 'locked' | 'returned' | 'completed';
 
@@ -32,21 +34,20 @@ const INCOMING_KINDS = new Set([
   'escrow_partial_refund',
 ]);
 
-export function walletActivityVisual(kind: string, amount: number | null): WalletActivityVisual {
+export function walletActivityVisual(
+  kind: string,
+  amount: number | null,
+  withdrawalStatus?: WalletWithdrawalStatus,
+): WalletActivityVisual {
   const incoming = amount !== null ? amount > 0 : INCOMING_KINDS.has(kind);
 
   let statusTag: WalletActivityStatusTag | null = null;
   if (kind === 'escrow_lock') statusTag = 'locked';
   else if (kind === 'refund' || kind === 'escrow_partial_refund') statusTag = 'returned';
-  else if (
-    [
-      'deposit',
-      'external_deposit',
-      'manual_top_up',
-      'pay_provider',
-      'escrow_release',
-      'manual_withdraw',
-    ].includes(kind)
+  else if (kind === 'manual_withdraw') {
+    if (withdrawalStatus === 'completed') statusTag = 'completed';
+  } else if (
+    ['deposit', 'external_deposit', 'manual_top_up', 'pay_provider', 'escrow_release'].includes(kind)
   ) {
     statusTag = 'completed';
   }
@@ -98,7 +99,17 @@ export function walletActivityDetailBadge(kind: string): WalletActivityStatusTag
 export function walletTransactionDetailBadge(
   kind: string,
   status: WalletTransactionStatus,
+  withdrawalStatus?: WalletWithdrawalStatus,
 ): WalletTransactionDetailBadge {
+  if (kind === 'manual_withdraw' && withdrawalStatus) {
+    const label = walletWithdrawalStatusLabel(withdrawalStatus);
+    if (withdrawalStatus === 'completed') return { label, variant: 'completed' };
+    if (withdrawalStatus === 'rejected' || withdrawalStatus === 'failed') {
+      return { label, variant: 'failed' };
+    }
+    return { label, variant: 'pending' };
+  }
+
   const tag = walletActivityVisual(kind, null).statusTag;
   if (tag === 'locked') return { label: 'Locked', variant: 'locked' };
   if (tag === 'returned') return { label: 'Returned', variant: 'returned' };
@@ -124,7 +135,7 @@ export function walletActivityWhatHappened(kind: string): string {
     case 'escrow_release':
       return 'Payment was released after you confirmed the request was complete.';
     case 'manual_withdraw':
-      return 'Money was withdrawn from your available balance.';
+      return 'You requested a withdrawal to your bank account. We process payouts manually; reserved funds return if the request is declined or the transfer fails.';
     case 'escrow_pending':
     case 'escrow_relock':
       return 'This money is held while your request is in progress.';
@@ -198,13 +209,17 @@ export function walletHistoryListMeta(
 } {
   const kind = row.kind ?? 'activity';
   const amount = walletActivityAmount(row);
-  const visual = walletActivityVisual(kind, amount);
+  const visual = walletActivityVisual(kind, amount, row.withdrawal?.queueStatus);
   const direction = walletHistoryDirection(row.available_delta);
+  const statusLabel =
+    row.withdrawal?.queueStatus != null
+      ? walletWithdrawalStatusLabel(row.withdrawal.queueStatus)
+      : walletTransactionStatusLabel(row.status);
 
   return {
     title: walletActivityTitle(kind),
     description: walletHistoryDescription(row),
-    statusLabel: walletTransactionStatusLabel(row.status),
+    statusLabel,
     direction,
     amount,
     signedAmount: amount !== null ? formatWalletActivitySignedAmount(amount, currency) : null,
@@ -222,17 +237,24 @@ export function walletActivityListMeta(
   currency: string,
 ): {
   title: string;
+  subtitle: string | null;
   amount: number | null;
   signedAmount: string | null;
   when: string;
   visual: WalletActivityVisual;
+  statusLabel: string;
 } {
   const meta = walletHistoryListMeta(row, currency);
+  const subtitle = row.withdrawal
+    ? `${row.withdrawal.destinationBankName} · ${row.withdrawal.destinationAccountNumberMasked}`
+    : null;
   return {
     title: meta.title,
+    subtitle,
     amount: meta.amount,
     signedAmount: meta.signedAmount,
     when: row.created_at ? formatWalletActivityWhen(row.created_at) : '',
     visual: meta.visual,
+    statusLabel: meta.statusLabel,
   };
 }

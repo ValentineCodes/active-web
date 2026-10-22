@@ -1,6 +1,6 @@
-import { useEffect, useRef } from 'react';
-import { ScrollView, Text, View } from 'react-native';
-import { router, useLocalSearchParams } from 'expo-router';
+import { useEffect, useMemo, useRef } from 'react';
+import { Pressable, ScrollView, Text, View } from 'react-native';
+import { type Href, router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 import { Header } from '@/components/ui/Header';
@@ -11,6 +11,11 @@ import { showAppToast } from '@/lib/toast';
 import { useEngagement } from '@/features/requests/requester-api';
 import { walletActivityAmount, walletActivityTitle } from '@/features/wallet/activity';
 import { useMyWallet, useWalletActivityInfinite } from '@/features/wallet/api';
+import {
+  enrichActivityWithWithdrawals,
+  useMyWalletWithdrawals,
+} from '@/features/wallet/withdrawals-api';
+import type { WalletActivityRow } from '@/features/wallet/activity';
 import {
   formatWalletActivitySignedAmount,
   formatWalletTransactionWhen,
@@ -64,9 +69,15 @@ export default function WalletTransactionScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const wallet = useMyWallet();
   const history = useWalletActivityInfinite();
+  const withdrawals = useMyWalletWithdrawals();
   useQueryErrorToast(wallet);
   useQueryErrorToast(history);
-  const item = history.data?.pages.flatMap((page) => page.items).find((row) => row.id === id);
+  useQueryErrorToast(withdrawals);
+  const item = useMemo(() => {
+    const base = history.data?.pages.flatMap((page) => page.items) ?? [];
+    const rows = enrichActivityWithWithdrawals(base, withdrawals.data ?? []) as WalletActivityRow[];
+    return rows.find((row) => row.id === id);
+  }, [history.data?.pages, withdrawals.data, id]);
   const engagement = useEngagement(item?.request_id ?? '');
   const notifiedNotFound = useRef(false);
 
@@ -108,7 +119,7 @@ export default function WalletTransactionScreen() {
   const visual = walletActivityVisual(kind, amount);
   const direction = walletHistoryDirection(item.available_delta);
   const requestTitle = engagement.data?.title ?? null;
-  const badge = walletTransactionDetailBadge(kind, item.status);
+  const badge = walletTransactionDetailBadge(kind, item.status, item.withdrawal?.queueStatus);
 
   const detailRows: { label: string; value: string }[] = [];
   if (item.created_at) {
@@ -123,6 +134,21 @@ export default function WalletTransactionScreen() {
   });
   if (requestTitle) {
     detailRows.push({ label: 'Request', value: `“${requestTitle}”` });
+  }
+  if (item.withdrawal) {
+    detailRows.push({
+      label: 'Bank',
+      value: `${item.withdrawal.destinationBankName} · ${item.withdrawal.destinationAccountNumberMasked}`,
+    });
+    if (item.withdrawal.completedAt) {
+      detailRows.push({
+        label: 'Completed',
+        value: formatWalletTransactionWhen(item.withdrawal.completedAt),
+      });
+    }
+    if (item.withdrawal.userFacingReason) {
+      detailRows.push({ label: 'Note', value: item.withdrawal.userFacingReason });
+    }
   }
 
   return (
@@ -177,6 +203,18 @@ export default function WalletTransactionScreen() {
           </Text>
           <Text className="text-base leading-6 text-muted">{walletActivityWhatHappened(kind)}</Text>
         </View>
+
+        {item.withdrawal?.withdrawalId ? (
+          <Pressable
+            onPress={() =>
+              router.push(`/wallet/withdrawal/${item.withdrawal!.withdrawalId}` as Href)
+            }
+            accessibilityRole="button"
+            className="rounded-2xl border border-hairline bg-elevated px-4 py-4 active:opacity-90"
+          >
+            <Text className="text-base font-semibold text-active">View withdrawal details</Text>
+          </Pressable>
+        ) : null}
       </ScrollView>
     </Screen>
   );

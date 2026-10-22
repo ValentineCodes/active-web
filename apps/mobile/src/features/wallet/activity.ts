@@ -1,4 +1,15 @@
+import type { WalletWithdrawalStatus } from './withdrawals-api';
 import type { WalletTransactionStatus, WalletTransactionType } from './types';
+
+export type WalletActivityWithdrawalMeta = {
+  withdrawalId: string;
+  queueStatus: WalletWithdrawalStatus;
+  destinationBankName: string;
+  destinationAccountNumberMasked: string;
+  destinationAccountName: string;
+  userFacingReason: string | null;
+  completedAt: string | null;
+};
 
 export type WalletActivityRow = {
   id: string;
@@ -10,6 +21,7 @@ export type WalletActivityRow = {
   created_at: string;
   status: WalletTransactionStatus;
   description: string | null;
+  withdrawal?: WalletActivityWithdrawalMeta;
 };
 
 const KIND_LABELS: Record<string, string> = {

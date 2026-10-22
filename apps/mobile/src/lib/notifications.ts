@@ -125,6 +125,25 @@ export function useNotificationBridge() {
     void queryClient.invalidateQueries({ queryKey: queryKeys.notificationUnreadCount });
   }, [queryClient]);
 
+  const refreshWalletAfterWithdrawalAlert = useCallback(
+    (data: Record<string, unknown>) => {
+      const type = data.type;
+      if (typeof type !== 'string') return;
+      if (
+        type !== 'withdrawal_submitted' &&
+        type !== 'withdrawal_processing' &&
+        type !== 'withdrawal_successful' &&
+        type !== 'withdrawal_failed'
+      ) {
+        return;
+      }
+      void queryClient.invalidateQueries({ queryKey: queryKeys.wallet });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.walletActivity });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.walletWithdrawals });
+    },
+    [queryClient],
+  );
+
   const navigateFromNotification = useCallback(
     (href: string) => {
       if (!navigationReady) {
@@ -146,6 +165,7 @@ export function useNotificationBridge() {
 
       const data = response.notification.request.content.data;
       if (data && typeof data === 'object' && !Array.isArray(data)) {
+        refreshWalletAfterWithdrawalAlert(data as Record<string, unknown>);
         void resolveNotificationHrefFromPushDataForOpen(
           queryClient,
           data as Record<string, unknown>,
@@ -154,7 +174,7 @@ export function useNotificationBridge() {
         });
       }
     },
-    [navigateFromNotification, queryClient, refreshInbox],
+    [navigateFromNotification, queryClient, refreshInbox, refreshWalletAfterWithdrawalAlert],
   );
 
   useEffect(() => {
@@ -167,8 +187,12 @@ export function useNotificationBridge() {
   useEffect(() => {
     void syncPushToken({ mode: 'silent' });
 
-    const received = Notifications.addNotificationReceivedListener(() => {
+    const received = Notifications.addNotificationReceivedListener((event) => {
       refreshInbox();
+      const data = event.request.content.data;
+      if (data && typeof data === 'object' && !Array.isArray(data)) {
+        refreshWalletAfterWithdrawalAlert(data as Record<string, unknown>);
+      }
     });
 
     const tapped = Notifications.addNotificationResponseReceivedListener((response) => {
@@ -179,5 +203,5 @@ export function useNotificationBridge() {
       received.remove();
       tapped.remove();
     };
-  }, [openNotificationResponse, refreshInbox]);
+  }, [openNotificationResponse, refreshInbox, refreshWalletAfterWithdrawalAlert]);
 }

@@ -7,44 +7,56 @@ import {
   type NativeScrollEvent,
   type NativeSyntheticEvent,
 } from 'react-native';
-import { router, useFocusEffect } from 'expo-router';
+import { type Href, router, useFocusEffect } from 'expo-router';
 
-import { WalletActivityRow, WalletHistoryListFooter } from '@/components/wallet/WalletActivityRow';
+import {
+  WalletActivityRow as WalletActivityRowComponent,
+  WalletHistoryListFooter,
+} from '@/components/wallet/WalletActivityRow';
 import { Header } from '@/components/ui/Header';
 import { Screen } from '@/components/ui/Screen';
 import { EmptyState, LoadingState } from '@/components/ui/StateView';
 import { useQueryErrorToast } from '@/lib/query/use-query-error-toast';
 import { useMyWallet, useWalletActivityInfinite } from '@/features/wallet/api';
 import { groupWalletActivityByMonth } from '@/features/wallet/presentation';
+import {
+  enrichActivityWithWithdrawals,
+  useMyWalletWithdrawals,
+} from '@/features/wallet/withdrawals-api';
+import type { WalletActivityRow } from '@/features/wallet/activity';
 import { usePullToRefresh } from '@/lib/query/use-pull-to-refresh';
 import { showQuerySkeleton } from '@/lib/query/show-skeleton';
 
 export default function WalletHistoryScreen() {
   const wallet = useMyWallet();
   const history = useWalletActivityInfinite();
+  const withdrawals = useMyWalletWithdrawals();
   useQueryErrorToast(wallet);
   useQueryErrorToast(history);
+  useQueryErrorToast(withdrawals);
 
   const { refetch: refetchWallet } = wallet;
   const { refetch: refetchHistory } = history;
+  const { refetch: refetchWithdrawals } = withdrawals;
 
   useFocusEffect(
     useCallback(() => {
       void refetchWallet();
       void refetchHistory();
-    }, [refetchWallet, refetchHistory]),
+      void refetchWithdrawals();
+    }, [refetchWallet, refetchHistory, refetchWithdrawals]),
   );
 
   const onPullRefresh = useCallback(
-    () => Promise.all([refetchWallet(), refetchHistory()]),
-    [refetchHistory, refetchWallet],
+    () => Promise.all([refetchWallet(), refetchHistory(), refetchWithdrawals()]),
+    [refetchHistory, refetchWallet, refetchWithdrawals],
   );
   const { refreshing, onRefresh } = usePullToRefresh(onPullRefresh);
 
-  const rows = useMemo(
-    () => history.data?.pages.flatMap((page) => page.items) ?? [],
-    [history.data?.pages],
-  );
+  const rows = useMemo(() => {
+    const base = history.data?.pages.flatMap((page) => page.items) ?? [];
+    return enrichActivityWithWithdrawals(base, withdrawals.data ?? []) as WalletActivityRow[];
+  }, [history.data?.pages, withdrawals.data]);
 
   const sections = useMemo(() => groupWalletActivityByMonth(rows), [rows]);
 
@@ -105,12 +117,20 @@ export default function WalletHistoryScreen() {
               </Text>
               <View className="overflow-hidden rounded-2xl border border-hairline bg-elevated px-4">
                 {section.items.map((item, index) => (
-                  <WalletActivityRow
+                  <WalletActivityRowComponent
                     key={item.id}
                     row={item}
                     currency={currency}
                     showDivider={index > 0}
-                    onPress={() => router.push(`/wallet/transaction/${item.id}`)}
+                    onPress={() => {
+                      if (item.withdrawal?.withdrawalId) {
+                        router.push(
+                          `/wallet/withdrawal/${item.withdrawal.withdrawalId}` as Href,
+                        );
+                        return;
+                      }
+                      router.push(`/wallet/transaction/${item.id}` as Href);
+                    }}
                   />
                 ))}
               </View>

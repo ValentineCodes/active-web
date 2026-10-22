@@ -1,6 +1,8 @@
 import { MemberActions } from '@/components/settings/member-actions';
+import { WithdrawalPolicyPanel } from '@/components/withdrawals/withdrawal-policy-panel';
 import { ADMIN_ROLE_LABELS } from '@/lib/admin/types';
 import { fetchAdminMembers } from '@/lib/admin/audit';
+import { fetchAdminWithdrawalPolicy } from '@/lib/admin/withdrawal-policy';
 import { requireAdminSessionForPath } from '@/lib/admin/session';
 
 export const dynamic = 'force-dynamic';
@@ -8,6 +10,8 @@ export const dynamic = 'force-dynamic';
 export default async function SettingsPage() {
   const session = await requireAdminSessionForPath('/settings');
   const members = await fetchAdminMembers();
+  const withdrawalPolicy =
+    session.permissions.withdrawals ? await fetchAdminWithdrawalPolicy() : null;
 
   return (
     <div className="space-y-6">
@@ -31,6 +35,8 @@ export default async function SettingsPage() {
           Permissions are enforced in middleware and every admin RPC via <code>get_my_admin_permissions()</code>.
         </p>
       </section>
+
+      {withdrawalPolicy ? <WithdrawalPolicyPanel initial={withdrawalPolicy} /> : null}
 
       <MemberActions
         members={members as Array<{ user_id: string; email: string | null; role: string }>}

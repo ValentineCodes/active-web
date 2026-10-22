@@ -1,4 +1,4 @@
-import { useCallback, useRef } from 'react';
+import { useCallback, useMemo, useRef } from 'react';
 import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 import { type Href, router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -7,7 +7,7 @@ import {
   WalletLockedFundsSheet,
   type WalletLockedFundsSheetHandle,
 } from '@/components/wallet/WalletLockedFundsSheet';
-import { WalletActivityRow } from '@/components/wallet/WalletActivityRow';
+import { WalletActivityRow as WalletActivityRowComponent } from '@/components/wallet/WalletActivityRow';
 import { Button } from '@/components/ui/Button';
 import { Header } from '@/components/ui/Header';
 import { Screen } from '@/components/ui/Screen';
@@ -16,6 +16,11 @@ import { useQueryErrorToast } from '@/lib/query/use-query-error-toast';
 import { WALLET } from '@/config';
 import { useWalletLockedCommitments } from '@/features/wallet/locked-commitments';
 import { useMyWallet, useWalletActivity } from '@/features/wallet/api';
+import {
+  enrichActivityWithWithdrawals,
+  useMyWalletWithdrawals,
+} from '@/features/wallet/withdrawals-api';
+import type { WalletActivityRow } from '@/features/wallet/activity';
 import { formatMoney } from '@/lib/format';
 import { usePullToRefresh } from '@/lib/query/use-pull-to-refresh';
 import { showQuerySkeleton } from '@/lib/query/show-skeleton';
@@ -26,6 +31,7 @@ export default function WalletHomeScreen() {
   const wallet = useMyWallet();
   useQueryErrorToast(wallet);
   const activity = useWalletActivity();
+  const withdrawals = useMyWalletWithdrawals();
   const lockedCommitments = useWalletLockedCommitments();
   const lockedSheetRef = useRef<WalletLockedFundsSheetHandle>(null);
 
@@ -36,12 +42,13 @@ export default function WalletHomeScreen() {
     useCallback(() => {
       void refetchWallet();
       void refetchActivity();
-    }, [refetchWallet, refetchActivity]),
+      void withdrawals.refetch();
+    }, [refetchWallet, refetchActivity, withdrawals]),
   );
 
   const onPullRefresh = useCallback(
-    () => Promise.all([refetchWallet(), refetchActivity()]),
-    [refetchActivity, refetchWallet],
+    () => Promise.all([refetchWallet(), refetchActivity(), withdrawals.refetch()]),
+    [refetchActivity, refetchWallet, withdrawals],
   );
   const { refreshing, onRefresh } = usePullToRefresh(onPullRefresh);
 
@@ -78,7 +85,10 @@ export default function WalletHomeScreen() {
 
   const { available, locked, pending, currency } = wallet.data;
   const total = available + locked + pending;
-  const preview = (activity.data ?? []).slice(0, WALLET.previewActivityCount);
+  const preview = useMemo(() => {
+    const base = (activity.data ?? []).slice(0, WALLET.previewActivityCount);
+    return enrichActivityWithWithdrawals(base, withdrawals.data ?? []) as WalletActivityRow[];
+  }, [activity.data, withdrawals.data]);
   const hasLockedFunds = locked > 0 || pending > 0;
 
   return (
@@ -200,12 +210,20 @@ export default function WalletHomeScreen() {
           ) : (
             <View className="overflow-hidden rounded-2xl border border-hairline bg-elevated px-4">
               {preview.map((row, index) => (
-                <WalletActivityRow
+                <WalletActivityRowComponent
                   key={row.id!}
                   row={row}
                   currency={currency}
                   showDivider={index > 0}
-                  onPress={() => router.push(`/wallet/transaction/${row.id}`)}
+                  onPress={() => {
+                    if (row.withdrawal?.withdrawalId) {
+                      router.push(
+                        `/wallet/withdrawal/${row.withdrawal.withdrawalId}` as Href,
+                      );
+                      return;
+                    }
+                    router.push(`/wallet/transaction/${row.id}` as Href);
+                  }}
                 />
               ))}
             </View>

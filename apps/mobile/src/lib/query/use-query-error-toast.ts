@@ -23,8 +23,9 @@ export function useQueryErrorToast(
   useEffect(() => {
     if (!enabled) return;
     if (!query.isError || query.isFetching || query.error === undefined) return;
-    if (lastNotified.current === query.error) return;
-    lastNotified.current = query.error;
-    showAppToast(toUserMessage(query.error), 'warning');
+    const errorKey = toUserMessage(query.error);
+    if (lastNotified.current === errorKey) return;
+    lastNotified.current = errorKey;
+    showAppToast(errorKey, 'warning');
   }, [enabled, query.error, query.isError, query.isFetching]);
 }
