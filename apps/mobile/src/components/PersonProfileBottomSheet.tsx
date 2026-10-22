@@ -197,13 +197,14 @@ export function PersonProfileBottomSheet({
                 path={avatarPath}
                 name={displayName}
                 size="md"
-                verified={identityVerified}
                 onPress={avatarPath ? () => setAvatarViewerOpen(true) : undefined}
               />
               <View className="min-w-0 flex-1 gap-2">
-                <View className="flex-row flex-wrap items-center gap-2">
-                  <Text className="text-lg font-bold leading-7 text-ink">{title}</Text>
-                  {identityVerified ? <IdentityVerifiedBadge /> : null}
+                <View className="max-w-full flex-row items-center gap-1">
+                  <Text className="shrink text-lg font-bold leading-7 text-ink" numberOfLines={1}>
+                    {title}
+                  </Text>
+                  {identityVerified ? <IdentityVerifiedBadge size={20} /> : null}
                 </View>
                 <StarRating average={ratingAverage} count={ratingCount ?? 0} />
               </View>

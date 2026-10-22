@@ -1,5 +1,6 @@
 import { Pressable, Text, View } from 'react-native';
 
+import { IdentityVerifiedBadge } from '@/components/profile/IdentityVerifiedBadge';
 import { Avatar } from '@/components/ui/Avatar';
 import type { ConversationInboxItem } from '@/features/requests/conversation-inbox-api';
 import { formatInboxRelativeTime } from '@/features/notifications/presentation';
@@ -43,17 +44,18 @@ export function ConversationListItem({
       accessibilityState={{ selected: unread }}
       className="flex-row gap-3 py-4 active:opacity-80"
     >
-      <Avatar
-        path={item.counterpartyAvatarPath}
-        name={item.counterpartyDisplayName}
-        size="sm"
-        verified={item.counterpartyIdentityVerified}
-      />
+      <Avatar path={item.counterpartyAvatarPath} name={item.counterpartyDisplayName} size="sm" />
 
       <View className="min-w-0 flex-1 gap-1 pr-2">
-        <Text className={cn('text-base text-ink', unread ? 'font-bold' : 'font-semibold')}>
-          {firstName}
-        </Text>
+        <View className="max-w-full flex-row items-center gap-1">
+          <Text
+            className={cn('shrink text-base text-ink', unread ? 'font-bold' : 'font-semibold')}
+            numberOfLines={1}
+          >
+            {firstName}
+          </Text>
+          {item.counterpartyIdentityVerified ? <IdentityVerifiedBadge /> : null}
+        </View>
         <Text className="text-sm text-muted" numberOfLines={1}>
           {item.requestTitle}
         </Text>

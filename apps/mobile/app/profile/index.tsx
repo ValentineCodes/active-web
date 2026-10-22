@@ -173,11 +173,14 @@ export default function ProfileScreen() {
             name={data.display_name}
             size="lg"
             showActiveDot={hasCommitments}
-            verified={identityStatus.data?.identityVerified === true}
           />
-          <View className="flex-row flex-wrap items-center justify-center gap-2">
-            <Text className="text-2xl font-bold text-ink">{data.display_name}</Text>
-            {identityStatus.data?.identityVerified ? <IdentityVerifiedBadge /> : null}
+          <View className="max-w-full flex-row items-center justify-center gap-1.5">
+            <Text className="shrink text-2xl font-bold text-ink" numberOfLines={1}>
+              {data.display_name}
+            </Text>
+            {identityStatus.data?.identityVerified ? (
+              <IdentityVerifiedBadge size={22} />
+            ) : null}
           </View>
           {ratingAverage !== null || completed > 0 ? (
             <View className="flex-row flex-wrap items-center justify-center gap-x-1.5">

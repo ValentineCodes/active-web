@@ -36,10 +36,10 @@ export function PersonRow({
 }) {
   const row = (
     <View className="w-full min-w-0 flex-row items-center gap-3">
-      <Avatar path={avatarPath} name={name} size={size} verified={identityVerified} />
+      <Avatar path={avatarPath} name={name} size={size} />
       <View className="min-w-0 flex-1 gap-0.5">
-        <View className="flex-row flex-wrap items-center gap-2">
-          <Text className="text-base font-semibold text-ink" numberOfLines={1}>
+        <View className="max-w-full flex-row items-center gap-1">
+          <Text className="shrink text-base font-semibold text-ink" numberOfLines={1}>
             {name}
           </Text>
           {identityVerified ? <IdentityVerifiedBadge /> : null}
