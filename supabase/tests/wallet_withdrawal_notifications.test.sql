@@ -135,6 +135,8 @@ select lives_ok(
   'move to processing'
 );
 
+select set_config('role', 'postgres', true);
+
 select is(
   (
     select count(*)::int
@@ -146,6 +148,8 @@ select is(
   1,
   'processing notification after admin approval'
 );
+
+select pg_temp.act_as('11111111-1111-1111-1111-111111111102');
 
 select lives_ok(
   format(
@@ -159,6 +163,8 @@ select lives_ok(
   ),
   'complete withdrawal'
 );
+
+select set_config('role', 'postgres', true);
 
 select is(
   (
@@ -196,6 +202,8 @@ select lives_ok(
   'reject withdrawal'
 );
 
+select set_config('role', 'postgres', true);
+
 select is(
   (
     select count(*)::int
@@ -209,12 +217,65 @@ select is(
   'rejected notification uses standard copy after funds release'
 );
 
-select public.admin_reject_wallet_withdrawal(
-  :'withdrawal_reject_id'::uuid,
-  'notify-admin-reject',
-  'Does not meet policy',
-  null
+select w.id as reject_wd_id
+from public.wallet_withdrawals w
+where w.idempotency_key = 'notify-reject-idem' \gset
+
+select pg_temp.act_as('11111111-1111-1111-1111-111111111102');
+
+select is(
+  public.admin_reject_wallet_withdrawal(
+    :'reject_wd_id'::uuid,
+    'notify-admin-reject',
+    'Does not meet policy',
+    null
+  )::text,
+  :'reject_wd_id',
+  'idempotent reject does not duplicate failure notification'
 );
+
+select set_config('role', 'service_role', true);
+
+select public.request_wallet_withdrawal(
+  '11111111-1111-1111-1111-111111111101'::uuid,
+  300,
+  (
+    select a.id
+    from public.user_bank_accounts a
+    where a.user_id = '11111111-1111-1111-1111-111111111101'::uuid
+    limit 1
+  ),
+  'notify-fail-idem'
+) as withdrawal_fail_id \gset
+
+select pg_temp.act_as('11111111-1111-1111-1111-111111111102');
+
+select lives_ok(
+  format(
+    $$select public.admin_begin_wallet_withdrawal_processing(
+      %L::uuid,
+      'notify-fail-process',
+      null
+    )$$,
+    :'withdrawal_fail_id'
+  ),
+  'processing for fail notification test'
+);
+
+select lives_ok(
+  format(
+    $$select public.admin_fail_wallet_withdrawal(
+      %L::uuid,
+      'notify-admin-fail',
+      'Bank transfer could not be completed.',
+      null
+    )$$,
+    :'withdrawal_fail_id'
+  ),
+  'fail withdrawal after transfer issue'
+);
+
+select set_config('role', 'postgres', true);
 
 select is(
   (
@@ -222,10 +283,11 @@ select is(
     from public.notification_inbox ni
     where ni.user_id = '11111111-1111-1111-1111-111111111101'::uuid
       and ni.type = 'withdrawal_failed'
-      and ni.url = format('/wallet/withdrawal/%s', :'withdrawal_reject_id')
+      and ni.body = 'Your withdrawal could not be completed. Your reserved funds have been returned.'
+      and ni.url = format('/wallet/withdrawal/%s', :'withdrawal_fail_id')
   ),
   1,
-  'idempotent reject does not duplicate failure notification'
+  'failed notification after funds released'
 );
 
 select finish();

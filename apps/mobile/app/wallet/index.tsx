@@ -159,6 +159,14 @@ export default function WalletHomeScreen() {
               />
             ) : null}
           </View>
+          <Pressable
+            onPress={() => router.push('/wallet/withdrawals' as Href)}
+            accessibilityRole="button"
+            accessibilityLabel="View withdrawal history"
+            className="border-t border-hairline px-4 py-3 active:opacity-80"
+          >
+            <Text className="text-center text-sm font-semibold text-active">Withdrawal history</Text>
+          </Pressable>
         </View>
 
         {hasLockedFunds ? (

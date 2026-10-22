@@ -15,6 +15,7 @@ export function ResponseCard({
   ratingAverage,
   ratingCount,
   completionPercent,
+  identityVerified = false,
   onViewProfile,
   message,
   quotedAmount,
@@ -31,6 +32,7 @@ export function ResponseCard({
   ratingAverage: number | null;
   ratingCount: number | null;
   completionPercent: number | null;
+  identityVerified?: boolean;
   onViewProfile: () => void;
   message: string | null;
   quotedAmount: number | null;
@@ -55,6 +57,7 @@ export function ResponseCard({
           ratingAverage={ratingAverage}
           ratingCount={ratingCount}
           completionPercent={completionPercent}
+          identityVerified={identityVerified}
           onPress={onViewProfile}
           onDiscussPress={onDiscussPress}
           discussLoading={discussLoading}

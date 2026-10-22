@@ -47,7 +47,7 @@ export function ConversationListItem({
         path={item.counterpartyAvatarPath}
         name={item.counterpartyDisplayName}
         size="sm"
-        verified={item.counterpartyAvatarCapturedInApp}
+        verified={item.counterpartyIdentityVerified}
       />
 
       <View className="min-w-0 flex-1 gap-1 pr-2">

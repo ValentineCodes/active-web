@@ -1,4 +1,4 @@
-import { ScrollView, Text, View } from 'react-native';
+import { RefreshControl, ScrollView, Text, View } from 'react-native';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback } from 'react';
 import { Ionicons } from '@expo/vector-icons';
@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Header } from '@/components/ui/Header';
 import { Screen } from '@/components/ui/Screen';
 import { EmptyState, LoadingState } from '@/components/ui/StateView';
+import { usePullToRefresh } from '@/lib/query/use-pull-to-refresh';
 import { useQueryErrorToast } from '@/lib/query/use-query-error-toast';
 import { formatMoney } from '@/lib/format';
 import { useMyWallet } from '@/features/wallet/api';
@@ -36,6 +37,12 @@ export default function WalletWithdrawalDetailScreen() {
   useQueryErrorToast(wallet);
   useQueryErrorToast(withdrawal);
 
+  const onPullRefresh = useCallback(
+    () => Promise.all([withdrawal.refetch(), wallet.refetch()]),
+    [withdrawal, wallet],
+  );
+  const { refreshing, onRefresh } = usePullToRefresh(onPullRefresh);
+
   useFocusEffect(
     useCallback(() => {
       void withdrawal.refetch();
@@ -60,7 +67,11 @@ export default function WalletWithdrawalDetailScreen() {
           icon="receipt-outline"
           title="Withdrawal not found"
           message="It may still be loading or you may not have access."
-          action={{ label: 'Go back', onPress: () => router.back() }}
+          action={{
+            label: withdrawal.isError ? 'Try again' : 'Go back',
+            onPress: () =>
+              withdrawal.isError ? void withdrawal.refetch() : router.back(),
+          }}
         />
       </Screen>
     );
@@ -119,6 +130,7 @@ export default function WalletWithdrawalDetailScreen() {
         className="flex-1"
         contentContainerClassName="gap-5 px-5 pb-10 pt-2"
         showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
         <View className="items-center px-4">
           <View className="mb-6 h-12 w-12 items-center justify-center rounded-full bg-surface">

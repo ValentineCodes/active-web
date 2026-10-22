@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 
 import { StatusBadge } from '@/components/admin/status-badge';
 import { UserAdminActions } from '@/components/users/user-actions';
+import { UserIdentitySection } from '@/components/users/user-identity-section';
 import { requireAdminSessionForPath } from '@/lib/admin/session';
 import { fetchAdminUser } from '@/lib/admin/users';
 import { formatCount, formatNgnFromKobo } from '@/lib/format/money';
@@ -13,7 +14,7 @@ export const dynamic = 'force-dynamic';
 type Props = { params: Promise<{ id: string }> };
 
 export default async function UserDetailPage({ params }: Props) {
-  await requireAdminSessionForPath('/users');
+  const session = await requireAdminSessionForPath('/users');
   const { id } = await params;
 
   let data: Awaited<ReturnType<typeof fetchAdminUser>>;
@@ -28,6 +29,13 @@ export default async function UserDetailPage({ params }: Props) {
   const activeRestriction = data.active_restriction as Record<string, unknown> | null;
   const wallet = data.wallet as Record<string, number> | null;
   const isRestricted = Boolean(activeRestriction);
+  const identityRaw = data.identity as Record<string, unknown> | undefined;
+  const identity = {
+    ninSubmitted: Boolean(identityRaw?.nin_submitted),
+    submittedAt:
+      typeof identityRaw?.submitted_at === 'string' ? identityRaw.submitted_at : null,
+    ninMasked: typeof identityRaw?.nin_masked === 'string' ? identityRaw.nin_masked : null,
+  };
 
   return (
     <div className="space-y-6">
@@ -84,12 +92,19 @@ export default async function UserDetailPage({ params }: Props) {
             </div>
           </dl>
           <p className="mt-3 text-xs text-subtle">
-            Verification is phone OTP via Supabase Auth. No identity-document storage exists in this schema.
+            Phone numbers are verified via OTP. Withdrawal identity uses a self-attested NIN stored encrypted;
+            see the identity section below for submission status.
           </p>
         </section>
 
         <UserAdminActions userId={id} isRestricted={isRestricted} />
       </div>
+
+      <UserIdentitySection
+        userId={id}
+        identity={identity}
+        canRevealNin={session.permissions.user_nin_reveal}
+      />
 
       <div className="grid gap-4 md:grid-cols-4">
         {Object.entries(counts).map(([key, value]) => (

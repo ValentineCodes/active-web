@@ -738,6 +738,24 @@ export type Database = {
           },
         ]
       }
+      platform_runtime_config: {
+        Row: {
+          deployment_environment: string
+          id: number
+          updated_at: string
+        }
+        Insert: {
+          deployment_environment?: string
+          id: number
+          updated_at?: string
+        }
+        Update: {
+          deployment_environment?: string
+          id?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       platform_wallet: {
         Row: {
           available: number
@@ -1772,6 +1790,66 @@ export type Database = {
           },
         ]
       }
+      user_identity_verifications: {
+        Row: {
+          created_at: string
+          provider: string | null
+          provider_reference: string | null
+          status: string
+          updated_at: string
+          user_id: string
+          verified_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          provider?: string | null
+          provider_reference?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+          verified_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          provider?: string | null
+          provider_reference?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+          verified_at?: string | null
+        }
+        Relationships: []
+      }
+      user_nin_secrets: {
+        Row: {
+          ciphertext: string
+          key_version: string
+          nin_fingerprint: string
+          nin_last_four: string | null
+          nonce: string
+          submitted_at: string
+          user_id: string
+        }
+        Insert: {
+          ciphertext: string
+          key_version?: string
+          nin_fingerprint: string
+          nin_last_four?: string | null
+          nonce: string
+          submitted_at?: string
+          user_id: string
+        }
+        Update: {
+          ciphertext?: string
+          key_version?: string
+          nin_fingerprint?: string
+          nin_last_four?: string | null
+          nonce?: string
+          submitted_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_notification_tag_interests: {
         Row: {
           created_at: string
@@ -1879,6 +1957,159 @@ export type Database = {
           },
         ]
       }
+      wallet_withdrawals: {
+        Row: {
+          admin_notes: string | null
+          amount_kobo: number
+          approved_at: string | null
+          approved_by: string | null
+          bank_account_id: string | null
+          bank_transfer_reference: string | null
+          completed_at: string | null
+          completed_by: string | null
+          created_at: string
+          currency: string
+          destination_account_name: string
+          destination_account_number: string
+          destination_bank_code: string
+          destination_bank_name: string
+          failed_at: string | null
+          failed_by: string | null
+          id: string
+          idempotency_key: string
+          paystack_recipient_code: string
+          processing_at: string | null
+          processing_by: string | null
+          rejected_at: string | null
+          rejected_by: string | null
+          release_transaction_id: string | null
+          status: Database["public"]["Enums"]["wallet_withdrawal_status"]
+          updated_at: string
+          user_facing_reason: string | null
+          user_id: string
+          wallet_transaction_id: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          amount_kobo: number
+          approved_at?: string | null
+          approved_by?: string | null
+          bank_account_id?: string | null
+          bank_transfer_reference?: string | null
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          currency?: string
+          destination_account_name: string
+          destination_account_number: string
+          destination_bank_code: string
+          destination_bank_name: string
+          failed_at?: string | null
+          failed_by?: string | null
+          id?: string
+          idempotency_key: string
+          paystack_recipient_code: string
+          processing_at?: string | null
+          processing_by?: string | null
+          rejected_at?: string | null
+          rejected_by?: string | null
+          release_transaction_id?: string | null
+          status?: Database["public"]["Enums"]["wallet_withdrawal_status"]
+          updated_at?: string
+          user_facing_reason?: string | null
+          user_id: string
+          wallet_transaction_id: string
+        }
+        Update: {
+          admin_notes?: string | null
+          amount_kobo?: number
+          approved_at?: string | null
+          approved_by?: string | null
+          bank_account_id?: string | null
+          bank_transfer_reference?: string | null
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          currency?: string
+          destination_account_name?: string
+          destination_account_number?: string
+          destination_bank_code?: string
+          destination_bank_name?: string
+          failed_at?: string | null
+          failed_by?: string | null
+          id?: string
+          idempotency_key?: string
+          paystack_recipient_code?: string
+          processing_at?: string | null
+          processing_by?: string | null
+          rejected_at?: string | null
+          rejected_by?: string | null
+          release_transaction_id?: string | null
+          status?: Database["public"]["Enums"]["wallet_withdrawal_status"]
+          updated_at?: string
+          user_facing_reason?: string | null
+          user_id?: string
+          wallet_transaction_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wallet_withdrawals_bank_account_id_fkey"
+            columns: ["bank_account_id"]
+            isOneToOne: false
+            referencedRelation: "user_bank_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wallet_withdrawals_release_transaction_id_fkey"
+            columns: ["release_transaction_id"]
+            isOneToOne: true
+            referencedRelation: "my_wallet_activity"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wallet_withdrawals_release_transaction_id_fkey"
+            columns: ["release_transaction_id"]
+            isOneToOne: true
+            referencedRelation: "wallet_ledger"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wallet_withdrawals_release_transaction_id_fkey"
+            columns: ["release_transaction_id"]
+            isOneToOne: true
+            referencedRelation: "wallet_transactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wallet_withdrawals_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wallet_withdrawals_wallet_transaction_id_fkey"
+            columns: ["wallet_transaction_id"]
+            isOneToOne: true
+            referencedRelation: "my_wallet_activity"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wallet_withdrawals_wallet_transaction_id_fkey"
+            columns: ["wallet_transaction_id"]
+            isOneToOne: true
+            referencedRelation: "wallet_ledger"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wallet_withdrawals_wallet_transaction_id_fkey"
+            columns: ["wallet_transaction_id"]
+            isOneToOne: true
+            referencedRelation: "wallet_transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       wallets: {
         Row: {
           available_balance: number
@@ -1916,6 +2147,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      withdrawal_policy: {
+        Row: {
+          allow_withdraw_without_identity_in_development: boolean
+          id: number
+          max_amount_kobo: number
+          max_daily_amount_kobo: number
+          min_amount_kobo: number
+          require_admin_review: boolean
+          require_identity_verification_for_withdrawal: boolean
+          updated_at: string
+          updated_by: string | null
+          withdrawals_enabled: boolean
+        }
+        Insert: {
+          allow_withdraw_without_identity_in_development?: boolean
+          id: number
+          max_amount_kobo: number
+          max_daily_amount_kobo: number
+          min_amount_kobo: number
+          require_admin_review?: boolean
+          require_identity_verification_for_withdrawal?: boolean
+          updated_at?: string
+          updated_by?: string | null
+          withdrawals_enabled?: boolean
+        }
+        Update: {
+          allow_withdraw_without_identity_in_development?: boolean
+          id?: number
+          max_amount_kobo?: number
+          max_daily_amount_kobo?: number
+          min_amount_kobo?: number
+          require_admin_review?: boolean
+          require_identity_verification_for_withdrawal?: boolean
+          updated_at?: string
+          updated_by?: string | null
+          withdrawals_enabled?: boolean
+        }
+        Relationships: []
       }
     }
     Views: {
@@ -2211,6 +2481,23 @@ export type Database = {
         Args: { p_admin_id: string; p_report_id: string }
         Returns: undefined
       }
+      admin_begin_wallet_withdrawal_processing: {
+        Args: {
+          p_admin_notes?: string
+          p_idempotency_key: string
+          p_withdrawal_id: string
+        }
+        Returns: string
+      }
+      admin_complete_wallet_withdrawal: {
+        Args: {
+          p_admin_notes?: string
+          p_bank_transfer_reference?: string
+          p_idempotency_key: string
+          p_withdrawal_id: string
+        }
+        Returns: string
+      }
       admin_execute_operational_recovery: {
         Args: {
           p_action: string
@@ -2219,6 +2506,15 @@ export type Database = {
           p_request_id: string
         }
         Returns: Json
+      }
+      admin_fail_wallet_withdrawal: {
+        Args: {
+          p_admin_notes?: string
+          p_idempotency_key: string
+          p_user_facing_reason: string
+          p_withdrawal_id: string
+        }
+        Returns: string
       }
       admin_financial_exceptions: { Args: never; Returns: Json }
       admin_get_audit_event: { Args: { p_event_id: string }; Returns: Json }
@@ -2239,6 +2535,16 @@ export type Database = {
       }
       admin_get_user: { Args: { p_user_id: string }; Returns: Json }
       admin_get_wallet: { Args: { p_user_id: string }; Returns: Json }
+      admin_get_wallet_withdrawal: {
+        Args: { p_withdrawal_id: string }
+        Returns: Json
+      }
+      admin_get_wallet_withdrawal_detail: {
+        Args: { p_withdrawal_id: string }
+        Returns: Json
+      }
+      admin_get_withdrawal_policy: { Args: never; Returns: Json }
+      admin_get_withdrawals_overview: { Args: never; Returns: Json }
       admin_grant_member: {
         Args: {
           p_role: Database["public"]["Enums"]["admin_role"]
@@ -2309,10 +2615,15 @@ export type Database = {
       }
       admin_list_withdrawals: {
         Args: {
+          p_amount_max_kobo?: number
+          p_amount_min_kobo?: number
           p_limit?: number
           p_offset?: number
           p_query?: string
           p_status?: string
+          p_submitted_from?: string
+          p_submitted_to?: string
+          p_user_id?: string
         }
         Returns: Json
       }
@@ -2339,6 +2650,15 @@ export type Database = {
       admin_reinstate_user: {
         Args: { p_idempotency_key: string; p_reason: string; p_user_id: string }
         Returns: undefined
+      }
+      admin_reject_wallet_withdrawal: {
+        Args: {
+          p_admin_notes?: string
+          p_idempotency_key: string
+          p_user_facing_reason: string
+          p_withdrawal_id: string
+        }
+        Returns: string
       }
       admin_report_filter_matches: {
         Args: {
@@ -2379,6 +2699,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      admin_reveal_wallet_withdrawal_account: {
+        Args: { p_idempotency_key: string; p_withdrawal_id: string }
+        Returns: Json
+      }
       admin_revoke_member: { Args: { p_user_id: string }; Returns: undefined }
       admin_suspend_user: {
         Args: { p_idempotency_key: string; p_reason: string; p_user_id: string }
@@ -2399,6 +2723,19 @@ export type Database = {
           p_report_id: string
         }
         Returns: undefined
+      }
+      admin_update_withdrawal_policy: {
+        Args: {
+          p_allow_withdraw_without_identity_in_development: boolean
+          p_idempotency_key: string
+          p_max_amount_kobo: number
+          p_max_daily_amount_kobo: number
+          p_min_amount_kobo: number
+          p_require_admin_review: boolean
+          p_require_identity_verification_for_withdrawal: boolean
+          p_withdrawals_enabled: boolean
+        }
+        Returns: Json
       }
       admin_upsert_service_problem_investigation: {
         Args: {
@@ -2464,6 +2801,10 @@ export type Database = {
         Args: { p_user_id: string }
         Returns: undefined
       }
+      assert_withdrawal_identity_allowed: {
+        Args: { p_user_id: string }
+        Returns: undefined
+      }
       attach_tags_to_request: {
         Args: { p_request_id: string; p_tag_ids: string[] }
         Returns: undefined
@@ -2505,6 +2846,7 @@ export type Database = {
           request_id: string
           requester_avatar_path: string
           requester_display_name: string
+          requester_identity_verified: boolean
           requester_rating_average: number
           requester_rating_count: number
           scheduled_for: string
@@ -2522,6 +2864,7 @@ export type Database = {
           request_id: string
           requester_avatar_path: string
           requester_display_name: string
+          requester_identity_verified: boolean
           requester_rating_average: number
           requester_rating_count: number
           scheduled_for: string
@@ -2544,6 +2887,7 @@ export type Database = {
           requester_completion_percent: number
           requester_display_name: string
           requester_id: string
+          requester_identity_verified: boolean
           requester_rating_average: number
           requester_rating_count: number
           respond_allowed: boolean
@@ -2826,6 +3170,7 @@ export type Database = {
           counterparty_completion_percent: number
           counterparty_display_name: string
           counterparty_id: string
+          counterparty_identity_verified: boolean
           counterparty_phone: string
           counterparty_rating_average: number
           counterparty_rating_count: number
@@ -2856,6 +3201,7 @@ export type Database = {
         }[]
       }
       get_my_admin_permissions: { Args: never; Returns: Json }
+      get_my_identity_status: { Args: never; Returns: Json }
       get_my_wallet: {
         Args: never
         Returns: {
@@ -2867,6 +3213,11 @@ export type Database = {
           wallet_id: string
         }[]
       }
+      get_my_wallet_withdrawal: {
+        Args: { p_withdrawal_id: string }
+        Returns: Json
+      }
+      get_public_withdrawal_policy: { Args: never; Returns: Json }
       get_request_conversation: {
         Args: { p_request_id: string }
         Returns: {
@@ -2905,6 +3256,27 @@ export type Database = {
         }
         Returns: string
       }
+      get_withdrawal_policy: {
+        Args: never
+        Returns: {
+          allow_withdraw_without_identity_in_development: boolean
+          id: number
+          max_amount_kobo: number
+          max_daily_amount_kobo: number
+          min_amount_kobo: number
+          require_admin_review: boolean
+          require_identity_verification_for_withdrawal: boolean
+          updated_at: string
+          updated_by: string | null
+          withdrawals_enabled: boolean
+        }
+        SetofOptions: {
+          from: "*"
+          to: "withdrawal_policy"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       insert_user_bank_account: {
         Args: {
           p_account_name: string
@@ -2940,6 +3312,7 @@ export type Database = {
           counterparty_avatar_path: string
           counterparty_display_name: string
           counterparty_id: string
+          counterparty_identity_verified: boolean
           latest_message_at: string
           latest_message_body: string
           latest_message_sender_id: string
@@ -3002,7 +3375,7 @@ export type Database = {
         Args: { p_limit?: number; p_offset?: number }
         Returns: {
           amount_kobo: number
-          completed_at: string | null
+          completed_at: string
           created_at: string
           currency: string
           destination_account_name: string
@@ -3010,35 +3383,10 @@ export type Database = {
           destination_bank_name: string
           status: string
           updated_at: string
-          user_facing_reason: string | null
+          user_facing_reason: string
           wallet_transaction_id: string
           withdrawal_id: string
         }[]
-      }
-      get_my_wallet_withdrawal: {
-        Args: { p_withdrawal_id: string }
-        Returns: Json
-      }
-      get_public_withdrawal_policy: {
-        Args: Record<string, never>
-        Returns: Json
-      }
-      admin_get_withdrawal_policy: {
-        Args: Record<string, never>
-        Returns: Json
-      }
-      admin_update_withdrawal_policy: {
-        Args: {
-          p_min_amount_kobo: number
-          p_max_amount_kobo: number
-          p_max_daily_amount_kobo: number
-          p_withdrawals_enabled: boolean
-          p_require_admin_review: boolean
-          p_require_identity_verification_for_withdrawal: boolean
-          p_allow_withdraw_without_identity_in_development: boolean
-          p_idempotency_key: string
-        }
-        Returns: Json
       }
       list_notification_tag_interests: {
         Args: never
@@ -3071,6 +3419,7 @@ export type Database = {
           display_name: string
           distance_m: number
           expires_at: string
+          identity_verified: boolean
           jobs_completed: number
           message: string
           phone_verified: boolean
@@ -3125,6 +3474,11 @@ export type Database = {
         Args: { p_request_id: string }
         Returns: undefined
       }
+      mask_bank_account_number: {
+        Args: { p_account_number: string }
+        Returns: string
+      }
+      mask_nin_last_four: { Args: { p_last_four: string }; Returns: string }
       matching_request_notification_body: {
         Args: { p_recipient_id: string; p_request_id: string }
         Returns: string
@@ -3150,6 +3504,7 @@ export type Database = {
           requester_completion_percent: number
           requester_display_name: string
           requester_id: string
+          requester_identity_verified: boolean
           requester_rating_average: number
           requester_rating_count: number
           response_id: string
@@ -3198,6 +3553,10 @@ export type Database = {
         Args: { p_request_id: string }
         Returns: undefined
       }
+      notify_wallet_withdrawal_user: {
+        Args: { p_stage: string; p_withdrawal_id: string }
+        Returns: undefined
+      }
       open_pre_handshake_conversation: {
         Args: { p_response_id: string }
         Returns: string
@@ -3210,6 +3569,7 @@ export type Database = {
         Args: { p_request_id: string }
         Returns: undefined
       }
+      platform_is_local_deployment: { Args: never; Returns: boolean }
       post_wallet_ledger: {
         Args: {
           p_available_delta: number
@@ -3383,6 +3743,7 @@ export type Database = {
           counterparty_avatar_path: string
           counterparty_display_name: string
           counterparty_id: string
+          counterparty_identity_verified: boolean
           created_at: string
           is_pre_handshake: boolean
           messaging_enabled: boolean
@@ -3498,6 +3859,17 @@ export type Database = {
         Returns: undefined
       }
       start_request: { Args: { p_request_id: string }; Returns: undefined }
+      submit_user_nin_encrypted: {
+        Args: {
+          p_ciphertext: string
+          p_fingerprint: string
+          p_key_version: string
+          p_nin_last_four: string
+          p_nonce: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
       sync_wallet_payment_transition: {
         Args: {
           p_from: Database["public"]["Enums"]["payment_status"]
@@ -3559,12 +3931,24 @@ export type Database = {
         Args: { p_bank_account_id: string; p_user_id: string }
         Returns: boolean
       }
+      user_has_provider_identity_verification: {
+        Args: { p_user_id: string }
+        Returns: boolean
+      }
+      user_marketplace_identity_verified: {
+        Args: { p_user_id: string }
+        Returns: boolean
+      }
       user_push_delivery_allowed: {
         Args: {
           p_type: Database["public"]["Enums"]["notification_type"]
           p_user_id: string
         }
         Returns: boolean
+      }
+      user_withdrawal_daily_reserved_kobo: {
+        Args: { p_day: string; p_user_id: string }
+        Returns: number
       }
       wallet_adjust_active_lock_kobo: {
         Args: {
@@ -3666,7 +4050,23 @@ export type Database = {
         Args: { p_amount: number; p_idempotency_key: string }
         Returns: undefined
       }
+      wallet_withdrawal_release_reservation: {
+        Args: {
+          p_description: string
+          p_release_reference: string
+          p_withdrawal_id: string
+        }
+        Returns: string
+      }
       withdraw_response: { Args: { p_response_id: string }; Returns: undefined }
+      withdrawal_identity_development_bypass_active: {
+        Args: never
+        Returns: boolean
+      }
+      withdrawal_lagos_calendar_day: {
+        Args: { p_at?: string }
+        Returns: string
+      }
     }
     Enums: {
       admin_audit_entity_type:
@@ -3674,6 +4074,8 @@ export type Database = {
         | "request"
         | "admin_member"
         | "service_problem"
+        | "wallet_withdrawal"
+        | "withdrawal_policy"
       admin_role: "super_admin" | "support_admin" | "finance_admin"
       conversation_attachment_type: "image" | "video" | "file"
       conversation_message_type: "text" | "system" | "attachment"
@@ -3707,7 +4109,6 @@ export type Database = {
         | "funds_returned"
         | "payment_released"
         | "payment_received"
-        | "withdrawal_submitted"
         | "withdrawal_processing"
         | "withdrawal_successful"
         | "withdrawal_failed"
@@ -3725,6 +4126,7 @@ export type Database = {
         | "request_awaiting_review"
         | "engagement_cancellation_requested"
         | "engagement_cancellation_declined"
+        | "withdrawal_submitted"
       payment_lock_bucket: "locked" | "pending"
       payment_lock_status: "active" | "released" | "refunded"
       payment_status:
@@ -3784,6 +4186,12 @@ export type Database = {
         | "refund"
         | "service_fee"
         | "adjustment"
+      wallet_withdrawal_status:
+        | "pending"
+        | "processing"
+        | "completed"
+        | "rejected"
+        | "failed"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -3916,6 +4324,8 @@ export const Constants = {
         "request",
         "admin_member",
         "service_problem",
+        "wallet_withdrawal",
+        "withdrawal_policy",
       ],
       admin_role: ["super_admin", "support_admin", "finance_admin"],
       conversation_attachment_type: ["image", "video", "file"],
@@ -3953,7 +4363,6 @@ export const Constants = {
         "funds_returned",
         "payment_released",
         "payment_received",
-        "withdrawal_submitted",
         "withdrawal_processing",
         "withdrawal_successful",
         "withdrawal_failed",
@@ -3971,6 +4380,7 @@ export const Constants = {
         "request_awaiting_review",
         "engagement_cancellation_requested",
         "engagement_cancellation_declined",
+        "withdrawal_submitted",
       ],
       payment_lock_bucket: ["locked", "pending"],
       payment_lock_status: ["active", "released", "refunded"],
@@ -4036,6 +4446,13 @@ export const Constants = {
         "refund",
         "service_fee",
         "adjustment",
+      ],
+      wallet_withdrawal_status: [
+        "pending",
+        "processing",
+        "completed",
+        "rejected",
+        "failed",
       ],
     },
   },

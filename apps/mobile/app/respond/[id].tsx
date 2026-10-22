@@ -438,6 +438,7 @@ export default function RespondScreen() {
         ratingAverage={request.requester_rating_average}
         ratingCount={request.requester_rating_count}
         completionPercent={request.requester_completion_percent}
+        identityVerified={request.requester_identity_verified}
       />
     </Screen>
   );

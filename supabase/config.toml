@@ -395,6 +395,8 @@ deno_version = 2
 PAYSTACK_SECRET_KEY = "env(PAYSTACK_SECRET_KEY)"
 PAYSTACK_PUBLIC_KEY = "env(PAYSTACK_PUBLIC_KEY)"
 PAYSTACK_BASE_URL = "env(PAYSTACK_BASE_URL)"
+NIN_ENCRYPTION_KEY = "env(NIN_ENCRYPTION_KEY)"
+NIN_FINGERPRINT_KEY = "env(NIN_FINGERPRINT_KEY)"
 
 [functions.paystack-initialize]
 verify_jwt = true
@@ -415,6 +417,12 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.wallet-withdraw-request]
+verify_jwt = true
+
+[functions.identity-nin-submit]
+verify_jwt = true
+
+[functions.admin-identity-nin-reveal]
 verify_jwt = true
 
 [analytics]

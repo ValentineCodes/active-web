@@ -25,7 +25,7 @@ export function Avatar({
   size = 'md',
   /** A small dot in the mockup's brand green, signalling this person is Active right now. */
   showActiveDot = false,
-  /** In-app captured profile photo (Didit-verified). */
+  /** Marketplace identity verified (e.g. NIN submitted for this app flow). */
   verified = false,
   onPress,
 }: {

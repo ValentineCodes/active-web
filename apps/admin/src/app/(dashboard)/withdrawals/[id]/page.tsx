@@ -98,6 +98,50 @@ export default async function WithdrawalDetailPage({ params }: Props) {
       </section>
 
       <section className="rounded-xl border border-border bg-elevated p-4 text-sm shadow-card">
+        <h3 className="font-semibold text-ink">Timestamps</h3>
+        <dl className="mt-3 grid gap-3 sm:grid-cols-2">
+          <div>
+            <dt className="text-muted">Submitted</dt>
+            <dd>{format(new Date(withdrawal.created_at as string), 'PPpp')}</dd>
+          </div>
+          <div>
+            <dt className="text-muted">Last updated</dt>
+            <dd>{format(new Date(withdrawal.updated_at as string), 'PPpp')}</dd>
+          </div>
+          {(withdrawal.approved_at as string) ? (
+            <div>
+              <dt className="text-muted">Approved for processing</dt>
+              <dd>{format(new Date(withdrawal.approved_at as string), 'PPpp')}</dd>
+            </div>
+          ) : null}
+          {(withdrawal.processing_at as string) ? (
+            <div>
+              <dt className="text-muted">Processing started</dt>
+              <dd>{format(new Date(withdrawal.processing_at as string), 'PPpp')}</dd>
+            </div>
+          ) : null}
+          {(withdrawal.completed_at as string) ? (
+            <div>
+              <dt className="text-muted">Completed</dt>
+              <dd>{format(new Date(withdrawal.completed_at as string), 'PPpp')}</dd>
+            </div>
+          ) : null}
+          {(withdrawal.rejected_at as string) ? (
+            <div>
+              <dt className="text-muted">Rejected</dt>
+              <dd>{format(new Date(withdrawal.rejected_at as string), 'PPpp')}</dd>
+            </div>
+          ) : null}
+          {(withdrawal.failed_at as string) ? (
+            <div>
+              <dt className="text-muted">Failed</dt>
+              <dd>{format(new Date(withdrawal.failed_at as string), 'PPpp')}</dd>
+            </div>
+          ) : null}
+        </dl>
+      </section>
+
+      <section className="rounded-xl border border-border bg-elevated p-4 text-sm shadow-card">
         <h3 className="font-semibold text-ink">Ledger references</h3>
         <dl className="mt-3 grid gap-3 sm:grid-cols-2">
           <div>

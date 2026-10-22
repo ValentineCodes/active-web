@@ -421,6 +421,7 @@ export default function ConversationScreen() {
       <ConversationHeader
         counterpartyName={thread.counterpartyDisplayName}
         counterpartyAvatarPath={thread.counterpartyAvatarPath}
+        counterpartyIdentityVerified={thread.counterpartyIdentityVerified}
         requestTitle={thread.requestTitle}
         statusLabel={headerStatusLabel}
         onBack={() => router.back()}

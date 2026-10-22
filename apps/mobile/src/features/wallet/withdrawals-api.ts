@@ -45,6 +45,9 @@ type ListWithdrawalRow = {
   created_at: string;
   updated_at: string;
   completed_at: string | null;
+  processing_at: string | null;
+  rejected_at: string | null;
+  failed_at: string | null;
 };
 
 type WithdrawalDetailJson = {
@@ -82,9 +85,9 @@ function mapListRow(row: ListWithdrawalRow): MyWalletWithdrawal {
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     completedAt: row.completed_at,
-    rejectedAt: null,
-    failedAt: null,
-    processingAt: null,
+    rejectedAt: row.rejected_at,
+    failedAt: row.failed_at,
+    processingAt: row.processing_at,
   };
 }
 
@@ -159,6 +162,13 @@ export function useMyWalletWithdrawals() {
   return useQuery({
     queryKey: queryKeys.walletWithdrawals,
     queryFn: () => fetchMyWalletWithdrawals(50, 0),
+    refetchInterval: (query) => {
+      const rows = query.state.data;
+      if (!rows?.some((row) => row.status === 'pending' || row.status === 'processing')) {
+        return false;
+      }
+      return 15_000;
+    },
   });
 }
 

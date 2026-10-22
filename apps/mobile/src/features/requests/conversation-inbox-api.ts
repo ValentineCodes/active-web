@@ -17,6 +17,7 @@ export type ConversationInboxItem = {
   counterpartyDisplayName: string | null;
   counterpartyAvatarPath: string | null;
   counterpartyAvatarCapturedInApp: boolean;
+  counterpartyIdentityVerified: boolean;
   latestMessageBody: string | null;
   latestMessageAt: string | null;
   latestMessageSenderId: string | null;
@@ -38,6 +39,7 @@ async function fetchConversationInbox(): Promise<ConversationInboxItem[]> {
     counterpartyDisplayName: row.counterparty_display_name,
     counterpartyAvatarPath: row.counterparty_avatar_path,
     counterpartyAvatarCapturedInApp: row.counterparty_avatar_captured_in_app,
+    counterpartyIdentityVerified: row.counterparty_identity_verified,
     latestMessageBody: row.latest_message_body,
     latestMessageAt: row.latest_message_at,
     latestMessageSenderId: row.latest_message_sender_id,

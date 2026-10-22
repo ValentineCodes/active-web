@@ -154,7 +154,7 @@ export function WithdrawalActions({ withdrawalId, status }: Props) {
           ) : (
             <p className="mt-2">
               {confirmAction === 'begin'
-                ? 'Move this withdrawal to processing and reserve it for manual payout?'
+                ? 'Approve this withdrawal for manual payout? Funds were already reserved when the user submitted the request.'
                 : 'Confirm that the external bank transfer succeeded and finalize this withdrawal?'}
             </p>
           )}

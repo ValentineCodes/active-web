@@ -70,6 +70,7 @@ export function RequestHelpSummary({
           ratingAverage={request.requester_rating_average}
           ratingCount={request.requester_rating_count}
           completionPercent={request.requester_completion_percent}
+          identityVerified={request.requester_identity_verified}
           onPress={onRequesterPress}
           onDiscussPress={onRequesterDiscussPress}
           discussLoading={requesterDiscussLoading}

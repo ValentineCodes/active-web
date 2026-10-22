@@ -11,6 +11,7 @@ export function RequestPersonCard({
   ratingAverage,
   ratingCount,
   completionPercent,
+  identityVerified = false,
   onPress,
   onDiscussPress,
   discussLoading,
@@ -20,6 +21,7 @@ export function RequestPersonCard({
   ratingAverage?: number | null;
   ratingCount?: number | null;
   completionPercent?: number | null;
+  identityVerified?: boolean;
   onPress?: () => void;
   onDiscussPress?: () => void;
   discussLoading?: boolean;
@@ -38,6 +40,7 @@ export function RequestPersonCard({
         ratingAverage={ratingAverage}
         ratingCount={ratingCount}
         inlineStat={inlineStat}
+        identityVerified={identityVerified}
         onPress={onPress}
         trailing={
           <View className="flex-row items-center gap-1">

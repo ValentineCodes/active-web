@@ -10,7 +10,8 @@ export type AdminPermissionKey =
   | 'withdrawals'
   | 'operational_issues'
   | 'audit_logs'
-  | 'settings';
+  | 'settings'
+  | 'user_nin_reveal';
 
 export type AdminPermissions = {
   role: AdminRole;
@@ -24,6 +25,7 @@ export type AdminPermissions = {
   operational_issues: boolean;
   audit_logs: boolean;
   settings: boolean;
+  user_nin_reveal: boolean;
 };
 
 export function parseAdminPermissions(value: unknown): AdminPermissions | null {
@@ -52,6 +54,7 @@ export function parseAdminPermissions(value: unknown): AdminPermissions | null {
     operational_issues: bool('operational_issues'),
     audit_logs: bool('audit_logs'),
     settings: bool('settings'),
+    user_nin_reveal: bool('user_nin_reveal'),
   };
 }
 

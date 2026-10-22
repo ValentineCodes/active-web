@@ -2,7 +2,7 @@ import { readEdgeFunctionPayload } from '@/lib/supabase/function-invoke';
 import { supabase } from '@/lib/supabase/client';
 
 export type WithdrawRequestResult = {
-  status: 'pending';
+  status: 'pending' | 'processing';
   withdrawal_id?: string;
   withdrawal_transaction_id: string;
   message: string;

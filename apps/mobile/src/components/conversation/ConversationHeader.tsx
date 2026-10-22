@@ -1,12 +1,14 @@
 import type { ReactNode } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
+import { IdentityVerifiedBadge } from '@/components/profile/IdentityVerifiedBadge';
 import { Avatar } from '@/components/ui/Avatar';
 import { IconButton } from '@/components/ui/IconButton';
 
 export function ConversationHeader({
   counterpartyName,
   counterpartyAvatarPath,
+  counterpartyIdentityVerified = false,
   requestTitle,
   statusLabel,
   onBack,
@@ -14,6 +16,7 @@ export function ConversationHeader({
 }: {
   counterpartyName: string | null;
   counterpartyAvatarPath: string | null;
+  counterpartyIdentityVerified?: boolean;
   requestTitle: string;
   statusLabel?: string | null;
   onBack: () => void;
@@ -29,11 +32,19 @@ export function ConversationHeader({
           accessibilityRole="header"
           className="min-w-0 flex-1 flex-row items-center gap-3 py-1"
         >
-          <Avatar path={counterpartyAvatarPath} name={counterpartyName} size="sm" />
+          <Avatar
+            path={counterpartyAvatarPath}
+            name={counterpartyName}
+            size="sm"
+            verified={counterpartyIdentityVerified}
+          />
           <View className="min-w-0 flex-1 gap-0.5">
-            <Text className="text-lg font-bold text-ink" numberOfLines={1}>
-              {firstName}
-            </Text>
+            <View className="flex-row flex-wrap items-center gap-2">
+              <Text className="text-lg font-bold text-ink" numberOfLines={1}>
+                {firstName}
+              </Text>
+              {counterpartyIdentityVerified ? <IdentityVerifiedBadge /> : null}
+            </View>
             <Text className="text-sm text-muted" numberOfLines={2}>
               {requestTitle}
             </Text>

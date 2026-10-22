@@ -50,6 +50,7 @@ export type RequestConversation = {
   counterpartyId: string;
   counterpartyDisplayName: string | null;
   counterpartyAvatarPath: string | null;
+  counterpartyIdentityVerified: boolean;
   createdAt: string;
   updatedAt: string;
 };
@@ -71,6 +72,7 @@ function mapResolvedConversationRow(
     counterpartyId: row.counterparty_id,
     counterpartyDisplayName: row.counterparty_display_name,
     counterpartyAvatarPath: row.counterparty_avatar_path,
+    counterpartyIdentityVerified: row.counterparty_identity_verified,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };

@@ -14,6 +14,7 @@ import { CatalogueViewer } from '@/components/CatalogueViewer';
 import { ResponderScheduleAvailability } from '@/components/ResponderScheduleAvailability';
 import { BottomSheetWindow } from '@/components/ui/BottomSheetWindow';
 import { ProfileCataloguePreview } from '@/components/ProfileCataloguePreview';
+import { IdentityVerifiedBadge } from '@/components/profile/IdentityVerifiedBadge';
 import { Avatar } from '@/components/ui/Avatar';
 import { Button } from '@/components/ui/Button';
 import { TextField } from '@/components/ui/TextField';
@@ -127,6 +128,7 @@ export function PersonProfileBottomSheet({
   ratingAverage,
   ratingCount,
   completionPercent,
+  identityVerified = false,
   responseActions,
 }: {
   sheetRef: RefObject<BottomSheetModal | null>;
@@ -137,6 +139,7 @@ export function PersonProfileBottomSheet({
   ratingAverage: number | null;
   ratingCount: number | null;
   completionPercent?: number | null;
+  identityVerified?: boolean;
   responseActions?: PersonProfileResponseActions;
 }) {
   const colors = useColors();
@@ -194,10 +197,14 @@ export function PersonProfileBottomSheet({
                 path={avatarPath}
                 name={displayName}
                 size="md"
+                verified={identityVerified}
                 onPress={avatarPath ? () => setAvatarViewerOpen(true) : undefined}
               />
               <View className="min-w-0 flex-1 gap-2">
-                <Text className="text-lg font-bold leading-7 text-ink">{title}</Text>
+                <View className="flex-row flex-wrap items-center gap-2">
+                  <Text className="text-lg font-bold leading-7 text-ink">{title}</Text>
+                  {identityVerified ? <IdentityVerifiedBadge /> : null}
+                </View>
                 <StarRating average={ratingAverage} count={ratingCount ?? 0} />
               </View>
             </View>

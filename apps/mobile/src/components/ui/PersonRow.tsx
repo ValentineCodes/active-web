@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
+import { IdentityVerifiedBadge } from '@/components/profile/IdentityVerifiedBadge';
 import { Avatar } from '@/components/ui/Avatar';
 import { StarRating } from '@/components/ui/Stars';
 
@@ -16,6 +17,7 @@ export function PersonRow({
   ratingCount,
   meta,
   inlineStat,
+  identityVerified = false,
   size = 'md',
   trailing,
   onPress,
@@ -27,17 +29,21 @@ export function PersonRow({
   meta?: string;
   /** Shown on the rating line after a dot (e.g. "98% completion"). */
   inlineStat?: string;
+  identityVerified?: boolean;
   size?: 'sm' | 'md';
   trailing?: ReactNode;
   onPress?: () => void;
 }) {
   const row = (
     <View className="w-full min-w-0 flex-row items-center gap-3">
-      <Avatar path={avatarPath} name={name} size={size} />
+      <Avatar path={avatarPath} name={name} size={size} verified={identityVerified} />
       <View className="min-w-0 flex-1 gap-0.5">
-        <Text className="text-base font-semibold text-ink" numberOfLines={1}>
-          {name}
-        </Text>
+        <View className="flex-row flex-wrap items-center gap-2">
+          <Text className="text-base font-semibold text-ink" numberOfLines={1}>
+            {name}
+          </Text>
+          {identityVerified ? <IdentityVerifiedBadge /> : null}
+        </View>
         {ratingAverage !== undefined || inlineStat ? (
           <View className="flex-row flex-wrap items-center gap-1.5">
             {ratingAverage !== undefined ? (

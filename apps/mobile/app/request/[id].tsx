@@ -78,6 +78,7 @@ type ResponderProfilePreview = {
   ratingAverage: number | null;
   ratingCount: number | null;
   completionPercent: number | null;
+  identityVerified: boolean;
   pendingResponse?: {
     responseId: string;
     responderAvailable: boolean;
@@ -450,6 +451,7 @@ export default function RequestDetailScreen() {
     ratingAverage: response.rating_average,
     ratingCount: response.rating_count,
     completionPercent: response.completion_percent,
+    identityVerified: response.identity_verified,
     pendingResponse: allowSelection
       ? {
           responseId: response.response_id,
@@ -469,6 +471,7 @@ export default function RequestDetailScreen() {
       ratingAverage={response.rating_average}
       ratingCount={response.rating_count}
       completionPercent={response.completion_percent}
+      identityVerified={response.identity_verified}
       onViewProfile={() =>
         openResponderProfile(responderProfileFromResponse(response, options.allowSelection))
       }
@@ -547,6 +550,7 @@ export default function RequestDetailScreen() {
             ratingAverage={acceptedProvider.rating_average}
             ratingCount={acceptedProvider.rating_count}
             completionPercent={acceptedProvider.completion_percent}
+            identityVerified={acceptedProvider.identity_verified}
             onPress={() =>
               openResponderProfile({
                 userId: acceptedProvider.responder_id,
@@ -556,6 +560,7 @@ export default function RequestDetailScreen() {
                 ratingAverage: acceptedProvider.rating_average,
                 ratingCount: acceptedProvider.rating_count,
                 completionPercent: acceptedProvider.completion_percent,
+                identityVerified: acceptedProvider.identity_verified,
               })
             }
           />
@@ -815,6 +820,7 @@ export default function RequestDetailScreen() {
           ratingAverage={profilePreview.ratingAverage}
           ratingCount={profilePreview.ratingCount}
           completionPercent={profilePreview.completionPercent}
+          identityVerified={profilePreview.identityVerified}
           responseActions={
             profilePreview.pendingResponse && responseSections.canAccept
               ? {

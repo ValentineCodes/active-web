@@ -8,6 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { ProfileTagInterestsLine } from '@/components/profile/ProfileTagInterestsLine';
 import { ProfileCatalogueRail } from '@/components/ProfileCatalogueRail';
 import { ReportIssueModal } from '@/components/ReportIssueModal';
+import { IdentityVerifiedBadge } from '@/components/profile/IdentityVerifiedBadge';
 import { Avatar } from '@/components/ui/Avatar';
 import { Header } from '@/components/ui/Header';
 import { Screen } from '@/components/ui/Screen';
@@ -18,6 +19,7 @@ import { hasProviderCommitments, useAttendance } from '@/features/attendance/api
 import { MARKET } from '@/config';
 import { signOut } from '@/features/auth/api';
 import { useNotificationTagInterests } from '@/features/notifications/tag-interests';
+import { useMyIdentityStatus } from '@/features/identity/api';
 import { useProfile } from '@/features/profile/api';
 import { useMyWallet } from '@/features/wallet/api';
 import { formatMoney, formatPhoneDisplay } from '@/lib/format';
@@ -93,6 +95,7 @@ export default function ProfileScreen() {
   const [reportIssueOpen, setReportIssueOpen] = useState(false);
   const colors = useColors();
   const profile = useProfile();
+  const identityStatus = useMyIdentityStatus();
   const tagInterests = useNotificationTagInterests();
   useQueryErrorToast(profile, { enabled: profile.isError && !profile.data });
   useQueryErrorToast(tagInterests, { enabled: tagInterests.isError && !tagInterests.data });
@@ -170,8 +173,12 @@ export default function ProfileScreen() {
             name={data.display_name}
             size="lg"
             showActiveDot={hasCommitments}
+            verified={identityStatus.data?.identityVerified === true}
           />
-          <Text className="text-2xl font-bold text-ink">{data.display_name}</Text>
+          <View className="flex-row flex-wrap items-center justify-center gap-2">
+            <Text className="text-2xl font-bold text-ink">{data.display_name}</Text>
+            {identityStatus.data?.identityVerified ? <IdentityVerifiedBadge /> : null}
+          </View>
           {ratingAverage !== null || completed > 0 ? (
             <View className="flex-row flex-wrap items-center justify-center gap-x-1.5">
               {ratingAverage !== null ? (

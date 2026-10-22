@@ -284,6 +284,7 @@ export default function EngagementScreen() {
                 ratingAverage={data.counterparty_rating_average}
                 ratingCount={data.counterparty_rating_count}
                 completionPercent={data.counterparty_completion_percent}
+                identityVerified={data.counterparty_identity_verified}
                 onPress={openCounterpartyProfile}
               />
             </View>
@@ -294,6 +295,7 @@ export default function EngagementScreen() {
               ratingAverage={data.counterparty_rating_average}
               ratingCount={data.counterparty_rating_count}
               completionPercent={data.counterparty_completion_percent}
+              identityVerified={data.counterparty_identity_verified}
               onPress={openCounterpartyProfile}
             />
           )}
@@ -527,6 +529,7 @@ export default function EngagementScreen() {
         ratingAverage={data.counterparty_rating_average}
         ratingCount={data.counterparty_rating_count}
         completionPercent={data.counterparty_completion_percent}
+        identityVerified={data.counterparty_identity_verified}
       />
 
       <ReportIssueModal

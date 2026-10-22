@@ -210,4 +210,6 @@ export async function invalidateWalletQueries(queryClient: QueryClient) {
   await queryClient.invalidateQueries({ queryKey: queryKeys.wallet });
   await queryClient.invalidateQueries({ queryKey: queryKeys.walletActivity });
   await queryClient.invalidateQueries({ queryKey: queryKeys.walletWithdrawals });
+  await queryClient.invalidateQueries({ queryKey: queryKeys.notificationInbox });
+  await queryClient.invalidateQueries({ queryKey: queryKeys.notificationUnreadCount });
 }

@@ -123,7 +123,7 @@ Deno.serve(async (req) => {
 
     const { data: withdrawalRow, error: withdrawalRowError } = await service
       .from('wallet_withdrawals')
-      .select('wallet_transaction_id')
+      .select('wallet_transaction_id, status')
       .eq('id', withdrawalId)
       .single();
 
@@ -131,12 +131,17 @@ Deno.serve(async (req) => {
       return errorResponse('Could not load withdrawal record', 500);
     }
 
+    const withdrawalStatus =
+      typeof withdrawalRow.status === 'string' ? withdrawalRow.status : 'pending';
+
     return jsonResponse({
-      status: 'pending',
+      status: withdrawalStatus,
       withdrawal_id: withdrawalId,
       withdrawal_transaction_id: withdrawalRow.wallet_transaction_id,
       message:
-        'Your withdrawal request was submitted. Funds will be sent after transfer processing completes.',
+        withdrawalStatus === 'processing'
+          ? 'Your withdrawal is being processed. Funds will be sent after the bank transfer completes.'
+          : 'Your withdrawal request was submitted and is awaiting review. Funds are reserved until processing finishes.',
       transfer_settlement: 'pending',
     });
   } catch (error) {

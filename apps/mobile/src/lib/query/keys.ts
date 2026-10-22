@@ -1,5 +1,6 @@
 export const queryKeys = {
   profile: (userId: string) => ['profile', userId] as const,
+  identityStatus: (userId: string) => ['identity-status', userId] as const,
   attendance: ['attendance'] as const,
   myRequests: ['my-requests'] as const,
   myRequest: (requestId: string) => ['my-requests', requestId] as const,

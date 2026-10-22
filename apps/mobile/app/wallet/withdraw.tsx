@@ -149,7 +149,7 @@ export default function WalletWithdrawScreen() {
         >
           <View className="gap-2 rounded-2xl border border-hairline bg-elevated px-4 py-4">
             <Text className="text-xs font-semibold uppercase tracking-wide text-subtle">
-              Available to withdraw
+              Available
             </Text>
             <Text className="text-3xl font-bold text-ink">{formatMoney(available, currency)}</Text>
             <Text className="text-sm text-muted">Only available balance can be withdrawn.</Text>

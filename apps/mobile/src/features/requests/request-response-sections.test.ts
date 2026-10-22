@@ -21,6 +21,7 @@ const response = (
     jobs_completed: 1,
     completion_percent: 100,
     phone_verified: true,
+    identity_verified: true,
     message: 'Hi',
     quoted_amount: 10,
     distance_m: 100,

@@ -29,7 +29,9 @@ export default async function SettingsPage() {
         <ul className="mt-2 list-disc space-y-1 pl-5 text-muted">
           <li>Super Admin — full access including audit logs and member management</li>
           <li>Support Admin — users, requests, reports, operational issues (no finance tables)</li>
-          <li>Finance Admin — transactions, wallets, withdrawals, operational/finance diagnostics</li>
+          <li>
+            Finance Admin — transactions, wallets, withdrawals, user lookup (no phone), audited NIN reveal
+          </li>
         </ul>
         <p className="mt-3 text-xs text-subtle">
           Permissions are enforced in middleware and every admin RPC via <code>get_my_admin_permissions()</code>.

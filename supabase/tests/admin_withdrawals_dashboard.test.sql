@@ -59,6 +59,8 @@ select ok(
   'list withdrawals with defaults'
 );
 
+select set_config('role', 'postgres', true);
+select set_config('request.jwt.claims', '', true);
 select pg_temp.make_user('22222222-2222-2222-2222-222222222222', 'Nobody', '+2348000000502');
 select pg_temp.act_as('22222222-2222-2222-2222-222222222222');
 

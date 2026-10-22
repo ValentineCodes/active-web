@@ -17,6 +17,7 @@ export type PublicRequest = Nullable<
   | 'requester_avatar_path'
   | 'requester_rating_average'
   | 'requester_rating_count'
+  | 'requester_identity_verified'
 >;
 
 export type BrowseRequestDetail = Nullable<
@@ -29,6 +30,7 @@ export type BrowseRequestDetail = Nullable<
   | 'requester_rating_average'
   | 'requester_rating_count'
   | 'requester_completion_percent'
+  | 'requester_identity_verified'
   | 'attachment_path'
 >;
 
@@ -106,7 +108,7 @@ export function useSearchRequests(query: string, position: Position | null) {
         p_longitude: position.longitude,
       });
       if (error) throw error;
-      return data;
+      return data ?? [];
     },
   });
 }

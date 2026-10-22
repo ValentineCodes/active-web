@@ -26,6 +26,7 @@ type MyResponse = Nullable<
   | 'requester_rating_average'
   | 'requester_rating_count'
   | 'requester_completion_percent'
+  | 'requester_identity_verified'
   | 'attachment_path'
   | 'decline_reason'
   | 'message'
@@ -47,6 +48,7 @@ export type RespondableRequest = {
   requester_rating_average: number | null;
   requester_rating_count: number | null;
   requester_completion_percent: number | null;
+  requester_identity_verified: boolean | null;
   attachment_path: string | null;
   tag_slugs: string[];
   posted_at: string;
@@ -88,6 +90,7 @@ function fromBrowseRequest(row: BrowseRequestDetail): RespondableRequest {
     requester_rating_average: row.requester_rating_average,
     requester_rating_count: row.requester_rating_count,
     requester_completion_percent: row.requester_completion_percent,
+    requester_identity_verified: row.requester_identity_verified ?? false,
     attachment_path: row.attachment_path,
     tag_slugs: normalizeRequestTagSlugs(row.tag_slugs),
     posted_at: row.posted_at,
@@ -112,6 +115,7 @@ function fromMyResponse(row: MyResponse): RespondableRequest {
     requester_rating_average: row.requester_rating_average,
     requester_rating_count: row.requester_rating_count,
     requester_completion_percent: row.requester_completion_percent,
+    requester_identity_verified: row.requester_identity_verified ?? false,
     attachment_path: row.attachment_path,
     tag_slugs: [],
     posted_at: row.posted_at,

@@ -70,7 +70,7 @@ select is(
 );
 
 select is(
-  (select status::text
+  (select wt.status::text
    from public.wallet_transactions wt
    join public.wallet_withdrawals w on w.wallet_transaction_id = wt.id
    where w.id = :'withdrawal_id'::uuid),
@@ -92,8 +92,13 @@ select is(
 select throws_ok(
   $$select public.request_wallet_withdrawal(
     'cccccccc-cccc-cccc-cccc-cccccccccccc'::uuid,
-    999999999,
-    :'bank_id'::uuid,
+    4500,
+    (
+      select a.id
+      from public.user_bank_accounts a
+      where a.user_id = 'cccccccc-cccc-cccc-cccc-cccccccccccc'::uuid
+      limit 1
+    ),
     'idem-2'
   )$$,
   '55000',

@@ -87,7 +87,7 @@ select is(
 );
 
 select is(
-  (select status::text from public.wallet_transactions wt
+  (select wt.status::text from public.wallet_transactions wt
    join public.wallet_withdrawals w on w.wallet_transaction_id = wt.id
    where w.id = :'withdrawal_id'::uuid),
   'pending',
@@ -96,7 +96,7 @@ select is(
 
 select is(
   (select available_balance from public.wallets where user_id = 'dddddddd-dddd-dddd-dddd-dddddddddddd'::uuid),
-  500000 - 100000,
+  (500000 - 100000)::bigint,
   'available balance reserved once'
 );
 
@@ -114,8 +114,13 @@ select is(
 select throws_ok(
   $$select public.request_wallet_withdrawal(
     'dddddddd-dddd-dddd-dddd-dddddddddddd'::uuid,
-    999999999,
-    :'bank_id'::uuid,
+    4500,
+    (
+      select a.id
+      from public.user_bank_accounts a
+      where a.user_id = 'dddddddd-dddd-dddd-dddd-dddddddddddd'::uuid
+      limit 1
+    ),
     'wd-idem-2'
   )$$,
   '55000',
@@ -127,7 +132,12 @@ select throws_ok(
   $$select public.request_wallet_withdrawal(
     'dddddddd-dddd-dddd-dddd-dddddddddddd'::uuid,
     50,
-    :'bank_id'::uuid,
+    (
+      select a.id
+      from public.user_bank_accounts a
+      where a.user_id = 'dddddddd-dddd-dddd-dddd-dddddddddddd'::uuid
+      limit 1
+    ),
     'wd-idem-3'
   )$$,
   '22023',
@@ -159,11 +169,14 @@ select throws_ok(
 select pg_temp.act_as('dddddddd-dddd-dddd-dddd-dddddddddddd');
 
 select throws_ok(
-  $$select public.admin_begin_wallet_withdrawal_processing(
-    :'withdrawal_id'::uuid,
-    'user-attempt-1',
-    null
-  )$$,
+  format(
+    $$select public.admin_begin_wallet_withdrawal_processing(
+      %L::uuid,
+      'user-attempt-1',
+      null
+    )$$,
+    :'withdrawal_id'
+  ),
   '42501',
   null,
   'non-admin cannot process withdrawals'
@@ -209,11 +222,15 @@ select lives_ok(
   'admin moves withdrawal to processing'
 );
 
+select set_config('role', 'postgres', true);
+
 select is(
   (select available_balance from public.wallets where user_id = 'dddddddd-dddd-dddd-dddd-dddddddddddd'::uuid),
-  500000 - 100000,
+  (500000 - 100000)::bigint,
   'approval does not create a second reservation'
 );
+
+select pg_temp.act_as('eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee');
 
 select lives_ok(
   format(
@@ -228,25 +245,29 @@ select lives_ok(
   'admin completes withdrawal'
 );
 
+select set_config('role', 'postgres', true);
+
 select is(
-  (select status::text from public.wallet_withdrawals where id = :'withdrawal_id'::uuid),
+  (select w.status::text from public.wallet_withdrawals w where w.idempotency_key = 'wd-idem-1'),
   'completed',
   'withdrawal completed'
 );
 
 select is(
-  (select status::text from public.wallet_transactions wt
+  (select wt.status::text from public.wallet_transactions wt
    join public.wallet_withdrawals w on w.wallet_transaction_id = wt.id
-   where w.id = :'withdrawal_id'::uuid),
+   where w.idempotency_key = 'wd-idem-1'),
   'completed',
   'reservation ledger finalized'
 );
 
 select is(
   (select available_balance from public.wallets where user_id = 'dddddddd-dddd-dddd-dddd-dddddddddddd'::uuid),
-  500000 - 100000,
+  (500000 - 100000)::bigint,
   'available stays debited after completion'
 );
+
+select pg_temp.act_as('eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee');
 
 select throws_ok(
   format(
@@ -262,6 +283,8 @@ select throws_ok(
   null,
   'double finalization blocked'
 );
+
+select set_config('role', 'service_role', true);
 
 select public.request_wallet_withdrawal(
   'dddddddd-dddd-dddd-dddd-dddddddddddd'::uuid,
@@ -283,34 +306,44 @@ select lives_ok(
   'admin rejects pending withdrawal'
 );
 
+select set_config('role', 'postgres', true);
+
 select is(
-  (select status::text from public.wallet_withdrawals where id = :'withdrawal_reject_id'::uuid),
+  (select w.status::text from public.wallet_withdrawals w where w.idempotency_key = 'wd-idem-reject'),
   'rejected',
   'rejected status'
 );
 
 select is(
   (select available_balance from public.wallets where user_id = 'dddddddd-dddd-dddd-dddd-dddddddddddd'::uuid),
-  500000 - 100000,
-  'funds released after reject restores available'
+  (500000 - 100000)::bigint,
+  'funds released after reject restores available while completed withdrawal stays debited'
 );
 
 select isnt(
-  (select release_transaction_id from public.wallet_withdrawals where id = :'withdrawal_reject_id'::uuid),
+  (select w.release_transaction_id from public.wallet_withdrawals w where w.idempotency_key = 'wd-idem-reject'),
   NULL,
   'release ledger linked'
 );
 
+select w.id as reject_wd_id
+from public.wallet_withdrawals w
+where w.idempotency_key = 'wd-idem-reject' \gset
+
+select pg_temp.act_as('eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee');
+
 select is(
   public.admin_reject_wallet_withdrawal(
-    :'withdrawal_reject_id'::uuid,
+    :'reject_wd_id'::uuid,
     'admin-reject-1',
     'We could not verify this payout request.',
     null
   )::text,
-  :'withdrawal_reject_id',
+  :'reject_wd_id',
   'duplicate reject idempotency is safe'
 );
+
+select set_config('role', 'service_role', true);
 
 select public.request_wallet_withdrawal(
   'dddddddd-dddd-dddd-dddd-dddddddddddd'::uuid,
@@ -344,18 +377,21 @@ select lives_ok(
   'admin fails processing withdrawal'
 );
 
+select set_config('role', 'postgres', true);
+
 select is(
   (select available_balance from public.wallets where user_id = 'dddddddd-dddd-dddd-dddd-dddddddddddd'::uuid),
-  500000 - 100000,
-  'funds released after fail'
+  (500000 - 100000)::bigint,
+  'funds released after fail while completed withdrawal stays debited'
 );
 
 select ok(
   exists (
     select 1
     from public.admin_audit_events a
+    inner join public.wallet_withdrawals w on w.id = a.entity_id
     where a.entity_type = 'wallet_withdrawal'::public.admin_audit_entity_type
-      and a.entity_id = :'withdrawal_id'::uuid
+      and w.idempotency_key = 'wd-idem-1'
       and a.action = 'wallet_withdrawal_complete'
   ),
   'audit row recorded for completion'
