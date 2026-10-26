@@ -14,7 +14,7 @@ import type {
 } from '@/features/requests/conversation-message-model';
 import type { ConversationAttachmentUploadState } from '@/features/requests/conversation-attachment-upload-state';
 import { useConversationAttachmentUrl } from '@/features/requests/conversation-attachment-url';
-import { formatChatMessageTime, formatFileSizeBytes } from '@/lib/format';
+import { formatFileSizeBytes } from '@/lib/format';
 import { cn } from '@/lib/cn';
 import { showAppToast } from '@/lib/toast';
 import { useColors } from '@/theme';
@@ -432,12 +432,7 @@ export function AttachmentMessageBubble({
   const hasBody = body.length > 0;
 
   return (
-    <View
-      className={cn(
-        'max-w-[85%] gap-1',
-        isOutgoing ? 'items-end self-end' : 'items-start self-start',
-      )}
-    >
+    <View className={cn('max-w-[85%]', isOutgoing ? 'self-end' : 'self-start')}>
       <View
         className={cn(
           'overflow-hidden rounded-2xl',
@@ -488,7 +483,6 @@ export function AttachmentMessageBubble({
           </View>
         ) : null}
       </View>
-      <Text className="px-1 text-xs text-muted">{formatChatMessageTime(message.createdAt)}</Text>
     </View>
   );
 }

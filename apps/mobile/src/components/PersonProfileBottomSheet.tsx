@@ -19,6 +19,7 @@ import { Avatar } from '@/components/ui/Avatar';
 import { Button } from '@/components/ui/Button';
 import { TextField } from '@/components/ui/TextField';
 import { StarRating } from '@/components/ui/Stars';
+import { cn } from '@/lib/cn';
 import { useColors } from '@/theme';
 
 function ProfileCompletionBadge({ percent }: { percent: number }) {
@@ -149,6 +150,7 @@ export function PersonProfileBottomSheet({
 
   const snapPoints = useMemo(() => ['62%', '94%'], []);
   const title = displayName?.trim() || 'Profile';
+  const hasRatings = (ratingCount ?? 0) > 0 && ratingAverage != null;
   const hasFooter = Boolean(responseActions);
   const scrollBottomPadding = hasFooter ? 120 + insets.bottom : 36;
 
@@ -192,21 +194,28 @@ export function PersonProfileBottomSheet({
       >
         <View className="gap-5">
           <View className="flex-row items-center gap-3">
-            <View className="min-w-0 flex-1 flex-row items-center gap-3">
+            <View
+              className={cn(
+                'min-w-0 flex-1 flex-row gap-3',
+                hasRatings ? 'items-start' : 'items-center',
+              )}
+            >
               <Avatar
                 path={avatarPath}
                 name={displayName}
                 size="md"
                 onPress={avatarPath ? () => setAvatarViewerOpen(true) : undefined}
               />
-              <View className="min-w-0 flex-1 gap-2">
+              <View className={cn('min-w-0 flex-1', hasRatings ? 'gap-2' : undefined)}>
                 <View className="max-w-full flex-row items-center gap-1">
                   <Text className="shrink text-lg font-bold leading-7 text-ink" numberOfLines={1}>
                     {title}
                   </Text>
                   {identityVerified ? <IdentityVerifiedBadge size={20} /> : null}
                 </View>
-                <StarRating average={ratingAverage} count={ratingCount ?? 0} />
+                {hasRatings ? (
+                  <StarRating average={ratingAverage} count={ratingCount ?? 0} />
+                ) : null}
               </View>
             </View>
             {completionPercent != null ? (

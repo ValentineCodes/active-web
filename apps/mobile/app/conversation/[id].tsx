@@ -11,7 +11,9 @@ import {
 import { RequestOutcomeContext } from '@/components/request-flow/RequestOutcomeContext';
 import { ConversationHeader } from '@/components/conversation/ConversationHeader';
 import { ConversationHeaderActions } from '@/components/conversation/ConversationHeaderActions';
+import { ConversationDateSeparator } from '@/components/conversation/ConversationDateSeparator';
 import { ConversationMessageItem } from '@/components/conversation/ConversationMessageItem';
+import { shouldShowChatDaySeparator } from '@/features/requests/chat-day-separators';
 import { ProfilePhotoCaptureContent } from '@/components/profile/ProfilePhotoCaptureContent';
 import { Button } from '@/components/ui/Button';
 import { KeyboardStickyFooter } from '@/components/ui/KeyboardStickyFooter';
@@ -335,24 +337,36 @@ export default function ConversationScreen() {
   const messages = messagesQuery.messages;
 
   const renderMessage = useCallback(
-    ({ item }: { item: RequestMessage }) => (
-      <ConversationMessageItem
-        message={item}
-        isOutgoing={item.senderId === userId}
-        outgoingUploadStateByAttachmentId={outgoingUploadByMessageId[item.id]}
-        onRetryOutgoing={
-          outgoingMessageUploadFailed(outgoingUploadByMessageId[item.id])
-            ? () => void gateChatSend(() => retryOutgoingMessage(item))
-            : undefined
-        }
-        onDeleteOutgoing={
-          outgoingMessageUploadFailed(outgoingUploadByMessageId[item.id])
-            ? () => void deleteOutgoingMessage(item)
-            : undefined
-        }
-      />
+    ({ item, index }: { item: RequestMessage; index: number }) => (
+      <View className="gap-3">
+        {shouldShowChatDaySeparator(messages, index) ? (
+          <ConversationDateSeparator iso={item.createdAt} />
+        ) : null}
+        <ConversationMessageItem
+          message={item}
+          isOutgoing={item.senderId === userId}
+          outgoingUploadStateByAttachmentId={outgoingUploadByMessageId[item.id]}
+          onRetryOutgoing={
+            outgoingMessageUploadFailed(outgoingUploadByMessageId[item.id])
+              ? () => void gateChatSend(() => retryOutgoingMessage(item))
+              : undefined
+          }
+          onDeleteOutgoing={
+            outgoingMessageUploadFailed(outgoingUploadByMessageId[item.id])
+              ? () => void deleteOutgoingMessage(item)
+              : undefined
+          }
+        />
+      </View>
     ),
-    [deleteOutgoingMessage, gateChatSend, outgoingUploadByMessageId, retryOutgoingMessage, userId],
+    [
+      deleteOutgoingMessage,
+      gateChatSend,
+      messages,
+      outgoingUploadByMessageId,
+      retryOutgoingMessage,
+      userId,
+    ],
   );
 
   const listFooter = useCallback(

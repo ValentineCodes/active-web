@@ -4,6 +4,7 @@ import { Pressable, Text, View } from 'react-native';
 import { IdentityVerifiedBadge } from '@/components/profile/IdentityVerifiedBadge';
 import { Avatar } from '@/components/ui/Avatar';
 import { StarRating } from '@/components/ui/Stars';
+import { cn } from '@/lib/cn';
 
 /**
  * A person summary row — avatar, name, rating, one line of context. Used anywhere the
@@ -34,8 +35,19 @@ export function PersonRow({
   trailing?: ReactNode;
   onPress?: () => void;
 }) {
+  const hasRatings = (ratingCount ?? 0) > 0 && ratingAverage != null;
+  const showRating = ratingAverage !== undefined && hasRatings;
+  const showInlineStat = Boolean(inlineStat);
+  const showMeta = Boolean(meta && !inlineStat);
+  const contentBelowName = showRating || showInlineStat || showMeta;
+
   const row = (
-    <View className="w-full min-w-0 flex-row items-center gap-3">
+    <View
+      className={cn(
+        'w-full min-w-0 flex-row gap-3',
+        contentBelowName ? 'items-start' : 'items-center',
+      )}
+    >
       <Avatar path={avatarPath} name={name} size={size} />
       <View className="min-w-0 flex-1 gap-0.5">
         <View className="max-w-full flex-row items-center gap-1">
@@ -44,20 +56,20 @@ export function PersonRow({
           </Text>
           {identityVerified ? <IdentityVerifiedBadge /> : null}
         </View>
-        {ratingAverage !== undefined || inlineStat ? (
+        {showRating || showInlineStat ? (
           <View className="flex-row flex-wrap items-center gap-1.5">
-            {ratingAverage !== undefined ? (
+            {showRating ? (
               <StarRating average={ratingAverage ?? null} count={ratingCount ?? 0} />
             ) : null}
-            {inlineStat ? (
+            {showInlineStat ? (
               <>
-                <Text className="text-sm text-subtle">·</Text>
+                {showRating ? <Text className="text-sm text-subtle">·</Text> : null}
                 <Text className="text-sm text-muted">{inlineStat}</Text>
               </>
             ) : null}
           </View>
         ) : null}
-        {meta && !inlineStat ? <Text className="text-sm text-muted">{meta}</Text> : null}
+        {showMeta ? <Text className="text-sm text-muted">{meta}</Text> : null}
       </View>
       {trailing}
     </View>

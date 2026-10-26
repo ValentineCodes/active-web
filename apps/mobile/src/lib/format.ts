@@ -165,15 +165,16 @@ export function formatAgo(iso: string): string {
   return `${formatDistanceToNowStrict(new Date(iso))} ago`;
 }
 
-/** Time label on chat bubbles — compact when recent, dated when older. */
-export function formatChatMessageTime(iso: string): string {
+/** Centered day label in the chat timeline (Today, Yesterday, weekday, …). */
+export function formatChatDayLabel(iso: string): string {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return '';
 
-  if (isToday(date)) return format(date, 'h:mm a');
-  if (isYesterday(date)) return `Yesterday ${format(date, 'h:mm a')}`;
-  if (isThisYear(date)) return format(date, 'EEE d MMM, h:mm a');
-  return format(date, 'd MMM yyyy, h:mm a');
+  if (isToday(date)) return 'Today';
+  if (isTomorrow(date)) return 'Tomorrow';
+  if (isYesterday(date)) return 'Yesterday';
+  if (isThisYear(date)) return format(date, 'EEEE, MMM d');
+  return format(date, 'EEEE, MMM d, yyyy');
 }
 
 export function formatRating(average: number | null, count: number): string {
