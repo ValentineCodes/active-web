@@ -9,7 +9,7 @@ import { ProfileTagInterestsLine } from '@/components/profile/ProfileTagInterest
 import { ProfileCatalogueRail } from '@/components/ProfileCatalogueRail';
 import { ReportIssueModal } from '@/components/ReportIssueModal';
 import { IdentityVerifiedBadge } from '@/components/profile/IdentityVerifiedBadge';
-import { Avatar } from '@/components/ui/Avatar';
+import { AvatarWithViewer } from '@/components/profile/AvatarWithViewer';
 import { Header } from '@/components/ui/Header';
 import { Screen } from '@/components/ui/Screen';
 import { StarRating } from '@/components/ui/Stars';
@@ -168,7 +168,7 @@ export default function ProfileScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
         <View className="items-center gap-2">
-          <Avatar
+          <AvatarWithViewer
             path={data.avatar_path}
             name={data.display_name}
             size="lg"

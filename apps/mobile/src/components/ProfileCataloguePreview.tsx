@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ActivityIndicator, Pressable, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
@@ -12,7 +12,6 @@ import { useColors } from '@/theme';
 const TILE_SIZE = 132;
 
 function PhotoTile({ path, onPress }: { path: string; onPress: () => void }) {
-  const colors = useColors();
   const url = useCatalogueMediaUrl(path);
 
   return (
@@ -30,9 +29,7 @@ function PhotoTile({ path, onPress }: { path: string; onPress: () => void }) {
           contentFit="cover"
         />
       ) : (
-        <View className="flex-1 items-center justify-center">
-          <ActivityIndicator color={colors.active} />
-        </View>
+        <View className="flex-1 bg-surface" />
       )}
     </Pressable>
   );
@@ -66,16 +63,11 @@ function VideoTile({ path, onPress }: { path: string; onPress: () => void }) {
 
 /** Read-only catalogue rail for profile previews (matches request_7 tiles). */
 export function ProfileCataloguePreview({ userId }: { userId: string }) {
-  const colors = useColors();
   const catalogue = useUserCatalogue(userId);
   const [viewerIndex, setViewerIndex] = useState<number | null>(null);
 
   if (catalogue.isPending) {
-    return (
-      <View className="h-36 items-center justify-center">
-        <ActivityIndicator color={colors.active} />
-      </View>
-    );
+    return null;
   }
 
   if (catalogue.isError) {

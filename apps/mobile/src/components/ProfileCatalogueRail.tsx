@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, View } from 'react-native';
+import { Pressable, ScrollView, View } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -20,34 +20,29 @@ function MediaPlaceholder({
   icon,
   label,
   onPress,
-  loading,
+  disabled,
 }: {
   icon: keyof typeof Ionicons.glyphMap;
   label: string;
   onPress: () => void;
-  loading?: boolean;
+  disabled?: boolean;
 }) {
   const colors = useColors();
   return (
     <Pressable
       onPress={onPress}
-      disabled={loading}
+      disabled={disabled}
       accessibilityRole="button"
       accessibilityLabel={label}
       className="items-center justify-center rounded-2xl border border-hairline bg-surface active:opacity-90"
       style={{ width: TILE_SIZE, height: TILE_SIZE }}
     >
-      {loading ? (
-        <ActivityIndicator color={colors.active} />
-      ) : (
-        <Ionicons name={icon} size={28} color={colors.subtle} />
-      )}
+      <Ionicons name={icon} size={28} color={colors.subtle} />
     </Pressable>
   );
 }
 
 function PhotoTile({ path, onPress }: { path: string; onPress: () => void }) {
-  const colors = useColors();
   const url = useCatalogueMediaUrl(path);
 
   return (
@@ -65,9 +60,7 @@ function PhotoTile({ path, onPress }: { path: string; onPress: () => void }) {
           contentFit="cover"
         />
       ) : (
-        <View className="flex-1 items-center justify-center">
-          <ActivityIndicator color={colors.active} />
-        </View>
+        <View className="flex-1 bg-surface" />
       )}
     </Pressable>
   );
@@ -101,18 +94,13 @@ function VideoTile({ path, onPress }: { path: string; onPress: () => void }) {
 
 /** Own-profile catalogue — video first, then photo slots with placeholders. */
 export function ProfileCatalogueRail() {
-  const colors = useColors();
   const catalogue = useMyCatalogue();
   const addPhoto = useAddCataloguePhoto();
   const setVideo = useSetCatalogueVideo();
   const [viewerIndex, setViewerIndex] = useState<number | null>(null);
 
   if (catalogue.isPending) {
-    return (
-      <View className="h-36 items-center justify-center">
-        <ActivityIndicator color={colors.active} />
-      </View>
-    );
+    return <View className="h-36" />;
   }
 
   if (catalogue.isError) {
@@ -153,7 +141,7 @@ export function ProfileCatalogueRail() {
             icon="videocam-outline"
             label="Add video"
             onPress={addVideo}
-            loading={setVideo.isPending}
+            disabled={setVideo.isPending}
           />
         )}
 
@@ -171,7 +159,7 @@ export function ProfileCatalogueRail() {
             icon="image-outline"
             label="Add photo"
             onPress={addPhotos}
-            loading={addPhoto.isPending}
+            disabled={addPhoto.isPending}
           />
         ))}
       </ScrollView>

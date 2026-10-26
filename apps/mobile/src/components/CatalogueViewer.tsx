@@ -1,5 +1,14 @@
-import { useState } from 'react';
-import { ActivityIndicator, Modal, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useEventListener } from 'expo';
+import { useEffect, useRef, useState } from 'react';
+import {
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  useWindowDimensions,
+  View,
+} from 'react-native';
 import { Image } from 'expo-image';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { Ionicons } from '@expo/vector-icons';
@@ -17,9 +26,26 @@ export type CatalogueViewerItem = {
   storage?: 'catalogue' | 'avatar';
 };
 
-function CatalogueVideoPlayer({ uri }: { uri: string }) {
-  const player = useVideoPlayer(uri, (instance) => {
-    instance.play();
+const VIDEO_VIEWER_BACKGROUND = '#000000';
+
+function CatalogueVideoPlayer({ uri, width }: { uri: string; width: number }) {
+  const [aspectRatio, setAspectRatio] = useState(16 / 9);
+  const player = useVideoPlayer(uri);
+  const height = Math.round(width / aspectRatio);
+
+  useEventListener(player, 'sourceLoad', (payload) => {
+    const track = payload.availableVideoTracks[0];
+    const size = track?.size;
+    if (size && size.width > 0 && size.height > 0) {
+      setAspectRatio(size.width / size.height);
+    }
+  });
+
+  useEventListener(player, 'videoTrackChange', (payload) => {
+    const size = payload.videoTrack?.size;
+    if (size && size.width > 0 && size.height > 0) {
+      setAspectRatio(size.width / size.height);
+    }
   });
 
   return (
@@ -27,86 +53,138 @@ function CatalogueVideoPlayer({ uri }: { uri: string }) {
       player={player}
       nativeControls
       contentFit="contain"
-      style={{ flex: 1, width: '100%' }}
+      style={{ width, height, backgroundColor: VIDEO_VIEWER_BACKGROUND }}
     />
   );
 }
 
-function CatalogueViewerBody({
+function CatalogueStackedItem({
   item,
-  index,
-  count,
-  onClose,
-  onPrev,
-  onNext,
+  width,
+  onHeight,
 }: {
   item: CatalogueViewerItem;
-  index: number;
-  count: number;
-  onClose: () => void;
-  onPrev: () => void;
-  onNext: () => void;
+  width: number;
+  onHeight: (height: number) => void;
 }) {
-  const colors = useColors();
-  const insets = useSafeAreaInsets();
   const storage = item.storage ?? 'catalogue';
   const catalogueUrl = useCatalogueMediaUrl(storage === 'catalogue' ? item.path : null);
   const avatarUrl = useAvatarUrl(storage === 'avatar' ? item.path : null);
   const url = storage === 'avatar' ? avatarUrl : catalogueUrl;
+  const colors = useColors();
+  const [photoAspectRatio, setPhotoAspectRatio] = useState<number | null>(null);
+
+  const photoHeight =
+    photoAspectRatio != null ? Math.round(width / photoAspectRatio) : Math.round(width);
+
+  const rowBackground = item.kind === 'video' ? VIDEO_VIEWER_BACKGROUND : colors.canvas;
 
   return (
     <View
-      className="flex-1 bg-ink"
-      style={{ paddingTop: insets.top, paddingBottom: insets.bottom }}
+      style={{ width, backgroundColor: rowBackground }}
+      onLayout={(e) => {
+        onHeight(e.nativeEvent.layout.height);
+      }}
     >
-      <View className="flex-row items-center justify-between px-4 py-3">
-        <Text className="text-sm font-medium text-canvas">
-          {index + 1} / {count}
-        </Text>
+      {url.data && item.kind === 'photo' ? (
+        <Image
+          source={{ uri: url.data }}
+          style={{
+            width,
+            ...(photoAspectRatio != null
+              ? { height: photoHeight }
+              : { height: Math.round(width) }),
+          }}
+          contentFit="contain"
+          onLoad={(e) => {
+            const { width: w, height: h } = e.source;
+            if (w > 0 && h > 0) {
+              setPhotoAspectRatio(w / h);
+            }
+          }}
+        />
+      ) : null}
+      {url.data && item.kind === 'video' ? (
+        <CatalogueVideoPlayer uri={url.data} width={width} />
+      ) : null}
+    </View>
+  );
+}
+
+function CatalogueViewerBody({
+  items,
+  initialIndex,
+  onClose,
+}: {
+  items: CatalogueViewerItem[];
+  initialIndex: number;
+  onClose: () => void;
+}) {
+  const colors = useColors();
+  const insets = useSafeAreaInsets();
+  const { width: windowWidth } = useWindowDimensions();
+  const scrollRef = useRef<ScrollView>(null);
+  const [itemHeights, setItemHeights] = useState<number[]>(() => items.map(() => 0));
+  const headerHeight = 52;
+
+  const setItemHeight = (index: number, height: number) => {
+    setItemHeights((prev) => {
+      if (prev[index] === height) return prev;
+      const next = [...prev];
+      next[index] = height;
+      return next;
+    });
+  };
+
+  useEffect(() => {
+    if (initialIndex <= 0) return;
+
+    let offset = 0;
+    for (let i = 0; i < initialIndex; i++) {
+      const h = itemHeights[i];
+      if (!h) return;
+      offset += h;
+    }
+
+    scrollRef.current?.scrollTo({ y: offset, animated: false });
+  }, [initialIndex, itemHeights]);
+
+  return (
+    <View
+      className="flex-1"
+      style={{
+        backgroundColor: colors.canvas,
+        paddingTop: insets.top,
+        paddingBottom: insets.bottom,
+      }}
+    >
+      <View className="flex-row items-center justify-end px-4" style={{ height: headerHeight }}>
         <Pressable
           onPress={onClose}
           accessibilityRole="button"
           accessibilityLabel="Close"
           hitSlop={8}
         >
-          <Ionicons name="close" size={28} color={colors.canvas} />
+          <Ionicons name="close" size={28} color={colors.ink} />
         </Pressable>
       </View>
 
-      <View className="flex-1">
-        {url.isPending ? (
-          <View className="flex-1 items-center justify-center">
-            <ActivityIndicator color={colors.canvas} />
-          </View>
-        ) : null}
-        {url.data && item.kind === 'photo' ? (
-          <Image source={{ uri: url.data }} style={{ flex: 1 }} contentFit="contain" />
-        ) : null}
-        {url.data && item.kind === 'video' ? <CatalogueVideoPlayer uri={url.data} /> : null}
-      </View>
-
-      {count > 1 ? (
-        <View className="flex-row items-center justify-between px-6 py-4">
-          <Pressable
-            onPress={onPrev}
-            disabled={index === 0}
-            accessibilityRole="button"
-            accessibilityLabel="Previous"
-            className={index === 0 ? 'opacity-30' : 'opacity-100'}
-          >
-            <Ionicons name="chevron-back" size={32} color={colors.canvas} />
-          </Pressable>
-          <Pressable
-            onPress={onNext}
-            disabled={index === count - 1}
-            accessibilityRole="button"
-            accessibilityLabel="Next"
-            className={index === count - 1 ? 'opacity-30' : 'opacity-100'}
-          >
-            <Ionicons name="chevron-forward" size={32} color={colors.canvas} />
-          </Pressable>
-        </View>
-      ) : null}
+      <ScrollView
+        ref={scrollRef}
+        className="flex-1"
+        showsVerticalScrollIndicator
+        style={{ backgroundColor: colors.canvas }}
+        contentContainerStyle={{ width: windowWidth, backgroundColor: colors.canvas }}
+      >
+        {items.map((item, index) => (
+          <CatalogueStackedItem
+            key={`${item.storage ?? 'catalogue'}:${item.path}`}
+            item={item}
+            width={windowWidth}
+            onHeight={(height) => setItemHeight(index, height)}
+          />
+        ))}
+      </ScrollView>
     </View>
   );
 }
@@ -120,32 +198,27 @@ export function CatalogueViewer({
   initialIndex: number;
   onClose: () => void;
 }) {
-  const [index, setIndex] = useState(initialIndex);
-  const item = items[index];
-  if (!item) return null;
+  const colors = useColors();
+
+  if (items.length === 0) return null;
 
   const body = (
-    <CatalogueViewerBody
-      item={item}
-      index={index}
-      count={items.length}
-      onClose={onClose}
-      onPrev={() => setIndex((current) => Math.max(0, current - 1))}
-      onNext={() => setIndex((current) => Math.min(items.length - 1, current + 1))}
-    />
+    <CatalogueViewerBody items={items} initialIndex={initialIndex} onClose={onClose} />
   );
 
   if (Platform.OS === 'ios') {
     return (
       <BottomSheetWindow>
-        <View style={StyleSheet.absoluteFill}>{body}</View>
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.canvas }]}>
+          {body}
+        </View>
       </BottomSheetWindow>
     );
   }
 
   return (
     <Modal visible animationType="fade" onRequestClose={onClose} statusBarTranslucent>
-      {body}
+      <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.canvas }]}>{body}</View>
     </Modal>
   );
 }

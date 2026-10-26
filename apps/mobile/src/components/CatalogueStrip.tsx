@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -19,14 +19,6 @@ function CatalogueThumb({
 }) {
   const colors = useColors();
   const url = useCatalogueMediaUrl(path);
-
-  if (url.isPending) {
-    return (
-      <View className="h-24 w-32 items-center justify-center rounded-2xl bg-surface">
-        <ActivityIndicator color={colors.brand} />
-      </View>
-    );
-  }
 
   if (url.isError || !url.data) {
     return (
@@ -73,17 +65,12 @@ export function CatalogueStrip({
   emptyLabel?: string;
   showHeading?: boolean;
 }) {
-  const colors = useColors();
   const catalogue = useUserCatalogue(userId);
   useQueryErrorToast(catalogue);
   const [viewerIndex, setViewerIndex] = useState<number | null>(null);
 
   if (catalogue.isPending) {
-    return (
-      <View className="h-24 items-center justify-center">
-        <ActivityIndicator color={colors.brand} />
-      </View>
-    );
+    return null;
   }
 
   if (catalogue.isError) {

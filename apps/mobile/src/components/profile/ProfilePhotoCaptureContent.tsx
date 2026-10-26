@@ -1,6 +1,6 @@
 import { Text, View } from 'react-native';
 
-import { Avatar } from '@/components/ui/Avatar';
+import { AvatarWithViewer } from '@/components/profile/AvatarWithViewer';
 import { InlineError } from '@/components/ui/StateView';
 
 export type ProfilePhotoCaptureVariant = 'respond' | 'chat';
@@ -46,7 +46,11 @@ export function ProfilePhotoCaptureContent({
   return (
     <View className={compact ? 'gap-3' : 'gap-5'}>
       <View className="items-center gap-3">
-        <Avatar path={avatarPath} name={displayName ?? null} size={compact ? 'md' : 'lg'} />
+        <AvatarWithViewer
+          path={avatarPath}
+          name={displayName ?? null}
+          size={compact ? 'md' : 'lg'}
+        />
         <Text
           className={
             compact

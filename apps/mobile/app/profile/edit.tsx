@@ -11,6 +11,7 @@ import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 import { ProfileTagInterestPicker } from '@/components/profile/ProfileTagInterestPicker';
+import { AvatarWithViewer } from '@/components/profile/AvatarWithViewer';
 import { Avatar } from '@/components/ui/Avatar';
 import { Header } from '@/components/ui/Header';
 import { Screen } from '@/components/ui/Screen';
@@ -195,22 +196,40 @@ function EditProfileForm({
           scrollEventThrottle={16}
         >
           <View className="items-center gap-3">
-            <Pressable
-              onPress={() =>
-                capturePhoto.mutate({}, { onSuccess: () => showAppToast('Profile updated') })
-              }
-              disabled={capturePhoto.isPending}
-              accessibilityRole="button"
-              accessibilityLabel="Change profile photo"
-              className="active:opacity-90"
-            >
-              <View className="relative">
-                <Avatar path={avatarPath} name={trimmedName || displayName} size="lg" />
-                <View className="absolute -bottom-0.5 -right-0.5 h-8 w-8 items-center justify-center rounded-full bg-active">
+            <View className="relative">
+              {avatarPath ? (
+                <AvatarWithViewer
+                  path={avatarPath}
+                  name={trimmedName || displayName}
+                  size="lg"
+                />
+              ) : (
+                <Pressable
+                  onPress={() =>
+                    capturePhoto.mutate({}, { onSuccess: () => showAppToast('Profile updated') })
+                  }
+                  disabled={capturePhoto.isPending}
+                  accessibilityRole="button"
+                  accessibilityLabel="Add a profile photo"
+                  className="active:opacity-90"
+                >
+                  <Avatar path={avatarPath} name={trimmedName || displayName} size="lg" />
+                </Pressable>
+              )}
+              <Pressable
+                onPress={() =>
+                  capturePhoto.mutate({}, { onSuccess: () => showAppToast('Profile updated') })
+                }
+                disabled={capturePhoto.isPending}
+                accessibilityRole="button"
+                accessibilityLabel="Change profile photo"
+                className="absolute -bottom-0.5 -right-0.5 active:opacity-90"
+              >
+                <View className="h-8 w-8 items-center justify-center rounded-full bg-active">
                   <Ionicons name="add" size={20} color={colors.onBrand} />
                 </View>
-              </View>
-            </Pressable>
+              </Pressable>
+            </View>
             <Pressable
               onPress={() =>
                 capturePhoto.mutate({}, { onSuccess: () => showAppToast('Profile updated') })

@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
 import { IdentityVerifiedBadge } from '@/components/profile/IdentityVerifiedBadge';
-import { Avatar } from '@/components/ui/Avatar';
+import { AvatarWithViewer } from '@/components/profile/AvatarWithViewer';
 import { IconButton } from '@/components/ui/IconButton';
 
 export function ConversationHeader({
@@ -32,7 +32,11 @@ export function ConversationHeader({
           accessibilityRole="header"
           className="min-w-0 flex-1 flex-row items-center gap-3 py-1"
         >
-          <Avatar path={counterpartyAvatarPath} name={counterpartyName} size="sm" />
+          <AvatarWithViewer
+            path={counterpartyAvatarPath}
+            name={counterpartyName}
+            size="sm"
+          />
           <View className="min-w-0 flex-1 gap-0.5">
             <View className="max-w-full flex-row items-center gap-1">
               <Text className="shrink text-lg font-bold text-ink" numberOfLines={1}>
