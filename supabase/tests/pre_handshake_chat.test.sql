@@ -137,6 +137,26 @@ select is(
   'responder discuss entry stays hidden until the requester has messaged'
 );
 
+select pg_temp.act_as_owner() as _ \gset
+update public.profiles
+set avatar_path = null,
+    avatar_captured_in_app = false
+where id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'::uuid;
+
+select pg_temp.act_as('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa') as _ \gset
+select throws_ok(
+  format($$select public.send_request_message(%L, %L)$$, :'pre_conversation_a_id', 'Hi'),
+  '55000',
+  'add a profile photo in the app before messaging',
+  'messaging requires an in-app profile photo'
+);
+
+select pg_temp.act_as_owner() as _ \gset
+update public.profiles
+set avatar_path = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa/avatar.jpg',
+    avatar_captured_in_app = true
+where id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'::uuid;
+
 select pg_temp.act_as('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa') as _ \gset
 select lives_ok(
   format($$select public.send_request_message(%L, %L)$$, :'pre_conversation_a_id', 'Hi, are you free Saturday?'),

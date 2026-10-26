@@ -12,6 +12,8 @@ import { RequestOutcomeContext } from '@/components/request-flow/RequestOutcomeC
 import { ConversationHeader } from '@/components/conversation/ConversationHeader';
 import { ConversationHeaderActions } from '@/components/conversation/ConversationHeaderActions';
 import { ConversationMessageItem } from '@/components/conversation/ConversationMessageItem';
+import { ProfilePhotoCaptureContent } from '@/components/profile/ProfilePhotoCaptureContent';
+import { Button } from '@/components/ui/Button';
 import { KeyboardStickyFooter } from '@/components/ui/KeyboardStickyFooter';
 import { Screen } from '@/components/ui/Screen';
 import { EmptyState, LoadingState } from '@/components/ui/StateView';
@@ -41,6 +43,7 @@ import {
 } from '@/features/requests/conversation-attachment-upload-state';
 import { showAppToast } from '@/lib/toast';
 import { useEngagement } from '@/features/requests/requester-api';
+import { useChatSendGate } from '@/features/profile/use-chat-send-gate';
 import { queryKeys } from '@/lib/query/keys';
 import { useColors } from '@/theme';
 
@@ -77,6 +80,16 @@ export default function ConversationScreen() {
   });
   const sendMessage = useSendRequestMessage(conversationId ?? '', requestId);
   const sendAttachment = useSendRequestMessageAttachment(conversationId ?? '', requestId);
+  const {
+    profile,
+    photoReady,
+    capturePhoto,
+    permissionBlocked,
+    captureButtonLabel,
+    gateChatSend,
+    runCapture,
+    openCameraSettings,
+  } = useChatSendGate();
   const [threadFocused, setThreadFocused] = useState(false);
 
   const threadVisible =
@@ -239,7 +252,7 @@ export default function ConversationScreen() {
     [clearOutgoingUploadState, conversationId, sendAttachment, setOutgoingAttachmentState, userId],
   );
 
-  const onComposerSend = async (body: string, pending: ComposerPendingAttachment[]) => {
+  const executeComposerSend = async (body: string, pending: ComposerPendingAttachment[]) => {
     if (!conversationId || !userId || sendLockRef.current) return;
 
     assertConversationMessageSendable(body, pending.length);
@@ -266,6 +279,10 @@ export default function ConversationScreen() {
     } finally {
       sendLockRef.current = false;
     }
+  };
+
+  const onComposerSend = async (body: string, pending: ComposerPendingAttachment[]) => {
+    await gateChatSend(() => executeComposerSend(body, pending));
   };
 
   const retryOutgoingMessage = useCallback(
@@ -325,7 +342,7 @@ export default function ConversationScreen() {
         outgoingUploadStateByAttachmentId={outgoingUploadByMessageId[item.id]}
         onRetryOutgoing={
           outgoingMessageUploadFailed(outgoingUploadByMessageId[item.id])
-            ? () => void retryOutgoingMessage(item)
+            ? () => void gateChatSend(() => retryOutgoingMessage(item))
             : undefined
         }
         onDeleteOutgoing={
@@ -335,7 +352,7 @@ export default function ConversationScreen() {
         }
       />
     ),
-    [deleteOutgoingMessage, outgoingUploadByMessageId, retryOutgoingMessage, userId],
+    [deleteOutgoingMessage, gateChatSend, outgoingUploadByMessageId, retryOutgoingMessage, userId],
   );
 
   const listFooter = useCallback(
@@ -443,18 +460,46 @@ export default function ConversationScreen() {
       <KeyboardStickyFooter
         className="flex-1"
         footer={
-          <ConversationComposer
-            onSend={onComposerSend}
-            sending={composerSending}
-            disabled={!thread.messagingEnabled}
-            disabledHint={
-              awaitingRequesterMessage
-                ? 'You can reply after they send a message'
-                : thread.isPreHandshake
-                  ? 'This discussion is closed'
-                  : 'This request is closed'
-            }
-          />
+          <View>
+            {thread.messagingEnabled && !photoReady ? (
+              <View className="gap-3 border-t border-hairline px-4 pb-2 pt-4">
+                <ProfilePhotoCaptureContent
+                  variant="chat"
+                  compact
+                  avatarPath={profile.data?.avatar_path}
+                  displayName={profile.data?.display_name}
+                  error={capturePhoto.isError ? capturePhoto.error : null}
+                  permissionBlocked={permissionBlocked}
+                />
+                <Button
+                  label={captureButtonLabel}
+                  size="lg"
+                  variant="secondary"
+                  loading={capturePhoto.isPending}
+                  icon={permissionBlocked ? 'settings-outline' : undefined}
+                  onPress={() => {
+                    if (permissionBlocked) {
+                      openCameraSettings();
+                      return;
+                    }
+                    void runCapture();
+                  }}
+                />
+              </View>
+            ) : null}
+            <ConversationComposer
+              onSend={onComposerSend}
+              sending={composerSending}
+              disabled={!thread.messagingEnabled}
+              disabledHint={
+                awaitingRequesterMessage
+                  ? 'You can reply after they send a message'
+                  : thread.isPreHandshake
+                    ? 'This discussion is closed'
+                    : 'This request is closed'
+              }
+            />
+          </View>
         }
       >
         {messagesQuery.isPending ? (

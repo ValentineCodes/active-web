@@ -657,6 +657,65 @@ select lives_ok(
   'the helper can mark the conversation as actively viewed'
 );
 
+select pg_temp.act_as_owner() as _ \gset
+update public.profiles
+set avatar_path = null,
+    avatar_captured_in_app = false
+where id = '11111111-1111-1111-1111-111111111111'::uuid;
+
+select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
+select throws_ok(
+  format($$select public.send_request_message(%L, %L)$$, :'conversation_id', 'No photo yet'),
+  '55000',
+  'add a profile photo in the app before messaging',
+  'send_request_message rejects sender without in-app profile photo'
+);
+
+select throws_ok(
+  format(
+    $$insert into public.request_messages (conversation_id, sender_id, message_type, body)
+      values (%L, '11111111-1111-1111-1111-111111111111'::uuid, 'text'::public.conversation_message_type, 'bypass')$$,
+    :'conversation_id'
+  ),
+  '55000',
+  'add a profile photo in the app before messaging',
+  'authenticated insert cannot bypass profile photo requirement'
+);
+
+select throws_ok(
+  format(
+    $$select * from public.begin_request_message_with_attachments(
+      %L,
+      'file',
+      jsonb_build_array(
+        jsonb_build_object(
+          'file_name', 'photo.jpg',
+          'mime_type', 'image/jpeg',
+          'file_size', 1024,
+          'attachment_type', 'image'
+        )
+      )
+    )$$,
+    :'conversation_id'
+  ),
+  '55000',
+  'add a profile photo in the app before messaging',
+  'begin_request_message_with_attachments rejects sender without in-app profile photo'
+);
+
+select cmp_ok(
+  (select count(*)::integer from public.list_request_messages(:'conversation_id'::uuid)),
+  '>=',
+  1,
+  'message history remains readable without profile photo'
+);
+
+select pg_temp.act_as_owner() as _ \gset
+update public.profiles
+set avatar_path = '11111111-1111-1111-1111-111111111111/avatar.jpg',
+    avatar_captured_in_app = true
+where id = '11111111-1111-1111-1111-111111111111'::uuid;
+
 select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
 select lives_ok(
   format(

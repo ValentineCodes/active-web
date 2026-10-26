@@ -22,6 +22,7 @@ import {
   type ConversationAttachmentKind,
   type ConversationPickedAttachment,
 } from '@/features/requests/conversation-media';
+import { isChatSendBlockedByProfilePhoto } from '@/features/requests/chat-send-eligibility';
 import { showAppToast } from '@/lib/toast';
 import { poppinsInputTypography } from '@/theme/fonts';
 import { useColors } from '@/theme';
@@ -118,8 +119,12 @@ export function ConversationComposer({
 
     try {
       await onSend(snapshot.text, snapshot.pending);
-    } catch {
+    } catch (error) {
       setText(snapshot.text);
+      if (isChatSendBlockedByProfilePhoto(error)) {
+        setPendingAttachments(snapshot.pending);
+        return;
+      }
       // Attachment sends show in the thread; keep composer staging cleared.
       if (snapshot.pending.length === 0) {
         setPendingAttachments(snapshot.pending);

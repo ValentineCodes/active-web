@@ -1,12 +1,15 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import * as ImagePicker from 'expo-image-picker';
 
 import { useUserId } from '@/features/auth/session';
 import { queryKeys } from '@/lib/query/keys';
 import { isSupabaseAuthError, recoverSessionOnAuthError } from '@/lib/supabase/auth-recovery';
 import { supabase } from '@/lib/supabase/client';
 
-import { AVATAR_BUCKET, readUriBytes, uploadPrivateObject } from './storage';
+import { hasProfilePhotoReady } from '@/features/requests/chat-send-eligibility';
+
+import { captureProfilePhotoInApp } from './capture-profile-photo';
+
+export { hasProfilePhotoReady };
 
 export { useAvatarUrl } from './avatar-url';
 
@@ -47,18 +50,6 @@ export function useProfile() {
   return useQuery(profileQueryOptions(useUserId()));
 }
 
-export function hasProfilePhotoReady(
-  profile:
-    | {
-        avatar_path: string | null;
-        avatar_captured_in_app: boolean;
-      }
-    | null
-    | undefined,
-) {
-  return Boolean(profile?.avatar_path && profile.avatar_captured_in_app);
-}
-
 export function useSaveProfile() {
   const userId = useUserId();
   const queryClient = useQueryClient();
@@ -90,31 +81,14 @@ export function useCaptureProfilePhoto() {
 
   return useMutation({
     mutationFn: async ({ onProgress }: { onProgress?: (fraction: number) => void } = {}) => {
-      const permission = await ImagePicker.requestCameraPermissionsAsync();
-      if (!permission.granted) {
+      const outcome = await captureProfilePhotoInApp(userId, onProgress);
+      if (outcome.kind === 'cancelled') return false;
+      if (outcome.kind === 'permission_denied') {
+        if (!outcome.canAskAgain) {
+          throw new Error('Camera access is blocked. Open settings to allow your camera.');
+        }
         throw new Error('Camera access is needed for your profile photo.');
       }
-
-      const result = await ImagePicker.launchCameraAsync({
-        mediaTypes: ['images'],
-        cameraType: ImagePicker.CameraType.front,
-        allowsEditing: true,
-        aspect: [1, 1],
-        quality: 0.7,
-      });
-
-      if (result.canceled) return false;
-
-      const [asset] = result.assets;
-      if (!asset?.uri) throw new Error('The photo could not be read.');
-
-      const bytes = await readUriBytes(asset.uri);
-
-      const path = `${userId}/avatar.jpg`;
-      await uploadPrivateObject(AVATAR_BUCKET, path, bytes, 'image/jpeg', onProgress);
-
-      const { error } = await supabase.rpc('confirm_avatar_capture', { p_storage_path: path });
-      if (error) throw error;
       return true;
     },
     onSuccess: (changed) => {

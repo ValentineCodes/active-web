@@ -552,6 +552,7 @@ export function useRequestMessages(conversationId: string | undefined) {
   return { ...query, messages, messagesChronological };
 }
 
+/** Call only through `useChatSendGate().gateChatSend` on the conversation screen. */
 export function useSendRequestMessage(conversationId: string, requestId: string) {
   const queryClient = useQueryClient();
   const userId = useUserId();
@@ -609,6 +610,7 @@ export function useSendRequestMessage(conversationId: string, requestId: string)
   });
 }
 
+/** Call only through `useChatSendGate().gateChatSend` on the conversation screen. */
 export function useSendRequestMessageAttachment(conversationId: string, requestId: string) {
   const queryClient = useQueryClient();
   const userId = useUserId();

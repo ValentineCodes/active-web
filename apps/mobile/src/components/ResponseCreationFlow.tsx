@@ -2,7 +2,7 @@ import { useRef, useState, type ComponentRef } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-import { Avatar } from '@/components/ui/Avatar';
+import { ProfilePhotoCaptureContent } from '@/components/profile/ProfilePhotoCaptureContent';
 import { Button } from '@/components/ui/Button';
 import { MoneyAmountInput } from '@/components/ui/MoneyAmountInput';
 import { IconButton } from '@/components/ui/IconButton';
@@ -327,21 +327,12 @@ export function ResponseCreationFlow({
         {needsPhotoStep && step === 0 ? (
           <View className="gap-5">
             <StepLabel>Step 1 of 3 · Photo</StepLabel>
-            <View className="items-center gap-3">
-              <Avatar
-                path={profile.data?.avatar_path}
-                name={profile.data?.display_name ?? null}
-                size="lg"
-              />
-              <Text className="text-center text-3xl font-bold leading-9 text-ink">
-                Add a profile photo
-              </Text>
-              <Text className="max-w-sm text-center text-base leading-6 text-muted">
-                People see your photo when you respond. Take one now with your camera — it only
-                takes a moment.
-              </Text>
-            </View>
-            {capturePhoto.isError ? <InlineError error={capturePhoto.error} /> : null}
+            <ProfilePhotoCaptureContent
+              variant="respond"
+              avatarPath={profile.data?.avatar_path}
+              displayName={profile.data?.display_name}
+              error={capturePhoto.isError ? capturePhoto.error : null}
+            />
           </View>
         ) : null}
 
