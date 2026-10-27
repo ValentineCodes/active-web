@@ -138,6 +138,7 @@ async function uploadBytesToStorage(
   kind: ConversationAttachmentKind,
   onProgress?: (fraction: number) => void,
   shouldCancel?: () => boolean,
+  options?: { replaceExisting?: boolean },
 ) {
   assertNotCancelled(shouldCancel);
   const bytes = await readUriBytes(uri);
@@ -147,10 +148,86 @@ async function uploadBytesToStorage(
 
   try {
     await uploadPrivateObject(CONVERSATION_MEDIA_BUCKET, storagePath, bytes, mimeType, onProgress, {
-      upsert: false,
+      upsert: options?.replaceExisting ?? false,
     });
-  } catch {
+  } catch (error) {
+    throw new Error(mapConversationAttachmentError(error));
+  }
+}
+
+export type ReservedConversationAttachmentSlot = {
+  messageId: string;
+  attachmentId: string;
+  storagePath: string;
+};
+
+export async function reserveConversationChatMessageSlots(input: {
+  conversationId: string;
+  caption: string;
+  plannedAttachments: PreparedConversationAttachment[];
+  clientSendId?: string | null;
+}): Promise<ReservedConversationAttachmentSlot[]> {
+  const { data: slots, error } = await supabase.rpc('begin_request_message_with_attachments', {
+    p_conversation_id: input.conversationId,
+    p_body: input.caption.trim(),
+    p_planned_attachments: input.plannedAttachments.map((prepared) => ({
+      file_name: prepared.fileName,
+      mime_type: prepared.mimeType,
+      file_size: prepared.fileSize,
+      attachment_type: prepared.attachmentType,
+    })),
+    p_client_send_id: input.clientSendId ?? undefined,
+  });
+
+  if (error) {
+    throw new Error(mapConversationAttachmentError(error));
+  }
+
+  if (!slots?.length) {
     throw new Error(CONVERSATION_ATTACHMENT_USER_ERRORS.uploadFailed);
+  }
+
+  const messageId = slots[0]?.message_id;
+  if (!messageId) {
+    throw new Error(CONVERSATION_ATTACHMENT_USER_ERRORS.uploadFailed);
+  }
+
+  return slots.map((slot) => {
+    if (!slot.attachment_id || !slot.storage_path || slot.message_id !== messageId) {
+      throw new Error(CONVERSATION_ATTACHMENT_USER_ERRORS.uploadFailed);
+    }
+    return {
+      messageId,
+      attachmentId: slot.attachment_id,
+      storagePath: slot.storage_path,
+    };
+  });
+}
+
+export async function uploadPreparedConversationAttachmentToSlot(input: {
+  slot: ReservedConversationAttachmentSlot;
+  prepared: PreparedConversationAttachment;
+  onProgress?: (fraction: number) => void;
+  shouldCancel?: () => boolean;
+  replaceExisting?: boolean;
+}): Promise<void> {
+  await uploadBytesToStorage(
+    input.slot.storagePath,
+    input.prepared.localUri,
+    input.prepared.mimeType,
+    input.prepared.attachmentType,
+    input.onProgress,
+    input.shouldCancel,
+    { replaceExisting: input.replaceExisting },
+  );
+}
+
+export async function completeConversationChatMessage(messageId: string): Promise<void> {
+  const { error } = await supabase.rpc('complete_request_message_with_attachments', {
+    p_message_id: messageId,
+  });
+  if (error) {
+    throw new Error(mapConversationAttachmentError(error));
   }
 }
 
@@ -243,57 +320,49 @@ export async function uploadConversationChatMessage(input: {
       emit(index, { phase: 'uploading', progress: 0 });
     }
 
-    const { data: slots, error: beginError } = await supabase.rpc(
-      'begin_request_message_with_attachments',
-      {
-        p_conversation_id: conversationId,
-        p_body: caption?.trim() ? caption.trim() : '',
-        p_planned_attachments: preparedItems.map(({ prepared }) => ({
-          file_name: prepared.fileName,
-          mime_type: prepared.mimeType,
-          file_size: prepared.fileSize,
-          attachment_type: prepared.attachmentType,
-        })),
-        p_client_send_id: clientSendId ?? undefined,
-      },
-    );
-    if (beginError) {
-      const message = mapConversationAttachmentError(beginError);
+    let reservedSlots: ReservedConversationAttachmentSlot[];
+    try {
+      reservedSlots = await reserveConversationChatMessageSlots({
+        conversationId,
+        caption: caption?.trim() ? caption.trim() : '',
+        plannedAttachments: preparedItems.map(({ prepared }) => prepared),
+        clientSendId,
+      });
+    } catch (error) {
+      const message = mapConversationAttachmentError(error);
       for (let index = 0; index < preparedItems.length; index += 1) {
         emit(index, { phase: 'failed', errorMessage: message });
       }
-      throw new Error(message);
+      throw error instanceof Error ? error : new Error(message);
     }
 
-    if (!slots?.length) {
-      throw new Error(CONVERSATION_ATTACHMENT_USER_ERRORS.uploadFailed);
-    }
-
-    messageId = slots[0]?.message_id ?? null;
+    messageId = reservedSlots[0]?.messageId ?? null;
     if (!messageId) {
       throw new Error(CONVERSATION_ATTACHMENT_USER_ERRORS.uploadFailed);
     }
 
     onMessageReserved?.(messageId);
 
-    const slotByAttachmentId = new Map(slots.map((slot) => [slot.attachment_id, slot]));
+    const slotByAttachmentId = new Map(
+      reservedSlots.map((slot) => [slot.attachmentId, slot]),
+    );
 
     for (let index = 0; index < preparedItems.length; index += 1) {
       assertNotCancelled(shouldCancel);
 
       const entry = preparedItems[index];
-      const slot = slots[index];
+      const slot = reservedSlots[index];
       if (!entry) {
         throw new Error(CONVERSATION_ATTACHMENT_USER_ERRORS.uploadFailed);
       }
       const { prepared } = entry;
-      if (!slot?.storage_path || !slot.attachment_id) {
+      if (!slot?.storagePath || !slot.attachmentId) {
         throw new Error(CONVERSATION_ATTACHMENT_USER_ERRORS.uploadFailed);
       }
-      if (slot.message_id !== messageId) {
+      if (slot.messageId !== messageId) {
         throw new Error(CONVERSATION_ATTACHMENT_USER_ERRORS.uploadFailed);
       }
-      if (!slotByAttachmentId.has(slot.attachment_id)) {
+      if (!slotByAttachmentId.has(slot.attachmentId)) {
         throw new Error(CONVERSATION_ATTACHMENT_USER_ERRORS.uploadFailed);
       }
 
@@ -315,14 +384,12 @@ export async function uploadConversationChatMessage(input: {
             };
 
       try {
-        await uploadBytesToStorage(
-          slot.storage_path,
-          prepared.localUri,
-          prepared.mimeType,
-          prepared.attachmentType,
-          progress,
+        await uploadPreparedConversationAttachmentToSlot({
+          slot,
+          prepared,
+          onProgress: progress,
           shouldCancel,
-        );
+        });
       } catch (error) {
         const message = mapConversationAttachmentError(error);
         emit(index, { phase: 'failed', errorMessage: message });
@@ -335,28 +402,20 @@ export async function uploadConversationChatMessage(input: {
 
     assertNotCancelled(shouldCancel);
 
-    const { error: completeError } = await supabase.rpc(
-      'complete_request_message_with_attachments',
-      {
-        p_message_id: messageId,
-      },
-    );
-    if (completeError) {
-      throw new Error(mapConversationAttachmentError(completeError));
-    }
+    await completeConversationChatMessage(messageId);
 
     const createdAt = new Date().toISOString();
 
     return {
       messageId,
       attachments: preparedItems.map(({ prepared }, index) => {
-        const slot = slots[index];
-        if (!slot?.attachment_id || !slot.storage_path) {
+        const slot = reservedSlots[index];
+        if (!slot?.attachmentId || !slot.storagePath) {
           throw new Error(CONVERSATION_ATTACHMENT_USER_ERRORS.uploadFailed);
         }
         return {
-          id: slot.attachment_id,
-          storagePath: slot.storage_path,
+          id: slot.attachmentId,
+          storagePath: slot.storagePath,
           fileName: prepared.fileName,
           mimeType: prepared.mimeType,
           fileSize: prepared.fileSize,

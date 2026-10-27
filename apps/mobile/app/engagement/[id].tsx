@@ -9,12 +9,18 @@ import {
   Text,
   View,
 } from 'react-native';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Redirect, router, useLocalSearchParams } from 'expo-router';
 import { format } from 'date-fns';
 import type { BottomSheetModal } from '@gorhom/bottom-sheet';
 
 import { PersonProfileBottomSheet } from '@/components/PersonProfileBottomSheet';
+import {
+  CompletionProofSheet,
+  type CompletionProofFailure,
+  type CompletionProofSheetHandle,
+} from '@/components/request-flow/CompletionProofSheet';
 import { ReportIssueModal } from '@/components/ReportIssueModal';
 import { RequestCallout } from '@/components/request-flow/RequestCallout';
 import { RequestCompletionCard } from '@/components/request-flow/RequestCompletionCard';
@@ -40,7 +46,6 @@ import {
   useEngagement,
   useLiveRequest,
 } from '@/features/requests/requester-api';
-import { useQuery } from '@tanstack/react-query';
 import { REQUEST_REPORT_ISSUES } from '@/features/support/report-issue-options';
 import { usePullToRefresh } from '@/lib/query/use-pull-to-refresh';
 import { showQuerySkeleton } from '@/lib/query/show-skeleton';
@@ -53,6 +58,21 @@ import {
   formatWhenHome,
   formatWhenRequestCard,
 } from '@/lib/format';
+import {
+  invalidateConversationInboxQueries,
+  useRequestConversation,
+} from '@/features/requests/conversation-api';
+import {
+  abortCompletionProofSendSession,
+  CompletionProofMessageSendFailedError,
+  CompletionProofUploadFailedError,
+  createCompletionProofSendSession,
+  sendCompletionProofMessage,
+  stageCompletionProofMedia,
+  type CompletionProofSendSession,
+  type CompletionProofStagedMedia,
+} from '@/features/requests/send-completion-proof-message';
+import { queryKeys } from '@/lib/query/keys';
 import { showAppToast } from '@/lib/toast';
 
 function openInMaps(latitude: number, longitude: number, label: string) {
@@ -87,10 +107,140 @@ export default function EngagementScreen() {
     enabled: Boolean(engagement.data?.viewer_is_requester) && id.length > 0,
   });
   const profileSheetRef = useRef<BottomSheetModal>(null);
+  const completionProofSheetRef = useRef<CompletionProofSheetHandle>(null);
   const [reportIssueOpen, setReportIssueOpen] = useState(false);
+  const [proofBusy, setProofBusy] = useState(false);
+  const [proofFailure, setProofFailure] = useState<CompletionProofFailure | null>(null);
   const [footerHeight, setFooterHeight] = useState(0);
   const insets = useSafeAreaInsets();
   const viewerIsRequesterRef = useRef(false);
+  const completionActionLockRef = useRef(false);
+  const proofSendSessionRef = useRef<CompletionProofSendSession | null>(null);
+  const queryClient = useQueryClient();
+  const engagementSnapshot = engagement.data;
+  const helperCanMarkComplete =
+    engagementSnapshot != null &&
+    !engagementSnapshot.viewer_is_requester &&
+    ['accepted', 'in_progress'].includes(engagementSnapshot.request_status);
+  const requestConversation = useRequestConversation(id, helperCanMarkComplete);
+
+  const finishMarkingComplete = useCallback(() => {
+    if (completionActionLockRef.current || markServiceComplete.isPending) return;
+
+    completionActionLockRef.current = true;
+    markServiceComplete.mutate(undefined, {
+      onSuccess: () => {
+        showAppToast('Waiting for confirmation', 'info');
+        completionProofSheetRef.current?.dismiss();
+        proofSendSessionRef.current = null;
+        setProofFailure(null);
+      },
+      onSettled: () => {
+        completionActionLockRef.current = false;
+      },
+    });
+  }, [markServiceComplete]);
+
+  const onCompletionProofSkip = useCallback(() => {
+    completionProofSheetRef.current?.dismiss();
+    finishMarkingComplete();
+  }, [finishMarkingComplete]);
+
+  const onStageCompletionProof = useCallback(
+    (localFile: Parameters<typeof stageCompletionProofMedia>[0], kindHint: 'image' | 'video') =>
+      stageCompletionProofMedia(localFile, kindHint),
+    [],
+  );
+
+  const onDiscardCompletionProofPreview = useCallback(() => {
+    void (async () => {
+      const session = proofSendSessionRef.current;
+      if (!session) return;
+      try {
+        await abortCompletionProofSendSession(session);
+      } catch {
+        showAppToast('Could not remove the pending proof upload.', 'warning');
+      } finally {
+        proofSendSessionRef.current = null;
+        setProofFailure(null);
+      }
+    })();
+  }, []);
+
+  const onSendCompletionProof = useCallback(
+    async (staged: CompletionProofStagedMedia) => {
+      if (completionActionLockRef.current || proofBusy) return;
+
+      const conversationId = requestConversation.data?.conversationId;
+      if (!conversationId) {
+        showAppToast('Chat is not ready yet. Try again in a moment.', 'warning');
+        return;
+      }
+
+      if (!proofSendSessionRef.current) {
+        proofSendSessionRef.current = createCompletionProofSendSession();
+      }
+
+      const session = proofSendSessionRef.current;
+      completionActionLockRef.current = true;
+      setProofBusy(true);
+      setProofFailure(null);
+
+      try {
+        try {
+          const updatedSession = await sendCompletionProofMessage({
+            conversationId,
+            staged,
+            session,
+          });
+          proofSendSessionRef.current = updatedSession;
+
+          await queryClient.invalidateQueries({ queryKey: queryKeys.requestConversation(id) });
+          invalidateConversationInboxQueries(queryClient);
+        } catch (error) {
+          if (error instanceof CompletionProofUploadFailedError) {
+            proofSendSessionRef.current = error.session;
+            setProofFailure({ phase: 'upload', message: error.message });
+            return;
+          }
+          if (error instanceof CompletionProofMessageSendFailedError) {
+            proofSendSessionRef.current = error.session;
+            setProofFailure({ phase: 'send', message: error.message });
+            return;
+          }
+          const message =
+            error instanceof Error ? error.message : 'Could not send your proof. Try again.';
+          setProofFailure({ phase: 'upload', message });
+          return;
+        }
+
+        try {
+          await markServiceComplete.mutateAsync();
+          showAppToast('Waiting for confirmation', 'info');
+          proofSendSessionRef.current = null;
+          setProofFailure(null);
+          completionProofSheetRef.current?.dismiss();
+        } catch (error) {
+          const message =
+            error instanceof Error
+              ? error.message
+              : 'Proof was sent but we could not mark this request complete. Try again.';
+          showAppToast(message, 'warning');
+        }
+      } finally {
+        setProofBusy(false);
+        completionActionLockRef.current = false;
+      }
+    },
+    [id, markServiceComplete, proofBusy, queryClient, requestConversation.data?.conversationId],
+  );
+
+  const openCompletionProofSheet = useCallback(() => {
+    if (completionActionLockRef.current || markServiceComplete.isPending || proofBusy) return;
+    proofSendSessionRef.current = null;
+    setProofFailure(null);
+    completionProofSheetRef.current?.present();
+  }, [markServiceComplete.isPending, proofBusy]);
 
   useLiveRequest(id);
 
@@ -439,23 +589,9 @@ export default function EngagementScreen() {
                     label="I'm done"
                     variant="active"
                     size="lg"
-                    loading={markServiceComplete.isPending}
-                    onPress={() =>
-                      Alert.alert(
-                        'Mark this complete?',
-                        'The person who asked will confirm before you are paid.',
-                        [
-                          { text: 'Not yet', style: 'cancel' },
-                          {
-                            text: 'Mark complete',
-                            onPress: () =>
-                              markServiceComplete.mutate(undefined, {
-                                onSuccess: () => showAppToast('Waiting for confirmation', 'info'),
-                              }),
-                          },
-                        ],
-                      )
-                    }
+                    loading={markServiceComplete.isPending || proofBusy}
+                    disabled={markServiceComplete.isPending || proofBusy}
+                    onPress={openCompletionProofSheet}
                   />
                 ) : null}
 
@@ -541,6 +677,32 @@ export default function EngagementScreen() {
           showAppToast('Thanks — we received your report');
         }}
       />
+
+      {helperCanMarkComplete ? (
+        <CompletionProofSheet
+          ref={completionProofSheetRef}
+          busy={proofBusy || markServiceComplete.isPending}
+          failure={proofFailure}
+          onSkip={onCompletionProofSkip}
+          onSendProof={onSendCompletionProof}
+          onStageMedia={onStageCompletionProof}
+          onDiscardPreview={onDiscardCompletionProofPreview}
+          onDismiss={() => {
+            void (async () => {
+              const session = proofSendSessionRef.current;
+              if (session && !session.messagePublished) {
+                try {
+                  await abortCompletionProofSendSession(session);
+                } catch {
+                  // Sheet is closing; avoid blocking dismissal.
+                }
+              }
+              proofSendSessionRef.current = null;
+              setProofFailure(null);
+            })();
+          }}
+        />
+      ) : null}
     </Screen>
   );
 }

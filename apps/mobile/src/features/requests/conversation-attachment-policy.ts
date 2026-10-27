@@ -1,4 +1,8 @@
 import { CONVERSATION_ATTACHMENTS } from '@/config';
+import {
+  isServerChatProfilePhotoRequiredError,
+  SERVER_CHAT_PROFILE_PHOTO_REQUIRED_MESSAGE,
+} from '@/features/requests/chat-send-eligibility';
 import type { ConversationAttachmentKind } from '@/features/requests/conversation-media';
 
 export const CONVERSATION_ATTACHMENT_USER_ERRORS = {
@@ -247,10 +251,30 @@ function mapKnownInfrastructureError(message: string): string | null {
   if (lower.includes('bucket not found')) {
     return 'Chat file storage is not set up on this backend. Run Supabase migrations, then try again.';
   }
+  if (
+    lower.includes('row-level security') ||
+    lower.includes('violates row-level security') ||
+    lower.includes('duplicate') ||
+    lower.includes('already exists')
+  ) {
+    return CONVERSATION_ATTACHMENT_USER_ERRORS.uploadFailed;
+  }
   return null;
 }
 
 export function mapConversationAttachmentError(error: unknown): string {
+  if (isServerChatProfilePhotoRequiredError(error)) {
+    return 'Add a profile photo in the app before you can send proof in chat.';
+  }
+  if (error && typeof error === 'object' && 'message' in error) {
+    const message = String((error as { message: unknown }).message);
+    if (message === 'this conversation is read-only') {
+      return 'This chat is read-only. Mark the request complete without proof, or try again before it closes.';
+    }
+    if (message === SERVER_CHAT_PROFILE_PHOTO_REQUIRED_MESSAGE) {
+      return 'Add a profile photo in the app before you can send proof in chat.';
+    }
+  }
   if (error && typeof error === 'object' && 'message' in error) {
     const message = String((error as { message: unknown }).message);
     if (USER_ERROR_MESSAGES.has(message)) return message;

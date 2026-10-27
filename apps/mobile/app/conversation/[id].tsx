@@ -8,7 +8,6 @@ import {
   composerPendingFromOutgoingMessage,
   type ComposerPendingAttachment,
 } from '@/components/conversation/ConversationComposer';
-import { RequestOutcomeContext } from '@/components/request-flow/RequestOutcomeContext';
 import { ConversationHeader } from '@/components/conversation/ConversationHeader';
 import { ConversationHeaderActions } from '@/components/conversation/ConversationHeaderActions';
 import { ConversationDateSeparator } from '@/components/conversation/ConversationDateSeparator';
@@ -466,10 +465,6 @@ export default function ConversationScreen() {
           )
         }
       />
-
-      {thread.isPreHandshake ? null : (
-        <RequestOutcomeContext description={thread.requestDescription} />
-      )}
 
       <KeyboardStickyFooter
         className="flex-1"
