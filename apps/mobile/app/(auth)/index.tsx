@@ -20,9 +20,10 @@ export default function WelcomeScreen() {
       <View className="flex-1 justify-between px-8 pb-10 pt-12">
         <View className="mt-20 items-center">
           <Image
-            source={require('../../assets/images/icon.png')}
+            source={require('../../assets/images/logo.png')}
             accessibilityLabel="Active"
-            style={{ width: 144, height: 144, borderRadius: 32, marginBottom: 40 }}
+            contentFit="contain"
+            style={{ width: 160, height: 160, marginBottom: 16 }}
           />
           <Text className="text-center text-3xl font-bold text-ink">Welcome to Active</Text>
           <Text className="mt-4 text-center text-base leading-6 text-muted">
