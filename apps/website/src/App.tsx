@@ -379,9 +379,9 @@ function Home({ go }: { go: (p: Page) => void }) {
         <div className="hero-copy">
           <Eyebrow>Help, made human</Eyebrow>
           <h1>
-            Get help.
+            Get help
             <br />
-            <em>Get paid.</em>
+            <em>Get paid</em>
           </h1>
           <p>
             Active connects everyday needs with capable people ready to help —
@@ -409,28 +409,7 @@ function Home({ go }: { go: (p: Page) => void }) {
           </div>
         </div>
         <div className="hero-visual">
-          <div className="hero-image-wrap">
-            <img
-              data-parallax="0.08"
-              src="https://images.unsplash.com/photo-1662988862761-7f296f441c04?auto=format&fit=crop&w=1000&q=85"
-              alt="Two people in Lagos"
-            />
-          </div>
-          <div className="floating-card float-one">
-            <span className="float-icon">
-              <Icon name="check" />
-            </span>
-            <div>
-              <small>Request matched</small>
-              <strong>Help is on the way</strong>
-            </div>
-          </div>
-          <div className="floating-card float-two">
-            <small>Earn on your terms</small>
-            <strong>₦25,000</strong>
-            <span>Event assistance · Demo</span>
-          </div>
-          <div className="hero-dots" />
+          <img src="/assets/tools%20animation.gif" alt="Tools animation" />
         </div>
       </section>
 
