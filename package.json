@@ -37,7 +37,10 @@
     "admin:dev": "pnpm --filter @active/admin dev",
     "admin:build": "pnpm --filter @active/admin build",
     "admin:typecheck": "pnpm --filter @active/admin typecheck",
-    "validate": "pnpm --filter @active/mobile validate && pnpm --filter @active/admin typecheck && pnpm format"
+    "website:dev": "pnpm --filter @active/website dev",
+    "website:build": "pnpm --filter @active/website build",
+    "website:typecheck": "pnpm --filter @active/website typecheck",
+    "validate": "pnpm --filter @active/mobile validate && pnpm --filter @active/admin typecheck && pnpm --filter @active/website typecheck && pnpm --filter @active/website build && pnpm format"
   },
   "devDependencies": {
     "prettier": "^3.9.6",
