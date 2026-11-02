@@ -235,6 +235,9 @@ importers:
 
   apps/website:
     dependencies:
+      lucide-react:
+        specifier: ^0.511.0
+        version: 0.511.0(react@19.3.0)
       react:
         specifier: ^19.0.0
         version: 19.3.0
