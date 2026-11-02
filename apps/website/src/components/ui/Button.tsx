@@ -9,7 +9,7 @@ export function Button({
 }: {
   children: ReactNode
   onClick?: () => void
-  variant?: "primary" | "secondary" | "light" | "text"
+  variant?: "primary" | "secondary" | "light" | "text" | "textGreen"
   type?: "button" | "submit"
   className?: string
 }) {

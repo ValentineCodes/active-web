@@ -152,7 +152,7 @@ export function HomePage({ go }: { go: Navigate }) {
               Don&apos;t miss out!
             </h2>
           </div>
-          <Button variant="secondary" onClick={() => go("explore")}>
+          <Button variant="textGreen" onClick={() => go("explore")}>
             View all <Icon name="arrow" size={17} />
           </Button>
         </div>

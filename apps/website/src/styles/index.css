@@ -53,6 +53,8 @@
 .button-secondary { color: var(--ink); background: transparent; border-color: #aeb4aa; }
 .button-light { background: var(--white); color: var(--ink); }
 .button-text { color: var(--white); background: transparent; text-decoration: underline; text-underline-offset: 5px; }
+.button-textGreen { color: var(--green-deep); background: transparent; border-color: transparent; min-height: auto; padding: 0; text-decoration: underline; text-underline-offset: 5px; }
+.button-textGreen:hover { background: transparent; color: var(--ink); }
 .nav-cta { min-height: 44px; padding: 0 17px; }
 .menu-button { display: none; border: 0; background: transparent; padding: 8px; }
 .mobile-only { display: none; }
