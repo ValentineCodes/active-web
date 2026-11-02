@@ -11,8 +11,7 @@ export function Footer({ go }: { go: Navigate }) {
             <span>active</span>
           </button>
           <p>
-            Making it simpler for Nigerians to get help, earn fairly, and move
-            forward.
+            Making it simpler for Nigerians to get help, earn fairly, and build wealth.
           </p>
         </div>
         <div className="footer-links">

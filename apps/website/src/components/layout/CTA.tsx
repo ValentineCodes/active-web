@@ -6,7 +6,7 @@ import { Icon } from "@/components/ui/Icon"
 
 export function CTA({
   go,
-  title = "Ready to see Active in motion?",
+  title = "Convinced? Seeing is believing",
 }: {
   go: Navigate
   title?: string

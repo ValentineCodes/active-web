@@ -177,8 +177,8 @@ export function HomePage({ go }: { go: Navigate }) {
           />
         </div>
         <div className="story-panel">
-          <Eyebrow light>Built around people</Eyebrow>
-          <h2>Opportunity should be active, too.</h2>
+          <Eyebrow light>Wealth distribution</Eyebrow>
+          <h2>A way to give back to the people</h2>
           <p>
             We’re building for the energy, ingenuity, and everyday reality of
             Nigerian communities.
