@@ -13,7 +13,6 @@ export function HomePage({ go }: { go: Navigate }) {
     <>
       <section className="home-hero">
         <div className="hero-copy">
-          <Eyebrow>We can all be active</Eyebrow>
           <h1 className="whitespace-nowrap">
             Get help
             <br />
