@@ -41,7 +41,7 @@ export function HomePage({ go }: { go: Navigate }) {
       <section className="home-steps section" aria-labelledby="home-steps-title">
         <div className="home-steps-intro">
           <Eyebrow>How it works</Eyebrow>
-          <h2 id="home-steps-title">Getting help in three steps</h2>
+          <h2 id="home-steps-title">3 steps only</h2>
         </div>
         <ol className="home-steps-grid">
           <li className="home-steps-card">
