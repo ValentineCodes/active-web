@@ -10,30 +10,42 @@ export function RequestCard({
 }) {
   return (
     <article className="request-card" onClick={onOpen}>
-      <div className="request-top">
-        <span className="category-pill">{item.category}</span>
-        <span className="demo-mini">DEMO</span>
-      </div>
-      <h3>{item.title}</h3>
-      <div className="request-meta">
-        <span>
-          <Icon name="pin" size={16} />
-          {item.location}
-        </span>
-        <span>
-          <Icon name="clock" size={16} />
-          {item.time}
-        </span>
-      </div>
-      <div className="request-bottom">
-        <div className="request-avatar">{item.initials}</div>
-        <div>
-          <small>Proposed budget</small>
-          <strong>{item.budget}</strong>
+      {item.attachment && (
+        <div className="request-cover">
+          <img src={item.attachment.image} alt={item.attachment.alt} />
         </div>
-        <span className="round-arrow">
-          <Icon name="arrow" size={17} />
-        </span>
+      )}
+      <div className="request-card-body">
+        <h3>{item.title}</h3>
+        <p className="request-card-description">{item.description}</p>
+        <div className="request-meta">
+          <span>
+            <Icon name="pin" size={16} />
+            {item.location}
+          </span>
+          <span>
+            <Icon name="clock" size={16} />
+            {item.time}
+          </span>
+        </div>
+        <div className="request-bottom">
+          <div
+            className={`request-avatar ${item.avatarUrl ? "request-avatar--photo" : ""}`}
+          >
+            {item.avatarUrl ? (
+              <img src={item.avatarUrl} alt="" />
+            ) : (
+              item.initials
+            )}
+          </div>
+          <div>
+            <small>Offer</small>
+            <strong>{item.budget}</strong>
+          </div>
+          <span className="round-arrow">
+            <Icon name="arrow" size={17} />
+          </span>
+        </div>
       </div>
     </article>
   )

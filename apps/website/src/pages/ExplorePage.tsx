@@ -90,9 +90,18 @@ export function ExplorePage() {
                 {selected.time}
               </span>
             </div>
+            {selected.attachment && (
+              <figure className="modal-attachment">
+                <img
+                  src={selected.attachment.image}
+                  alt={selected.attachment.alt}
+                />
+                <figcaption>{selected.attachment.caption}</figcaption>
+              </figure>
+            )}
             <p>{selected.description}</p>
             <div className="modal-budget">
-              <span>Proposed budget</span>
+              <span>Offer</span>
               <strong>{selected.budget}</strong>
             </div>
             <Button onClick={() => setSelected(null)}>

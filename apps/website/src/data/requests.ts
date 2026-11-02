@@ -11,6 +11,15 @@ export const demoRequests: RequestItem[] = [
     description:
       "I need someone experienced with flat-pack furniture to assemble a two-door wardrobe. Tools would be helpful.",
     initials: "AO",
+    avatarUrl:
+      "https://images.unsplash.com/photo-1589156191108-c762ff4b96ab?auto=format&fit=crop&w=120&h=120&q=80",
+    attachment: {
+      image:
+        "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?auto=format&fit=crop&w=800&q=80",
+      alt: "Flat-pack wardrobe boxes in a bedroom",
+      caption:
+        "Two-door wardrobe still in boxes — assembly needed in the bedroom.",
+    },
   },
   {
     id: 2,
@@ -33,6 +42,15 @@ export const demoRequests: RequestItem[] = [
     description:
       "Looking for a product photographer to shoot 15 fashion accessories for my online store.",
     initials: "KN",
+    avatarUrl:
+      "https://images.unsplash.com/photo-1594824476967-48c8b964273f?auto=format&fit=crop&w=120&h=120&q=80",
+    attachment: {
+      image:
+        "https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=800&q=80",
+      alt: "Fashion accessories laid out for product photos",
+      caption:
+        "Fifteen pieces to shoot — clean white background preferred.",
+    },
   },
   {
     id: 4,
@@ -44,6 +62,8 @@ export const demoRequests: RequestItem[] = [
     description:
       "Help welcome guests, coordinate seating and support our small event team for six hours.",
     initials: "TM",
+    avatarUrl:
+      "https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=120&h=120&q=80",
   },
   {
     id: 5,
@@ -55,6 +75,13 @@ export const demoRequests: RequestItem[] = [
     description:
       "Purchase items from the provided list at Tejuosho Market and deliver them to Surulere.",
     initials: "BE",
+    attachment: {
+      image:
+        "https://images.unsplash.com/photo-1579998120708-682dd8a5624f?auto=format&fit=crop&w=800&q=80",
+      alt: "Busy market street scene",
+      caption:
+        "Shopping list attached — vegetables, spices, and pantry staples from Tejuosho.",
+    },
   },
   {
     id: 6,
@@ -66,5 +93,7 @@ export const demoRequests: RequestItem[] = [
     description:
       "A relaxed 90-minute lesson for a complete beginner. Please bring or recommend a suitable guitar.",
     initials: "EN",
+    avatarUrl:
+      "https://images.unsplash.com/photo-1633332755192-727a05c4013d?auto=format&fit=crop&w=120&h=120&q=80",
   },
 ]

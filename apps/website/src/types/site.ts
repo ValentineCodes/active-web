@@ -17,6 +17,12 @@ export type RequestItem = {
   time: string
   description: string
   initials: string
+  avatarUrl?: string
+  attachment?: {
+    image: string
+    alt: string
+    caption: string
+  }
 }
 
 export type Navigate = (page: Page) => void

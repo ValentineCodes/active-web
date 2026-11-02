@@ -154,16 +154,13 @@ export function HomePage({ go }: { go: Navigate }) {
           <div>
             <Eyebrow>Happening on Active</Eyebrow>
             <h2>
-              Small tasks.
-              <br />
-              Real momentum.
+              Don&apos;t miss out!
             </h2>
           </div>
           <Button variant="secondary" onClick={() => go("explore")}>
-            View all demo requests <Icon name="arrow" size={17} />
+            View all <Icon name="arrow" size={17} />
           </Button>
         </div>
-        <div className="demo-label">Sample requests · Demo data only</div>
         <div className="request-grid">
           {demoRequests.slice(0, 3).map((r) => (
             <RequestCard key={r.id} item={r} onOpen={() => go("explore")} />
