@@ -45,7 +45,6 @@ export function HomePage({ go }: { go: Navigate }) {
         </div>
         <ol className="home-steps-grid">
           <li className="home-steps-card">
-            <span className="home-steps-index">01</span>
             <div className="home-steps-icon">
               <Icon name="plus" size={24} />
             </div>
@@ -55,7 +54,6 @@ export function HomePage({ go }: { go: Navigate }) {
             </p>
           </li>
           <li className="home-steps-card">
-            <span className="home-steps-index">02</span>
             <div className="home-steps-icon">
               <Icon name="users" size={24} />
             </div>
@@ -63,7 +61,6 @@ export function HomePage({ go }: { go: Navigate }) {
             <p>Choose from the people who respond to your request.</p>
           </li>
           <li className="home-steps-card">
-            <span className="home-steps-index">03</span>
             <div className="home-steps-icon">
               <Icon name="naira" size={24} />
             </div>
@@ -74,7 +71,6 @@ export function HomePage({ go }: { go: Navigate }) {
       </section>
 
       <section className="promise-strip">
-        <p>One community. Two ways forward.</p>
         <div>
           <span>
             <Handshake

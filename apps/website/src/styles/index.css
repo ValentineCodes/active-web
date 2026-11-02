@@ -80,8 +80,7 @@ em { font-style: normal; color: var(--green-deep); }
 .home-steps-intro { max-width: 560px; margin-bottom: 44px; }
 .home-steps-intro h2 { font-size: clamp(32px, 3.5vw, 46px); line-height: 1.08; font-weight: 600; }
 .home-steps-grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
-.home-steps-card { background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 28px 28px 24px; position: relative; display: flex; flex-direction: column; align-items: flex-start; min-height: 100%; }
-.home-steps-index { position: absolute; top: 28px; right: 28px; font: 600 11px var(--font-display); letter-spacing: .08em; color: #9ba098; }
+.home-steps-card { background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 28px 28px 24px; display: flex; flex-direction: column; align-items: flex-start; min-height: 100%; }
 .home-steps-icon { width: 52px; height: 52px; border-radius: 14px; display: grid; place-items: center; background: rgba(200,255,50,.35); border: 1px solid rgba(169,234,0,.45); margin-bottom: 22px; }
 .home-steps-card h3 { font-size: 22px; margin-bottom: 10px; font-weight: 600; }
 .home-steps-card p { color: var(--muted); line-height: 1.65; font-size: 16px; }
@@ -290,6 +289,7 @@ footer { background: #0b100b; color: var(--white); padding: 75px max(28px, calc(
   .hero-copy h1, .page-hero h1 { font-size: clamp(48px, 13vw, 72px); }
   .promise-strip { flex-direction: column; gap: 18px; }
   .split-intro, .two-column-note { grid-template-columns: 1fr; gap: 35px; }
+  .split-intro.section { padding-bottom: 48px; }
   .path-grid { gap: 12px; }
   .request-grid { grid-template-columns: repeat(2, 1fr); }
   .request-preview .section-head { flex-direction: row; align-items: end; }
@@ -320,6 +320,8 @@ footer { background: #0b100b; color: var(--white); padding: 75px max(28px, calc(
   .promise-strip > div { flex-direction: column; gap: 12px; }
   .promise-strip i { width: 30px; height: 1px; }
   .section { padding: 75px 20px; }
+  .split-intro.section { padding-bottom: 32px; gap: 28px; }
+  .path-grid.section { padding-top: 20px; }
   .split-intro h2, .section-head h2, .two-column-note h2, .founder-note h2 { font-size: 38px; }
   .path-grid { grid-template-columns: 1fr; gap: 16px; }
   .path-card-body { padding: 28px 28px 22px; }
