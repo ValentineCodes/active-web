@@ -25,7 +25,6 @@ type HomeFeedRequestPageProps = {
   isOwnRequest: boolean;
   waiting: boolean;
   onOpen: () => void;
-  onSearch: () => void;
 };
 
 const PHOTO_BOTTOM_SCRIM = ['rgba(0,0,0,0)', 'rgba(0,0,0,0.82)'] as const;
@@ -38,7 +37,6 @@ export function HomeFeedRequestPage({
   isOwnRequest,
   waiting,
   onOpen,
-  onSearch,
 }: HomeFeedRequestPageProps) {
   const colors = useColors();
   const { colors: themeColors } = useTheme();
@@ -105,7 +103,7 @@ export function HomeFeedRequestPage({
           className="active:opacity-95"
         />
 
-        <View pointerEvents="none" className="absolute left-0 right-0 top-0 flex-row items-start gap-3 p-4 pr-16">
+        <View pointerEvents="none" className="absolute left-0 right-0 top-0 flex-row items-start gap-3 p-4">
           <View className="min-w-0 flex-1 flex-row items-center gap-2.5">
             <Avatar
               size="sm"
@@ -122,25 +120,6 @@ export function HomeFeedRequestPage({
             </View>
           </View>
         </View>
-
-        <Pressable
-          onPress={onSearch}
-          accessibilityRole="button"
-          accessibilityLabel="Search requests"
-          hitSlop={8}
-          style={{ position: 'absolute', top: 16, right: 16 }}
-          className={
-            hasPhoto
-              ? 'h-10 w-10 items-center justify-center rounded-full bg-black/45 active:opacity-90'
-              : 'h-10 w-10 items-center justify-center rounded-full bg-elevated active:opacity-90'
-          }
-        >
-          <Ionicons
-            name="search-outline"
-            size={20}
-            color={hasPhoto ? '#ffffff' : colors.ink}
-          />
-        </Pressable>
 
         <View
           pointerEvents="none"

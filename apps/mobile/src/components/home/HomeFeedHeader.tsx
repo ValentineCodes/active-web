@@ -5,8 +5,6 @@ import { Avatar } from '@/components/ui/Avatar';
 import { SkeletonBlock } from '@/components/ui/Skeleton';
 import { hasProviderCommitments, type MyAttendance } from '@/features/attendance/api';
 import { formatGreetingFirstName, formatGreetingPeriod, formatMoney } from '@/lib/format';
-import { useTheme } from '@/theme';
-
 type HomeFeedHeaderProps = {
   loading: boolean;
   displayName: string | null;
@@ -24,7 +22,6 @@ export function HomeFeedHeader({
   walletAvailable,
   walletCurrency,
 }: HomeFeedHeaderProps) {
-  const { shadow } = useTheme();
   const firstName = formatGreetingFirstName(displayName);
 
   if (loading) {
@@ -37,44 +34,44 @@ export function HomeFeedHeader({
             <SkeletonBlock className="h-6 w-36 rounded-md" />
           </View>
         </View>
-        <SkeletonBlock className="h-11 w-24 rounded-2xl" />
+        <SkeletonBlock className="h-7 w-20 rounded-md" />
       </View>
     );
   }
 
   return (
     <View className="flex-row items-center justify-between gap-3 px-5 pb-2 pt-1">
-      <Pressable
-        onPress={() => router.push('/profile')}
-        accessibilityRole="button"
-        accessibilityLabel="Open your profile"
-        className="min-w-0 flex-1 flex-row items-center gap-3 active:opacity-90"
-      >
-        <Avatar
-          size="md"
-          path={avatarPath}
-          name={displayName}
-          showActiveDot={hasProviderCommitments(attendance)}
-        />
+      <View className="min-w-0 flex-1 flex-row items-center gap-3">
+        <Pressable
+          onPress={() => router.push('/profile')}
+          accessibilityRole="button"
+          accessibilityLabel="Open your profile"
+          className="active:opacity-90"
+        >
+          <Avatar
+            size="md"
+            path={avatarPath}
+            name={displayName}
+            showActiveDot={hasProviderCommitments(attendance)}
+          />
+        </Pressable>
         <View className="min-w-0 flex-1 gap-0.5">
           <Text className="text-sm leading-5 text-muted">{formatGreetingPeriod()}</Text>
           <Text className="text-2xl font-bold leading-8 text-ink" numberOfLines={1}>
             {firstName ?? 'Welcome'}
           </Text>
         </View>
-      </Pressable>
+      </View>
 
       {walletAvailable != null && walletCurrency ? (
         <Pressable
           onPress={() => router.push('/wallet')}
           accessibilityRole="button"
-          accessibilityLabel="Open wallet"
+          accessibilityLabel={`Wallet balance ${formatMoney(walletAvailable, walletCurrency)}`}
           hitSlop={8}
-          style={shadow.card}
-          className="shrink-0 items-end rounded-2xl border border-hairline bg-elevated px-3 py-2 active:opacity-90"
+          className="shrink-0 active:opacity-90"
         >
-          <Text className="text-[10px] font-bold uppercase tracking-widest text-muted">Wallet</Text>
-          <Text className="text-base font-bold text-active">
+          <Text className="text-lg font-bold text-active">
             {formatMoney(walletAvailable, walletCurrency)}
           </Text>
         </Pressable>

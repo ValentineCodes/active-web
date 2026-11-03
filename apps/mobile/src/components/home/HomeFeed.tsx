@@ -9,6 +9,7 @@ import {
   type NativeScrollEvent,
   type NativeSyntheticEvent,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 
 import {
@@ -80,7 +81,6 @@ export function HomeFeed({ searchQuery, onOpenSearch }: HomeFeedProps) {
           isOwnRequest={isOwnRequest}
           waiting={Boolean(waiting)}
           onOpen={() => openRequest(item, feed.position)}
-          onSearch={onOpenSearch}
         />
       );
     },
@@ -88,7 +88,6 @@ export function HomeFeed({ searchQuery, onOpenSearch }: HomeFeedProps) {
       feed.myResponses,
       feed.ownOpenRequestIds,
       feed.position,
-      onOpenSearch,
       openRequest,
       pageHeight,
       tabBarInset,
@@ -120,6 +119,7 @@ export function HomeFeed({ searchQuery, onOpenSearch }: HomeFeedProps) {
   );
 
   const listReady = pageHeight > 0;
+  const showFeedSearch = !feed.searchNeedsLocation;
 
   return (
     <View className="min-h-0 flex-1 bg-canvas" onLayout={onFeedLayout}>
@@ -192,6 +192,18 @@ export function HomeFeed({ searchQuery, onOpenSearch }: HomeFeedProps) {
           scrollIndicatorInsets={{ bottom: tabBarInset }}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         />
+      ) : null}
+
+      {showFeedSearch ? (
+        <Pressable
+          onPress={onOpenSearch}
+          accessibilityRole="button"
+          accessibilityLabel="Search requests"
+          hitSlop={8}
+          className="absolute right-4 top-4 z-10 h-10 w-10 items-center justify-center rounded-full bg-black/45 active:opacity-90"
+        >
+          <Ionicons name="search-outline" size={20} color="#ffffff" />
+        </Pressable>
       ) : null}
     </View>
   );
