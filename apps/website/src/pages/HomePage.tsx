@@ -131,7 +131,7 @@ export function HomePage({ go }: { go: Navigate }) {
               <Icon name="naira" size={28} />
             </div>
             <p className="path-card-label">Getting paid</p>
-            <h3>I want to earn</h3>
+            <h3>I need money</h3>
             <p className="path-card-copy">
               Find requests that fit your time and skills. Help out and get paid.
             </p>
