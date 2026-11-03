@@ -248,6 +248,7 @@ em { font-style: normal; color: var(--green-deep); }
 .form-head span:last-child { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .1em; }
 label { display: block; font-size: 12px; font-weight: 700; margin-bottom: 20px; }
 input, select, textarea { display: block; width: 100%; border: 1px solid #cdd2c8; border-radius: 6px; background: var(--white); padding: 14px 15px; margin-top: 8px; color: var(--ink); outline: none; }
+.contact-page select.contact-field { appearance: none; line-height: 1.25; min-height: calc(1.25em + 28px + 2px); }
 textarea { resize: vertical; }
 input:focus, select:focus, textarea:focus { border-color: #6c7a5e; box-shadow: 0 0 0 3px rgba(200,255,50,.5); }
 [aria-invalid="true"] { border-color: var(--error); }
@@ -255,9 +256,9 @@ label small { color: var(--error); display: block; margin-top: 6px; font-weight:
 .submit-button { width: 100%; }
 .privacy-note { color: var(--muted); font-size: 10px; display: flex; justify-content: center; gap: 6px; margin-top: 15px; }
 .success-state { max-width: 520px; margin: 80px auto; }
-.success-state > div { width: 65px; height: 65px; display: grid; place-items: center; border-radius: 50%; background: var(--green); margin-bottom: 30px; }
-.success-state h2 { font-size: 44px; margin-bottom: 20px; }
-.success-state p { color: var(--muted); line-height: 1.7; margin-bottom: 30px; }
+.success-state-icon { width: 65px; height: 65px; display: grid; place-items: center; border-radius: 50%; background: var(--green); margin-bottom: 28px; }
+.success-state h2 { font-size: clamp(32px, 4vw, 44px); line-height: 1.08; font-weight: 600; margin-bottom: 16px; }
+.success-state p { color: var(--muted); line-height: 1.7; margin-bottom: 30px; max-width: 42ch; }
 footer { background: #0b100b; color: var(--white); padding: 75px max(28px, calc((100vw - 1184px)/2)) 30px; }
 .footer-top { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 60px; padding-bottom: 60px; }
 .logo-light { color: var(--white); }

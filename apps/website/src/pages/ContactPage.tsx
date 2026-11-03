@@ -17,8 +17,6 @@ export function ContactPage() {
       next.email = "Enter a valid email address."
     if (!data.get("interest"))
       next.interest = "Choose what you’d like to discuss."
-    if (!String(data.get("message") || "").trim())
-      next.message = "Add a short note so we can prepare."
     setErrors(next)
     if (!Object.keys(next).length) setSubmitted(true)
   }
@@ -27,9 +25,9 @@ export function ContactPage() {
       <div className="contact-intro">
         <Eyebrow light>Book a demo</Eyebrow>
         <h1>
-          Let’s make
+          Seeing is
           <br />
-          <em>something move.</em>
+          <em>believing</em>
         </h1>
         <p>
           See the Active concept, explore ways to collaborate, or share what
@@ -37,53 +35,50 @@ export function ContactPage() {
         </p>
         <div className="contact-points">
           <span>
-            <Icon name="check" /> A focused product walkthrough
+            <Icon name="check" /> A 10-minute walkthrough
           </span>
           <span>
-            <Icon name="check" /> A candid conversation — no hard sell
+            <Icon name="check" /> A candid conversation
           </span>
           <span>
-            <Icon name="check" /> Built around your questions
+            <Icon name="check" /> Questions & Answers
           </span>
         </div>
       </div>
       <div className="form-wrap">
         {submitted ? (
           <div className="success-state">
-            <div>
+            <div className="success-state-icon">
               <Icon name="check" size={34} />
             </div>
-            <Eyebrow>Request received</Eyebrow>
-            <h2>Thanks for reaching out.</h2>
+            <h2>Request received</h2>
             <p>
-              This is a prototype, so no real booking was sent. In a live
-              experience, the Active team would follow up to arrange a time.
+              Thanks for reaching out. Please be patient, we will get back to you shortly.
             </p>
             <Button onClick={() => setSubmitted(false)}>
-              Send another request
+              Send another
             </Button>
           </div>
         ) : (
           <form onSubmit={handleSubmit} noValidate>
             <div className="form-head">
               <span>Demo enquiry</span>
-              <span>Prototype form</span>
             </div>
             <label>
               Full name
               <input
                 name="name"
-                placeholder="How should we address you?"
+                placeholder="What do we call you?"
                 aria-invalid={!!errors.name}
               />
               {errors.name && <small>{errors.name}</small>}
             </label>
             <label>
-              Work email
+              Email
               <input
                 name="email"
                 type="email"
-                placeholder="you@company.com"
+                placeholder="you@example.com"
                 aria-invalid={!!errors.email}
               />
               {errors.email && <small>{errors.email}</small>}
@@ -91,13 +86,11 @@ export function ContactPage() {
             <label>
               I’m interested in
               <select
+                className="contact-field"
                 name="interest"
-                defaultValue=""
+                defaultValue="Product demo"
                 aria-invalid={!!errors.interest}
               >
-                <option value="" disabled>
-                  Select one
-                </option>
                 <option>Product demo</option>
                 <option>Investment conversation</option>
                 <option>Partnership opportunity</option>
@@ -118,10 +111,6 @@ export function ContactPage() {
             <Button type="submit" className="submit-button">
               Request a demo <Icon name="arrow" size={18} />
             </Button>
-            <p className="privacy-note">
-              <Icon name="lock" size={15} /> Demo only — information is not sent
-              or stored.
-            </p>
           </form>
         )}
       </div>
