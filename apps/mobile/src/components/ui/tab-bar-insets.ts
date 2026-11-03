@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
  * Scroll padding below list content on tab screens. iOS native tabs overlay the screen;
  * nested lists (notifications) do not always get automatic insets.
  */
-const IOS_TAB_BAR_SCROLL_CLEARANCE = 40;
+const IOS_TAB_BAR_SCROLL_CLEARANCE = 52;
 
 /** JS tab bar on web (`HomeTabBar` icon row). */
 const WEB_TAB_BAR_HEIGHT = 48;
@@ -18,6 +18,21 @@ const IOS_FAB_BOTTOM_CLEARANCE = 10;
 
 /** Home create FAB inset from the screen edge (matches horizontal placement). */
 export const FAB_EDGE_INSET = 20;
+
+/** Overlay text on the home feed — sits above the native tab pill without scroll-style slack. */
+export function useHomeFeedContentInset(contentGap = 4) {
+  const insets = useSafeAreaInsets();
+
+  if (Platform.OS === 'ios') {
+    return insets.bottom + 44 + contentGap;
+  }
+
+  if (Platform.OS === 'web') {
+    return insets.bottom + WEB_TAB_BAR_HEIGHT + contentGap;
+  }
+
+  return insets.bottom + contentGap;
+}
 
 export function useTabBarScrollPadding(extra = 8) {
   const insets = useSafeAreaInsets();

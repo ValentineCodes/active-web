@@ -6,6 +6,8 @@ import type { Database } from '@/lib/supabase/database.types';
 
 type MyAttendance = Database['public']['Views']['my_attendance']['Row'];
 
+export type { MyAttendance };
+
 export function useAttendance() {
   return useQuery({
     queryKey: queryKeys.attendance,

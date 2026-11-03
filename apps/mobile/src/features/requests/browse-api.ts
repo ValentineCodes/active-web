@@ -1,4 +1,4 @@
-import { keepPreviousData, useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useInfiniteQuery, useQuery } from '@tanstack/react-query';
 
 import type { Position } from '@/lib/location';
 import { queryKeys } from '@/lib/query/keys';
@@ -18,6 +18,8 @@ export type PublicRequest = Nullable<
   | 'requester_rating_average'
   | 'requester_rating_count'
   | 'requester_identity_verified'
+  | 'attachment_path'
+  | 'posted_at'
 >;
 
 export type BrowseRequestDetail = Nullable<
@@ -36,6 +38,13 @@ export type BrowseRequestDetail = Nullable<
 
 function roundCoordinate(value: number) {
   return Math.round(value * 1000) / 1000;
+}
+
+export const HOME_BROWSE_PAGE_SIZE = 10;
+
+function nextBrowseOffset(lastPage: PublicRequest[], pageParam: number) {
+  if (lastPage.length < HOME_BROWSE_PAGE_SIZE) return undefined;
+  return pageParam + HOME_BROWSE_PAGE_SIZE;
 }
 
 async function recordDiscoveryCoordinates(position: Position) {
@@ -110,6 +119,87 @@ export function useSearchRequests(query: string, position: Position | null) {
       if (error) throw error;
       return data ?? [];
     },
+  });
+}
+
+export function useBrowseOpenRequestsInfinite(options?: { enabled?: boolean }) {
+  const enabled = options?.enabled ?? true;
+
+  return useInfiniteQuery({
+    queryKey: [...queryKeys.browseOpen, 'pages'],
+    enabled,
+    initialPageParam: 0,
+    staleTime: 15_000,
+    queryFn: async ({ pageParam }) => {
+      const { data, error } = await supabase.rpc('browse_open_requests', {
+        p_limit: HOME_BROWSE_PAGE_SIZE,
+        p_offset: pageParam,
+      });
+      if (error) throw error;
+      return data;
+    },
+    getNextPageParam: (lastPage, _pages, pageParam) => nextBrowseOffset(lastPage, pageParam),
+  });
+}
+
+export function useBrowseNearbyRequestsInfinite(position: Position | null) {
+  const latitude = position ? roundCoordinate(position.latitude) : null;
+  const longitude = position ? roundCoordinate(position.longitude) : null;
+
+  return useInfiniteQuery({
+    queryKey: [...queryKeys.browseNearby(latitude, longitude), 'pages'],
+    enabled: position !== null,
+    initialPageParam: 0,
+    staleTime: 15_000,
+    queryFn: async ({ pageParam }) => {
+      if (!position) throw new Error('Location is required to browse nearby requests.');
+
+      if (pageParam === 0) {
+        await recordDiscoveryCoordinates(position);
+      }
+
+      const { data, error } = await supabase.rpc('browse_nearby_requests', {
+        p_latitude: position.latitude,
+        p_longitude: position.longitude,
+        p_limit: HOME_BROWSE_PAGE_SIZE,
+        p_offset: pageParam,
+      });
+      if (error) throw error;
+      return data;
+    },
+    getNextPageParam: (lastPage, _pages, pageParam) => nextBrowseOffset(lastPage, pageParam),
+  });
+}
+
+export function useSearchRequestsInfinite(query: string, position: Position | null) {
+  const trimmed = query.trim();
+  const latitude = position ? roundCoordinate(position.latitude) : null;
+  const longitude = position ? roundCoordinate(position.longitude) : null;
+
+  return useInfiniteQuery({
+    queryKey: [...queryKeys.requestSearch(trimmed, latitude, longitude), 'pages'],
+    enabled: position !== null && trimmed.length > 0,
+    initialPageParam: 0,
+    staleTime: 15_000,
+    queryFn: async ({ pageParam }) => {
+      if (!position) throw new Error('Location is required to search requests.');
+      if (!trimmed) return [];
+
+      if (pageParam === 0) {
+        await recordDiscoveryCoordinates(position);
+      }
+
+      const { data, error } = await supabase.rpc('search_requests', {
+        p_query: trimmed,
+        p_latitude: position.latitude,
+        p_longitude: position.longitude,
+        p_limit: HOME_BROWSE_PAGE_SIZE,
+        p_offset: pageParam,
+      });
+      if (error) throw error;
+      return data ?? [];
+    },
+    getNextPageParam: (lastPage, _pages, pageParam) => nextBrowseOffset(lastPage, pageParam),
   });
 }
 

@@ -60,7 +60,7 @@ function RootNavigator() {
         <Stack.Screen
           name="search"
           options={{
-            presentation: 'transparentModal',
+            presentation: 'modal',
             animation: 'fade',
           }}
         />

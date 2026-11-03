@@ -1,4 +1,4 @@
-import { Pressable, Text, View } from 'react-native';
+import { Pressable, Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import { useTheme } from '@/theme';
@@ -15,21 +15,16 @@ export function HomeActiveRequestBanner({
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`Open: ${title}`}
+      accessibilityLabel={`Active now: ${title}`}
       onPress={onPress}
       style={shadow.raised}
-      className="flex-row items-center gap-3 rounded-2xl bg-active p-4 active:opacity-90"
+      className="mx-5 flex-row items-center gap-2.5 rounded-2xl bg-active px-4 py-3 active:opacity-90"
     >
-      <View className="h-10 w-10 items-center justify-center rounded-full bg-on-brand/15">
-        <View className="h-2.5 w-2.5 rounded-full bg-on-brand" />
-      </View>
-      <View className="min-w-0 flex-1 gap-1">
-        <Text className="text-xs font-bold uppercase tracking-widest text-on-brand">Active</Text>
-        <Text className="text-lg font-bold leading-6 text-on-brand" numberOfLines={2}>
-          {title}
-        </Text>
-      </View>
-      <Ionicons name="chevron-forward" size={20} color={colors.onBrand} />
+      <Ionicons name="radio-outline" size={18} color={colors.onBrand} />
+      <Text className="min-w-0 flex-1 text-sm font-semibold text-on-brand" numberOfLines={1}>
+        Active now · {title}
+      </Text>
+      <Ionicons name="chevron-forward" size={18} color={colors.onBrand} />
     </Pressable>
   );
 }

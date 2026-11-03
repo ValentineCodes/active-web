@@ -2836,13 +2836,20 @@ export type Database = {
         }[]
       }
       browse_nearby_requests: {
-        Args: { p_latitude: number; p_longitude: number }
+        Args: {
+          p_latitude: number
+          p_longitude: number
+          p_limit?: number
+          p_offset?: number
+        }
         Returns: {
+          attachment_path: string
           currency: string
           description: string
           distance_m: number
           location_label: string
           offered_amount: number
+          posted_at: string
           request_id: string
           requester_avatar_path: string
           requester_display_name: string
@@ -2854,13 +2861,15 @@ export type Database = {
         }[]
       }
       browse_open_requests: {
-        Args: never
+        Args: { p_limit?: number; p_offset?: number }
         Returns: {
+          attachment_path: string
           currency: string
           description: string
           distance_m: number
           location_label: string
           offered_amount: number
+          posted_at: string
           request_id: string
           requester_avatar_path: string
           requester_display_name: string
@@ -3782,16 +3791,25 @@ export type Database = {
         }[]
       }
       search_requests: {
-        Args: { p_latitude: number; p_longitude: number; p_query: string }
+        Args: {
+          p_latitude: number
+          p_longitude: number
+          p_query: string
+          p_limit?: number
+          p_offset?: number
+        }
         Returns: {
+          attachment_path: string
           currency: string
           description: string
           distance_m: number
           location_label: string
           offered_amount: number
+          posted_at: string
           request_id: string
           requester_avatar_path: string
           requester_display_name: string
+          requester_identity_verified: boolean
           requester_rating_average: number
           requester_rating_count: number
           scheduled_for: string

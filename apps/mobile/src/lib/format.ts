@@ -67,10 +67,19 @@ export function formatWhenHome(scheduledFor: string | null): string {
 }
 
 export function formatGreeting(displayName: string | null): string {
-  const hour = new Date().getHours();
-  const period = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
-  const first = displayName?.trim().split(/\s+/)[0];
+  const period = formatGreetingPeriod();
+  const first = formatGreetingFirstName(displayName);
   return first ? `${period}, ${first}` : period;
+}
+
+export function formatGreetingPeriod(): string {
+  const hour = new Date().getHours();
+  return hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+}
+
+export function formatGreetingFirstName(displayName: string | null): string | null {
+  const first = displayName?.trim().split(/\s+/)[0];
+  return first ?? null;
 }
 
 /** Exact distance — only after selection when coordinates are shared. */

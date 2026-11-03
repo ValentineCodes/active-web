@@ -3,6 +3,7 @@ import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 import { HomeTabBar } from '@/components/ui/HomeTabBar';
+import { useTrackTabForCreateReturn } from '@/features/navigation/use-track-tab-for-create-return';
 import { useNotificationUnreadCount } from '@/features/notifications/inbox';
 import { useNotificationBridge } from '@/lib/notifications';
 import { useMyRequests } from '@/features/requests/requester-api';
@@ -22,6 +23,7 @@ function TabIcon({
 
 /** JavaScript tabs on web — native tabs have no system tab bar on web. */
 export default function TabsLayout() {
+  useTrackTabForCreateReturn();
   const colors = useColors();
   const { data: requests } = useMyRequests();
   const unreadNotifications = useNotificationUnreadCount();
@@ -62,6 +64,13 @@ export default function TabsLayout() {
           title: 'Activity',
           tabBarBadge: waitingResponses > 0 ? waitingResponses : undefined,
           tabBarIcon: (props) => <TabIcon {...props} name="list-outline" />,
+        }}
+      />
+      <Tabs.Screen
+        name="create"
+        options={{
+          title: 'Create',
+          href: null,
         }}
       />
       <Tabs.Screen
