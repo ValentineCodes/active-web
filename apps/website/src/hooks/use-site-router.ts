@@ -4,6 +4,8 @@ import type { Page } from "@/types/site"
 
 export function usePageEffects(page: Page) {
   useEffect(() => {
+    window.scrollTo(0, 0)
+
     const reducedMotion = window.matchMedia(
       "(prefers-reduced-motion: reduce)",
     ).matches
@@ -67,10 +69,8 @@ export function usePageEffects(page: Page) {
 
 export function useHashRouter(setPage: (page: Page) => void) {
   useEffect(() => {
-    const onHash = () => {
-      setPage(pageFromHash())
-      window.scrollTo(0, 0)
-    }
+    history.scrollRestoration = "manual"
+    const onHash = () => setPage(pageFromHash())
     window.addEventListener("hashchange", onHash)
     return () => window.removeEventListener("hashchange", onHash)
   }, [setPage])
