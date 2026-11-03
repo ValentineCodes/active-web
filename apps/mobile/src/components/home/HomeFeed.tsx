@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import {
   FlatList,
   Pressable,
@@ -9,9 +9,11 @@ import {
   type NativeScrollEvent,
   type NativeSyntheticEvent,
 } from 'react-native';
+import type { BottomSheetModal } from '@gorhom/bottom-sheet';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 
+import { PersonProfileBottomSheet } from '@/components/PersonProfileBottomSheet';
 import {
   HomeFeedRequestPage,
   HomeFeedRequestPageSkeleton,
@@ -32,6 +34,8 @@ export function HomeFeed({ searchQuery, onOpenSearch }: HomeFeedProps) {
   const feed = useHomeBrowseFeed(searchQuery);
   const tabBarInset = useHomeFeedContentInset();
   const [pageHeight, setPageHeight] = useState(0);
+  const profileSheetRef = useRef<BottomSheetModal>(null);
+  const [profileRequest, setProfileRequest] = useState<PublicRequest | null>(null);
 
   const onFeedLayout = useCallback((event: LayoutChangeEvent) => {
     const next = Math.round(event.nativeEvent.layout.height);
@@ -60,6 +64,11 @@ export function HomeFeed({ searchQuery, onOpenSearch }: HomeFeedProps) {
     [feed.ownOpenRequestIds, feed.position],
   );
 
+  const openRequesterProfile = useCallback((request: PublicRequest) => {
+    setProfileRequest(request);
+    queueMicrotask(() => profileSheetRef.current?.present());
+  }, []);
+
   const renderItem = useCallback(
     ({ item }: { item: PublicRequest }) => {
       if (pageHeight < 1) return null;
@@ -81,6 +90,7 @@ export function HomeFeed({ searchQuery, onOpenSearch }: HomeFeedProps) {
           isOwnRequest={isOwnRequest}
           waiting={Boolean(waiting)}
           onOpen={() => openRequest(item, feed.position)}
+          onRequesterPress={() => openRequesterProfile(item)}
         />
       );
     },
@@ -89,6 +99,7 @@ export function HomeFeed({ searchQuery, onOpenSearch }: HomeFeedProps) {
       feed.ownOpenRequestIds,
       feed.position,
       openRequest,
+      openRequesterProfile,
       pageHeight,
       tabBarInset,
     ],
@@ -204,6 +215,21 @@ export function HomeFeed({ searchQuery, onOpenSearch }: HomeFeedProps) {
         >
           <Ionicons name="search-outline" size={20} color="#ffffff" />
         </Pressable>
+      ) : null}
+
+      {profileRequest ? (
+        <PersonProfileBottomSheet
+          key={profileRequest.requester_id}
+          sheetRef={profileSheetRef}
+          userId={profileRequest.requester_id}
+          displayName={profileRequest.requester_display_name}
+          avatarPath={profileRequest.requester_avatar_path}
+          bio={profileRequest.requester_bio}
+          ratingAverage={profileRequest.requester_rating_average}
+          ratingCount={profileRequest.requester_rating_count}
+          completionPercent={profileRequest.requester_completion_percent}
+          identityVerified={profileRequest.requester_identity_verified ?? false}
+        />
       ) : null}
     </View>
   );

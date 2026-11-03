@@ -25,6 +25,7 @@ type HomeFeedRequestPageProps = {
   isOwnRequest: boolean;
   waiting: boolean;
   onOpen: () => void;
+  onRequesterPress: () => void;
 };
 
 const PHOTO_BOTTOM_SCRIM = ['rgba(0,0,0,0)', 'rgba(0,0,0,0.82)'] as const;
@@ -37,6 +38,7 @@ export function HomeFeedRequestPage({
   isOwnRequest,
   waiting,
   onOpen,
+  onRequesterPress,
 }: HomeFeedRequestPageProps) {
   const colors = useColors();
   const { colors: themeColors } = useTheme();
@@ -99,27 +101,29 @@ export function HomeFeedRequestPage({
           accessibilityState={{ disabled: openDisabled }}
           disabled={openDisabled}
           onPress={onOpen}
-          style={{ position: 'absolute', top: 0, right: 0, bottom: tabBarInset, left: 0 }}
+          style={{ position: 'absolute', top: 0, right: 0, bottom: tabBarInset, left: 0, zIndex: 1 }}
           className="active:opacity-95"
         />
 
-        <View pointerEvents="none" className="absolute left-0 right-0 top-0 flex-row items-start gap-3 p-4">
-          <View className="min-w-0 flex-1 flex-row items-center gap-2.5">
-            <Avatar
-              size="sm"
-              path={request.requester_avatar_path}
-              name={request.requester_display_name}
-            />
-            <View className="min-w-0 flex-1">
-              <Text className={requesterNameClass} numberOfLines={1}>
-                {request.requester_display_name ?? 'Someone nearby'}
-              </Text>
-              {postedLabel ? (
-                <Text className={metaSubClass}>{postedLabel}</Text>
-              ) : null}
-            </View>
+        <Pressable
+          onPress={onRequesterPress}
+          accessibilityRole="button"
+          accessibilityLabel={`View ${request.requester_display_name ?? 'requester'} profile`}
+          className="absolute left-0 right-16 top-0 flex-row items-center gap-2.5 p-4 active:opacity-90"
+          style={{ zIndex: 2 }}
+        >
+          <Avatar
+            size="sm"
+            path={request.requester_avatar_path}
+            name={request.requester_display_name}
+          />
+          <View className="min-w-0 flex-1">
+            <Text className={requesterNameClass} numberOfLines={1}>
+              {request.requester_display_name ?? 'Someone nearby'}
+            </Text>
+            {postedLabel ? <Text className={metaSubClass}>{postedLabel}</Text> : null}
           </View>
-        </View>
+        </Pressable>
 
         <View
           pointerEvents="none"

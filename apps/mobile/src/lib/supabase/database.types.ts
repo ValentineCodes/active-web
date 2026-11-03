@@ -2852,7 +2852,10 @@ export type Database = {
           posted_at: string
           request_id: string
           requester_avatar_path: string
+          requester_bio: string
+          requester_completion_percent: number
           requester_display_name: string
+          requester_id: string
           requester_identity_verified: boolean
           requester_rating_average: number
           requester_rating_count: number
@@ -2872,7 +2875,10 @@ export type Database = {
           posted_at: string
           request_id: string
           requester_avatar_path: string
+          requester_bio: string
+          requester_completion_percent: number
           requester_display_name: string
+          requester_id: string
           requester_identity_verified: boolean
           requester_rating_average: number
           requester_rating_count: number
@@ -3808,7 +3814,10 @@ export type Database = {
           posted_at: string
           request_id: string
           requester_avatar_path: string
+          requester_bio: string
+          requester_completion_percent: number
           requester_display_name: string
+          requester_id: string
           requester_identity_verified: boolean
           requester_rating_average: number
           requester_rating_count: number
