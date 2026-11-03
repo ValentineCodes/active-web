@@ -12,15 +12,15 @@ export function AboutPage({ go }: { go: Navigate }) {
         eyebrow="About Active"
         title={
           <>
-            We believe progress
+            If you can pay for it,
             <br />
-            starts with a <em>hand.</em>
+            someone can <em>do it</em>
           </>
         }
-        text="Active is a Nigerian marketplace being built to connect everyday needs with everyday capability."
+        text="Active is built to connect needs with capabilities."
       />
       <section className="section manifesto">
-        <Eyebrow>Our point of view</Eyebrow>
+        <Eyebrow>Our vision</Eyebrow>
         <p>
           Across Nigeria, people need trusted help to keep life moving. At the
           same time, capable people have time, skills, and energy to offer.
@@ -33,30 +33,25 @@ export function AboutPage({ go }: { go: Navigate }) {
       <section className="values section">
         {[
           [
-            "01",
             "People first",
             "Technology should make human connection easier — never colder.",
+            "heart",
           ],
           [
-            "02",
             "Opportunity, unlocked",
             "Useful skills deserve a clear path to meaningful earning.",
+            "naira",
           ],
           [
-            "03",
             "Trust by design",
             "Safety and transparency belong in every interaction.",
-          ],
-          [
-            "04",
-            "Built for here",
-            "We design around local context, not borrowed assumptions.",
+            "shield",
           ],
         ].map((v) => (
           <article key={v[0]}>
-            <span>{v[0]}</span>
-            <h3>{v[1]}</h3>
-            <p>{v[2]}</p>
+            <Icon name={v[2]} size={28} />
+            <h3>{v[0]}</h3>
+            <p>{v[1]}</p>
           </article>
         ))}
       </section>
@@ -70,7 +65,7 @@ export function AboutPage({ go }: { go: Navigate }) {
         </div>
         <div>
           <Eyebrow>Our ambition</Eyebrow>
-          <h2>A more connected way to move forward.</h2>
+          <h2>Solving problems with ease</h2>
           <p>
             We’re exploring how a trusted, local marketplace can help
             communities solve everyday problems while opening flexible paths to
