@@ -70,13 +70,17 @@ export function MemberActions({ members, currentUserId }: Props) {
             className="rounded-lg border border-border px-3 py-2 text-sm"
           >
             {ROLES.map((option) => (
-              <option key={option.value} value={option.value}>{option.label}</option>
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
             ))}
           </select>
           <Button
             variant="secondary"
             loading={loading}
-            onClick={() => post('/api/admin/settings/members/grant', { userId: userId.trim(), role })}
+            onClick={() =>
+              post('/api/admin/settings/members/grant', { userId: userId.trim(), role })
+            }
           >
             Save member
           </Button>
@@ -104,7 +108,9 @@ export function MemberActions({ members, currentUserId }: Props) {
                     <Button
                       variant="danger"
                       loading={loading}
-                      onClick={() => post('/api/admin/settings/members/revoke', { userId: member.user_id })}
+                      onClick={() =>
+                        post('/api/admin/settings/members/revoke', { userId: member.user_id })
+                      }
                     >
                       Revoke
                     </Button>
@@ -118,7 +124,11 @@ export function MemberActions({ members, currentUserId }: Props) {
         </table>
       </div>
 
-      {error ? <p className="text-sm text-red-700" role="alert">{error}</p> : null}
+      {error ? (
+        <p className="text-sm text-red-700" role="alert">
+          {error}
+        </p>
+      ) : null}
     </div>
   );
 }

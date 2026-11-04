@@ -1,10 +1,7 @@
 import { PaystackApiError } from './client.ts';
 
 export type ResolutionErrorCode =
-  | 'invalid_input'
-  | 'not_found'
-  | 'rate_limited'
-  | 'provider_unavailable';
+  'invalid_input' | 'not_found' | 'rate_limited' | 'provider_unavailable';
 
 export type ResolutionSuccessBody = {
   status: 'resolved';

@@ -178,9 +178,7 @@ export default function ProfileScreen() {
             <Text className="shrink text-2xl font-bold text-ink" numberOfLines={1}>
               {data.display_name}
             </Text>
-            {identityStatus.data?.identityVerified ? (
-              <IdentityVerifiedBadge size={22} />
-            ) : null}
+            {identityStatus.data?.identityVerified ? <IdentityVerifiedBadge size={22} /> : null}
           </View>
           {ratingAverage !== null || completed > 0 ? (
             <View className="flex-row flex-wrap items-center justify-center gap-x-1.5">

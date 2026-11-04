@@ -2,7 +2,10 @@ import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 
 import { filterRequestTags } from '@/features/requests/tag-catalogue-filter';
-import { getMemoryTagCatalogue, persistTagCatalogue } from '@/features/requests/tag-catalogue-storage';
+import {
+  getMemoryTagCatalogue,
+  persistTagCatalogue,
+} from '@/features/requests/tag-catalogue-storage';
 import { queryKeys } from '@/lib/query/keys';
 import { supabase } from '@/lib/supabase/client';
 

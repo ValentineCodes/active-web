@@ -32,13 +32,17 @@ export default async function OperationalIssuesPage() {
       <div>
         <h2 className="text-2xl font-semibold text-ink">Operational issues</h2>
         <p className="mt-1 text-sm text-muted">
-          Prioritized diagnostics from ledger, Paystack deposits, engagements, and reconciliation rules. Recovery
-          actions call existing backend RPCs with validation, idempotency, and audit — never raw SQL edits.
+          Prioritized diagnostics from ledger, Paystack deposits, engagements, and reconciliation
+          rules. Recovery actions call existing backend RPCs with validation, idempotency, and audit
+          — never raw SQL edits.
         </p>
       </div>
 
       {error ? (
-        <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800" role="alert">
+        <p
+          className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800"
+          role="alert"
+        >
           {error}
         </p>
       ) : null}
@@ -58,10 +62,7 @@ export default async function OperationalIssuesPage() {
               requires_confirmation?: boolean;
             }>;
             return (
-              <article
-                key={issue.id}
-                className={`rounded-xl border p-4 shadow-card ${tone}`}
-              >
+              <article key={issue.id} className={`rounded-xl border p-4 shadow-card ${tone}`}>
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-wide opacity-80">
@@ -80,7 +81,7 @@ export default async function OperationalIssuesPage() {
                     </p>
                   </div>
                   {issue.href ? (
-                    <Link href={issue.href} className="text-sm font-medium underline shrink-0">
+                    <Link href={issue.href} className="shrink-0 text-sm font-medium underline">
                       Investigate →
                     </Link>
                   ) : null}
@@ -102,7 +103,8 @@ export default async function OperationalIssuesPage() {
         <ul className="mt-3 space-y-2 text-sm text-muted">
           {gaps.map((gap) => (
             <li key={gap.key}>
-              <span className="font-medium text-ink">{gap.key.replaceAll('_', ' ')}</span>: {gap.reason}
+              <span className="font-medium text-ink">{gap.key.replaceAll('_', ' ')}</span>:{' '}
+              {gap.reason}
             </li>
           ))}
         </ul>

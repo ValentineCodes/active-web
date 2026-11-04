@@ -13,7 +13,10 @@ export async function POST(request: Request, { params }: Props) {
     return NextResponse.json({ error: 'idempotencyKey is required' }, { status: 400 });
   }
   if (!body.reason?.trim() || body.reason.trim().length < 3) {
-    return NextResponse.json({ error: 'A user-facing reason is required (min 3 characters)' }, { status: 400 });
+    return NextResponse.json(
+      { error: 'A user-facing reason is required (min 3 characters)' },
+      { status: 400 },
+    );
   }
 
   return callWithdrawalRpc('admin_reject_wallet_withdrawal', {

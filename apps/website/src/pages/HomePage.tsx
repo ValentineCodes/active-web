@@ -1,12 +1,12 @@
-import { Handshake } from "lucide-react"
-import { CTA } from "@/components/layout/CTA"
-import { RequestCard } from "@/components/marketing/RequestCard"
-import { Button } from "@/components/ui/Button"
-import { Eyebrow } from "@/components/ui/Eyebrow"
-import { Icon } from "@/components/ui/Icon"
-import { demoRequests } from "@/data/requests"
-import { assets } from "@/lib/assets"
-import type { Navigate } from "@/types/site"
+import { Handshake } from 'lucide-react';
+import { CTA } from '@/components/layout/CTA';
+import { RequestCard } from '@/components/marketing/RequestCard';
+import { Button } from '@/components/ui/Button';
+import { Eyebrow } from '@/components/ui/Eyebrow';
+import { Icon } from '@/components/ui/Icon';
+import { demoRequests } from '@/data/requests';
+import { assets } from '@/lib/assets';
+import type { Navigate } from '@/types/site';
 
 export function HomePage({ go }: { go: Navigate }) {
   return (
@@ -24,10 +24,10 @@ export function HomePage({ go }: { go: Navigate }) {
             Ask for anything and someone will respond.
           </p>
           <div className="hero-actions">
-            <Button onClick={() => go("contact")}>
+            <Button onClick={() => go('contact')}>
               Book a demo <Icon name="arrow" size={18} />
             </Button>
-            <Button variant="secondary" onClick={() => go("explore")}>
+            <Button variant="secondary" onClick={() => go('explore')}>
               Explore requests
             </Button>
           </div>
@@ -48,9 +48,7 @@ export function HomePage({ go }: { go: Navigate }) {
               <Icon name="plus" size={24} />
             </div>
             <h3>Post your request</h3>
-            <p>
-              Say what you want and how much you&apos;re willing to pay for it.
-            </p>
+            <p>Say what you want and how much you&apos;re willing to pay for it.</p>
           </li>
           <li className="home-steps-card">
             <div className="home-steps-icon">
@@ -72,13 +70,8 @@ export function HomePage({ go }: { go: Navigate }) {
       <section className="promise-strip">
         <div>
           <span>
-            <Handshake
-              className="icon"
-              size={20}
-              strokeWidth={1.8}
-              aria-hidden
-            />{" "}
-            Get the help you need
+            <Handshake className="icon" size={20} strokeWidth={1.8} aria-hidden /> Get the help you
+            need
           </span>
           <i />
           <span>
@@ -91,17 +84,17 @@ export function HomePage({ go }: { go: Navigate }) {
         <div>
           <Eyebrow>Why Active</Eyebrow>
           <h2>
-            So you don&apos;t have to 
+            So you don&apos;t have to
             <br />
             <span>do it yourself</span>
           </h2>
         </div>
         <div className="section-copy">
           <p>
-            Finding workers can be tedious, so don&apos;t. Just say what you
-            want, and let us find workers for you.
+            Finding workers can be tedious, so don&apos;t. Just say what you want, and let us find
+            workers for you.
           </p>
-          <button className="text-link" onClick={() => go("about")}>
+          <button className="text-link" onClick={() => go('about')}>
             Our story <Icon name="arrow" size={18} />
           </button>
         </div>
@@ -120,7 +113,7 @@ export function HomePage({ go }: { go: Navigate }) {
             </p>
           </div>
           <div className="path-card-footer">
-            <Button variant="primary" onClick={() => go("how")}>
+            <Button variant="primary" onClick={() => go('how')}>
               See how it works <Icon name="arrow" size={17} />
             </Button>
           </div>
@@ -137,7 +130,7 @@ export function HomePage({ go }: { go: Navigate }) {
             </p>
           </div>
           <div className="path-card-footer">
-            <Button variant="primary" onClick={() => go("explore")}>
+            <Button variant="primary" onClick={() => go('explore')}>
               View requests <Icon name="arrow" size={17} />
             </Button>
           </div>
@@ -148,17 +141,15 @@ export function HomePage({ go }: { go: Navigate }) {
         <div className="section-head">
           <div>
             <Eyebrow>Happening on Active</Eyebrow>
-            <h2>
-              Don&apos;t miss out!
-            </h2>
+            <h2>Don&apos;t miss out!</h2>
           </div>
-          <Button variant="textGreen" onClick={() => go("explore")}>
+          <Button variant="textGreen" onClick={() => go('explore')}>
             View all <Icon name="arrow" size={17} />
           </Button>
         </div>
         <div className="request-grid">
           {demoRequests.slice(0, 3).map((r) => (
-            <RequestCard key={r.id} item={r} onOpen={() => go("explore")} />
+            <RequestCard key={r.id} item={r} onOpen={() => go('explore')} />
           ))}
         </div>
       </section>
@@ -175,10 +166,9 @@ export function HomePage({ go }: { go: Navigate }) {
           <Eyebrow light>Wealth distribution</Eyebrow>
           <h2>A way to give back to the people</h2>
           <p>
-            We’re building for the energy, ingenuity, and everyday reality of
-            Nigerian communities.
+            We’re building for the energy, ingenuity, and everyday reality of Nigerian communities.
           </p>
-          <Button variant="light" onClick={() => go("partners")}>
+          <Button variant="light" onClick={() => go('partners')}>
             Partner with us <Icon name="arrow" size={17} />
           </Button>
         </div>
@@ -186,5 +176,5 @@ export function HomePage({ go }: { go: Navigate }) {
 
       <CTA go={go} />
     </>
-  )
+  );
 }

@@ -20,9 +20,7 @@ type Props = {
 
 export function TrendChart({ days, showCommission }: Props) {
   if (days.length === 0) {
-    return (
-      <p className="text-sm text-muted">No trend data for this period.</p>
-    );
+    return <p className="text-sm text-muted">No trend data for this period.</p>;
   }
 
   const maxCount = Math.max(
@@ -30,10 +28,7 @@ export function TrendChart({ days, showCommission }: Props) {
     ...days.flatMap((d) => [d.new_users, d.requests_posted, d.engagements_completed]),
   );
 
-  const maxCommission = Math.max(
-    1,
-    ...days.map((d) => d.commission_collected_kobo ?? 0),
-  );
+  const maxCommission = Math.max(1, ...days.map((d) => d.commission_collected_kobo ?? 0));
 
   return (
     <div className="space-y-6">
@@ -41,7 +36,11 @@ export function TrendChart({ days, showCommission }: Props) {
         <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted">
           Activity (daily)
         </p>
-        <div className="flex items-end gap-1 overflow-x-auto pb-2" role="img" aria-label="Daily activity chart">
+        <div
+          className="flex items-end gap-1 overflow-x-auto pb-2"
+          role="img"
+          aria-label="Daily activity chart"
+        >
           {days.map((day) => (
             <div key={day.day} className="flex min-w-[28px] flex-1 flex-col items-center gap-1">
               <div className="flex h-24 w-full items-end justify-center gap-0.5">
@@ -58,9 +57,7 @@ export function TrendChart({ days, showCommission }: Props) {
                   );
                 })}
               </div>
-              <span className="text-[10px] text-subtle">
-                {day.day.slice(5)}
-              </span>
+              <span className="text-[10px] text-subtle">{day.day.slice(5)}</span>
             </div>
           ))}
         </div>
@@ -79,12 +76,19 @@ export function TrendChart({ days, showCommission }: Props) {
           <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted">
             Commission collected (daily)
           </p>
-          <div className="flex items-end gap-1 overflow-x-auto pb-2" role="img" aria-label="Daily commission chart">
+          <div
+            className="flex items-end gap-1 overflow-x-auto pb-2"
+            role="img"
+            aria-label="Daily commission chart"
+          >
             {days.map((day) => {
               const value = day.commission_collected_kobo ?? 0;
               const height = Math.max(4, Math.round((value / maxCommission) * 72));
               return (
-                <div key={`fee-${day.day}`} className="flex min-w-[28px] flex-1 flex-col items-center gap-1">
+                <div
+                  key={`fee-${day.day}`}
+                  className="flex min-w-[28px] flex-1 flex-col items-center gap-1"
+                >
                   <div
                     className="w-full max-w-[20px] rounded-t bg-amber-500"
                     style={{ height }}

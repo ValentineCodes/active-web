@@ -31,7 +31,9 @@ export default async function TransactionDetailPage({ params }: Props) {
   return (
     <div className="space-y-6">
       <div>
-        <Link href="/transactions" className="text-sm text-brand hover:text-brand-dark">← Transactions</Link>
+        <Link href="/transactions" className="text-sm text-brand hover:text-brand-dark">
+          ← Transactions
+        </Link>
         <h2 className="mt-1 text-2xl font-semibold capitalize text-ink">
           {(tx.type as string).replaceAll('_', ' ')}
         </h2>
@@ -42,7 +44,7 @@ export default async function TransactionDetailPage({ params }: Props) {
         </div>
       </div>
 
-      <section className="rounded-xl border border-border bg-elevated p-4 shadow-card text-sm">
+      <section className="rounded-xl border border-border bg-elevated p-4 text-sm shadow-card">
         <dl className="grid gap-3 sm:grid-cols-2">
           <div>
             <dt className="text-muted">User</dt>
@@ -62,7 +64,9 @@ export default async function TransactionDetailPage({ params }: Props) {
           </div>
           <div>
             <dt className="text-muted">Paystack reference</dt>
-            <dd className="break-all font-mono text-xs">{(tx.paystack_reference as string) ?? '—'}</dd>
+            <dd className="break-all font-mono text-xs">
+              {(tx.paystack_reference as string) ?? '—'}
+            </dd>
           </div>
           {tx.description ? (
             <div className="sm:col-span-2">
@@ -74,21 +78,22 @@ export default async function TransactionDetailPage({ params }: Props) {
       </section>
 
       {request ? (
-        <section className="rounded-xl border border-border bg-elevated p-4 shadow-card text-sm">
+        <section className="rounded-xl border border-border bg-elevated p-4 text-sm shadow-card">
           <h3 className="font-semibold text-ink">Request</h3>
           <p className="mt-2">
             <Link href={`/requests/${request.id as string}`} className="text-brand">
               {request.title as string}
             </Link>
           </p>
-          <p className="mt-1 text-muted capitalize">
-            {(request.status as string).replaceAll('_', ' ')} · payment {(request.payment_status as string).replaceAll('_', ' ')}
+          <p className="mt-1 capitalize text-muted">
+            {(request.status as string).replaceAll('_', ' ')} · payment{' '}
+            {(request.payment_status as string).replaceAll('_', ' ')}
           </p>
         </section>
       ) : null}
 
       {lock ? (
-        <section className="rounded-xl border border-border bg-elevated p-4 shadow-card text-sm">
+        <section className="rounded-xl border border-border bg-elevated p-4 text-sm shadow-card">
           <h3 className="font-semibold text-ink">Payment lock</h3>
           <dl className="mt-2 grid gap-2 sm:grid-cols-3">
             <div>
@@ -108,15 +113,20 @@ export default async function TransactionDetailPage({ params }: Props) {
       ) : null}
 
       {deposit ? (
-        <section className="rounded-xl border border-border bg-elevated p-4 shadow-card text-sm">
+        <section className="rounded-xl border border-border bg-elevated p-4 text-sm shadow-card">
           <h3 className="font-semibold text-ink">Linked Paystack deposit</h3>
-          <p className="mt-1 capitalize text-muted">Status {(deposit.status as string).replaceAll('_', ' ')}</p>
+          <p className="mt-1 capitalize text-muted">
+            Status {(deposit.status as string).replaceAll('_', ' ')}
+          </p>
         </section>
       ) : null}
 
       <section className="rounded-xl border border-border bg-surface p-4 text-xs text-muted">
         <p className="font-medium text-ink">Immutable ledger</p>
-        <p className="mt-1">This row cannot be edited from the dashboard. Corrections require authorized backend settlement flows.</p>
+        <p className="mt-1">
+          This row cannot be edited from the dashboard. Corrections require authorized backend
+          settlement flows.
+        </p>
         <pre className="mt-3 max-h-64 overflow-auto rounded bg-elevated p-2 text-subtle">
           {JSON.stringify(tx.metadata, null, 2)}
         </pre>

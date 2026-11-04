@@ -217,9 +217,7 @@ export default function WalletHomeScreen() {
                   showDivider={index > 0}
                   onPress={() => {
                     if (row.withdrawal?.withdrawalId) {
-                      router.push(
-                        `/wallet/withdrawal/${row.withdrawal.withdrawalId}` as Href,
-                      );
+                      router.push(`/wallet/withdrawal/${row.withdrawal.withdrawalId}` as Href);
                       return;
                     }
                     router.push(`/wallet/transaction/${row.id}` as Href);

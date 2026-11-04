@@ -1,6 +1,4 @@
-import {
-  isServerChatProfilePhotoRequiredError,
-} from '@/features/requests/chat-send-eligibility';
+import { isServerChatProfilePhotoRequiredError } from '@/features/requests/chat-send-eligibility';
 import { mapConversationAttachmentError } from '@/features/requests/conversation-attachment-policy';
 import {
   abortConversationAttachmentMessage,
@@ -63,7 +61,9 @@ export function createCompletionProofSendSession(): CompletionProofSendSession {
   };
 }
 
-export async function abortCompletionProofSendSession(session: CompletionProofSendSession): Promise<void> {
+export async function abortCompletionProofSendSession(
+  session: CompletionProofSendSession,
+): Promise<void> {
   if (!session.messageId || session.messagePublished) {
     return;
   }

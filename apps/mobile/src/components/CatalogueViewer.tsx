@@ -117,9 +117,7 @@ function CatalogueStackedItem({
           accessibilityLabel={item.accessibilityLabel}
           style={{
             width,
-            ...(photoAspectRatio != null
-              ? { height: photoHeight }
-              : { height: Math.round(width) }),
+            ...(photoAspectRatio != null ? { height: photoHeight } : { height: Math.round(width) }),
           }}
           contentFit="contain"
           onLoad={(e) => {
@@ -241,16 +239,12 @@ export function CatalogueViewer({
 
   if (items.length === 0) return null;
 
-  const body = (
-    <CatalogueViewerBody items={items} initialIndex={initialIndex} onClose={onClose} />
-  );
+  const body = <CatalogueViewerBody items={items} initialIndex={initialIndex} onClose={onClose} />;
 
   if (Platform.OS === 'ios') {
     return (
       <BottomSheetWindow>
-        <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.canvas }]}>
-          {body}
-        </View>
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.canvas }]}>{body}</View>
       </BottomSheetWindow>
     );
   }

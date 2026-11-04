@@ -174,8 +174,8 @@ export function WithdrawalPolicyPanel({ initial }: Props) {
 
       {state.identityDevelopmentBypassActive ? (
         <p className="mt-3 text-xs text-amber-700">
-          Development identity bypass is active for this environment. No fake verification records are
-          created.
+          Development identity bypass is active for this environment. No fake verification records
+          are created.
         </p>
       ) : null}
 

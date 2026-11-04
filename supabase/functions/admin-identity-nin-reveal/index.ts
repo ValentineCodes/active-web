@@ -1,9 +1,6 @@
 import { AuthError, requireUser } from '../_shared/auth.ts';
 import { errorResponse, handleCors, jsonResponse } from '../_shared/cors.ts';
-import {
-  ciphertextBundleFromRpc,
-  decryptNin,
-} from '../_shared/nin/crypto.ts';
+import { ciphertextBundleFromRpc, decryptNin } from '../_shared/nin/crypto.ts';
 import { loadNinCryptoConfig } from '../_shared/nin/env.ts';
 import { getServiceSupabase } from '../_shared/supabase-service.ts';
 
@@ -30,7 +27,10 @@ Deno.serve(async (req) => {
       typeof body.idempotencyKey === 'string' ? body.idempotencyKey.trim() : '';
 
     if (!userId) {
-      return jsonResponse({ status: 'error', code: 'invalid_request', error: 'userId is required' }, 400);
+      return jsonResponse(
+        { status: 'error', code: 'invalid_request', error: 'userId is required' },
+        400,
+      );
     }
     if (reason.length < 10) {
       return jsonResponse(
@@ -88,7 +88,10 @@ Deno.serve(async (req) => {
     return jsonResponse({ status: 'ok', nin });
   } catch (err) {
     if (err instanceof AuthError) {
-      return jsonResponse({ status: 'error', code: 'unauthorized', error: err.message }, err.status);
+      return jsonResponse(
+        { status: 'error', code: 'unauthorized', error: err.message },
+        err.status,
+      );
     }
     return errorResponse('Could not reveal NIN', 500);
   }

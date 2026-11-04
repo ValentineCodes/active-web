@@ -1,5 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, Modal, Platform, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
+import {
+  Alert,
+  Modal,
+  Platform,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  Text,
+  View,
+} from 'react-native';
 import DateTimePicker, { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
 import { Redirect, router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { addHours, format, set } from 'date-fns';
@@ -64,10 +73,7 @@ import { queryKeys } from '@/lib/query/keys';
 import { useQueryClient } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useMyWallet } from '@/features/wallet/api';
-import {
-  isInsufficientWalletBalanceError,
-  toUserMessage,
-} from '@/lib/supabase/errors';
+import { isInsufficientWalletBalanceError, toUserMessage } from '@/lib/supabase/errors';
 import { openWalletTopUp, walletLockAmountMajor } from '@/features/wallet/top-up';
 
 type ResponderProfilePreview = {
@@ -167,7 +173,10 @@ export default function RequestDetailScreen() {
 
       const quoted =
         responses.data?.find((row) => row.response_id === responseId)?.quoted_amount ?? null;
-      const requiredLockMajor = walletLockAmountMajor({ offeredAmount: offered, quotedAmount: quoted });
+      const requiredLockMajor = walletLockAmountMajor({
+        offeredAmount: offered,
+        quotedAmount: quoted,
+      });
 
       acceptResponse.mutate(responseId, {
         onSuccess: () => {
@@ -355,10 +364,14 @@ export default function RequestDetailScreen() {
     (data.status === 'posted' || data.status === 'searching') &&
     !isAwaitingReview &&
     !isExpiredRequest;
-  const responseSections = partitionRequestResponsesForRequester(responses.data ?? [], data.status, {
-    isAwaitingReview,
-    isExpiredRequest,
-  });
+  const responseSections = partitionRequestResponsesForRequester(
+    responses.data ?? [],
+    data.status,
+    {
+      isAwaitingReview,
+      isExpiredRequest,
+    },
+  );
   const pending = responseSections.selectablePending;
   const redirectsToEngagement = ['completion_pending', 'disputed', 'no_show'].includes(data.status);
   const reuseLabel = canReuseRequest(data.status, data.expires_at)
@@ -462,7 +475,11 @@ export default function RequestDetailScreen() {
 
   const renderResponseCard = (
     response: ListedResponse,
-    options: { allowSelection: boolean; statusLabel?: string; statusTone?: 'neutral' | 'brand' | 'active' | 'danger' | 'warning' | 'info' },
+    options: {
+      allowSelection: boolean;
+      statusLabel?: string;
+      statusTone?: 'neutral' | 'brand' | 'active' | 'danger' | 'warning' | 'info';
+    },
   ) => (
     <ResponseCard
       key={response.response_id}
@@ -662,10 +679,12 @@ export default function RequestDetailScreen() {
                   <LoadingState label="Loading responses" />
                 ) : null}
 
-                {responses.isSuccess && pending.length === 0 && !responseSections.hasActiveEngagement ? (
+                {responses.isSuccess &&
+                pending.length === 0 &&
+                !responseSections.hasActiveEngagement ? (
                   <Text className="text-base text-muted">
-                    Your request is visible to people nearby. They see approximate distance, not your
-                    exact location.
+                    Your request is visible to people nearby. They see approximate distance, not
+                    your exact location.
                   </Text>
                 ) : null}
 
@@ -748,12 +767,7 @@ export default function RequestDetailScreen() {
       />
 
       {extendIosPicker ? (
-        <Modal
-          transparent
-          visible
-          animationType="slide"
-          onRequestClose={finishExtendPickerFlow}
-        >
+        <Modal transparent visible animationType="slide" onRequestClose={finishExtendPickerFlow}>
           <Pressable
             accessibilityRole="button"
             className="flex-1 justify-end bg-black/40"

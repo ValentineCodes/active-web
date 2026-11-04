@@ -74,10 +74,7 @@ export default function WalletDepositCheckoutScreen() {
     }
     if (failedToastShown.current) return;
     failedToastShown.current = true;
-    showAppToast(
-      toUserMessage(error ?? new Error('Payment could not be confirmed')),
-      'warning',
-    );
+    showAppToast(toUserMessage(error ?? new Error('Payment could not be confirmed')), 'warning');
   }, [error, phase]);
 
   useEffect(() => {
@@ -269,8 +266,9 @@ export default function WalletDepositCheckoutScreen() {
         <View className="flex-1 items-center justify-center gap-4 bg-canvas px-5">
           <ActivityIndicator color={colors.brand} />
           <Text className="text-center text-sm leading-5 text-muted">
-            Complete payment in the browser. After Paystack shows success, return here—we will confirm
-            your deposit. You can also use the back arrow and we will check the payment for you.
+            Complete payment in the browser. After Paystack shows success, return here—we will
+            confirm your deposit. You can also use the back arrow and we will check the payment for
+            you.
           </Text>
         </View>
       </Screen>

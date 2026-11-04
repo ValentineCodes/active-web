@@ -1,25 +1,25 @@
-import { Fragment, useState } from "react"
-import { PageHero } from "@/components/layout/PageHero"
-import { Button } from "@/components/ui/Button"
-import { Eyebrow } from "@/components/ui/Eyebrow"
-import { Icon } from "@/components/ui/Icon"
-import { faqSections } from "@/data/faqs"
-import type { Navigate } from "@/types/site"
+import { Fragment, useState } from 'react';
+import { PageHero } from '@/components/layout/PageHero';
+import { Button } from '@/components/ui/Button';
+import { Eyebrow } from '@/components/ui/Eyebrow';
+import { Icon } from '@/components/ui/Icon';
+import { faqSections } from '@/data/faqs';
+import type { Navigate } from '@/types/site';
 
 function FaqInline({ text }: { text: string }) {
-  const parts = text.split(/(\*\*[^*]+\*\*)/g)
+  const parts = text.split(/(\*\*[^*]+\*\*)/g);
   return parts.map((part, i) =>
-    part.startsWith("**") && part.endsWith("**") ? (
+    part.startsWith('**') && part.endsWith('**') ? (
       <strong key={i}>{part.slice(2, -2)}</strong>
     ) : (
       <Fragment key={i}>{part}</Fragment>
     ),
-  )
+  );
 }
 
 export function FAQPage({ go }: { go: Navigate }) {
-  const [open, setOpen] = useState(0)
-  let itemIndex = 0
+  const [open, setOpen] = useState(0);
+  let itemIndex = 0;
 
   return (
     <>
@@ -39,32 +39,26 @@ export function FAQPage({ go }: { go: Navigate }) {
           <div key={section.title} className="faq-section">
             <h2 className="faq-section-title">{section.title}</h2>
             {section.items.map((item) => {
-              const i = itemIndex++
+              const i = itemIndex++;
               return (
-                <article
-                  key={item.question}
-                  className={open === i ? "faq-open" : ""}
-                >
-                  <button
-                    onClick={() => setOpen(open === i ? -1 : i)}
-                    aria-expanded={open === i}
-                  >
+                <article key={item.question} className={open === i ? 'faq-open' : ''}>
+                  <button onClick={() => setOpen(open === i ? -1 : i)} aria-expanded={open === i}>
                     <strong>{item.question}</strong>
                     <i>
-                      <Icon name={open === i ? "close" : "plus"} />
+                      <Icon name={open === i ? 'close' : 'plus'} />
                     </i>
                   </button>
                   <div className="faq-answer">
                     <div className="faq-answer-inner">
                       {item.blocks.map((block, bi) => {
-                        if (block.type === "p") {
+                        if (block.type === 'p') {
                           return (
                             <p key={bi}>
                               <FaqInline text={block.text} />
                             </p>
-                          )
+                          );
                         }
-                        if (block.type === "ul") {
+                        if (block.type === 'ul') {
                           return (
                             <ul key={bi}>
                               {block.items.map((line, li) => (
@@ -73,7 +67,7 @@ export function FAQPage({ go }: { go: Navigate }) {
                                 </li>
                               ))}
                             </ul>
-                          )
+                          );
                         }
                         return (
                           <ol key={bi}>
@@ -83,12 +77,12 @@ export function FAQPage({ go }: { go: Navigate }) {
                               </li>
                             ))}
                           </ol>
-                        )
+                        );
                       })}
                     </div>
                   </div>
                 </article>
-              )
+              );
             })}
           </div>
         ))}
@@ -97,14 +91,12 @@ export function FAQPage({ go }: { go: Navigate }) {
         <div>
           <Eyebrow>Still curious?</Eyebrow>
           <h2>Let’s talk it through.</h2>
-          <p>
-            We'll be happy to clarify any questions you have.
-          </p>
+          <p>We'll be happy to clarify any questions you have.</p>
         </div>
-        <Button onClick={() => go("contact")}>
+        <Button onClick={() => go('contact')}>
           Book a demo <Icon name="arrow" size={17} />
         </Button>
       </section>
     </>
-  )
+  );
 }

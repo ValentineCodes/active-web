@@ -166,7 +166,7 @@ export function OverviewDashboard({ data }: Props) {
       )}
 
       <div className="grid gap-4 xl:grid-cols-3">
-        <div className="xl:col-span-2 rounded-xl border border-border bg-elevated p-4 shadow-card">
+        <div className="rounded-xl border border-border bg-elevated p-4 shadow-card xl:col-span-2">
           <h2 className="mb-4 text-sm font-semibold text-ink">Trends</h2>
           <TrendChart days={data.trends} showCommission={data.includes_financial} />
         </div>

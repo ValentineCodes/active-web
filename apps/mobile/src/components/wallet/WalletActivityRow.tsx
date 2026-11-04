@@ -35,7 +35,9 @@ export function WalletActivityRow({ row, currency, onPress, showDivider }: Props
         <View className="min-w-0 flex-1 gap-1">
           <Text className="text-base font-semibold text-ink">{meta.title}</Text>
           {meta.subtitle ? (
-            <Text className="text-sm text-muted" numberOfLines={1}>{meta.subtitle}</Text>
+            <Text className="text-sm text-muted" numberOfLines={1}>
+              {meta.subtitle}
+            </Text>
           ) : null}
           <View className="flex-row flex-wrap items-center gap-x-1.5">
             <Text className="text-sm text-muted">{meta.when}</Text>

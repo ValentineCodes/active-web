@@ -50,13 +50,7 @@ function NearbyFeedSkeleton({ home }: { home: boolean }) {
   );
 }
 
-function SortByNearestButton({
-  loading,
-  onPress,
-}: {
-  loading: boolean;
-  onPress: () => void;
-}) {
+function SortByNearestButton({ loading, onPress }: { loading: boolean; onPress: () => void }) {
   return (
     <Pressable
       onPress={onPress}
@@ -257,10 +251,7 @@ export function NearbyRequests({
     : isHome && openBrowseEnabled && showQuerySkeleton(open);
 
   const showHomeSortButton =
-    isHome &&
-    position === null &&
-    !searchHasResults &&
-    foregroundPermission === 'undetermined';
+    isHome && position === null && !searchHasResults && foregroundPermission === 'undetermined';
 
   const renderRequestList = () => (
     <>
@@ -361,9 +352,7 @@ export function NearbyRequests({
           We could not get your location. Pull to refresh to try again.
         </Text>
       ) : (
-        <Text className="text-sm text-muted">
-          Allow location to search open requests near you.
-        </Text>
+        <Text className="text-sm text-muted">Allow location to search open requests near you.</Text>
       )}
     </View>
   ) : position === null && !isHome ? (
@@ -404,10 +393,7 @@ export function NearbyRequests({
   ) : (
     <View className="gap-3">
       {showHomeSortButton ? (
-        <SortByNearestButton
-          loading={sortingNearest}
-          onPress={() => void sortByNearest()}
-        />
+        <SortByNearestButton loading={sortingNearest} onPress={() => void sortByNearest()} />
       ) : null}
       {renderRequestList()}
     </View>

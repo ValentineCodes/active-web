@@ -35,9 +35,10 @@ export default function SavedLocationsScreen() {
   const upsert = useUpsertSavedLocation();
   const remove = useDeleteSavedLocation();
   const [adding, setAdding] = useState(false);
-  const [addLocationError, setAddLocationError] = useState<
-    Extract<PositionResult, { ok: false }> | null
-  >(null);
+  const [addLocationError, setAddLocationError] = useState<Extract<
+    PositionResult,
+    { ok: false }
+  > | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [aliasDraft, setAliasDraft] = useState('');
 
@@ -78,7 +79,9 @@ export default function SavedLocationsScreen() {
           text: 'Remove',
           style: 'destructive',
           onPress: () => {
-            void remove.mutateAsync(row.saved_location_id).then(() => showAppToast('Place removed'));
+            void remove
+              .mutateAsync(row.saved_location_id)
+              .then(() => showAppToast('Place removed'));
           },
         },
       ],

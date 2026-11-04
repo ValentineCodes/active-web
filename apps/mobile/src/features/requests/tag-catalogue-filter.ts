@@ -23,11 +23,7 @@ export function groupRequestTagsByCategory(tags: RequestTag[]): TagCatalogueSect
 }
 
 /** Mirrors public.search_tags matching for client-side filtering on the full catalogue. */
-export function filterRequestTags(
-  tags: RequestTag[],
-  query: string,
-  limit = 50,
-): RequestTag[] {
+export function filterRequestTags(tags: RequestTag[], query: string, limit = 50): RequestTag[] {
   const trimmed = query.trim();
   if (!trimmed) return tags.slice(0, limit);
 

@@ -18,7 +18,10 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
     return NextResponse.json({ error: 'A valid outcome is required' }, { status: 400 });
   }
   if (!body.adminNote || body.adminNote.trim().length < 10) {
-    return NextResponse.json({ error: 'Findings note must be at least 10 characters' }, { status: 400 });
+    return NextResponse.json(
+      { error: 'Findings note must be at least 10 characters' },
+      { status: 400 },
+    );
   }
   if (!body.idempotencyKey) {
     return NextResponse.json({ error: 'idempotencyKey is required' }, { status: 400 });

@@ -25,11 +25,7 @@ export type ResolveBankAccountResult = {
 };
 
 export type ResolveBankAccountErrorCode =
-  | 'not_found'
-  | 'provider_unavailable'
-  | 'invalid_input'
-  | 'rate_limited'
-  | 'unknown';
+  'not_found' | 'provider_unavailable' | 'invalid_input' | 'rate_limited' | 'unknown';
 
 type BanksSuccessBody = {
   status: 'ok';

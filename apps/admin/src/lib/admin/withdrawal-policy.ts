@@ -1,7 +1,10 @@
 import type { AdminWithdrawalPolicyResponse } from '@/lib/admin/withdrawal-policy-types';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 
-export type { AdminWithdrawalPolicy, AdminWithdrawalPolicyResponse } from '@/lib/admin/withdrawal-policy-types';
+export type {
+  AdminWithdrawalPolicy,
+  AdminWithdrawalPolicyResponse,
+} from '@/lib/admin/withdrawal-policy-types';
 
 type PolicyJson = {
   policy: {
@@ -27,8 +30,10 @@ function mapPolicy(body: PolicyJson): AdminWithdrawalPolicyResponse {
       maxDailyAmountKobo: body.policy.max_daily_amount_kobo,
       withdrawalsEnabled: body.policy.withdrawals_enabled,
       requireAdminReview: body.policy.require_admin_review,
-      requireIdentityVerificationForWithdrawal: body.policy.require_identity_verification_for_withdrawal,
-      allowWithdrawWithoutIdentityInDevelopment: body.policy.allow_withdraw_without_identity_in_development,
+      requireIdentityVerificationForWithdrawal:
+        body.policy.require_identity_verification_for_withdrawal,
+      allowWithdrawWithoutIdentityInDevelopment:
+        body.policy.allow_withdraw_without_identity_in_development,
       updatedAt: body.policy.updated_at,
       updatedBy: body.policy.updated_by,
     },

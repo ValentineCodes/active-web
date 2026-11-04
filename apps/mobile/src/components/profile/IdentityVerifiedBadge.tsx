@@ -12,11 +12,7 @@ export function IdentityVerifiedBadge({ size = 18 }: Props) {
   const colors = useColors();
 
   return (
-    <View
-      accessibilityLabel="Identity verified"
-      accessibilityRole="image"
-      className="shrink-0"
-    >
+    <View accessibilityLabel="Identity verified" accessibilityRole="image" className="shrink-0">
       <Ionicons name="checkmark-circle" size={size} color={colors.active} />
     </View>
   );

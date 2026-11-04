@@ -32,11 +32,7 @@ export function parseAdminPermissions(value: unknown): AdminPermissions | null {
   if (!value || typeof value !== 'object') return null;
   const row = value as Record<string, unknown>;
   const role = row.role;
-  if (
-    role !== 'super_admin' &&
-    role !== 'support_admin' &&
-    role !== 'finance_admin'
-  ) {
+  if (role !== 'super_admin' && role !== 'support_admin' && role !== 'finance_admin') {
     return null;
   }
 

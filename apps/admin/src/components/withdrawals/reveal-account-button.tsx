@@ -18,8 +18,7 @@ export function RevealAccountButton({ withdrawalId, masked }: Props) {
     setError(null);
     setLoading(true);
     try {
-      const idempotencyKey =
-        globalThis.crypto?.randomUUID?.() ?? `reveal-${Date.now()}`;
+      const idempotencyKey = globalThis.crypto?.randomUUID?.() ?? `reveal-${Date.now()}`;
       const response = await fetch(`/api/admin/withdrawals/${withdrawalId}/reveal-account`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

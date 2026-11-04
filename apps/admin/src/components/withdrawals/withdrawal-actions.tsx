@@ -48,10 +48,7 @@ export function WithdrawalActions({ withdrawalId, status }: Props) {
   const runConfirmed = () => {
     if (!confirmAction) return;
     const trimmedReason = reason.trim();
-    if (
-      (confirmAction === 'reject' || confirmAction === 'fail') &&
-      trimmedReason.length < 3
-    ) {
+    if ((confirmAction === 'reject' || confirmAction === 'fail') && trimmedReason.length < 3) {
       setError('Enter a user-facing reason (at least 3 characters).');
       return;
     }
@@ -60,7 +57,10 @@ export function WithdrawalActions({ withdrawalId, status }: Props) {
       return;
     }
     if (confirmAction === 'reject') {
-      void post(`/api/admin/withdrawals/${withdrawalId}/reject`, { reason: trimmedReason, adminNotes });
+      void post(`/api/admin/withdrawals/${withdrawalId}/reject`, {
+        reason: trimmedReason,
+        adminNotes,
+      });
       return;
     }
     if (confirmAction === 'complete') {
@@ -71,25 +71,32 @@ export function WithdrawalActions({ withdrawalId, status }: Props) {
       return;
     }
     if (confirmAction === 'fail') {
-      void post(`/api/admin/withdrawals/${withdrawalId}/fail`, { reason: trimmedReason, adminNotes });
+      void post(`/api/admin/withdrawals/${withdrawalId}/fail`, {
+        reason: trimmedReason,
+        adminNotes,
+      });
     }
   };
 
   if (status === 'completed' || status === 'rejected' || status === 'failed') {
     return (
-      <p className="text-sm text-muted">This withdrawal is in a terminal state. No further actions are available.</p>
+      <p className="text-sm text-muted">
+        This withdrawal is in a terminal state. No further actions are available.
+      </p>
     );
   }
 
   return (
     <div className="space-y-4">
       <p className="text-sm text-muted">
-        Send the bank transfer outside Active first. Only mark completed after you independently confirm the payment
-        succeeded.
+        Send the bank transfer outside Active first. Only mark completed after you independently
+        confirm the payment succeeded.
       </p>
 
       {error ? (
-        <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800" role="alert">{error}</p>
+        <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800" role="alert">
+          {error}
+        </p>
       ) : null}
 
       <label className="block text-xs text-muted">
@@ -97,7 +104,7 @@ export function WithdrawalActions({ withdrawalId, status }: Props) {
         <textarea
           value={adminNotes}
           onChange={(event) => setAdminNotes(event.target.value)}
-          className="mt-1 w-full rounded-lg border border-border bg-canvas px-3 py-2 text-sm"
+          className="bg-canvas mt-1 w-full rounded-lg border border-border px-3 py-2 text-sm"
           rows={2}
         />
       </label>
@@ -124,7 +131,7 @@ export function WithdrawalActions({ withdrawalId, status }: Props) {
             <input
               value={transferRef}
               onChange={(event) => setTransferRef(event.target.value)}
-              className="mt-1 w-full rounded-lg border border-border bg-canvas px-3 py-2 text-sm font-mono"
+              className="bg-canvas mt-1 w-full rounded-lg border border-border px-3 py-2 font-mono text-sm"
             />
           </label>
           <div className="flex flex-wrap gap-2">

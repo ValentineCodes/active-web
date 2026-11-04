@@ -61,7 +61,12 @@ export async function fetchAdminTransactions(params: {
     p_offset: params.offset,
   });
   if (error) throw new Error(error.message);
-  const row = data as { total: number; limit: number; offset: number; items: TransactionListItem[] };
+  const row = data as {
+    total: number;
+    limit: number;
+    offset: number;
+    items: TransactionListItem[];
+  };
   return {
     total: row.total ?? 0,
     limit: row.limit ?? params.limit,

@@ -42,7 +42,8 @@ import { useColors } from '@/theme';
 
 function createIdempotencyKey(): string {
   return (
-    globalThis.crypto?.randomUUID?.() ?? `wd-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
+    globalThis.crypto?.randomUUID?.() ??
+    `wd-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
   );
 }
 
@@ -89,19 +90,16 @@ export default function WalletWithdrawReviewScreen() {
     }, [bankAccounts.refetch, identityStatus, wallet.refetch, withdrawalPolicy]),
   );
 
-  const goToSuccess = useCallback(
-    (withdrawalId: string, message: string) => {
-      clearPendingWithdrawSubmission();
-      idempotencyKeyRef.current = null;
-      void invalidateWalletQueries(queryClient);
-      const query = new URLSearchParams({
-        withdrawalId,
-        message,
-      }).toString();
-      router.replace(`/wallet/withdraw/result?${query}` as Href);
-    },
-    [],
-  );
+  const goToSuccess = useCallback((withdrawalId: string, message: string) => {
+    clearPendingWithdrawSubmission();
+    idempotencyKeyRef.current = null;
+    void invalidateWalletQueries(queryClient);
+    const query = new URLSearchParams({
+      withdrawalId,
+      message,
+    }).toString();
+    router.replace(`/wallet/withdraw/result?${query}` as Href);
+  }, []);
 
   useEffect(() => {
     if (recoveryChecked.current) return;
@@ -113,10 +111,7 @@ export default function WalletWithdrawReviewScreen() {
       return;
     }
 
-    if (
-      pending.amountMajor !== amountMajor ||
-      pending.bankAccountId !== draft.bankAccountId
-    ) {
+    if (pending.amountMajor !== amountMajor || pending.bankAccountId !== draft.bankAccountId) {
       recoveryChecked.current = true;
       return;
     }
@@ -127,24 +122,17 @@ export default function WalletWithdrawReviewScreen() {
     void resolveWithdrawalAfterNetworkError(pending, account.bank_name, account.account_name)
       .then((resolved) => {
         if (resolved) {
-          goToSuccess(
-            resolved.withdrawalId,
-            'Your withdrawal request was already submitted.',
-          );
+          goToSuccess(resolved.withdrawalId, 'Your withdrawal request was already submitted.');
         }
       })
       .catch(() => {
-        showAppToast('Could not verify withdrawal status. You can try submitting again.', 'warning');
+        showAppToast(
+          'Could not verify withdrawal status. You can try submitting again.',
+          'warning',
+        );
       })
       .finally(() => setRecovering(false));
-  }, [
-    account,
-    amountMajor,
-    draft.amount,
-    draft.bankAccountId,
-    goToSuccess,
-    validationError,
-  ]);
+  }, [account, amountMajor, draft.amount, draft.bankAccountId, goToSuccess, validationError]);
 
   const submitWithdrawal = useCallback(async () => {
     if (!account || !draft.bankAccountId) {
@@ -199,10 +187,7 @@ export default function WalletWithdrawReviewScreen() {
             account.account_name,
           );
           if (resolved) {
-            goToSuccess(
-              resolved.withdrawalId,
-              'Your withdrawal request was already submitted.',
-            );
+            goToSuccess(resolved.withdrawalId, 'Your withdrawal request was already submitted.');
             return;
           }
         } catch {
@@ -274,12 +259,7 @@ export default function WalletWithdrawReviewScreen() {
   const ninOnFile = identityStatus.data?.ninSubmitted === true;
   const ninMasked = identityStatus.data?.ninMasked;
 
-  if (
-    wallet.isPending ||
-    bankAccounts.isPending ||
-    identityStatus.isPending ||
-    recovering
-  ) {
+  if (wallet.isPending || bankAccounts.isPending || identityStatus.isPending || recovering) {
     return (
       <Screen>
         <Header title="Review withdrawal" onBack={() => router.back()} />
@@ -348,32 +328,32 @@ export default function WalletWithdrawReviewScreen() {
           <View className="gap-4 rounded-2xl border border-hairline bg-elevated p-4">
             {withdrawalPolicy.data?.requireIdentityVerification ? (
               <View className="flex-row items-start gap-3">
-                  <View className="h-10 w-10 items-center justify-center rounded-xl bg-surface">
-                    <Ionicons name="shield-checkmark-outline" size={22} color={colors.muted} />
-                  </View>
-                  <View className="min-w-0 flex-1 gap-1">
-                    <Text className="text-xs font-semibold uppercase tracking-wide text-subtle">
-                      Identity
-                    </Text>
-                    {ninOnFile ? (
-                      <>
-                        <Text className="text-base font-semibold text-ink">NIN on file</Text>
-                        {ninMasked ? (
-                          <Text className="text-sm text-muted">{ninMasked}</Text>
-                        ) : (
-                          <Text className="text-sm text-muted">
-                            Your NIN is saved for withdrawals.
-                          </Text>
-                        )}
-                      </>
-                    ) : (
-                      <Text className="text-sm leading-5 text-muted">
-                        You&apos;ll need to add your 11-digit NIN when you confirm. We require it
-                        before your first withdrawal and store it securely.
-                      </Text>
-                    )}
-                  </View>
+                <View className="h-10 w-10 items-center justify-center rounded-xl bg-surface">
+                  <Ionicons name="shield-checkmark-outline" size={22} color={colors.muted} />
                 </View>
+                <View className="min-w-0 flex-1 gap-1">
+                  <Text className="text-xs font-semibold uppercase tracking-wide text-subtle">
+                    Identity
+                  </Text>
+                  {ninOnFile ? (
+                    <>
+                      <Text className="text-base font-semibold text-ink">NIN on file</Text>
+                      {ninMasked ? (
+                        <Text className="text-sm text-muted">{ninMasked}</Text>
+                      ) : (
+                        <Text className="text-sm text-muted">
+                          Your NIN is saved for withdrawals.
+                        </Text>
+                      )}
+                    </>
+                  ) : (
+                    <Text className="text-sm leading-5 text-muted">
+                      You&apos;ll need to add your 11-digit NIN when you confirm. We require it
+                      before your first withdrawal and store it securely.
+                    </Text>
+                  )}
+                </View>
+              </View>
             ) : null}
 
             {withdrawalPolicy.data?.requireIdentityVerification ? (
@@ -387,17 +367,15 @@ export default function WalletWithdrawReviewScreen() {
               <View className="min-w-0 flex-1 gap-1">
                 <Text className="text-base font-semibold text-ink">Manual processing</Text>
                 <Text className="text-sm leading-5 text-muted">
-                  We review each request and send money to your bank manually. It may take some time.
-                  You&apos;ll be notified when the transfer is confirmed or if we need to return
-                  funds.
+                  We review each request and send money to your bank manually. It may take some
+                  time. You&apos;ll be notified when the transfer is confirmed or if we need to
+                  return funds.
                 </Text>
               </View>
             </View>
           </View>
 
-          {error ? (
-            <InlineError error={new Error(withdrawErrorMessage(error))} />
-          ) : null}
+          {error ? <InlineError error={new Error(withdrawErrorMessage(error))} /> : null}
         </ScrollView>
       </KeyboardStickyFooter>
     </Screen>

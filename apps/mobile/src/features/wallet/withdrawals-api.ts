@@ -6,12 +6,7 @@ import { supabase } from '@/lib/supabase/client';
 
 import type { PendingWithdrawSubmission } from './withdraw-pending';
 
-export type WalletWithdrawalStatus =
-  | 'pending'
-  | 'processing'
-  | 'completed'
-  | 'rejected'
-  | 'failed';
+export type WalletWithdrawalStatus = 'pending' | 'processing' | 'completed' | 'rejected' | 'failed';
 
 export type MyWalletWithdrawal = {
   withdrawalId: string;

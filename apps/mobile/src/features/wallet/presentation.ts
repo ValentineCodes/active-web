@@ -47,7 +47,9 @@ export function walletActivityVisual(
   else if (kind === 'manual_withdraw') {
     if (withdrawalStatus === 'completed') statusTag = 'completed';
   } else if (
-    ['deposit', 'external_deposit', 'manual_top_up', 'pay_provider', 'escrow_release'].includes(kind)
+    ['deposit', 'external_deposit', 'manual_top_up', 'pay_provider', 'escrow_release'].includes(
+      kind,
+    )
   ) {
     statusTag = 'completed';
   }

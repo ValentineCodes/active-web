@@ -37,9 +37,7 @@ export function AdminSidebar({ permissions, mobileOpen, onMobileClose }: Props) 
       >
         <div className="flex h-16 items-center justify-between border-b border-sidebar-border px-5">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-widest text-teal-300">
-              Active
-            </p>
+            <p className="text-xs font-semibold uppercase tracking-widest text-teal-300">Active</p>
             <p className="text-sm font-medium text-slate-200">Operations</p>
           </div>
           <button

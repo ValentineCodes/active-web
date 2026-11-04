@@ -221,10 +221,7 @@ export default function RespondScreen() {
           className="flex-1"
           contentContainerClassName="flex-grow"
           refreshControl={
-            <RefreshControl
-              refreshing={pullRefreshing}
-              onRefresh={() => void onPullRefresh()}
-            />
+            <RefreshControl refreshing={pullRefreshing} onRefresh={() => void onPullRefresh()} />
           }
         />
       </Screen>
@@ -349,10 +346,7 @@ export default function RespondScreen() {
         contentContainerClassName="gap-6 p-5 pb-12"
         keyboardShouldPersistTaps="handled"
         refreshControl={
-          <RefreshControl
-            refreshing={pullRefreshing}
-            onRefresh={() => void onPullRefresh()}
-          />
+          <RefreshControl refreshing={pullRefreshing} onRefresh={() => void onPullRefresh()} />
         }
       >
         <RequestHelpSummary
@@ -425,7 +419,6 @@ export default function RespondScreen() {
             onPress={beginFlow}
           />
         ) : null}
-
       </ScrollView>
 
       <PersonProfileBottomSheet

@@ -1,13 +1,13 @@
-import { useState } from "react"
-import { PageHero } from "@/components/layout/PageHero"
-import { RequestCard } from "@/components/marketing/RequestCard"
-import { Button } from "@/components/ui/Button"
-import { Icon } from "@/components/ui/Icon"
-import { demoRequests } from "@/data/requests"
-import type { RequestItem } from "@/types/site"
+import { useState } from 'react';
+import { PageHero } from '@/components/layout/PageHero';
+import { RequestCard } from '@/components/marketing/RequestCard';
+import { Button } from '@/components/ui/Button';
+import { Icon } from '@/components/ui/Icon';
+import { demoRequests } from '@/data/requests';
+import type { RequestItem } from '@/types/site';
 
 export function ExplorePage() {
-  const [selected, setSelected] = useState<RequestItem | null>(null)
+  const [selected, setSelected] = useState<RequestItem | null>(null);
   return (
     <>
       <PageHero
@@ -35,11 +35,7 @@ export function ExplorePage() {
             aria-labelledby="request-title"
             onMouseDown={(e) => e.stopPropagation()}
           >
-            <button
-              className="modal-close"
-              onClick={() => setSelected(null)}
-              aria-label="Close"
-            >
+            <button className="modal-close" onClick={() => setSelected(null)} aria-label="Close">
               <Icon name="close" />
             </button>
             <h2 id="request-title">{selected.title}</h2>
@@ -55,10 +51,7 @@ export function ExplorePage() {
             </div>
             {selected.attachment && (
               <figure className="modal-attachment">
-                <img
-                  src={selected.attachment.image}
-                  alt={selected.attachment.alt}
-                />
+                <img src={selected.attachment.image} alt={selected.attachment.alt} />
               </figure>
             )}
             <p>{selected.description}</p>
@@ -73,5 +66,5 @@ export function ExplorePage() {
         </div>
       )}
     </>
-  )
+  );
 }

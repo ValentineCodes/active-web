@@ -50,7 +50,8 @@ export async function POST(request: Request) {
     p_withdrawals_enabled: body.withdrawalsEnabled,
     p_require_admin_review: body.requireAdminReview,
     p_require_identity_verification_for_withdrawal: body.requireIdentityVerificationForWithdrawal,
-    p_allow_withdraw_without_identity_in_development: body.allowWithdrawWithoutIdentityInDevelopment,
+    p_allow_withdraw_without_identity_in_development:
+      body.allowWithdrawWithoutIdentityInDevelopment,
     p_idempotency_key: idempotencyKey,
   });
 

@@ -29,7 +29,12 @@ export default async function DepositDetailPage({ params }: Props) {
   return (
     <div className="space-y-6">
       <div>
-        <Link href="/transactions?view=deposits" className="text-sm text-brand hover:text-brand-dark">← Deposits</Link>
+        <Link
+          href="/transactions?view=deposits"
+          className="text-sm text-brand hover:text-brand-dark"
+        >
+          ← Deposits
+        </Link>
         <h2 className="mt-1 text-2xl font-semibold text-ink">Paystack deposit</h2>
         <p className="text-sm text-muted">{id}</p>
         <div className="mt-2 flex items-center gap-2">
@@ -54,11 +59,13 @@ export default async function DepositDetailPage({ params }: Props) {
           </div>
           <div>
             <dt className="text-muted">Reference</dt>
-            <dd className="font-mono text-xs break-all">{deposit.reference as string}</dd>
+            <dd className="break-all font-mono text-xs">{deposit.reference as string}</dd>
           </div>
           <div>
             <dt className="text-muted">Paystack reference</dt>
-            <dd className="font-mono text-xs break-all">{(deposit.paystack_reference as string) ?? '—'}</dd>
+            <dd className="break-all font-mono text-xs">
+              {(deposit.paystack_reference as string) ?? '—'}
+            </dd>
           </div>
           <div>
             <dt className="text-muted">Completed</dt>
@@ -74,12 +81,17 @@ export default async function DepositDetailPage({ params }: Props) {
       {walletTx ? (
         <section className="rounded-xl border border-border bg-elevated p-4 text-sm shadow-card">
           <h3 className="font-semibold text-ink">Ledger credit</h3>
-          <Link href={`/transactions/${walletTx.id as string}`} className="mt-2 inline-block text-brand">
+          <Link
+            href={`/transactions/${walletTx.id as string}`}
+            className="mt-2 inline-block text-brand"
+          >
             View wallet transaction →
           </Link>
         </section>
       ) : (
-        <p className="text-sm text-amber-800">No linked wallet transaction yet — check reconciliation if status is completed.</p>
+        <p className="text-sm text-amber-800">
+          No linked wallet transaction yet — check reconciliation if status is completed.
+        </p>
       )}
     </div>
   );

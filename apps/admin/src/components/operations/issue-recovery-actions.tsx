@@ -68,7 +68,8 @@ export function IssueRecoveryActions({ requestId, actions }: Props) {
             checked={confirmed}
             onChange={(event) => setConfirmed(event.target.checked)}
           />
-          I confirm this uses the existing auto-completion backend path and may release payment per policy.
+          I confirm this uses the existing auto-completion backend path and may release payment per
+          policy.
         </label>
       ) : null}
       <div className="mt-2 flex flex-wrap gap-2">
@@ -84,7 +85,11 @@ export function IssueRecoveryActions({ requestId, actions }: Props) {
           </Button>
         ))}
       </div>
-      {error ? <p className="mt-2 text-red-700" role="alert">{error}</p> : null}
+      {error ? (
+        <p className="mt-2 text-red-700" role="alert">
+          {error}
+        </p>
+      ) : null}
     </div>
   );
 }

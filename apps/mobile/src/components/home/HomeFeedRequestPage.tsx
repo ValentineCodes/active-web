@@ -50,8 +50,12 @@ export function HomeFeedRequestPage({
   const description = requestOutcomeDescription(request.description);
   const postedLabel = request.posted_at ? formatAgo(request.posted_at) : null;
 
-  const titleClass = hasPhoto ? 'text-3xl font-bold leading-9 text-white' : 'text-3xl font-bold leading-9 text-ink';
-  const bodyClass = hasPhoto ? 'text-base leading-6 text-white/90' : 'text-base leading-6 text-muted';
+  const titleClass = hasPhoto
+    ? 'text-3xl font-bold leading-9 text-white'
+    : 'text-3xl font-bold leading-9 text-ink';
+  const bodyClass = hasPhoto
+    ? 'text-base leading-6 text-white/90'
+    : 'text-base leading-6 text-muted';
   const requesterNameClass = hasPhoto
     ? 'text-lg font-semibold leading-6 text-white'
     : 'text-lg font-semibold leading-6 text-ink';
@@ -59,10 +63,14 @@ export function HomeFeedRequestPage({
   const whenChipClass = hasPhoto
     ? 'rounded-full bg-white/15 px-3 py-1'
     : 'rounded-full bg-surface px-3 py-1';
-  const whenTextClass = hasPhoto ? 'text-sm font-semibold text-white' : 'text-sm font-semibold text-ink';
+  const whenTextClass = hasPhoto
+    ? 'text-sm font-semibold text-white'
+    : 'text-sm font-semibold text-ink';
   const footerBorderClass = hasPhoto ? 'border-t border-white/15' : 'border-t border-hairline';
   const locationIconColor = hasPhoto ? '#ffffff' : colors.ink;
-  const locationTextClass = hasPhoto ? 'text-sm font-medium text-white' : 'text-sm font-medium text-ink';
+  const locationTextClass = hasPhoto
+    ? 'text-sm font-medium text-white'
+    : 'text-sm font-medium text-ink';
 
   const openDisabled = !isOwnRequest && waiting;
 
@@ -101,7 +109,14 @@ export function HomeFeedRequestPage({
           accessibilityState={{ disabled: openDisabled }}
           disabled={openDisabled}
           onPress={onOpen}
-          style={{ position: 'absolute', top: 0, right: 0, bottom: tabBarInset, left: 0, zIndex: 1 }}
+          style={{
+            position: 'absolute',
+            top: 0,
+            right: 0,
+            bottom: tabBarInset,
+            left: 0,
+            zIndex: 1,
+          }}
           className="active:opacity-95"
         />
 
@@ -151,7 +166,9 @@ export function HomeFeedRequestPage({
             </Text>
           ) : null}
 
-          <View className={`mt-1 flex-row items-center justify-between gap-3 pt-3 ${footerBorderClass}`}>
+          <View
+            className={`mt-1 flex-row items-center justify-between gap-3 pt-3 ${footerBorderClass}`}
+          >
             <View className="flex-row items-center gap-1.5">
               <Ionicons name="location-outline" size={16} color={locationIconColor} />
               <Text className={locationTextClass}>{proximityLabel}</Text>
@@ -186,10 +203,7 @@ export function HomeFeedRequestPageSkeleton({
   );
 }
 
-export function proximityLabelForRequest(
-  request: PublicRequest,
-  isOwnRequest: boolean,
-): string {
+export function proximityLabelForRequest(request: PublicRequest, isOwnRequest: boolean): string {
   if (isOwnRequest) return 'Your request';
   if (request.distance_m != null) return formatProximityHome(request.distance_m);
   return formatCoarseLocationLabel(request.location_label ?? 'Nearby');

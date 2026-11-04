@@ -39,9 +39,7 @@ export function LoginForm({ nextPath, sessionError }: Props) {
     }
 
     const destination =
-      nextPath && nextPath.startsWith('/') && !nextPath.startsWith('//')
-        ? nextPath
-        : '/overview';
+      nextPath && nextPath.startsWith('/') && !nextPath.startsWith('//') ? nextPath : '/overview';
     router.replace(destination);
     router.refresh();
   };

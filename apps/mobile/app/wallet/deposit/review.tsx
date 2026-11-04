@@ -17,10 +17,7 @@ import { validateDepositAmountMajor } from '@/features/wallet/deposit-limits';
 import { formatMoney } from '@/lib/format';
 import { showAppToast } from '@/lib/toast';
 import { toUserMessage } from '@/lib/supabase/errors';
-import {
-  readWalletReturnTo,
-  WALLET_RETURN_TO_PARAM,
-} from '@/features/wallet/deposit-navigation';
+import { readWalletReturnTo, WALLET_RETURN_TO_PARAM } from '@/features/wallet/deposit-navigation';
 import { useColors } from '@/theme';
 
 export default function WalletDepositReviewScreen() {

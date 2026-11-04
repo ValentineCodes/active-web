@@ -22,7 +22,9 @@ export function ReportEvidence({ paths }: Props) {
       const supabase = createSupabaseBrowserClient();
       const next = await Promise.all(
         paths.map(async (path) => {
-          const { data, error } = await supabase.storage.from('request-media').createSignedUrl(path, 3600);
+          const { data, error } = await supabase.storage
+            .from('request-media')
+            .createSignedUrl(path, 3600);
           if (error) {
             return { path, url: null, error: error.message };
           }
@@ -56,7 +58,11 @@ export function ReportEvidence({ paths }: Props) {
           {item.url ? (
             <a href={item.url} target="_blank" rel="noreferrer" className="block">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={item.url} alt="User-submitted report evidence" className="max-h-64 w-full rounded object-cover" />
+              <img
+                src={item.url}
+                alt="User-submitted report evidence"
+                className="max-h-64 w-full rounded object-cover"
+              />
             </a>
           ) : (
             <p className="text-sm text-red-700">{item.error ?? 'Could not load image'}</p>

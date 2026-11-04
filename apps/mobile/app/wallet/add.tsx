@@ -21,12 +21,15 @@ import {
 } from '@/features/wallet/top-up';
 
 export default function WalletAddMoneyScreen() {
-  const { returnTo: returnToParam, prefillAmount, topUpShortfall: shortfallParam } =
-    useLocalSearchParams<{
-      returnTo?: string;
-      prefillAmount?: string;
-      topUpShortfall?: string;
-    }>();
+  const {
+    returnTo: returnToParam,
+    prefillAmount,
+    topUpShortfall: shortfallParam,
+  } = useLocalSearchParams<{
+    returnTo?: string;
+    prefillAmount?: string;
+    topUpShortfall?: string;
+  }>();
   const returnTo = readWalletReturnTo(returnToParam);
   const prefill = readWalletTopUpPrefill(prefillAmount);
   const topUpShortfall = readWalletTopUpShortfall(shortfallParam);

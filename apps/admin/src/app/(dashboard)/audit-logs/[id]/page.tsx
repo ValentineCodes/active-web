@@ -26,7 +26,9 @@ export default async function AuditEventDetailPage({ params }: Props) {
   return (
     <div className="space-y-6">
       <div>
-        <Link href="/audit-logs" className="text-sm text-brand hover:text-brand-dark">← Audit logs</Link>
+        <Link href="/audit-logs" className="text-sm text-brand hover:text-brand-dark">
+          ← Audit logs
+        </Link>
         <h2 className="mt-1 text-2xl font-semibold text-ink">{event.action as string}</h2>
         <p className="text-sm text-muted">{format(new Date(event.created_at as string), 'PPpp')}</p>
       </div>
@@ -43,11 +45,14 @@ export default async function AuditEventDetailPage({ params }: Props) {
           </div>
           <div>
             <dt className="text-muted">Target</dt>
-            <dd>{event.entity_type as string} {event.entity_id ? `· ${event.entity_id as string}` : ''}</dd>
+            <dd>
+              {event.entity_type as string}{' '}
+              {event.entity_id ? `· ${event.entity_id as string}` : ''}
+            </dd>
           </div>
           <div>
             <dt className="text-muted">Correlation id</dt>
-            <dd className="font-mono text-xs break-all">{event.correlation_id as string}</dd>
+            <dd className="break-all font-mono text-xs">{event.correlation_id as string}</dd>
           </div>
           <div className="sm:col-span-2">
             <dt className="text-muted">Reason</dt>

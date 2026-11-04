@@ -33,7 +33,10 @@ export default async function ReportDetailPage({ params }: Props) {
   const resolutions = data.admin_resolutions as Array<Record<string, unknown>>;
   const notes = data.notes as Array<Record<string, unknown>>;
   const audit = data.audit_events as Array<Record<string, unknown>>;
-  const assignableAdmins = data.assignable_admins as Array<{ user_id: string; email: string | null }>;
+  const assignableAdmins = data.assignable_admins as Array<{
+    user_id: string;
+    email: string | null;
+  }>;
   const paymentLock = data.payment_lock as Record<string, unknown> | null;
   const transactions = data.wallet_transactions as Array<Record<string, unknown>> | null;
   const evidencePaths = (report.evidence_paths as string[]) ?? [];
@@ -47,7 +50,9 @@ export default async function ReportDetailPage({ params }: Props) {
   return (
     <div className="space-y-6">
       <div>
-        <Link href="/reports" className="text-sm text-brand hover:text-brand-dark">← Reports</Link>
+        <Link href="/reports" className="text-sm text-brand hover:text-brand-dark">
+          ← Reports
+        </Link>
         <h2 className="mt-1 text-2xl font-semibold text-ink">
           {REPORT_KIND_LABELS[report.kind as string] ?? (report.kind as string)}
         </h2>
@@ -64,13 +69,17 @@ export default async function ReportDetailPage({ params }: Props) {
         <p className="mt-2 whitespace-pre-wrap">{report.description as string}</p>
         <p className="mt-2 text-xs text-amber-900/80">
           Submitted {format(new Date(report.created_at as string), 'PPpp')}
-          {report.respond_by ? ` · Counterparty may respond until ${format(new Date(report.respond_by as string), 'PPpp')}` : ''}
+          {report.respond_by
+            ? ` · Counterparty may respond until ${format(new Date(report.respond_by as string), 'PPpp')}`
+            : ''}
         </p>
       </section>
 
       <section className="rounded-xl border border-border bg-elevated p-4 shadow-card">
         <h3 className="text-sm font-semibold text-ink">Submitted evidence</h3>
-        <p className="mt-1 text-xs text-muted">User-submitted photos. Access is logged for administrators.</p>
+        <p className="mt-1 text-xs text-muted">
+          User-submitted photos. Access is logged for administrators.
+        </p>
         <div className="mt-3">
           <ReportEvidence paths={evidencePaths} />
         </div>
@@ -94,7 +103,9 @@ export default async function ReportDetailPage({ params }: Props) {
             </div>
             <div>
               <dt className="text-muted">Payment</dt>
-              <dd className="capitalize">{(request.payment_status as string).replaceAll('_', ' ')}</dd>
+              <dd className="capitalize">
+                {(request.payment_status as string).replaceAll('_', ' ')}
+              </dd>
             </div>
             <div>
               <dt className="text-muted">Location</dt>
@@ -157,7 +168,9 @@ export default async function ReportDetailPage({ params }: Props) {
             <dl className="mt-3 grid gap-2 text-sm sm:grid-cols-2">
               <div>
                 <dt className="text-muted">Escrow status</dt>
-                <dd className="capitalize">{(paymentLock.status as string).replaceAll('_', ' ')}</dd>
+                <dd className="capitalize">
+                  {(paymentLock.status as string).replaceAll('_', ' ')}
+                </dd>
               </div>
               <div>
                 <dt className="text-muted">Provider amount</dt>
@@ -168,9 +181,13 @@ export default async function ReportDetailPage({ params }: Props) {
           {transactions && transactions.length > 0 ? (
             <ul className="mt-3 space-y-1 text-sm">
               {transactions.map((tx) => (
-                <li key={tx.id as string} className="flex justify-between gap-2 border-b border-border/60 py-1">
+                <li
+                  key={tx.id as string}
+                  className="flex justify-between gap-2 border-b border-border/60 py-1"
+                >
                   <span className="capitalize text-muted">
-                    {(tx.type as string).replaceAll('_', ' ')} · {(tx.status as string).replaceAll('_', ' ')}
+                    {(tx.type as string).replaceAll('_', ' ')} ·{' '}
+                    {(tx.status as string).replaceAll('_', ' ')}
                   </span>
                   <span>{formatNgnFromKobo(tx.amount as number)}</span>
                 </li>
@@ -181,7 +198,9 @@ export default async function ReportDetailPage({ params }: Props) {
           )}
         </section>
       ) : (
-        <p className="text-sm text-muted">Financial details require a finance-enabled administrator role.</p>
+        <p className="text-sm text-muted">
+          Financial details require a finance-enabled administrator role.
+        </p>
       )}
 
       <section className="rounded-xl border border-border bg-elevated p-4 shadow-card">
@@ -194,7 +213,8 @@ export default async function ReportDetailPage({ params }: Props) {
             messages.map((message) => (
               <li key={message.id as string} className="rounded-lg bg-surface px-3 py-2">
                 <p className="text-xs text-muted">
-                  {message.sender_name as string} · {format(new Date(message.created_at as string), 'PPp')}
+                  {message.sender_name as string} ·{' '}
+                  {format(new Date(message.created_at as string), 'PPp')}
                 </p>
                 <p className="mt-1 whitespace-pre-wrap">{message.body as string}</p>
               </li>
@@ -208,8 +228,9 @@ export default async function ReportDetailPage({ params }: Props) {
         <ul className="mt-3 space-y-1 text-sm text-muted">
           {events.map((event) => (
             <li key={event.id as string}>
-              {format(new Date(event.created_at as string), 'PPp')} — {(event.from_status as string).replaceAll('_', ' ')}{' '}
-              → {(event.to_status as string).replaceAll('_', ' ')}
+              {format(new Date(event.created_at as string), 'PPp')} —{' '}
+              {(event.from_status as string).replaceAll('_', ' ')} →{' '}
+              {(event.to_status as string).replaceAll('_', ' ')}
             </li>
           ))}
         </ul>
@@ -222,7 +243,8 @@ export default async function ReportDetailPage({ params }: Props) {
             {related.map((item) => (
               <li key={item.id as string}>
                 <Link href={`/reports/${item.id as string}`} className="text-brand">
-                  {REPORT_KIND_LABELS[item.kind as string] ?? (item.kind as string)} · {item.status as string}
+                  {REPORT_KIND_LABELS[item.kind as string] ?? (item.kind as string)} ·{' '}
+                  {item.status as string}
                 </Link>
               </li>
             ))}
@@ -237,8 +259,13 @@ export default async function ReportDetailPage({ params }: Props) {
             <li className="text-muted">No internal notes yet.</li>
           ) : (
             notes.map((item) => (
-              <li key={item.id as string} className="rounded-lg border border-border bg-surface px-3 py-2">
-                <p className="text-xs text-muted">{format(new Date(item.created_at as string), 'PPpp')}</p>
+              <li
+                key={item.id as string}
+                className="rounded-lg border border-border bg-surface px-3 py-2"
+              >
+                <p className="text-xs text-muted">
+                  {format(new Date(item.created_at as string), 'PPpp')}
+                </p>
                 <p className="mt-1 whitespace-pre-wrap">{item.body as string}</p>
               </li>
             ))
@@ -253,9 +280,16 @@ export default async function ReportDetailPage({ params }: Props) {
             <li className="text-muted">No administrative resolution recorded.</li>
           ) : (
             resolutions.map((item) => (
-              <li key={item.id as string} className="rounded-lg border border-border bg-surface px-3 py-2">
-                <p className="font-medium capitalize">{(item.outcome as string).replaceAll('_', ' ')}</p>
-                <p className="mt-1 text-xs text-muted">{format(new Date(item.created_at as string), 'PPpp')}</p>
+              <li
+                key={item.id as string}
+                className="rounded-lg border border-border bg-surface px-3 py-2"
+              >
+                <p className="font-medium capitalize">
+                  {(item.outcome as string).replaceAll('_', ' ')}
+                </p>
+                <p className="mt-1 text-xs text-muted">
+                  {format(new Date(item.created_at as string), 'PPpp')}
+                </p>
                 <p className="mt-2 whitespace-pre-wrap">{item.admin_note as string}</p>
               </li>
             ))

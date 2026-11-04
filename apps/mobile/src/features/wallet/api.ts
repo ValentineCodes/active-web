@@ -191,8 +191,7 @@ export function useWalletActivityInfinite() {
     queryKey: [...queryKeys.walletActivity, 'pages'],
     enabled: Boolean(session),
     initialPageParam: 0,
-    queryFn: async ({ pageParam }) =>
-      fetchVisibleWalletActivity(WALLET.historyPageSize, pageParam),
+    queryFn: async ({ pageParam }) => fetchVisibleWalletActivity(WALLET.historyPageSize, pageParam),
     getNextPageParam: (lastPage) => (lastPage.hasMore ? lastPage.nextOffset : undefined),
   });
 }

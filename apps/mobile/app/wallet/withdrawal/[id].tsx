@@ -69,8 +69,7 @@ export default function WalletWithdrawalDetailScreen() {
           message="It may still be loading or you may not have access."
           action={{
             label: withdrawal.isError ? 'Try again' : 'Go back',
-            onPress: () =>
-              withdrawal.isError ? void withdrawal.refetch() : router.back(),
+            onPress: () => (withdrawal.isError ? void withdrawal.refetch() : router.back()),
           }}
         />
       </Screen>

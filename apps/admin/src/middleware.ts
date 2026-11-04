@@ -60,34 +60,33 @@ export async function middleware(request: NextRequest) {
     return response;
   }
 
-  const routePermission =
-    pathname.startsWith('/api/admin/settings')
-      ? 'settings'
-      : pathname.startsWith('/api/admin/operational-issues')
-        ? 'operational_issues'
-        : pathname.startsWith('/api/admin/reports')
-          ? 'reports'
-          : pathname.startsWith('/api/admin/users')
+  const routePermission = pathname.startsWith('/api/admin/settings')
+    ? 'settings'
+    : pathname.startsWith('/api/admin/operational-issues')
+      ? 'operational_issues'
+      : pathname.startsWith('/api/admin/reports')
+        ? 'reports'
+        : pathname.startsWith('/api/admin/users')
+          ? 'users'
+          : pathname.startsWith('/users')
             ? 'users'
-            : pathname.startsWith('/users')
-              ? 'users'
-              : pathname.startsWith('/requests')
-                ? 'requests'
-                : pathname.startsWith('/reports')
-                  ? 'reports'
-                  : pathname.startsWith('/transactions')
-                    ? 'transactions'
-                    : pathname.startsWith('/wallets')
-                      ? 'wallets'
-                      : pathname.startsWith('/withdrawals')
-                        ? 'withdrawals'
-                        : pathname.startsWith('/operational-issues')
-                          ? 'operational_issues'
-                          : pathname.startsWith('/audit-logs')
-                            ? 'audit_logs'
-                            : pathname.startsWith('/settings')
-                              ? 'settings'
-                              : navItemForPath(pathname)?.permission;
+            : pathname.startsWith('/requests')
+              ? 'requests'
+              : pathname.startsWith('/reports')
+                ? 'reports'
+                : pathname.startsWith('/transactions')
+                  ? 'transactions'
+                  : pathname.startsWith('/wallets')
+                    ? 'wallets'
+                    : pathname.startsWith('/withdrawals')
+                      ? 'withdrawals'
+                      : pathname.startsWith('/operational-issues')
+                        ? 'operational_issues'
+                        : pathname.startsWith('/audit-logs')
+                          ? 'audit_logs'
+                          : pathname.startsWith('/settings')
+                            ? 'settings'
+                            : navItemForPath(pathname)?.permission;
 
   if (routePermission && !permissions[routePermission]) {
     const deniedUrl = request.nextUrl.clone();

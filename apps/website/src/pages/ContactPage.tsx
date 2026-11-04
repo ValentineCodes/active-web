@@ -1,25 +1,22 @@
-import { FormEvent, useState } from "react"
-import { Button } from "@/components/ui/Button"
-import { Eyebrow } from "@/components/ui/Eyebrow"
-import { Icon } from "@/components/ui/Icon"
+import { FormEvent, useState } from 'react';
+import { Button } from '@/components/ui/Button';
+import { Eyebrow } from '@/components/ui/Eyebrow';
+import { Icon } from '@/components/ui/Icon';
 
 export function ContactPage() {
-  const [submitted, setSubmitted] = useState(false)
-  const [errors, setErrors] = useState<Record<string, string>>({})
+  const [submitted, setSubmitted] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    const data = new FormData(e.currentTarget)
-    const next: Record<string, string> = {}
-    if (!String(data.get("name") || "").trim())
-      next.name = "Please enter your name."
-    const email = String(data.get("email") || "")
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
-      next.email = "Enter a valid email address."
-    if (!data.get("interest"))
-      next.interest = "Choose what you’d like to discuss."
-    setErrors(next)
-    if (!Object.keys(next).length) setSubmitted(true)
-  }
+    e.preventDefault();
+    const data = new FormData(e.currentTarget);
+    const next: Record<string, string> = {};
+    if (!String(data.get('name') || '').trim()) next.name = 'Please enter your name.';
+    const email = String(data.get('email') || '');
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) next.email = 'Enter a valid email address.';
+    if (!data.get('interest')) next.interest = 'Choose what you’d like to discuss.';
+    setErrors(next);
+    if (!Object.keys(next).length) setSubmitted(true);
+  };
   return (
     <section className="contact-page">
       <div className="contact-intro">
@@ -30,8 +27,7 @@ export function ContactPage() {
           <em>believing</em>
         </h1>
         <p>
-          See the Active concept, explore ways to collaborate, or share what
-          caught your attention.
+          See the Active concept, explore ways to collaborate, or share what caught your attention.
         </p>
         <div className="contact-points">
           <span>
@@ -52,12 +48,8 @@ export function ContactPage() {
               <Icon name="check" size={34} />
             </div>
             <h2>Request received</h2>
-            <p>
-              Thanks for reaching out. Please be patient, we will get back to you shortly.
-            </p>
-            <Button onClick={() => setSubmitted(false)}>
-              Send another
-            </Button>
+            <p>Thanks for reaching out. Please be patient, we will get back to you shortly.</p>
+            <Button onClick={() => setSubmitted(false)}>Send another</Button>
           </div>
         ) : (
           <form onSubmit={handleSubmit} noValidate>
@@ -66,11 +58,7 @@ export function ContactPage() {
             </div>
             <label>
               Full name
-              <input
-                name="name"
-                placeholder="What do we call you?"
-                aria-invalid={!!errors.name}
-              />
+              <input name="name" placeholder="What do we call you?" aria-invalid={!!errors.name} />
               {errors.name && <small>{errors.name}</small>}
             </label>
             <label>
@@ -115,5 +103,5 @@ export function ContactPage() {
         )}
       </div>
     </section>
-  )
+  );
 }

@@ -52,7 +52,7 @@ export function WithdrawalsFilters() {
           <input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            className="rounded-lg border border-border bg-canvas px-3 py-2 text-sm text-ink"
+            className="bg-canvas rounded-lg border border-border px-3 py-2 text-sm text-ink"
             placeholder="Reference, name, user id…"
           />
         </label>
@@ -61,11 +61,13 @@ export function WithdrawalsFilters() {
           <input
             value={userId}
             onChange={(event) => setUserId(event.target.value)}
-            className="rounded-lg border border-border bg-canvas px-3 py-2 font-mono text-sm text-ink"
+            className="bg-canvas rounded-lg border border-border px-3 py-2 font-mono text-sm text-ink"
             placeholder="UUID"
           />
         </label>
-        <Button type="submit" variant="secondary" loading={pending}>Apply filters</Button>
+        <Button type="submit" variant="secondary" loading={pending}>
+          Apply filters
+        </Button>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -75,7 +77,7 @@ export function WithdrawalsFilters() {
             type="date"
             value={submittedFrom}
             onChange={(event) => setSubmittedFrom(event.target.value)}
-            className="rounded-lg border border-border bg-canvas px-3 py-2 text-sm"
+            className="bg-canvas rounded-lg border border-border px-3 py-2 text-sm"
           />
         </label>
         <label className="flex flex-col gap-1 text-xs text-muted">
@@ -84,7 +86,7 @@ export function WithdrawalsFilters() {
             type="date"
             value={submittedTo}
             onChange={(event) => setSubmittedTo(event.target.value)}
-            className="rounded-lg border border-border bg-canvas px-3 py-2 text-sm"
+            className="bg-canvas rounded-lg border border-border px-3 py-2 text-sm"
           />
         </label>
         <label className="flex flex-col gap-1 text-xs text-muted">
@@ -92,7 +94,7 @@ export function WithdrawalsFilters() {
           <input
             value={amountMin}
             onChange={(event) => setAmountMin(event.target.value.replace(/[^\d]/g, ''))}
-            className="rounded-lg border border-border bg-canvas px-3 py-2 text-sm"
+            className="bg-canvas rounded-lg border border-border px-3 py-2 text-sm"
             inputMode="numeric"
           />
         </label>
@@ -101,7 +103,7 @@ export function WithdrawalsFilters() {
           <input
             value={amountMax}
             onChange={(event) => setAmountMax(event.target.value.replace(/[^\d]/g, ''))}
-            className="rounded-lg border border-border bg-canvas px-3 py-2 text-sm"
+            className="bg-canvas rounded-lg border border-border px-3 py-2 text-sm"
             inputMode="numeric"
           />
         </label>
@@ -116,7 +118,7 @@ export function WithdrawalsFilters() {
             className={
               activeFilter === option.value
                 ? 'rounded-lg bg-brand px-3 py-1.5 text-sm font-medium text-white'
-                : 'rounded-lg border border-border bg-canvas px-3 py-1.5 text-sm text-muted hover:text-ink'
+                : 'bg-canvas rounded-lg border border-border px-3 py-1.5 text-sm text-muted hover:text-ink'
             }
           >
             {option.label}

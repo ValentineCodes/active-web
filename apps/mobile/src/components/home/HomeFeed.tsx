@@ -55,9 +55,7 @@ export function HomeFeed({ searchQuery, onOpenSearch }: HomeFeedProps) {
         pathname: '/respond/[id]',
         params: {
           id: request.request_id,
-          ...(position
-            ? { lat: String(position.latitude), lng: String(position.longitude) }
-            : {}),
+          ...(position ? { lat: String(position.latitude), lng: String(position.longitude) } : {}),
         },
       });
     },

@@ -17,9 +17,10 @@ export type PositionResult =
   | { ok: true; position: Position }
   | { ok: false; reason: 'permission-denied' | 'services-disabled' | 'unavailable' };
 
-async function ensureForegroundPositionAccess(): Promise<
-  Extract<PositionResult, { ok: false }> | null
-> {
+async function ensureForegroundPositionAccess(): Promise<Extract<
+  PositionResult,
+  { ok: false }
+> | null> {
   const permissionBefore = await readForegroundPermission();
   if (permissionBefore === 'denied') {
     return { ok: false, reason: 'permission-denied' };

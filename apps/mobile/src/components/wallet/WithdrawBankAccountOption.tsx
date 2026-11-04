@@ -2,10 +2,7 @@ import { Pressable, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import { Badge } from '@/components/ui/Badge';
-import {
-  formatMaskedAccountNumber,
-  type BankAccount,
-} from '@/features/profile/bank-accounts-api';
+import { formatMaskedAccountNumber, type BankAccount } from '@/features/profile/bank-accounts-api';
 import { cn } from '@/lib/cn';
 import { useColors } from '@/theme';
 
@@ -16,12 +13,7 @@ type Props = {
   showDivider?: boolean;
 };
 
-export function WithdrawBankAccountOption({
-  account,
-  selected,
-  onSelect,
-  showDivider,
-}: Props) {
+export function WithdrawBankAccountOption({ account, selected, onSelect, showDivider }: Props) {
   const colors = useColors();
 
   return (

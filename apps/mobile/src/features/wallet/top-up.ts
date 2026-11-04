@@ -3,10 +3,7 @@ import { type Href, router } from 'expo-router';
 import { MARKET, WALLET } from '@/config';
 import { resolveAgreedAmount } from '@/features/requests/payment-display';
 import { formatMoney } from '@/lib/format';
-import {
-  WALLET_RETURN_TO_PARAM,
-  readWalletReturnTo,
-} from '@/features/wallet/deposit-navigation';
+import { WALLET_RETURN_TO_PARAM, readWalletReturnTo } from '@/features/wallet/deposit-navigation';
 
 /** Whole naira to prefill on `/wallet/add` when opening a contextual top-up. */
 export const WALLET_TOP_UP_PREFILL_PARAM = 'prefillAmount';
@@ -59,9 +56,7 @@ export function suggestedWalletTopUpMajor(shortfallMajor: number): number | unde
   return suggested;
 }
 
-export function readWalletTopUpPrefill(
-  param: string | string[] | undefined,
-): string | undefined {
+export function readWalletTopUpPrefill(param: string | string[] | undefined): string | undefined {
   const value = Array.isArray(param) ? param[0] : param;
   if (!value || !/^\d+$/.test(value)) return undefined;
   const major = Number(value);
@@ -69,9 +64,7 @@ export function readWalletTopUpPrefill(
   return String(Math.trunc(major));
 }
 
-export function readWalletTopUpShortfall(
-  param: string | string[] | undefined,
-): number | undefined {
+export function readWalletTopUpShortfall(param: string | string[] | undefined): number | undefined {
   const value = Array.isArray(param) ? param[0] : param;
   if (!value || !/^\d+$/.test(value)) return undefined;
   const major = Number(value);
@@ -103,10 +96,7 @@ function buildTopUpParams(context: WalletTopUpContext): Record<string, string> {
   if (!returnTo.startsWith('/')) {
     throw new Error('returnTo must be an app path.');
   }
-  const shortfall = walletLockShortfallMajor(
-    context.requiredLockMajor,
-    context.availableMajor,
-  );
+  const shortfall = walletLockShortfallMajor(context.requiredLockMajor, context.availableMajor);
   const prefill = suggestedWalletTopUpMajor(shortfall);
   return walletDepositFlowParams({
     returnTo,

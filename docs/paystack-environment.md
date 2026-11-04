@@ -103,9 +103,9 @@ Edge entrypoints:
 
 Authenticated Edge APIs (JWT required; `PAYSTACK_SECRET_KEY` never sent to the client):
 
-| Function | Body | Success |
-| -------- | ---- | ------- |
-| `POST /functions/v1/paystack-banks` | `{}` | `{ "status": "ok", "banks": [{ "code", "name" }] }` |
+| Function                                      | Body                                | Success                                                                   |
+| --------------------------------------------- | ----------------------------------- | ------------------------------------------------------------------------- |
+| `POST /functions/v1/paystack-banks`           | `{}`                                | `{ "status": "ok", "banks": [{ "code", "name" }] }`                       |
 | `POST /functions/v1/paystack-resolve-account` | `{ "bank_code", "account_number" }` | `{ "status": "resolved", "bank_code", "account_number", "account_name" }` |
 
 Paystack endpoints used server-side:
@@ -136,8 +136,8 @@ supabase functions deploy paystack-resolve-account
 
 Withdrawal requests (ledger only; no Paystack transfer from the mobile app):
 
-| Function | Body | Success |
-| -------- | ---- | ------- |
+| Function                                     | Body                                                       | Success                                                                                  |
+| -------------------------------------------- | ---------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
 | `POST /functions/v1/wallet-withdraw-request` | `{ "amount_naira", "bank_account_id", "idempotency_key" }` | `{ "status": "pending", "withdrawal_transaction_id", "transfer_settlement": "pending" }` |
 
 Server RPC `request_wallet_withdrawal` (service_role) debits available balance into a **pending** `withdrawal` ledger row and sends `withdrawal_processing` only. **Paystack transfer initiation and completion/failure settlement are not implemented yet** — that remains a backend job using stored `paystack_recipient_code`.

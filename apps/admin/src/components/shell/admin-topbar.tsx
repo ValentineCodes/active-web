@@ -26,7 +26,10 @@ export function AdminTopbar({ session, title, breadcrumbs, onOpenNav }: Props) {
           <Menu className="size-5" />
         </button>
         <div className="min-w-0 flex-1">
-          <nav className="mb-0.5 flex flex-wrap items-center gap-1 text-xs text-muted" aria-label="Breadcrumb">
+          <nav
+            className="mb-0.5 flex flex-wrap items-center gap-1 text-xs text-muted"
+            aria-label="Breadcrumb"
+          >
             {breadcrumbs.map((crumb, index) => (
               <span key={`${crumb.label}-${index}`} className="inline-flex items-center gap-1">
                 {index > 0 ? <ChevronRight className="size-3" aria-hidden /> : null}

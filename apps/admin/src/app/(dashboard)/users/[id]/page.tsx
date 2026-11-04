@@ -32,8 +32,7 @@ export default async function UserDetailPage({ params }: Props) {
   const identityRaw = data.identity as Record<string, unknown> | undefined;
   const identity = {
     ninSubmitted: Boolean(identityRaw?.nin_submitted),
-    submittedAt:
-      typeof identityRaw?.submitted_at === 'string' ? identityRaw.submitted_at : null,
+    submittedAt: typeof identityRaw?.submitted_at === 'string' ? identityRaw.submitted_at : null,
     ninMasked: typeof identityRaw?.nin_masked === 'string' ? identityRaw.nin_masked : null,
   };
 
@@ -41,7 +40,9 @@ export default async function UserDetailPage({ params }: Props) {
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <Link href="/users" className="text-sm text-brand hover:text-brand-dark">← Users</Link>
+          <Link href="/users" className="text-sm text-brand hover:text-brand-dark">
+            ← Users
+          </Link>
           <h2 className="mt-1 text-2xl font-semibold text-ink">
             {(profile.display_name as string) ?? 'Unnamed user'}
           </h2>
@@ -92,8 +93,8 @@ export default async function UserDetailPage({ params }: Props) {
             </div>
           </dl>
           <p className="mt-3 text-xs text-subtle">
-            Phone numbers are verified via OTP. Withdrawal identity uses a self-attested NIN stored encrypted;
-            see the identity section below for submission status.
+            Phone numbers are verified via OTP. Withdrawal identity uses a self-attested NIN stored
+            encrypted; see the identity section below for submission status.
           </p>
         </section>
 
@@ -126,10 +127,26 @@ export default async function UserDetailPage({ params }: Props) {
       ) : null}
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <HistoryTable title="Requests" rows={data.requests as Array<Record<string, unknown>>} linkKey="id" />
-        <HistoryTable title="Engagements" rows={data.engagements as Array<Record<string, unknown>>} linkKey="id" />
-        <HistoryTable title="Offers submitted" rows={data.responses as Array<Record<string, unknown>>} linkKey="request_id" />
-        <HistoryTable title="Reports" rows={data.reports as Array<Record<string, unknown>>} linkKey="request_id" />
+        <HistoryTable
+          title="Requests"
+          rows={data.requests as Array<Record<string, unknown>>}
+          linkKey="id"
+        />
+        <HistoryTable
+          title="Engagements"
+          rows={data.engagements as Array<Record<string, unknown>>}
+          linkKey="id"
+        />
+        <HistoryTable
+          title="Offers submitted"
+          rows={data.responses as Array<Record<string, unknown>>}
+          linkKey="request_id"
+        />
+        <HistoryTable
+          title="Reports"
+          rows={data.reports as Array<Record<string, unknown>>}
+          linkKey="request_id"
+        />
       </div>
 
       <NotesAndAudit
@@ -166,7 +183,9 @@ function HistoryTable({
               </Link>
               <p className="text-xs text-muted">
                 {(row.status as string) ?? '—'}
-                {row.created_at ? ` · ${format(new Date(row.created_at as string), 'MMM d, yyyy')}` : ''}
+                {row.created_at
+                  ? ` · ${format(new Date(row.created_at as string), 'MMM d, yyyy')}`
+                  : ''}
               </p>
             </li>
           ))}

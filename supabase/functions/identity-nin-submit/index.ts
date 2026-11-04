@@ -46,7 +46,10 @@ Deno.serve(async (req) => {
     }
 
     const cryptoConfig = loadNinCryptoConfig();
-    const { ciphertext, nonce, keyVersion } = await encryptNin(nin, cryptoConfig.encryptionKeyBase64);
+    const { ciphertext, nonce, keyVersion } = await encryptNin(
+      nin,
+      cryptoConfig.encryptionKeyBase64,
+    );
     const fingerprint = await fingerprintNin(nin, cryptoConfig.fingerprintKeyBase64);
 
     const service = getServiceSupabase();
@@ -72,7 +75,11 @@ Deno.serve(async (req) => {
 
       if (lower.includes('already linked to another account')) {
         return jsonResponse(
-          { status: 'error', code: 'nin_in_use', error: 'This NIN is already linked to another account.' },
+          {
+            status: 'error',
+            code: 'nin_in_use',
+            error: 'This NIN is already linked to another account.',
+          },
           { status: 409 },
         );
       }

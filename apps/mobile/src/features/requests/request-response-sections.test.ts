@@ -6,10 +6,7 @@ import {
   requesterCanAcceptResponses,
 } from './request-response-sections.ts';
 
-const response = (
-  id: string,
-  status: 'pending' | 'accepted' | 'withdrawn' | 'declined',
-) =>
+const response = (id: string, status: 'pending' | 'accepted' | 'withdrawn' | 'declined') =>
   ({
     response_id: id,
     responder_id: id,

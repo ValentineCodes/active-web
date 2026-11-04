@@ -29,51 +29,53 @@ export function useBankAccountLookup({ bankCode, accountNumber }: LookupInput) {
 
   const state = projectLookupState(lookup, currentKey);
 
-  const runLookup = useCallback(async (generation: number, key: string, bank: string, account: string) => {
-    setLookup({ key, status: 'loading' });
+  const runLookup = useCallback(
+    async (generation: number, key: string, bank: string, account: string) => {
+      setLookup({ key, status: 'loading' });
 
-    try {
-      const result = await resolveBankAccount({
-        bankCode: bank,
-        accountNumber: account,
-      });
+      try {
+        const result = await resolveBankAccount({
+          bankCode: bank,
+          accountNumber: account,
+        });
 
-      if (generationRef.current !== generation) return;
+        if (generationRef.current !== generation) return;
 
-      setLookup({ key, status: 'resolved', accountName: result.account_name });
-    } catch (error) {
-      if (generationRef.current !== generation) return;
+        setLookup({ key, status: 'resolved', accountName: result.account_name });
+      } catch (error) {
+        if (generationRef.current !== generation) return;
 
-      const code = resolveErrorCode(error);
-      const message =
-        error instanceof Error ? error.message : 'Could not look up this account.';
+        const code = resolveErrorCode(error);
+        const message = error instanceof Error ? error.message : 'Could not look up this account.';
 
-      if (code === 'not_found') {
+        if (code === 'not_found') {
+          setLookup({ key, status: 'not_found', message });
+          return;
+        }
+
+        if (code === 'rate_limited') {
+          setLookup({
+            key,
+            status: 'provider_error',
+            message: message || 'Too many lookups. Wait a moment and try again.',
+          });
+          return;
+        }
+
+        if (code === 'provider_unavailable' || code === 'unknown') {
+          setLookup({
+            key,
+            status: 'provider_error',
+            message: message || 'Bank lookup is temporarily unavailable. Try again.',
+          });
+          return;
+        }
+
         setLookup({ key, status: 'not_found', message });
-        return;
       }
-
-      if (code === 'rate_limited') {
-        setLookup({
-          key,
-          status: 'provider_error',
-          message: message || 'Too many lookups. Wait a moment and try again.',
-        });
-        return;
-      }
-
-      if (code === 'provider_unavailable' || code === 'unknown') {
-        setLookup({
-          key,
-          status: 'provider_error',
-          message: message || 'Bank lookup is temporarily unavailable. Try again.',
-        });
-        return;
-      }
-
-      setLookup({ key, status: 'not_found', message });
-    }
-  }, []);
+    },
+    [],
+  );
 
   const digits = useMemo(() => accountNumber.replace(/\D/g, ''), [accountNumber]);
 

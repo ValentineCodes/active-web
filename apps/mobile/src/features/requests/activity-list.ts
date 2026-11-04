@@ -5,7 +5,6 @@ import type { NotificationType } from '@/features/notifications/types';
 import type { Database } from '@/lib/supabase/database.types';
 import { formatAgo, formatMoney } from '@/lib/format';
 
-
 type RequestStatus = Database['public']['Enums']['request_status'];
 type ResponseStatus = Database['public']['Enums']['response_status'];
 

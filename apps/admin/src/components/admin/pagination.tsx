@@ -32,7 +32,9 @@ export function ListPagination({ basePath, searchParams, total, limit, offset }:
   return (
     <div className="flex items-center justify-between gap-3 border-t border-border pt-4 text-sm">
       <p className="text-muted">
-        {total === 0 ? 'No results' : `Showing ${offset + 1}–${Math.min(offset + limit, total)} of ${total}`}
+        {total === 0
+          ? 'No results'
+          : `Showing ${offset + 1}–${Math.min(offset + limit, total)} of ${total}`}
       </p>
       <div className="flex items-center gap-2">
         <Link
@@ -45,7 +47,9 @@ export function ListPagination({ basePath, searchParams, total, limit, offset }:
         >
           Previous
         </Link>
-        <span className="tabular-nums text-muted">Page {page} / {pages}</span>
+        <span className="tabular-nums text-muted">
+          Page {page} / {pages}
+        </span>
         <Link
           href={hasNext ? hrefFor(nextOffset) : '#'}
           className={cn(

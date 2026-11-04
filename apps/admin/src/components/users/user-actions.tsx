@@ -102,7 +102,11 @@ export function UserAdminActions({ userId, isRestricted }: Props) {
         </Button>
       </div>
 
-      {error ? <p className="text-sm text-red-700" role="alert">{error}</p> : null}
+      {error ? (
+        <p className="text-sm text-red-700" role="alert">
+          {error}
+        </p>
+      ) : null}
     </div>
   );
 }

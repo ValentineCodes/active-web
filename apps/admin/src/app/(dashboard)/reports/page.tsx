@@ -29,8 +29,8 @@ export default async function ReportsPage({ searchParams }: Props) {
       <div>
         <h2 className="text-2xl font-semibold text-ink">Reports</h2>
         <p className="mt-1 text-sm text-muted">
-          Service problems filed through the mobile Report flow. Opening a report does not refund, pay, or cancel
-          engagements automatically.
+          Service problems filed through the mobile Report flow. Opening a report does not refund,
+          pay, or cancel engagements automatically.
         </p>
       </div>
 
@@ -44,7 +44,7 @@ export default async function ReportsPage({ searchParams }: Props) {
 
       <div className="overflow-hidden rounded-xl border border-border bg-elevated shadow-card">
         <div className="overflow-x-auto">
-          <table className="min-w-[1100px] w-full text-left text-sm">
+          <table className="w-full min-w-[1100px] text-left text-sm">
             <thead className="border-b border-border bg-surface text-xs uppercase tracking-wide text-muted">
               <tr>
                 <th className="px-4 py-3 font-medium">Submitted</th>
@@ -67,7 +67,10 @@ export default async function ReportsPage({ searchParams }: Props) {
                 result.items.map((report) => (
                   <tr key={report.id} className="border-b border-border/70 last:border-0">
                     <td className="px-4 py-3 text-muted">
-                      <Link href={`/reports/${report.id}`} className="font-medium text-ink hover:text-brand">
+                      <Link
+                        href={`/reports/${report.id}`}
+                        className="font-medium text-ink hover:text-brand"
+                      >
                         {format(new Date(report.created_at), 'PP')}
                       </Link>
                       <p className="text-xs text-subtle">{report.id.slice(0, 8)}…</p>
@@ -101,7 +104,9 @@ export default async function ReportsPage({ searchParams }: Props) {
                     <td className="px-4 py-3">
                       <StatusBadge status={report.status} />
                       {report.resolution ? (
-                        <p className="mt-1 text-xs capitalize text-subtle">{report.resolution.replaceAll('_', ' ')}</p>
+                        <p className="mt-1 text-xs capitalize text-subtle">
+                          {report.resolution.replaceAll('_', ' ')}
+                        </p>
                       ) : null}
                     </td>
                   </tr>

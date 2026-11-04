@@ -1,4 +1,4 @@
-import { ReactNode } from "react"
+import { ReactNode } from 'react';
 
 const paths: Record<string, ReactNode> = {
   arrow: (
@@ -82,7 +82,7 @@ const paths: Record<string, ReactNode> = {
       <path d="M5 14h13" />
     </>
   ),
-}
+};
 
 export function Icon({ name, size = 20 }: { name: string; size?: number }) {
   return (
@@ -100,5 +100,5 @@ export function Icon({ name, size = 20 }: { name: string; size?: number }) {
     >
       {paths[name] || paths.spark}
     </svg>
-  )
+  );
 }

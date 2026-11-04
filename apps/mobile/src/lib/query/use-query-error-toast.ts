@@ -13,10 +13,7 @@ type QueryErrorToastSource = {
  * Shows one toast when a query settles in an error state. Safe across re-renders;
  * fires again when the error identity changes (e.g. after a failed refetch).
  */
-export function useQueryErrorToast(
-  query: QueryErrorToastSource,
-  options?: { enabled?: boolean },
-) {
+export function useQueryErrorToast(query: QueryErrorToastSource, options?: { enabled?: boolean }) {
   const enabled = options?.enabled ?? true;
   const lastNotified = useRef<unknown>(undefined);
 

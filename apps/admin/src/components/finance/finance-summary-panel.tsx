@@ -25,7 +25,9 @@ type Props = {
 export function FinanceSummaryPanel({ financial, snapshots, unavailable }: Props) {
   if (!financial) {
     return (
-      <p className="text-sm text-muted">Commission and revenue metrics require the transactions permission.</p>
+      <p className="text-sm text-muted">
+        Commission and revenue metrics require the transactions permission.
+      </p>
     );
   }
 
@@ -35,21 +37,35 @@ export function FinanceSummaryPanel({ financial, snapshots, unavailable }: Props
         <Metric label="Gross settled volume" value={financial.gross_settled_volume_kobo} />
         <Metric label="Commission earned (on release)" value={financial.commission_earned_kobo} />
         <Metric label="Commission collected" value={financial.commission_collected_kobo} />
-        <Metric label="Outstanding on active locks" value={financial.commission_pending_on_active_locks_kobo} />
+        <Metric
+          label="Outstanding on active locks"
+          value={financial.commission_pending_on_active_locks_kobo}
+        />
         <Metric label="Refunds (period)" value={financial.refunds_in_period_kobo} />
         <Metric label="Adjustments (period)" value={financial.adjustments_in_period_kobo} />
-        <Metric label="User deposits (period)" hint="Custodial funding, not revenue" value={financial.user_deposits_in_period_kobo} />
-        <Metric label="Funds locked (active engagements)" value={financial.funds_locked_active_engagements_kobo} />
+        <Metric
+          label="User deposits (period)"
+          hint="Custodial funding, not revenue"
+          value={financial.user_deposits_in_period_kobo}
+        />
+        <Metric
+          label="Funds locked (active engagements)"
+          value={financial.funds_locked_active_engagements_kobo}
+        />
       </div>
       {snapshots ? (
         <dl className="grid gap-2 text-sm sm:grid-cols-2">
           <div>
             <dt className="text-muted">Platform wallet (book)</dt>
-            <dd className="font-medium text-ink">{formatNgnFromKobo(snapshots.platform_wallet_available_kobo)}</dd>
+            <dd className="font-medium text-ink">
+              {formatNgnFromKobo(snapshots.platform_wallet_available_kobo)}
+            </dd>
           </div>
           <div>
             <dt className="text-muted">User wallet liabilities</dt>
-            <dd className="font-medium text-ink">{formatNgnFromKobo(snapshots.user_wallet_liabilities_kobo)}</dd>
+            <dd className="font-medium text-ink">
+              {formatNgnFromKobo(snapshots.user_wallet_liabilities_kobo)}
+            </dd>
           </div>
         </dl>
       ) : null}
@@ -57,7 +73,8 @@ export function FinanceSummaryPanel({ financial, snapshots, unavailable }: Props
         <ul className="rounded-lg border border-border bg-surface px-3 py-2 text-xs text-muted">
           {unavailable.map((item) => (
             <li key={item.key}>
-              <span className="font-medium text-ink">{item.key.replaceAll('_', ' ')}</span>: {item.reason}
+              <span className="font-medium text-ink">{item.key.replaceAll('_', ' ')}</span>:{' '}
+              {item.reason}
             </li>
           ))}
         </ul>

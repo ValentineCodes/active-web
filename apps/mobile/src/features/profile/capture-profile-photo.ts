@@ -5,9 +5,7 @@ import { supabase } from '@/lib/supabase/client';
 import { AVATAR_BUCKET, readUriBytes, uploadPrivateObject } from './storage';
 
 export type ProfilePhotoCaptureOutcome =
-  | { kind: 'saved' }
-  | { kind: 'cancelled' }
-  | { kind: 'permission_denied'; canAskAgain: boolean };
+  { kind: 'saved' } | { kind: 'cancelled' } | { kind: 'permission_denied'; canAskAgain: boolean };
 
 let captureInFlight: Promise<ProfilePhotoCaptureOutcome> | null = null;
 

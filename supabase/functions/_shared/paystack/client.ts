@@ -161,10 +161,7 @@ export class PaystackClient {
     });
   }
 
-  private async request<T>(
-    path: string,
-    init: RequestInit & { timeoutMs?: number },
-  ): Promise<T> {
+  private async request<T>(path: string, init: RequestInit & { timeoutMs?: number }): Promise<T> {
     const url = `${this.config.baseUrl}${path}`;
     const { timeoutMs, ...fetchInit } = init;
 

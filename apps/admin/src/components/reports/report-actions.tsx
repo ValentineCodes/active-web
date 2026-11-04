@@ -60,7 +60,8 @@ export function ReportActions({
   if (!isOpen) {
     return (
       <p className="text-sm text-muted">
-        This report is closed. Resolution history is shown below; new investigation actions are not available.
+        This report is closed. Resolution history is shown below; new investigation actions are not
+        available.
       </p>
     );
   }
@@ -103,7 +104,8 @@ export function ReportActions({
         <h3 className="text-sm font-semibold text-ink">Investigation status</h3>
         <p className="mt-1 text-xs text-muted">
           Queue status is for internal coordination only. User-facing report state remains{' '}
-          <span className="font-medium">open</span> until resolved via the actions below or the mobile contest flow.
+          <span className="font-medium">open</span> until resolved via the actions below or the
+          mobile contest flow.
         </p>
         <div className="mt-2 flex flex-wrap gap-2">
           <Button
@@ -144,8 +146,8 @@ export function ReportActions({
           className="mt-2 min-h-16 w-full rounded-lg border border-border px-3 py-2 text-sm"
         />
         <p className="mt-2 text-xs text-muted">
-          To request more detail from users, use the existing request chat (participants only). There is no separate
-          admin messaging channel in this release.
+          To request more detail from users, use the existing request chat (participants only).
+          There is no separate admin messaging channel in this release.
         </p>
       </div>
 
@@ -161,7 +163,9 @@ export function ReportActions({
           className="mt-2"
           variant="secondary"
           loading={loading}
-          onClick={() => post(`/api/admin/reports/${reportId}/notes`, { body: note }).then(() => setNote(''))}
+          onClick={() =>
+            post(`/api/admin/reports/${reportId}/notes`, { body: note }).then(() => setNote(''))
+          }
         >
           Save note
         </Button>
@@ -170,8 +174,9 @@ export function ReportActions({
       <div className="border-t border-border pt-4">
         <h3 className="text-sm font-semibold text-ink">Record resolution</h3>
         <p className="mt-1 text-xs leading-relaxed text-muted">
-          These outcomes call the existing <code className="text-xs">admin_resolve_service_problem</code> backend.
-          They are explicit financial or engagement decisions — not automatic consequences of opening a report.
+          These outcomes call the existing{' '}
+          <code className="text-xs">admin_resolve_service_problem</code> backend. They are explicit
+          financial or engagement decisions — not automatic consequences of opening a report.
         </p>
         <select
           value={outcome}
@@ -210,7 +215,10 @@ export function ReportActions({
           <p className="mt-1 text-xs text-muted">
             Restrict new marketplace listings only. Does not cancel this engagement or move funds.
           </p>
-          <Link href={`/users/${counterpartyUserId}`} className="mt-2 inline-block text-sm text-brand hover:text-brand-dark">
+          <Link
+            href={`/users/${counterpartyUserId}`}
+            className="mt-2 inline-block text-sm text-brand hover:text-brand-dark"
+          >
             Open user profile to suspend or reinstate →
           </Link>
         </div>

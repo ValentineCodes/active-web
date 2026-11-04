@@ -39,10 +39,7 @@ export function StarRating({
     >
       <Ionicons name="star" size={starSize} color={ratingColor} />
       <Text
-        className={cn(
-          'font-semibold',
-          size === 'md' ? 'text-base' : 'text-sm',
-        )}
+        className={cn('font-semibold', size === 'md' ? 'text-base' : 'text-sm')}
         style={{ color: ratingColor }}
       >
         {average.toFixed(1)}

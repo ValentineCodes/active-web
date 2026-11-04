@@ -42,7 +42,9 @@ function BankAccountCard({
       <View className="flex-row items-start justify-between gap-3">
         <View className="min-w-0 flex-1 gap-1">
           <Text className="text-lg font-semibold text-ink">{row.bank_name}</Text>
-          <Text className="text-base text-muted">{formatMaskedAccountNumber(row.account_number)}</Text>
+          <Text className="text-base text-muted">
+            {formatMaskedAccountNumber(row.account_number)}
+          </Text>
           <Text className="text-sm text-muted">{row.account_name}</Text>
         </View>
         {row.is_default ? <Badge label="Default" tone="active" /> : null}
@@ -73,7 +75,9 @@ function BankAccountCard({
         >
           <Text
             className={
-              row.can_delete ? 'text-base font-semibold text-danger' : 'text-base font-semibold text-muted'
+              row.can_delete
+                ? 'text-base font-semibold text-danger'
+                : 'text-base font-semibold text-muted'
             }
           >
             {removing ? 'Removing…' : 'Remove'}
@@ -146,8 +150,8 @@ export default function BankAccountsScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onPullRefresh} />}
       >
         <Text className="text-sm leading-5 text-muted">
-          Saved accounts are used when you withdraw money from your Active wallet. Your default account
-          is pre-selected for payouts.
+          Saved accounts are used when you withdraw money from your Active wallet. Your default
+          account is pre-selected for payouts.
         </Text>
 
         {accounts.isError ? <InlineError error={accounts.error} /> : null}

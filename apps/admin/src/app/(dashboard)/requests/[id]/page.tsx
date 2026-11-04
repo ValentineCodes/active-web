@@ -34,7 +34,9 @@ export default async function RequestDetailPage({ params }: Props) {
   return (
     <div className="space-y-6">
       <div>
-        <Link href="/requests" className="text-sm text-brand hover:text-brand-dark">← Requests</Link>
+        <Link href="/requests" className="text-sm text-brand hover:text-brand-dark">
+          ← Requests
+        </Link>
         <h2 className="mt-1 text-2xl font-semibold text-ink">{request.title as string}</h2>
         <p className="text-sm text-muted">{id}</p>
       </div>
@@ -115,7 +117,10 @@ export default async function RequestDetailPage({ params }: Props) {
               offers.map((offer) => (
                 <li key={String(offer.id)} className="py-3 text-sm">
                   <div className="flex items-center justify-between gap-2">
-                    <Link href={`/users/${offer.responder_id as string}`} className="font-medium hover:text-brand">
+                    <Link
+                      href={`/users/${offer.responder_id as string}`}
+                      className="font-medium hover:text-brand"
+                    >
                       {offer.responder_name as string}
                     </Link>
                     <StatusBadge status={offer.status as string} />
@@ -127,7 +132,9 @@ export default async function RequestDetailPage({ params }: Props) {
                     {' · '}
                     {format(new Date(offer.created_at as string), 'MMM d, HH:mm')}
                   </p>
-                  {offer.message ? <p className="mt-1 text-muted">{offer.message as string}</p> : null}
+                  {offer.message ? (
+                    <p className="mt-1 text-muted">{offer.message as string}</p>
+                  ) : null}
                 </li>
               ))
             )}
@@ -182,7 +189,9 @@ export default async function RequestDetailPage({ params }: Props) {
             ) : (
               problems.map((problem) => (
                 <li key={String(problem.id)} className="py-2">
-                  <p className="font-medium capitalize">{(problem.kind as string).replaceAll('_', ' ')}</p>
+                  <p className="font-medium capitalize">
+                    {(problem.kind as string).replaceAll('_', ' ')}
+                  </p>
                   <p className="text-xs text-muted">
                     {problem.status as string}
                     {problem.resolution ? ` · ${problem.resolution as string}` : ''}
@@ -215,7 +224,8 @@ export default async function RequestDetailPage({ params }: Props) {
           <h3 className="text-sm font-semibold text-ink">Financial records</h3>
           {paymentLock ? (
             <p className="mt-2 text-sm text-muted">
-              Lock {paymentLock.status as string} · total {formatNgnFromKobo(paymentLock.total as number)} (provider{' '}
+              Lock {paymentLock.status as string} · total{' '}
+              {formatNgnFromKobo(paymentLock.total as number)} (provider{' '}
               {formatNgnFromKobo(paymentLock.provider_amount as number)}, fee{' '}
               {formatNgnFromKobo(paymentLock.service_fee as number)})
             </p>
@@ -230,7 +240,9 @@ export default async function RequestDetailPage({ params }: Props) {
               ))}
             </ul>
           ) : (
-            <p className="mt-2 text-sm text-muted">No wallet transactions linked to this request.</p>
+            <p className="mt-2 text-sm text-muted">
+              No wallet transactions linked to this request.
+            </p>
           )}
         </section>
       ) : null}

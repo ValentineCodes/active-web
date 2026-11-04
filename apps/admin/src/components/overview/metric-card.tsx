@@ -27,7 +27,10 @@ export function MetricCard({ label, value, hint, href, className }: Props) {
 
   if (href) {
     return (
-      <Link href={href} className="block rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50">
+      <Link
+        href={href}
+        className="block rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50"
+      >
         {content}
       </Link>
     );

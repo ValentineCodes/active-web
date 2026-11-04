@@ -77,15 +77,21 @@ Deno.serve(async (req) => {
       }
 
       if (lower.includes('insufficient available balance')) {
-        return jsonResponse({ status: 'error', code: 'insufficient_balance', error: message }, {
-          status: 422,
-        });
+        return jsonResponse(
+          { status: 'error', code: 'insufficient_balance', error: message },
+          {
+            status: 422,
+          },
+        );
       }
 
       if (lower.includes('bank account not found')) {
-        return jsonResponse({ status: 'error', code: 'invalid_bank_account', error: message }, {
-          status: 400,
-        });
+        return jsonResponse(
+          { status: 'error', code: 'invalid_bank_account', error: message },
+          {
+            status: 400,
+          },
+        );
       }
 
       if (
@@ -95,27 +101,39 @@ Deno.serve(async (req) => {
         lower.includes('per-withdrawal limit') ||
         lower.includes('daily withdrawal limit')
       ) {
-        return jsonResponse({ status: 'error', code: 'invalid_amount', error: message }, {
-          status: 400,
-        });
+        return jsonResponse(
+          { status: 'error', code: 'invalid_amount', error: message },
+          {
+            status: 400,
+          },
+        );
       }
 
       if (lower.includes('withdrawals are temporarily disabled')) {
-        return jsonResponse({ status: 'error', code: 'withdrawals_disabled', error: message }, {
-          status: 503,
-        });
+        return jsonResponse(
+          { status: 'error', code: 'withdrawals_disabled', error: message },
+          {
+            status: 503,
+          },
+        );
       }
 
       if (lower.includes('identity verification is required')) {
-        return jsonResponse({ status: 'error', code: 'identity_verification_required', error: message }, {
-          status: 403,
-        });
+        return jsonResponse(
+          { status: 'error', code: 'identity_verification_required', error: message },
+          {
+            status: 403,
+          },
+        );
       }
 
       if (lower.includes('withdrawal in progress')) {
-        return jsonResponse({ status: 'error', code: 'withdrawal_in_progress', error: message }, {
-          status: 409,
-        });
+        return jsonResponse(
+          { status: 'error', code: 'withdrawal_in_progress', error: message },
+          {
+            status: 409,
+          },
+        );
       }
 
       return errorResponse(message, 500);

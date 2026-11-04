@@ -32,19 +32,13 @@ export function ConversationHeader({
           accessibilityRole="header"
           className="min-w-0 flex-1 flex-row items-center gap-3 py-1"
         >
-          <AvatarWithViewer
-            path={counterpartyAvatarPath}
-            name={counterpartyName}
-            size="sm"
-          />
+          <AvatarWithViewer path={counterpartyAvatarPath} name={counterpartyName} size="sm" />
           <View className="min-w-0 flex-1 gap-0.5">
             <View className="max-w-full flex-row items-center gap-1">
               <Text className="shrink text-lg font-bold text-ink" numberOfLines={1}>
                 {firstName}
               </Text>
-              {counterpartyIdentityVerified ? (
-                <IdentityVerifiedBadge size={20} />
-              ) : null}
+              {counterpartyIdentityVerified ? <IdentityVerifiedBadge size={20} /> : null}
             </View>
             <Text className="text-sm text-muted" numberOfLines={2}>
               {requestTitle}

@@ -10,11 +10,7 @@ export function isAwaitingReviewRequestView(
     return true;
   }
 
-  return (
-    status === 'posted' &&
-    expiresAt !== null &&
-    new Date(expiresAt).getTime() <= Date.now()
-  );
+  return status === 'posted' && expiresAt !== null && new Date(expiresAt).getTime() <= Date.now();
 }
 
 export function canReuseRequest(status: RequestStatus, _expiresAt: string | null): boolean {

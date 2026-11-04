@@ -124,9 +124,7 @@ export default function WalletHistoryScreen() {
                     showDivider={index > 0}
                     onPress={() => {
                       if (item.withdrawal?.withdrawalId) {
-                        router.push(
-                          `/wallet/withdrawal/${item.withdrawal.withdrawalId}` as Href,
-                        );
+                        router.push(`/wallet/withdrawal/${item.withdrawal.withdrawalId}` as Href);
                         return;
                       }
                       router.push(`/wallet/transaction/${item.id}` as Href);

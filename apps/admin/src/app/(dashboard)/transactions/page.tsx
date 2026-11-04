@@ -56,23 +56,24 @@ export default async function TransactionsPage({ searchParams }: Props) {
         })
       : null;
 
-  const statusLinks = (view === 'deposits' ? DEPOSIT_STATUS_FILTERS : TRANSACTION_STATUS_FILTERS).map(
-    (option) => {
-      const next = new URLSearchParams();
-      if (query) next.set('q', query);
-      if (view !== 'ledger') next.set('view', view);
-      if (typeGroup !== 'all') next.set('filter', typeGroup);
-      if (option.value !== 'all') next.set('status', option.value);
-      return { ...option, href: `/transactions?${next.toString()}` };
-    },
-  );
+  const statusLinks = (
+    view === 'deposits' ? DEPOSIT_STATUS_FILTERS : TRANSACTION_STATUS_FILTERS
+  ).map((option) => {
+    const next = new URLSearchParams();
+    if (query) next.set('q', query);
+    if (view !== 'ledger') next.set('view', view);
+    if (typeGroup !== 'all') next.set('filter', typeGroup);
+    if (option.value !== 'all') next.set('status', option.value);
+    return { ...option, href: `/transactions?${next.toString()}` };
+  });
 
   return (
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-semibold text-ink">Transactions</h2>
         <p className="mt-1 text-sm text-muted">
-          Append-only wallet ledger (kobo) and Paystack deposit lifecycle. Amounts are integer kobo; NGN only.
+          Append-only wallet ledger (kobo) and Paystack deposit lifecycle. Amounts are integer kobo;
+          NGN only.
         </p>
       </div>
 
@@ -82,13 +83,21 @@ export default async function TransactionsPage({ searchParams }: Props) {
           Deposits and locked user funds are not counted as collected platform revenue.
         </p>
         <div className="mt-4">
-          <FinanceSummaryPanel financial={financial} snapshots={snapshots} unavailable={unavailable} />
+          <FinanceSummaryPanel
+            financial={financial}
+            snapshots={snapshots}
+            unavailable={unavailable}
+          />
         </div>
       </section>
 
       <div className="flex flex-wrap gap-2">
-        <TabLink href="/transactions" active={view === 'ledger'}>Ledger</TabLink>
-        <TabLink href="/transactions?view=deposits" active={view === 'deposits'}>Paystack deposits</TabLink>
+        <TabLink href="/transactions" active={view === 'ledger'}>
+          Ledger
+        </TabLink>
+        <TabLink href="/transactions?view=deposits" active={view === 'deposits'}>
+          Paystack deposits
+        </TabLink>
       </div>
 
       <Suspense fallback={<div className="h-12 animate-pulse rounded-lg bg-border" />}>
@@ -96,9 +105,7 @@ export default async function TransactionsPage({ searchParams }: Props) {
           basePath={view === 'deposits' ? '/transactions?view=deposits' : '/transactions'}
           searchPlaceholder="Search id, reference, Paystack ref, user, or request"
           filterOptions={
-            view === 'deposits'
-              ? [...DEPOSIT_STATUS_FILTERS]
-              : [...TRANSACTION_TYPE_FILTERS]
+            view === 'deposits' ? [...DEPOSIT_STATUS_FILTERS] : [...TRANSACTION_TYPE_FILTERS]
           }
         />
       </Suspense>
@@ -122,7 +129,7 @@ export default async function TransactionsPage({ searchParams }: Props) {
       <div className="overflow-hidden rounded-xl border border-border bg-elevated shadow-card">
         <div className="overflow-x-auto">
           {view === 'deposits' && deposits ? (
-            <table className="min-w-[960px] w-full text-left text-sm">
+            <table className="w-full min-w-[960px] text-left text-sm">
               <thead className="border-b border-border bg-surface text-xs uppercase tracking-wide text-muted">
                 <tr>
                   <th className="px-4 py-3 font-medium">Created</th>
@@ -135,15 +142,23 @@ export default async function TransactionsPage({ searchParams }: Props) {
               <tbody>
                 {deposits.items.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="px-4 py-10 text-center text-muted">No deposits found.</td>
+                    <td colSpan={5} className="px-4 py-10 text-center text-muted">
+                      No deposits found.
+                    </td>
                   </tr>
                 ) : (
                   deposits.items.map((row) => {
                     const item = row as Record<string, unknown>;
                     return (
-                      <tr key={item.id as string} className="border-b border-border/70 last:border-0">
+                      <tr
+                        key={item.id as string}
+                        className="border-b border-border/70 last:border-0"
+                      >
                         <td className="px-4 py-3">
-                          <Link href={`/transactions/deposits/${item.id as string}`} className="text-brand">
+                          <Link
+                            href={`/transactions/deposits/${item.id as string}`}
+                            className="text-brand"
+                          >
                             {format(new Date(item.created_at as string), 'PPp')}
                           </Link>
                         </td>
@@ -153,7 +168,9 @@ export default async function TransactionsPage({ searchParams }: Props) {
                           </Link>
                         </td>
                         <td className="px-4 py-3">{formatNgnFromKobo(item.amount as number)}</td>
-                        <td className="px-4 py-3"><StatusBadge status={item.status as string} /></td>
+                        <td className="px-4 py-3">
+                          <StatusBadge status={item.status as string} />
+                        </td>
                         <td className="px-4 py-3 text-xs text-muted">
                           <p>{item.reference as string}</p>
                           <p>{(item.paystack_reference as string) ?? '—'}</p>
@@ -165,7 +182,7 @@ export default async function TransactionsPage({ searchParams }: Props) {
               </tbody>
             </table>
           ) : ledger ? (
-            <table className="min-w-[1100px] w-full text-left text-sm">
+            <table className="w-full min-w-[1100px] text-left text-sm">
               <thead className="border-b border-border bg-surface text-xs uppercase tracking-wide text-muted">
                 <tr>
                   <th className="px-4 py-3 font-medium">Time</th>
@@ -180,7 +197,9 @@ export default async function TransactionsPage({ searchParams }: Props) {
               <tbody>
                 {ledger.items.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-4 py-10 text-center text-muted">No ledger entries found.</td>
+                    <td colSpan={7} className="px-4 py-10 text-center text-muted">
+                      No ledger entries found.
+                    </td>
                   </tr>
                 ) : (
                   ledger.items.map((tx) => (
@@ -191,20 +210,26 @@ export default async function TransactionsPage({ searchParams }: Props) {
                         </Link>
                       </td>
                       <td className="px-4 py-3 capitalize">{tx.type.replaceAll('_', ' ')}</td>
-                      <td className="px-4 py-3"><StatusBadge status={tx.status} /></td>
                       <td className="px-4 py-3">
-                        <Link href={`/wallets/${tx.user_id}`} className="text-brand">{tx.user_name ?? tx.user_id.slice(0, 8)}</Link>
+                        <StatusBadge status={tx.status} />
+                      </td>
+                      <td className="px-4 py-3">
+                        <Link href={`/wallets/${tx.user_id}`} className="text-brand">
+                          {tx.user_name ?? tx.user_id.slice(0, 8)}
+                        </Link>
                       </td>
                       <td className="px-4 py-3">{formatNgnFromKobo(tx.amount)}</td>
                       <td className="px-4 py-3">
                         {tx.request_id ? (
-                          <Link href={`/requests/${tx.request_id}`} className="text-brand">View</Link>
+                          <Link href={`/requests/${tx.request_id}`} className="text-brand">
+                            View
+                          </Link>
                         ) : (
                           '—'
                         )}
                       </td>
                       <td className="px-4 py-3 text-xs text-muted">
-                        <p className="truncate max-w-48">{tx.reference}</p>
+                        <p className="max-w-48 truncate">{tx.reference}</p>
                         {tx.paystack_reference ? <p>{tx.paystack_reference}</p> : null}
                       </td>
                     </tr>
@@ -223,7 +248,7 @@ export default async function TransactionsPage({ searchParams }: Props) {
               filter: typeGroup === 'all' ? undefined : typeGroup,
               status: status === 'all' ? undefined : status,
             }}
-            total={view === 'deposits' ? deposits?.total ?? 0 : ledger?.total ?? 0}
+            total={view === 'deposits' ? (deposits?.total ?? 0) : (ledger?.total ?? 0)}
             limit={limit}
             offset={offset}
           />
@@ -233,7 +258,15 @@ export default async function TransactionsPage({ searchParams }: Props) {
   );
 }
 
-function TabLink({ href, active, children }: { href: string; active: boolean; children: ReactNode }) {
+function TabLink({
+  href,
+  active,
+  children,
+}: {
+  href: string;
+  active: boolean;
+  children: ReactNode;
+}) {
   return (
     <Link
       href={href}

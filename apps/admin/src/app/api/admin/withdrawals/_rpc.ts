@@ -11,7 +11,13 @@ export async function callWithdrawalRpc(
 
   if (error) {
     const status =
-      error.code === '42501' ? 403 : error.code === 'P0002' ? 404 : error.code === '55000' ? 409 : 400;
+      error.code === '42501'
+        ? 403
+        : error.code === 'P0002'
+          ? 404
+          : error.code === '55000'
+            ? 409
+            : 400;
     return NextResponse.json({ error: error.message }, { status });
   }
 

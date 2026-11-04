@@ -22,7 +22,9 @@ export default async function AccessDeniedPage() {
         <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
           {user ? (
             <form action="/api/auth/sign-out" method="post">
-              <Button type="submit" variant="secondary">Sign out</Button>
+              <Button type="submit" variant="secondary">
+                Sign out
+              </Button>
             </form>
           ) : (
             <Link href="/login">

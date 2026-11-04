@@ -198,11 +198,7 @@ function EditProfileForm({
           <View className="items-center gap-3">
             <View className="relative">
               {avatarPath ? (
-                <AvatarWithViewer
-                  path={avatarPath}
-                  name={trimmedName || displayName}
-                  size="lg"
-                />
+                <AvatarWithViewer path={avatarPath} name={trimmedName || displayName} size="lg" />
               ) : (
                 <Pressable
                   onPress={() =>

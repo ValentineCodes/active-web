@@ -8,7 +8,10 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
   const { id } = await context.params;
   const body = (await request.json()) as Body;
   if (!body.reason || body.reason.trim().length < 10) {
-    return NextResponse.json({ error: 'A reason of at least 10 characters is required' }, { status: 400 });
+    return NextResponse.json(
+      { error: 'A reason of at least 10 characters is required' },
+      { status: 400 },
+    );
   }
   if (!body.idempotencyKey) {
     return NextResponse.json({ error: 'idempotencyKey is required' }, { status: 400 });

@@ -293,9 +293,7 @@ export async function resolveNotificationHrefFromPushDataForOpen(
 }
 
 export function resolveNotificationHrefFromPushData(data: Record<string, unknown>): string | null {
-  const storedHref = normalizeNotificationHref(
-    typeof data.url === 'string' ? data.url : null,
-  );
+  const storedHref = normalizeNotificationHref(typeof data.url === 'string' ? data.url : null);
   if (storedHref) return storedHref;
 
   const type = data.type;

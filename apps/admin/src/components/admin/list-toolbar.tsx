@@ -63,7 +63,9 @@ export function ListToolbar({
             <button
               key={option.value}
               type="button"
-              onClick={() => apply({ [filterParam]: option.value === 'all' ? undefined : option.value })}
+              onClick={() =>
+                apply({ [filterParam]: option.value === 'all' ? undefined : option.value })
+              }
               className={
                 activeFilter === option.value
                   ? 'rounded-lg bg-brand px-3 py-1.5 text-sm font-medium text-white'

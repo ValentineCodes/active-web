@@ -57,7 +57,7 @@ export default async function RequestsPage({ searchParams }: Props) {
 
       <div className="overflow-hidden rounded-xl border border-border bg-elevated shadow-card">
         <div className="overflow-x-auto">
-          <table className="min-w-[1100px] w-full text-left text-sm">
+          <table className="w-full min-w-[1100px] text-left text-sm">
             <thead className="border-b border-border bg-surface text-xs uppercase tracking-wide text-muted">
               <tr>
                 <th className="px-4 py-3 font-medium">Request</th>
@@ -87,7 +87,9 @@ export default async function RequestsPage({ searchParams }: Props) {
                       >
                         {request.title}
                       </Link>
-                      <p className="line-clamp-1 text-xs text-subtle">{request.description_preview}</p>
+                      <p className="line-clamp-1 text-xs text-subtle">
+                        {request.description_preview}
+                      </p>
                     </td>
                     <td className="px-4 py-3">
                       <Link href={`/users/${request.requester_id}`} className="hover:text-brand">

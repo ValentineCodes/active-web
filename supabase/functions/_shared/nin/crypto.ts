@@ -38,7 +38,11 @@ export async function encryptNin(
     ['encrypt'],
   );
   const plaintext = new TextEncoder().encode(nin);
-  const encrypted = await crypto.subtle.encrypt({ name: 'AES-GCM', iv: nonce }, cryptoKey, plaintext);
+  const encrypted = await crypto.subtle.encrypt(
+    { name: 'AES-GCM', iv: nonce },
+    cryptoKey,
+    plaintext,
+  );
   return {
     ciphertext: new Uint8Array(encrypted),
     nonce,
@@ -58,10 +62,10 @@ function hexToBytes(hex: string): Uint8Array {
   return bytes;
 }
 
-export function ciphertextBundleFromRpc(row: {
-  ciphertext_hex: string;
-  nonce_hex: string;
-}): { ciphertext: Uint8Array; nonce: Uint8Array } {
+export function ciphertextBundleFromRpc(row: { ciphertext_hex: string; nonce_hex: string }): {
+  ciphertext: Uint8Array;
+  nonce: Uint8Array;
+} {
   return {
     ciphertext: hexToBytes(row.ciphertext_hex),
     nonce: hexToBytes(row.nonce_hex),

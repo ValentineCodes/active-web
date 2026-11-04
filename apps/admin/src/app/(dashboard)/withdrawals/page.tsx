@@ -66,9 +66,9 @@ export default async function WithdrawalsPage({ searchParams }: Props) {
       <div>
         <h2 className="text-2xl font-semibold text-ink">Withdrawals</h2>
         <p className="mt-1 max-w-3xl text-sm text-muted">
-          Manual payout queue. Active does not initiate bank transfers — send payment through your approved external
-          banking channel, then record the outcome here. All actions run through secured database operations with audit
-          logging.
+          Manual payout queue. Active does not initiate bank transfers — send payment through your
+          approved external banking channel, then record the outcome here. All actions run through
+          secured database operations with audit logging.
         </p>
       </div>
 
@@ -82,7 +82,7 @@ export default async function WithdrawalsPage({ searchParams }: Props) {
 
       <div className="overflow-hidden rounded-xl border border-border bg-elevated shadow-card">
         <div className="overflow-x-auto">
-          <table className="min-w-[1100px] w-full text-left text-sm">
+          <table className="w-full min-w-[1100px] text-left text-sm">
             <thead className="border-b border-border bg-surface text-xs uppercase tracking-wide text-muted">
               <tr>
                 <th className="px-4 py-3 font-medium">Reference</th>
@@ -98,19 +98,27 @@ export default async function WithdrawalsPage({ searchParams }: Props) {
             <tbody>
               {result.items.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-4 py-10 text-center text-muted">No withdrawals found.</td>
+                  <td colSpan={8} className="px-4 py-10 text-center text-muted">
+                    No withdrawals found.
+                  </td>
                 </tr>
               ) : (
                 result.items.map((item) => (
                   <tr key={item.id} className="border-b border-border/70 last:border-0">
                     <td className="px-4 py-3">
-                      <Link href={`/withdrawals/${item.id}`} className="font-mono text-xs text-brand break-all">
+                      <Link
+                        href={`/withdrawals/${item.id}`}
+                        className="break-all font-mono text-xs text-brand"
+                      >
                         {item.reference}
                       </Link>
                     </td>
                     <td className="px-4 py-3">
                       <div className="font-medium text-ink">{item.user_name ?? '—'}</div>
-                      <Link href={`/users/${item.user_id}`} className="font-mono text-xs text-muted">
+                      <Link
+                        href={`/users/${item.user_id}`}
+                        className="font-mono text-xs text-muted"
+                      >
                         {item.user_id}
                       </Link>
                     </td>
@@ -123,8 +131,12 @@ export default async function WithdrawalsPage({ searchParams }: Props) {
                     <td className="px-4 py-3">
                       <StatusBadge status={item.status} />
                     </td>
-                    <td className="px-4 py-3 text-muted">{format(new Date(item.created_at), 'PPp')}</td>
-                    <td className="px-4 py-3 text-muted">{format(new Date(item.updated_at), 'PPp')}</td>
+                    <td className="px-4 py-3 text-muted">
+                      {format(new Date(item.created_at), 'PPp')}
+                    </td>
+                    <td className="px-4 py-3 text-muted">
+                      {format(new Date(item.updated_at), 'PPp')}
+                    </td>
                   </tr>
                 ))
               )}

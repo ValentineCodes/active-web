@@ -21,8 +21,7 @@ export function profilePhotoCaptureCopy(variant: ProfilePhotoCaptureVariant): {
   if (variant === 'chat') {
     return {
       title: 'Take a moment before you chat',
-      description:
-        'Take your profile photo using your camera to start messaging on Active.',
+      description: 'Take your profile photo using your camera to start messaging on Active.',
     };
   }
 

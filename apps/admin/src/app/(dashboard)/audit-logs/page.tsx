@@ -34,8 +34,9 @@ export default async function AuditLogsPage({ searchParams }: Props) {
       <div>
         <h2 className="text-2xl font-semibold text-ink">Audit logs</h2>
         <p className="mt-1 text-sm text-muted">
-          Immutable administrator actions stored in <code className="text-xs">admin_audit_events</code> (Super Admin
-          only). Secrets in metadata are redacted at read time.
+          Immutable administrator actions stored in{' '}
+          <code className="text-xs">admin_audit_events</code> (Super Admin only). Secrets in
+          metadata are redacted at read time.
         </p>
       </div>
 
@@ -49,7 +50,7 @@ export default async function AuditLogsPage({ searchParams }: Props) {
 
       <div className="overflow-hidden rounded-xl border border-border bg-elevated shadow-card">
         <div className="overflow-x-auto">
-          <table className="min-w-[1000px] w-full text-left text-sm">
+          <table className="w-full min-w-[1000px] text-left text-sm">
             <thead className="border-b border-border bg-surface text-xs uppercase tracking-wide text-muted">
               <tr>
                 <th className="px-4 py-3 font-medium">Time</th>
@@ -62,7 +63,9 @@ export default async function AuditLogsPage({ searchParams }: Props) {
             <tbody>
               {result.items.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-4 py-10 text-center text-muted">No audit events found.</td>
+                  <td colSpan={5} className="px-4 py-10 text-center text-muted">
+                    No audit events found.
+                  </td>
                 </tr>
               ) : (
                 result.items.map((event) => (
@@ -75,7 +78,7 @@ export default async function AuditLogsPage({ searchParams }: Props) {
                     <td className="px-4 py-3 font-mono text-xs">{event.action}</td>
                     <td className="px-4 py-3">
                       <p>{event.actor_email ?? event.actor_admin_id.slice(0, 8)}</p>
-                      <p className="text-xs text-muted capitalize">
+                      <p className="text-xs capitalize text-muted">
                         {event.actor_role?.replaceAll('_', ' ') ?? '—'}
                       </p>
                     </td>

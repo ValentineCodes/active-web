@@ -2,8 +2,7 @@ import { parseOverviewPayload, type OverviewPayload } from '@/lib/overview/types
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 
 export type OverviewFetchResult =
-  | { ok: true; data: OverviewPayload }
-  | { ok: false; error: string };
+  { ok: true; data: OverviewPayload } | { ok: false; error: string };
 
 export async function fetchOverview(
   periodStart: Date,

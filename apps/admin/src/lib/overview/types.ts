@@ -143,9 +143,7 @@ export function parseOverviewPayload(raw: unknown): OverviewPayload | null {
       gross_settled_volume_kobo: asNumber(f.gross_settled_volume_kobo),
       commission_earned_kobo: asNumber(f.commission_earned_kobo),
       commission_collected_kobo: asNumber(f.commission_collected_kobo),
-      commission_pending_on_active_locks_kobo: asNumber(
-        f.commission_pending_on_active_locks_kobo,
-      ),
+      commission_pending_on_active_locks_kobo: asNumber(f.commission_pending_on_active_locks_kobo),
       refunds_in_period_kobo: asNumber(f.refunds_in_period_kobo),
       adjustments_in_period_kobo: asNumber(f.adjustments_in_period_kobo),
       user_deposits_in_period_kobo: asNumber(f.user_deposits_in_period_kobo),
@@ -170,9 +168,7 @@ export function parseOverviewPayload(raw: unknown): OverviewPayload | null {
           requests_posted: asNumber(t.requests_posted),
           engagements_completed: asNumber(t.engagements_completed),
           commission_collected_kobo:
-            t.commission_collected_kobo === null
-              ? null
-              : asNumber(t.commission_collected_kobo),
+            t.commission_collected_kobo === null ? null : asNumber(t.commission_collected_kobo),
         }))
     : [];
 
@@ -201,7 +197,9 @@ export function parseOverviewPayload(raw: unknown): OverviewPayload | null {
         .filter((item): item is Record<string, unknown> => !!item && typeof item === 'object')
         .map((item) => ({
           code: String(item.code),
-          severity: (item.severity === 'high' || item.severity === 'medium' || item.severity === 'low'
+          severity: (item.severity === 'high' ||
+          item.severity === 'medium' ||
+          item.severity === 'low'
             ? item.severity
             : 'low') as OverviewWarning['severity'],
           message: String(item.message),
@@ -218,11 +216,15 @@ export function parseOverviewPayload(raw: unknown): OverviewPayload | null {
     snapshots: parseSnapshots(row.snapshots),
     trends,
     recent: {
-      requests: Array.isArray(recentObj.requests) ? (recentObj.requests as OverviewRecentRequest[]) : [],
+      requests: Array.isArray(recentObj.requests)
+        ? (recentObj.requests as OverviewRecentRequest[])
+        : [],
       engagements: Array.isArray(recentObj.engagements)
         ? (recentObj.engagements as OverviewRecentEngagement[])
         : [],
-      reports: Array.isArray(recentObj.reports) ? (recentObj.reports as OverviewRecentReport[]) : [],
+      reports: Array.isArray(recentObj.reports)
+        ? (recentObj.reports as OverviewRecentReport[])
+        : [],
       financial_activity: Array.isArray(recentObj.financial_activity)
         ? (recentObj.financial_activity as OverviewRecentFinancial[])
         : null,

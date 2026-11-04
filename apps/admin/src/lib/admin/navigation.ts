@@ -95,9 +95,8 @@ export const MAIN_NAV: NavItem[] = [
 ];
 
 export function navItemForPath(pathname: string): NavItem | undefined {
-  const normalized = pathname.endsWith('/') && pathname.length > 1
-    ? pathname.slice(0, -1)
-    : pathname;
+  const normalized =
+    pathname.endsWith('/') && pathname.length > 1 ? pathname.slice(0, -1) : pathname;
   return MAIN_NAV.find((item) => item.href === normalized);
 }
 

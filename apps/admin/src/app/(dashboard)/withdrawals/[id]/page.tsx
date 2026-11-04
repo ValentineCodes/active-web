@@ -33,13 +33,19 @@ export default async function WithdrawalDetailPage({ params }: Props) {
   return (
     <div className="space-y-6">
       <div>
-        <Link href="/withdrawals" className="text-sm text-brand hover:text-brand-dark">← Withdrawals</Link>
+        <Link href="/withdrawals" className="text-sm text-brand hover:text-brand-dark">
+          ← Withdrawals
+        </Link>
         <h2 className="mt-1 text-2xl font-semibold text-ink">Withdrawal</h2>
         <div className="mt-2 flex flex-wrap items-center gap-2">
           <StatusBadge status={withdrawal.status as string} />
-          <span className="text-lg font-medium">{formatNgnFromKobo(withdrawal.amount_kobo as number)}</span>
+          <span className="text-lg font-medium">
+            {formatNgnFromKobo(withdrawal.amount_kobo as number)}
+          </span>
         </div>
-        <p className="mt-2 font-mono text-xs text-muted break-all">{withdrawal.reference as string}</p>
+        <p className="mt-2 break-all font-mono text-xs text-muted">
+          {withdrawal.reference as string}
+        </p>
       </div>
 
       <section className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
@@ -65,7 +71,7 @@ export default async function WithdrawalDetailPage({ params }: Props) {
           </div>
           <div>
             <dt className="text-muted">User ID</dt>
-            <dd className="font-mono text-xs break-all">{withdrawal.user_id as string}</dd>
+            <dd className="break-all font-mono text-xs">{withdrawal.user_id as string}</dd>
           </div>
           <div>
             <dt className="text-muted">Phone</dt>
@@ -149,7 +155,7 @@ export default async function WithdrawalDetailPage({ params }: Props) {
             <dd>
               <Link
                 href={`/transactions/${withdrawal.wallet_transaction_id as string}`}
-                className="font-mono text-xs text-brand break-all"
+                className="break-all font-mono text-xs text-brand"
               >
                 {withdrawal.wallet_transaction_id as string}
               </Link>
@@ -157,19 +163,22 @@ export default async function WithdrawalDetailPage({ params }: Props) {
           </div>
           <div>
             <dt className="text-muted">Release transaction</dt>
-            <dd className="font-mono text-xs break-all">
-              {withdrawal.release_transaction_id
-                ? (
-                  <Link href={`/transactions/${withdrawal.release_transaction_id as string}`} className="text-brand">
-                    {withdrawal.release_transaction_id as string}
-                  </Link>
-                )
-                : '—'}
+            <dd className="break-all font-mono text-xs">
+              {withdrawal.release_transaction_id ? (
+                <Link
+                  href={`/transactions/${withdrawal.release_transaction_id as string}`}
+                  className="text-brand"
+                >
+                  {withdrawal.release_transaction_id as string}
+                </Link>
+              ) : (
+                '—'
+              )}
             </dd>
           </div>
           <div>
             <dt className="text-muted">External transfer reference</dt>
-            <dd className="font-mono text-xs break-all">
+            <dd className="break-all font-mono text-xs">
               {(withdrawal.bank_transfer_reference as string) ?? '—'}
             </dd>
           </div>
@@ -179,11 +188,15 @@ export default async function WithdrawalDetailPage({ params }: Props) {
       <section className="rounded-xl border border-border bg-elevated p-4 text-sm shadow-card">
         <h3 className="font-semibold text-ink">Actions</h3>
         <div className="mt-3">
-          <WithdrawalActions withdrawalId={withdrawal.id as string} status={withdrawal.status as string} />
+          <WithdrawalActions
+            withdrawalId={withdrawal.id as string}
+            status={withdrawal.status as string}
+          />
         </div>
         {(withdrawal.user_facing_reason as string) ? (
           <p className="mt-4 text-muted">
-            User-facing reason: <span className="text-ink">{withdrawal.user_facing_reason as string}</span>
+            User-facing reason:{' '}
+            <span className="text-ink">{withdrawal.user_facing_reason as string}</span>
           </p>
         ) : null}
         {(withdrawal.admin_notes as string) ? (
@@ -224,8 +237,12 @@ export default async function WithdrawalDetailPage({ params }: Props) {
               return (
                 <li key={row.id as string} className="rounded-lg bg-surface px-3 py-2">
                   <div className="font-medium text-ink">{row.action as string}</div>
-                  <div className="text-xs text-muted">{format(new Date(row.created_at as string), 'PPpp')}</div>
-                  {(row.reason as string) ? <p className="mt-1 text-sm">{row.reason as string}</p> : null}
+                  <div className="text-xs text-muted">
+                    {format(new Date(row.created_at as string), 'PPpp')}
+                  </div>
+                  {(row.reason as string) ? (
+                    <p className="mt-1 text-sm">{row.reason as string}</p>
+                  ) : null}
                 </li>
               );
             })}

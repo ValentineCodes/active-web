@@ -343,9 +343,7 @@ export async function uploadConversationChatMessage(input: {
 
     onMessageReserved?.(messageId);
 
-    const slotByAttachmentId = new Map(
-      reservedSlots.map((slot) => [slot.attachmentId, slot]),
-    );
+    const slotByAttachmentId = new Map(reservedSlots.map((slot) => [slot.attachmentId, slot]));
 
     for (let index = 0; index < preparedItems.length; index += 1) {
       assertNotCancelled(shouldCancel);

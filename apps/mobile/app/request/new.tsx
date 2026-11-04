@@ -713,7 +713,10 @@ export function NewRequestForm({
       const permission = await readForegroundPermission();
       setForegroundPermission(permission);
       if (permission === 'denied') {
-        showAppToast('Location access is off. Turn it on in Settings to post this request.', 'warning');
+        showAppToast(
+          'Location access is off. Turn it on in Settings to post this request.',
+          'warning',
+        );
         return;
       }
 
@@ -738,9 +741,7 @@ export function NewRequestForm({
     setLocationModalError(null);
     void touchSavedLocation
       .mutateAsync(place.saved_location_id)
-      .then(() =>
-        finishPostWithPlace(savedLocationPosition(place), place.location_label.trim()),
-      )
+      .then(() => finishPostWithPlace(savedLocationPosition(place), place.location_label.trim()))
       .catch((error: unknown) => {
         setLocationModalError(
           error instanceof Error ? error.message : 'Could not use this saved place.',
@@ -934,7 +935,9 @@ export function NewRequestForm({
             {step === 1 ? (
               <View className="gap-3">
                 <Text className="text-3xl font-bold leading-9 text-ink">Tell us more</Text>
-                <Text className="text-base text-muted">What does success look like? (optional)</Text>
+                <Text className="text-base text-muted">
+                  What does success look like? (optional)
+                </Text>
                 <CreateTextArea
                   inputRef={descriptionInputRef}
                   value={description}
@@ -1107,8 +1110,8 @@ export function NewRequestForm({
 
                 {REQUEST_REQUIRES_FUNDING && funding ? (
                   <Text className="text-sm text-muted">
-                    {formatMoney(funding.total, funding.currency)} will be held from your wallet when
-                    you accept someone to help.
+                    {formatMoney(funding.total, funding.currency)} will be held from your wallet
+                    when you accept someone to help.
                   </Text>
                 ) : null}
 

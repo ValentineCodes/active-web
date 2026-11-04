@@ -28,8 +28,7 @@ export function UserIdentitySection({ userId, identity, canRevealNin }: Props) {
     setError(null);
     setLoading(true);
     try {
-      const idempotencyKey =
-        globalThis.crypto?.randomUUID?.() ?? `nin-reveal-${Date.now()}`;
+      const idempotencyKey = globalThis.crypto?.randomUUID?.() ?? `nin-reveal-${Date.now()}`;
       const response = await fetch(`/api/admin/users/${userId}/reveal-nin`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -69,8 +68,8 @@ export function UserIdentitySection({ userId, identity, canRevealNin }: Props) {
     <section className="rounded-xl border border-border bg-elevated p-4 shadow-card">
       <h3 className="text-sm font-semibold text-ink">Identity (NIN)</h3>
       <p className="mt-1 text-xs text-muted">
-        Users must submit a National Identification Number before withdrawals are accepted. Full NIN is
-        shown only after an audited reveal for compliance or payout verification.
+        Users must submit a National Identification Number before withdrawals are accepted. Full NIN
+        is shown only after an audited reveal for compliance or payout verification.
       </p>
       <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-2">
         <div>
@@ -122,14 +121,16 @@ export function UserIdentitySection({ userId, identity, canRevealNin }: Props) {
           <Button variant="secondary" onClick={() => void copyNin()}>
             {copied ? 'Copied' : 'Copy NIN'}
           </Button>
-          <p className="text-xs text-muted">This access is recorded in the audit trail (NIN value is not stored in logs).</p>
+          <p className="text-xs text-muted">
+            This access is recorded in the audit trail (NIN value is not stored in logs).
+          </p>
         </div>
       ) : null}
 
       {identity.ninSubmitted && !canRevealNin ? (
         <p className="mt-3 text-xs text-subtle">
-          Your role can view submission status but cannot reveal the full NIN. Contact a Super Admin or
-          Finance Admin if you need audited access.
+          Your role can view submission status but cannot reveal the full NIN. Contact a Super Admin
+          or Finance Admin if you need audited access.
         </p>
       ) : null}
 

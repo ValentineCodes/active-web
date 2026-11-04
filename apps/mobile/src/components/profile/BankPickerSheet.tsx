@@ -1,12 +1,12 @@
+import { forwardRef, useCallback, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import {
-  forwardRef,
-  useCallback,
-  useImperativeHandle,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
-import { ActivityIndicator, Pressable, Text, TextInput, useWindowDimensions, View } from 'react-native';
+  ActivityIndicator,
+  Pressable,
+  Text,
+  TextInput,
+  useWindowDimensions,
+  View,
+} from 'react-native';
 import {
   BottomSheetBackdrop,
   BottomSheetModal,
@@ -49,9 +49,7 @@ export const BankPickerSheet = forwardRef<BankPickerSheetHandle, Props>(function
   const fieldTypography = poppinsInputTypography('regular', 'base');
 
   const snapPoints = useMemo(() => {
-    const maxHeight = Math.floor(
-      windowHeight - insets.top - insets.bottom - SHEET_VERTICAL_MARGIN,
-    );
+    const maxHeight = Math.floor(windowHeight - insets.top - insets.bottom - SHEET_VERTICAL_MARGIN);
     const preferred = Math.floor(windowHeight * 0.75);
     return [Math.min(preferred, maxHeight)];
   }, [insets.bottom, insets.top, windowHeight]);
@@ -118,7 +116,9 @@ export const BankPickerSheet = forwardRef<BankPickerSheetHandle, Props>(function
       );
     }
     return (
-      <Text className="px-5 py-8 text-center text-base text-muted">No banks match your search.</Text>
+      <Text className="px-5 py-8 text-center text-base text-muted">
+        No banks match your search.
+      </Text>
     );
   }, [colors.active, errorMessage, loading]);
 

@@ -84,7 +84,10 @@ export function OverviewRecentRequests({ rows }: { rows: OverviewRecentRequest[]
       ) : (
         <ul className="divide-y divide-border">
           {rows.map((row) => (
-            <li key={row.id} className="flex items-start justify-between gap-3 py-2.5 first:pt-0 last:pb-0">
+            <li
+              key={row.id}
+              className="flex items-start justify-between gap-3 py-2.5 first:pt-0 last:pb-0"
+            >
               <div className="min-w-0">
                 <Link
                   href={`/requests?id=${row.id}`}
@@ -92,7 +95,9 @@ export function OverviewRecentRequests({ rows }: { rows: OverviewRecentRequest[]
                 >
                   {row.title}
                 </Link>
-                <p className="text-xs text-muted">{format(new Date(row.created_at), 'MMM d, HH:mm')}</p>
+                <p className="text-xs text-muted">
+                  {format(new Date(row.created_at), 'MMM d, HH:mm')}
+                </p>
               </div>
               <span className="shrink-0 rounded-full bg-surface px-2 py-0.5 text-xs font-medium text-muted">
                 {row.status}
@@ -113,7 +118,10 @@ export function OverviewRecentEngagements({ rows }: { rows: OverviewRecentEngage
       ) : (
         <ul className="divide-y divide-border">
           {rows.map((row) => (
-            <li key={row.request_id} className="flex items-start justify-between gap-3 py-2.5 first:pt-0 last:pb-0">
+            <li
+              key={row.request_id}
+              className="flex items-start justify-between gap-3 py-2.5 first:pt-0 last:pb-0"
+            >
               <div className="min-w-0">
                 <Link
                   href={`/requests?id=${row.request_id}`}
@@ -170,11 +178,7 @@ export function OverviewRecentReports({ rows }: { rows: OverviewRecentReport[] }
   );
 }
 
-export function OverviewRecentFinancial({
-  rows,
-}: {
-  rows: OverviewRecentFinancial[] | null;
-}) {
+export function OverviewRecentFinancial({ rows }: { rows: OverviewRecentFinancial[] | null }) {
   if (rows === null) return null;
 
   return (

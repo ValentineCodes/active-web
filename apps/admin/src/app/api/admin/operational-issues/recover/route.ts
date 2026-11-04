@@ -13,10 +13,16 @@ export async function POST(request: Request) {
   const body = (await request.json()) as Body;
 
   if (!body.action || !body.requestId || !body.idempotencyKey) {
-    return NextResponse.json({ error: 'action, requestId, and idempotencyKey are required' }, { status: 400 });
+    return NextResponse.json(
+      { error: 'action, requestId, and idempotencyKey are required' },
+      { status: 400 },
+    );
   }
   if (!body.reason || body.reason.trim().length < 10) {
-    return NextResponse.json({ error: 'A reason of at least 10 characters is required' }, { status: 400 });
+    return NextResponse.json(
+      { error: 'A reason of at least 10 characters is required' },
+      { status: 400 },
+    );
   }
 
   const supabase = await createSupabaseServerClient();

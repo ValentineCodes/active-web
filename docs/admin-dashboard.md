@@ -39,11 +39,11 @@ Subsequent members can be granted by a signed-in Super Admin via `admin_grant_me
 
 ## Roles
 
-| Role | Access |
-|------|--------|
-| `super_admin` | All sections including audit logs and settings |
+| Role            | Access                                                 |
+| --------------- | ------------------------------------------------------ |
+| `super_admin`   | All sections including audit logs and settings         |
 | `support_admin` | Overview, users, requests, reports, operational issues |
-| `finance_admin` | Overview, transactions, wallets, withdrawals |
+| `finance_admin` | Overview, transactions, wallets, withdrawals           |
 
 Authorization is enforced in middleware (route access) and `get_my_admin_permissions()` (database). The `admin_members` table has no policies for `authenticated`; rows cannot be read or written from the client API except through these RPCs.
 
@@ -51,14 +51,14 @@ Authorization is enforced in middleware (route access) and `get_my_admin_permiss
 
 User-facing **Report** flow writes to `service_problems` (not a separate admin report table). Dashboard RPCs:
 
-| RPC | Purpose |
-|-----|---------|
-| `admin_list_reports` | Searchable queue with investigation filters |
-| `admin_get_report` | Detail, parties, chat, financial slice, evidence paths (view audited) |
-| `admin_assign_report` | Assign support administrator (open reports only) |
+| RPC                                 | Purpose                                                                       |
+| ----------------------------------- | ----------------------------------------------------------------------------- |
+| `admin_list_reports`                | Searchable queue with investigation filters                                   |
+| `admin_get_report`                  | Detail, parties, chat, financial slice, evidence paths (view audited)         |
+| `admin_assign_report`               | Assign support administrator (open reports only)                              |
 | `admin_update_report_investigation` | Internal queue status: `triage`, `under_review`, `awaiting_info`, `escalated` |
-| `admin_add_report_note` | Private notes on `admin_service_problem_notes` |
-| `admin_resolve_report` | Permission-checked wrapper around `admin_resolve_service_problem` |
+| `admin_add_report_note`             | Private notes on `admin_service_problem_notes`                                |
+| `admin_resolve_report`              | Permission-checked wrapper around `admin_resolve_service_problem`             |
 
 **Schema notes**
 
@@ -71,26 +71,26 @@ User-facing **Report** flow writes to `service_problems` (not a separate admin r
 
 Finance admins (`finance_admin`, `super_admin`) use RPCs backed by `wallet_transactions`, `deposit_transactions`, `payment_locks`, and `wallets` (kobo integers, NGN only).
 
-| RPC | Permission | Purpose |
-|-----|------------|---------|
-| `admin_list_transactions` | `transactions` | Ledger search with type group and status filters |
-| `admin_get_transaction` | `transactions` | Ledger row + request, lock, deposit link |
-| `admin_list_deposits` | `transactions` | Paystack deposit lifecycle |
-| `admin_get_deposit` | `transactions` | Deposit detail |
-| `admin_list_wallets` / `admin_get_wallet` | `wallets` | Balances, locks, ledger slice |
-| `admin_list_withdrawals` | `withdrawals` | Withdrawal-type ledger rows (read-only) |
-| `admin_get_finance_summary` | `transactions` | Commission / volume metrics (same definitions as overview) |
-| `admin_financial_exceptions` | `transactions` or `operational_issues` | Read-only reconciliation checks |
+| RPC                                       | Permission                             | Purpose                                                    |
+| ----------------------------------------- | -------------------------------------- | ---------------------------------------------------------- |
+| `admin_list_transactions`                 | `transactions`                         | Ledger search with type group and status filters           |
+| `admin_get_transaction`                   | `transactions`                         | Ledger row + request, lock, deposit link                   |
+| `admin_list_deposits`                     | `transactions`                         | Paystack deposit lifecycle                                 |
+| `admin_get_deposit`                       | `transactions`                         | Deposit detail                                             |
+| `admin_list_wallets` / `admin_get_wallet` | `wallets`                              | Balances, locks, ledger slice                              |
+| `admin_list_withdrawals`                  | `withdrawals`                          | Withdrawal-type ledger rows (read-only)                    |
+| `admin_get_finance_summary`               | `transactions`                         | Commission / volume metrics (same definitions as overview) |
+| `admin_financial_exceptions`              | `transactions` or `operational_issues` | Read-only reconciliation checks                            |
 
 ## Operational issues & audit
 
-| RPC | Permission | Purpose |
-|-----|------------|---------|
-| `admin_operational_issues` | `operational_issues` or `transactions` | Prioritized diagnostic queue |
-| `admin_execute_operational_recovery` | `operational_issues` | `auto_complete_request` when eligibility checks pass |
-| `admin_list_audit_events` / `admin_get_audit_event` | `audit_logs` (super admin) | Searchable audit trail with redacted metadata |
-| `admin_list_members` | `settings` | Dashboard member directory |
-| `admin_grant_member` / `admin_revoke_member` | super admin caller | Role changes with audit rows |
+| RPC                                                 | Permission                             | Purpose                                              |
+| --------------------------------------------------- | -------------------------------------- | ---------------------------------------------------- |
+| `admin_operational_issues`                          | `operational_issues` or `transactions` | Prioritized diagnostic queue                         |
+| `admin_execute_operational_recovery`                | `operational_issues`                   | `auto_complete_request` when eligibility checks pass |
+| `admin_list_audit_events` / `admin_get_audit_event` | `audit_logs` (super admin)             | Searchable audit trail with redacted metadata        |
+| `admin_list_members`                                | `settings`                             | Dashboard member directory                           |
+| `admin_grant_member` / `admin_revoke_member`        | super admin caller                     | Role changes with audit rows                         |
 
 `admin_audit_events` has no RLS policies for clients; rows are append-only via `admin_record_audit_event` and readable only through audit RPCs.
 

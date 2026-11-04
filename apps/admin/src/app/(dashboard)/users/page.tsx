@@ -44,7 +44,7 @@ export default async function UsersPage({ searchParams }: Props) {
 
       <div className="overflow-hidden rounded-xl border border-border bg-elevated shadow-card">
         <div className="overflow-x-auto">
-          <table className="min-w-[960px] w-full text-left text-sm">
+          <table className="w-full min-w-[960px] text-left text-sm">
             <thead className="border-b border-border bg-surface text-xs uppercase tracking-wide text-muted">
               <tr>
                 <th className="px-4 py-3 font-medium">User</th>
@@ -67,7 +67,10 @@ export default async function UsersPage({ searchParams }: Props) {
                 result.items.map((user) => (
                   <tr key={user.id} className="border-b border-border/70 last:border-0">
                     <td className="px-4 py-3">
-                      <Link href={`/users/${user.id}`} className="font-medium text-ink hover:text-brand">
+                      <Link
+                        href={`/users/${user.id}`}
+                        className="font-medium text-ink hover:text-brand"
+                      >
                         {user.display_name ?? 'Unnamed user'}
                       </Link>
                       <p className="text-xs text-subtle">{user.id.slice(0, 8)}…</p>
@@ -89,11 +92,15 @@ export default async function UsersPage({ searchParams }: Props) {
                         <StatusBadge status={user.is_onboarded ? 'onboarded' : 'draft'} />
                       </div>
                     </td>
-                    <td className="px-4 py-3 tabular-nums">{formatCount(user.requests_posted_count)}</td>
+                    <td className="px-4 py-3 tabular-nums">
+                      {formatCount(user.requests_posted_count)}
+                    </td>
                     <td className="px-4 py-3 tabular-nums">
                       {formatCount(user.engagements_as_provider_count)}
                     </td>
-                    <td className="px-4 py-3 tabular-nums">{formatCount(user.reports_filed_count)}</td>
+                    <td className="px-4 py-3 tabular-nums">
+                      {formatCount(user.reports_filed_count)}
+                    </td>
                   </tr>
                 ))
               )}

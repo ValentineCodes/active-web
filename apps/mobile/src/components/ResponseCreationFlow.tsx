@@ -246,8 +246,7 @@ export function ResponseCreationFlow({
       onStepChange(0);
       return;
     }
-    const offerRaw =
-      parsedYourOffer !== null && parsedYourOffer > 0 ? yourOffer : initialYourOffer;
+    const offerRaw = parsedYourOffer !== null && parsedYourOffer > 0 ? yourOffer : initialYourOffer;
     const quoted = counterOfferForRpc(requesterOffer, offerRaw);
     if (quoted === 'invalid') return;
     onSubmit({ message: message.trim() || null, quotedAmount: quoted });

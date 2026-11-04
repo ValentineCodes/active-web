@@ -18,7 +18,10 @@ export async function POST(request: Request, { params }: Props) {
   const idempotencyKey = body.idempotencyKey?.trim() ?? '';
 
   if (reason.length < 10) {
-    return NextResponse.json({ error: 'A reason of at least 10 characters is required' }, { status: 400 });
+    return NextResponse.json(
+      { error: 'A reason of at least 10 characters is required' },
+      { status: 400 },
+    );
   }
   if (!idempotencyKey) {
     return NextResponse.json({ error: 'idempotencyKey is required' }, { status: 400 });
@@ -62,7 +65,11 @@ export async function POST(request: Request, { params }: Props) {
 
   if (!response.ok) {
     const status =
-      payload.code === 'not_authorized' ? 403 : payload.code === 'not_found' ? 404 : response.status;
+      payload.code === 'not_authorized'
+        ? 403
+        : payload.code === 'not_found'
+          ? 404
+          : response.status;
     return NextResponse.json({ error: payload.error ?? 'Could not reveal NIN' }, { status });
   }
 

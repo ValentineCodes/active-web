@@ -9,8 +9,7 @@ const variantClasses: Record<Variant, string> = {
   secondary:
     'border border-border bg-elevated text-ink hover:bg-surface focus-visible:ring-slate-300',
   ghost: 'text-ink hover:bg-surface focus-visible:ring-slate-300',
-  danger:
-    'bg-red-600 text-white hover:bg-red-700 focus-visible:ring-red-300 disabled:bg-red-400',
+  danger: 'bg-red-600 text-white hover:bg-red-700 focus-visible:ring-red-300 disabled:bg-red-400',
 };
 
 type Props = ButtonHTMLAttributes<HTMLButtonElement> & {

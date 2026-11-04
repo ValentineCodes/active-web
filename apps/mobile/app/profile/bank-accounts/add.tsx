@@ -153,7 +153,9 @@ export default function AddBankAccountScreen() {
           ) : null}
 
           {lookup.state.status === 'resolved' ? (
-            <Text className="px-1 text-base font-semibold text-ink">{lookup.state.accountName}</Text>
+            <Text className="px-1 text-base font-semibold text-ink">
+              {lookup.state.accountName}
+            </Text>
           ) : null}
 
           {lookup.state.status === 'not_found' ? (
@@ -192,9 +194,7 @@ export default function AddBankAccountScreen() {
         ref={bankPickerRef}
         banks={banksQuery.data ?? []}
         loading={banksQuery.isPending}
-        errorMessage={
-          banksQuery.isError ? toUserMessage(banksQuery.error) : null
-        }
+        errorMessage={banksQuery.isError ? toUserMessage(banksQuery.error) : null}
         selectedCode={selectedBank?.code ?? null}
         onSelect={(bank) => {
           setSaveError(null);

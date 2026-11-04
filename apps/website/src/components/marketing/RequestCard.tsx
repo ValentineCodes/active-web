@@ -1,13 +1,7 @@
-import { Icon } from "@/components/ui/Icon"
-import type { RequestItem } from "@/types/site"
+import { Icon } from '@/components/ui/Icon';
+import type { RequestItem } from '@/types/site';
 
-export function RequestCard({
-  item,
-  onOpen,
-}: {
-  item: RequestItem
-  onOpen: () => void
-}) {
+export function RequestCard({ item, onOpen }: { item: RequestItem; onOpen: () => void }) {
   return (
     <article className="request-card" onClick={onOpen}>
       {item.attachment && (
@@ -29,14 +23,8 @@ export function RequestCard({
           </span>
         </div>
         <div className="request-bottom">
-          <div
-            className={`request-avatar ${item.avatarUrl ? "request-avatar--photo" : ""}`}
-          >
-            {item.avatarUrl ? (
-              <img src={item.avatarUrl} alt="" />
-            ) : (
-              item.initials
-            )}
+          <div className={`request-avatar ${item.avatarUrl ? 'request-avatar--photo' : ''}`}>
+            {item.avatarUrl ? <img src={item.avatarUrl} alt="" /> : item.initials}
           </div>
           <div>
             <small>Offer</small>
@@ -48,5 +36,5 @@ export function RequestCard({
         </div>
       </div>
     </article>
-  )
+  );
 }

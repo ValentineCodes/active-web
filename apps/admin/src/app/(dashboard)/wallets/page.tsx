@@ -28,7 +28,8 @@ export default async function WalletsPage({ searchParams }: Props) {
       <div>
         <h2 className="text-2xl font-semibold text-ink">Wallets</h2>
         <p className="mt-1 text-sm text-muted">
-          Server-authoritative balances in kobo. Locked engagement funds are committed at provider acceptance via payment locks.
+          Server-authoritative balances in kobo. Locked engagement funds are committed at provider
+          acceptance via payment locks.
         </p>
       </div>
 
@@ -38,7 +39,7 @@ export default async function WalletsPage({ searchParams }: Props) {
 
       <div className="overflow-hidden rounded-xl border border-border bg-elevated shadow-card">
         <div className="overflow-x-auto">
-          <table className="min-w-[900px] w-full text-left text-sm">
+          <table className="w-full min-w-[900px] text-left text-sm">
             <thead className="border-b border-border bg-surface text-xs uppercase tracking-wide text-muted">
               <tr>
                 <th className="px-4 py-3 font-medium">User</th>
@@ -51,22 +52,38 @@ export default async function WalletsPage({ searchParams }: Props) {
             <tbody>
               {result.items.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-4 py-10 text-center text-muted">No wallets found.</td>
+                  <td colSpan={5} className="px-4 py-10 text-center text-muted">
+                    No wallets found.
+                  </td>
                 </tr>
               ) : (
                 result.items.map((row) => {
                   const wallet = row as Record<string, unknown>;
                   return (
-                    <tr key={wallet.user_id as string} className="border-b border-border/70 last:border-0">
+                    <tr
+                      key={wallet.user_id as string}
+                      className="border-b border-border/70 last:border-0"
+                    >
                       <td className="px-4 py-3">
-                        <Link href={`/wallets/${wallet.user_id as string}`} className="font-medium text-brand">
+                        <Link
+                          href={`/wallets/${wallet.user_id as string}`}
+                          className="font-medium text-brand"
+                        >
                           {wallet.user_name as string}
                         </Link>
-                        <p className="text-xs text-subtle">{(wallet.user_id as string).slice(0, 8)}…</p>
+                        <p className="text-xs text-subtle">
+                          {(wallet.user_id as string).slice(0, 8)}…
+                        </p>
                       </td>
-                      <td className="px-4 py-3">{formatNgnFromKobo(wallet.available_kobo as number)}</td>
-                      <td className="px-4 py-3">{formatNgnFromKobo(wallet.locked_balance_kobo as number)}</td>
-                      <td className="px-4 py-3">{formatNgnFromKobo(wallet.pending_kobo as number)}</td>
+                      <td className="px-4 py-3">
+                        {formatNgnFromKobo(wallet.available_kobo as number)}
+                      </td>
+                      <td className="px-4 py-3">
+                        {formatNgnFromKobo(wallet.locked_balance_kobo as number)}
+                      </td>
+                      <td className="px-4 py-3">
+                        {formatNgnFromKobo(wallet.pending_kobo as number)}
+                      </td>
                       <td className="px-4 py-3 text-muted">
                         {format(new Date(wallet.updated_at as string), 'PP')}
                       </td>
@@ -89,7 +106,8 @@ export default async function WalletsPage({ searchParams }: Props) {
       </div>
 
       <p className="text-xs text-muted">
-        Balance corrections are not available in this UI. There is no admin adjustment RPC; use service_role settlement tooling only.
+        Balance corrections are not available in this UI. There is no admin adjustment RPC; use
+        service_role settlement tooling only.
       </p>
     </div>
   );

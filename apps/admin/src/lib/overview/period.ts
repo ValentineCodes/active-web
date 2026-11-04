@@ -30,8 +30,7 @@ export function resolveOverviewPeriod(
     }
   }
 
-  const days =
-    rangeParam === '7d' ? 7 : rangeParam === '90d' ? 90 : 30;
+  const days = rangeParam === '7d' ? 7 : rangeParam === '90d' ? 90 : 30;
   const preset: OverviewRangePreset =
     rangeParam === '7d' ? '7d' : rangeParam === '90d' ? '90d' : '30d';
 

@@ -44,10 +44,7 @@ export function buildWithdrawReturnTo(draft: {
   return query ? `${WALLET_WITHDRAW_RETURN_TO}?${query}` : WALLET_WITHDRAW_RETURN_TO;
 }
 
-export function readWithdrawDraftFromParams(params: {
-  amount?: string;
-  bankAccountId?: string;
-}) {
+export function readWithdrawDraftFromParams(params: { amount?: string; bankAccountId?: string }) {
   const amountRaw = params.amount?.replace(/[^\d]/g, '') ?? '';
   return {
     amount: amountRaw,
