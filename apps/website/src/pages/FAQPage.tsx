@@ -27,9 +27,7 @@ export function FAQPage({ go }: { go: Navigate }) {
         eyebrow="Frequently asked questions"
         title={
           <>
-            A few things you
-            <br />
-            might be <em>wondering</em>
+            Got <em>questions?</em>
           </>
         }
         text="Straightforward answers to some questions you might have."
@@ -90,7 +88,7 @@ export function FAQPage({ go }: { go: Navigate }) {
       <section className="question-card section">
         <div>
           <Eyebrow>Still curious?</Eyebrow>
-          <h2>Let’s talk it through.</h2>
+          <h2>Let’s talk</h2>
           <p>We'll be happy to clarify any questions you have.</p>
         </div>
         <Button onClick={() => go('contact')}>
