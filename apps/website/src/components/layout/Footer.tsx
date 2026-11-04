@@ -27,12 +27,12 @@ export function Footer({ go }: { go: Navigate }) {
         <div className="footer-links">
           <strong>Let’s talk</strong>
           <button onClick={() => go('contact')}>Book a demo</button>
-          <a href="mailto:hello@active.demo">hello@active.demo</a>
+          <a href="mailto:hello@active.demo">valentineorga@gmail.com</a>
         </div>
       </div>
       <div className="footer-bottom">
-        <span>© 2025 Active. Prototype for demonstration.</span>
-        <span>Made with purpose in Nigeria.</span>
+        <span>© 2025 Active</span>
+        <span>Made with purpose in Nigeria</span>
       </div>
     </footer>
   );
