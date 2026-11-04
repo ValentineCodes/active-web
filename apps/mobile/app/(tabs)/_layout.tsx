@@ -1,4 +1,3 @@
-import { View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Redirect } from 'expo-router';
 import { NativeTabs } from 'expo-router/native-tabs';
@@ -8,30 +7,9 @@ import { useProfile } from '@/features/profile/api';
 import { useTrackTabForCreateReturn } from '@/features/navigation/use-track-tab-for-create-return';
 import { useNotificationBridge } from '@/lib/notifications';
 import { useMyRequests } from '@/features/requests/requester-api';
-import { useColors, useTheme } from '@/theme';
+import { useColors } from '@/theme';
 
 const VectorIcon = NativeTabs.Trigger.VectorIcon;
-
-function CreateTabIcon() {
-  const { colors, shadow } = useTheme();
-  return (
-    <View
-      style={[
-        shadow.raised,
-        {
-          height: 40,
-          width: 40,
-          alignItems: 'center',
-          justifyContent: 'center',
-          borderRadius: 12,
-          backgroundColor: colors.active,
-        },
-      ]}
-    >
-      <Ionicons name="add" size={26} color={colors.ink} />
-    </View>
-  );
-}
 
 export default function TabsLayout() {
   const profile = useProfile();
@@ -88,7 +66,10 @@ function TabsNavigator() {
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="create" accessibilityLabel="Create request">
         <NativeTabs.Trigger.Label hidden />
-        <NativeTabs.Trigger.Icon sf={{ default: 'plus', selected: 'plus' }} src={<CreateTabIcon />} />
+        <NativeTabs.Trigger.Icon
+          sf={{ default: 'plus', selected: 'plus' }}
+          src={<VectorIcon family={Ionicons} name="add" />}
+        />
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="notifications" accessibilityLabel="Notifications">
         <NativeTabs.Trigger.Label hidden />

@@ -21,8 +21,6 @@ export async function takeRequestPhoto() {
 
   return ImagePicker.launchCameraAsync({
     mediaTypes: ['images'],
-    allowsEditing: true,
-    aspect: [4, 3],
     quality: 0.8,
   });
 }
