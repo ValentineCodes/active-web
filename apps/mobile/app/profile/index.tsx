@@ -196,6 +196,23 @@ export default function ProfileScreen() {
           {data.bio ? (
             <Text className="max-w-sm text-center text-base leading-6 text-muted">{data.bio}</Text>
           ) : null}
+          {data.phone ? (
+            <Pressable
+              onPress={() => {
+                void Clipboard.setStringAsync(data.phone!);
+                showAppToast('Phone number copied');
+              }}
+              accessibilityRole="button"
+              accessibilityLabel={`Phone number ${formatPhoneDisplay(data.phone)}`}
+              accessibilityHint="Copies your phone number"
+              className="mt-2 flex-row items-center gap-2 self-center rounded-full bg-surface px-4 py-2 active:opacity-80"
+            >
+              <Ionicons name="copy-outline" size={14} color={colors.active} />
+              <Text className="text-md font-medium text-muted">
+                {formatPhoneDisplay(data.phone)}
+              </Text>
+            </Pressable>
+          ) : null}
           <ProfileTagInterestsLine tags={tagInterests.data ?? []} />
         </View>
 
@@ -240,25 +257,6 @@ export default function ProfileScreen() {
             <Ionicons name="chevron-forward" size={20} color={colors.subtle} />
           </View>
         </Pressable>
-
-        {data.phone ? (
-          <Pressable
-            onPress={() => {
-              void Clipboard.setStringAsync(data.phone!);
-              showAppToast('Phone number copied');
-            }}
-            accessibilityRole="button"
-            accessibilityLabel={`Phone number ${formatPhoneDisplay(data.phone)}`}
-            accessibilityHint="Copies your phone number"
-            className="flex-row items-center gap-3 rounded-2xl border border-hairline bg-elevated px-4 py-3.5 active:opacity-90"
-          >
-            <Ionicons name="call-outline" size={22} color={colors.active} />
-            <Text className="min-w-0 flex-1 text-lg text-ink">
-              {formatPhoneDisplay(data.phone)}
-            </Text>
-            <Ionicons name="chevron-forward" size={20} color={colors.subtle} />
-          </Pressable>
-        ) : null}
 
         <SettingsGroup title="Account">
           <SettingsRow label="Edit profile" onPress={() => router.push('/profile/edit')} />
