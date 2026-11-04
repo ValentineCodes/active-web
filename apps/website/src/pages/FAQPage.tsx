@@ -1,13 +1,26 @@
-import { useState } from "react"
+import { Fragment, useState } from "react"
 import { PageHero } from "@/components/layout/PageHero"
 import { Button } from "@/components/ui/Button"
 import { Eyebrow } from "@/components/ui/Eyebrow"
 import { Icon } from "@/components/ui/Icon"
-import { faqs } from "@/data/faqs"
+import { faqSections } from "@/data/faqs"
 import type { Navigate } from "@/types/site"
+
+function FaqInline({ text }: { text: string }) {
+  const parts = text.split(/(\*\*[^*]+\*\*)/g)
+  return parts.map((part, i) =>
+    part.startsWith("**") && part.endsWith("**") ? (
+      <strong key={i}>{part.slice(2, -2)}</strong>
+    ) : (
+      <Fragment key={i}>{part}</Fragment>
+    ),
+  )
+}
 
 export function FAQPage({ go }: { go: Navigate }) {
   const [open, setOpen] = useState(0)
+  let itemIndex = 0
+
   return (
     <>
       <PageHero
@@ -16,28 +29,68 @@ export function FAQPage({ go }: { go: Navigate }) {
           <>
             A few things you
             <br />
-            might be <em>wondering.</em>
+            might be <em>wondering</em>
           </>
         }
-        text="Straightforward answers about the Active idea and this prototype."
+        text="Straightforward answers to some questions you might have."
       />
       <section className="section faq-list">
-        {faqs.map((f, i) => (
-          <article key={f[0]} className={open === i ? "faq-open" : ""}>
-            <button
-              onClick={() => setOpen(open === i ? -1 : i)}
-              aria-expanded={open === i}
-            >
-              <span>{String(i + 1).padStart(2, "0")}</span>
-              <strong>{f[0]}</strong>
-              <i>
-                <Icon name={open === i ? "close" : "plus"} />
-              </i>
-            </button>
-            <div className="faq-answer">
-              <p>{f[1]}</p>
-            </div>
-          </article>
+        {faqSections.map((section) => (
+          <div key={section.title} className="faq-section">
+            <h2 className="faq-section-title">{section.title}</h2>
+            {section.items.map((item) => {
+              const i = itemIndex++
+              return (
+                <article
+                  key={item.question}
+                  className={open === i ? "faq-open" : ""}
+                >
+                  <button
+                    onClick={() => setOpen(open === i ? -1 : i)}
+                    aria-expanded={open === i}
+                  >
+                    <strong>{item.question}</strong>
+                    <i>
+                      <Icon name={open === i ? "close" : "plus"} />
+                    </i>
+                  </button>
+                  <div className="faq-answer">
+                    <div className="faq-answer-inner">
+                      {item.blocks.map((block, bi) => {
+                        if (block.type === "p") {
+                          return (
+                            <p key={bi}>
+                              <FaqInline text={block.text} />
+                            </p>
+                          )
+                        }
+                        if (block.type === "ul") {
+                          return (
+                            <ul key={bi}>
+                              {block.items.map((line, li) => (
+                                <li key={li}>
+                                  <FaqInline text={line} />
+                                </li>
+                              ))}
+                            </ul>
+                          )
+                        }
+                        return (
+                          <ol key={bi}>
+                            {block.items.map((line, li) => (
+                              <li key={li}>
+                                <FaqInline text={line} />
+                              </li>
+                            ))}
+                          </ol>
+                        )
+                      })}
+                    </div>
+                  </div>
+                </article>
+              )
+            })}
+          </div>
         ))}
       </section>
       <section className="question-card section">
@@ -45,7 +98,7 @@ export function FAQPage({ go }: { go: Navigate }) {
           <Eyebrow>Still curious?</Eyebrow>
           <h2>Let’s talk it through.</h2>
           <p>
-            Tell us what you’re exploring and we’ll continue the conversation.
+            We'll be happy to clarify any questions you have.
           </p>
         </div>
         <Button onClick={() => go("contact")}>
