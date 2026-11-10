@@ -179,7 +179,7 @@ export function RequestDetailPage() {
 
   if (showQuerySkeleton(request)) {
     return (
-      <Screen>
+      <Screen className="flex min-h-0 flex-1 flex-col">
         <RequestFlowHeader title="Your request" onBack={() => router.back()} />
         <LoadingState />
       </Screen>
@@ -189,7 +189,7 @@ export function RequestDetailPage() {
   const data = request.data;
   if (!data) {
     return (
-      <Screen>
+      <Screen className="flex min-h-0 flex-1 flex-col">
         <RequestFlowHeader title="Your request" onBack={() => router.back()} />
         {request.isError ? (
           <div className="px-5">
@@ -206,7 +206,7 @@ export function RequestDetailPage() {
 
   if (['completion_pending', 'disputed', 'no_show'].includes(data.status)) {
     return (
-      <Screen>
+      <Screen className="flex min-h-0 flex-1 flex-col">
         <LoadingState />
       </Screen>
     );
@@ -383,14 +383,15 @@ export function RequestDetailPage() {
       : undefined;
 
   return (
-    <Screen>
+    <Screen className="flex min-h-0 flex-1 flex-col">
       <RequestFlowHeader
         title="Your request"
         onBack={() => router.back()}
         menuActions={menuActions}
       />
 
-      <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto p-5 pb-12">
+      <div className="min-h-0 flex-1 overflow-y-auto p-5 pb-12">
+        <div className="flex flex-col gap-6">
         <RequestMetaRow badgeLabel={badge.label} badgeTone={badge.tone} trailing={metaTime} />
 
         <RequestTitleSection title={data.title} description={data.description} />
@@ -604,6 +605,7 @@ export function RequestDetailPage() {
             ) : null}
           </div>
         ) : null}
+        </div>
       </div>
 
       <ExtendResponseDeadlineSheet

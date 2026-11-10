@@ -12,24 +12,23 @@ export function RequestAttachmentSection({
   if (!attachmentPath) return null;
 
   return (
-    <div className="relative aspect-[4/3] w-full overflow-hidden rounded-2xl bg-surface">
+    <div
+      className="flex w-full shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-surface"
+      style={{ aspectRatio: '4 / 3' }}
+    >
       {signedUrl.isPending ? (
-        <div className="flex h-full w-full items-center justify-center">
-          <span
-            className="h-6 w-6 animate-spin rounded-full border-2 border-subtle border-t-transparent"
-            aria-hidden
-          />
-        </div>
+        <span
+          className="h-6 w-6 animate-spin rounded-full border-2 border-subtle border-t-transparent"
+          aria-label="Loading request photo"
+        />
       ) : signedUrl.data ? (
         <img
           src={signedUrl.data}
           alt="Request photo"
-          className="absolute inset-0 h-full w-full object-cover"
+          className="h-full w-full object-cover"
         />
       ) : (
-        <p className="flex h-full items-center justify-center px-4 text-center text-sm text-muted">
-          Could not load this photo.
-        </p>
+        <p className="px-4 text-center text-sm text-muted">Could not load this photo.</p>
       )}
     </div>
   );

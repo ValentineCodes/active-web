@@ -159,7 +159,8 @@ export function RespondPage() {
     return (
       <div className="flex min-h-0 flex-1 flex-col bg-canvas">
         <RequestFlowHeader title="Respond" onBack={() => setInFlow(false)} />
-        <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-5 pb-8 pt-2">
+        <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-8 pt-2">
+          <div className="flex flex-col gap-4">
           <TextAreaField label="Message (optional)" value={message} onChange={(e) => setMessage(e.target.value)} />
           <div className="flex flex-col gap-2">
             <p className="text-sm font-semibold text-ink">Counteroffer ({MARKET.currencySymbol}, optional)</p>
@@ -173,6 +174,7 @@ export function RespondPage() {
           {respond.isError ? (
             <InlineError message={respond.error instanceof Error ? respond.error.message : 'Could not send response.'} />
           ) : null}
+          </div>
         </div>
       </div>
     );
@@ -181,7 +183,8 @@ export function RespondPage() {
   return (
     <div className="flex min-h-0 flex-1 flex-col bg-canvas">
       <RequestFlowHeader title="Request" onBack={() => router.push('/home')} />
-      <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto p-5 pb-12">
+      <div className="min-h-0 flex-1 overflow-y-auto p-5 pb-12">
+        <div className="flex flex-col gap-6">
         <RequestHelpSummary
           request={request}
           existingResponse={Boolean(existingResponse)}
@@ -263,6 +266,7 @@ export function RespondPage() {
             onClick={() => void withdraw.mutateAsync(existingResponse.responseId)}
           />
         ) : null}
+        </div>
       </div>
     </div>
   );
