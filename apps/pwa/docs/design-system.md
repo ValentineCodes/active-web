@@ -32,9 +32,9 @@ Notification inbox chips use `getColors()` via `features/notifications/presentat
 
 PWA wraps [shadcn/ui](https://ui.shadcn.com) on Active tokens (`components.json`).
 
-- Primitive: `src/components/ui/primitives/button.tsx`
-- Adapter: `src/components/ui/Button.tsx`
-- Auth CTAs: `src/components/auth/AuthFooterButton.tsx`
+- Primary bar CTA (welcome / sign-in / full-width actions): `src/components/ui/ActiveBarButton.tsx`
+- Adapter: `src/components/ui/Button.tsx` (delegates `primary` / `active` to `ActiveBarButton`)
+- shadcn primitive: `src/components/ui/primitives/button.tsx`
 
 Shadcn semantics (`--primary`, `--background`, …) are defined in `tokens.css` and exposed via `index.css` `@theme`.
 

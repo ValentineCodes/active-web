@@ -4,10 +4,12 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
+import { ActiveBarButton } from '@/components/ui/ActiveBarButton';
 import { OtpInput } from '@/components/auth/OtpInput';
-import { FlowScreen } from '@/components/layout/FlowScreen';
-import { Button } from '@/components/ui/Button';
-import { TextField } from '@/components/ui/TextField';
+import { PhoneUnderlineField } from '@/components/auth/PhoneUnderlineField';
+import { KeyboardStickyFooter } from '@/components/layout/KeyboardStickyFooter';
+import { Screen } from '@/components/ui/Screen';
+import { ScreenHeading } from '@/components/ui/ScreenHeading';
 import { InlineError } from '@/components/ui/StateView';
 import { MARKET } from '@/config/market';
 import { isPlausiblePhone, sendPhoneOtp, toE164, verifyPhoneOtp } from '@/features/auth/api';
@@ -54,6 +56,15 @@ export function SignInPage() {
   });
 
   useEffect(() => {
+    if (process.env.NODE_ENV === 'production') return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('otp') === '1') {
+      setOtpSent(true);
+      setPhone('08012345678');
+    }
+  }, []);
+
+  useEffect(() => {
     if (!otpSent || resendSecondsLeft <= 0) return;
     const id = setInterval(() => {
       setResendSecondsLeft((prev) => (prev <= 1 ? 0 : prev - 1));
@@ -65,7 +76,7 @@ export function SignInPage() {
   const isOtpComplete = otp.length === CODE_LENGTH;
   const displayNumber = phone.replace(/\D/g, '') ? toE164(phone) : MARKET.dialCode;
 
-  const resetNumber = () => {
+  const handleChangeNumber = () => {
     setOtpSent(false);
     setOtp('');
     setResendSecondsLeft(0);
@@ -74,73 +85,94 @@ export function SignInPage() {
     resend.reset();
   };
 
+  const handleWhatsMyNumber = () => {
+    window.alert("You can find your number in your device's Settings under Phone or About.");
+  };
+
   const primaryLoading = otpSent ? verify.isPending : sendCode.isPending;
   const primaryDisabled = otpSent ? !isOtpComplete : !canSend;
   const mutationError = otpSent ? verify.error : sendCode.error;
 
-  return (
-    <FlowScreen
-      title={otpSent ? 'Verify your number' : 'Sign in'}
-      backTo="/welcome"
-      bodyClassName="flex flex-col gap-6 pb-10"
-    >
-      <p className="text-base leading-6 text-muted">
-        {otpSent ? (
-          <>
-            Enter the {CODE_LENGTH}-digit code we sent to{' '}
-            <span className="font-semibold text-ink">{displayNumber}</span>.{' '}
-            <button type="button" className="font-semibold text-brand" onClick={resetNumber}>
-              Change number
-            </button>
-          </>
-        ) : (
-          <>Active will verify your phone number. Carrier charges may apply.</>
-        )}
-      </p>
+  const primaryAction = () => {
+    if (otpSent) verify.mutate();
+    else sendCode.mutate();
+  };
 
-      {!otpSent ? (
-        <TextField
-          label="Phone number"
-          value={phone}
-          onChange={(event) => setPhone(event.target.value.replace(/\D/g, ''))}
-          inputMode="tel"
-          autoComplete="tel"
-          placeholder="e.g. 08012345678"
-        />
-      ) : (
-        <>
-          <OtpInput value={otp} onChange={setOtp} />
-          <p className="text-sm text-muted">
-            Didn&apos;t get a code?{' '}
-            {resendSecondsLeft > 0 ? (
-              <span className="font-semibold">Resend in {resendSecondsLeft}s</span>
+  return (
+    <Screen className="min-h-[100dvh]">
+      <KeyboardStickyFooter
+        footer={
+          <div className="px-6 pb-8">
+            <ActiveBarButton
+              label={otpSent ? 'Verify' : 'Next'}
+              onClick={primaryAction}
+              disabled={primaryDisabled}
+              loading={primaryLoading}
+            />
+          </div>
+        }
+      >
+        <div className="grow px-6 pb-4 pt-[max(1rem,env(safe-area-inset-top))]">
+          <ScreenHeading
+            title={otpSent ? 'Verify your number' : 'Enter your phone number'}
+            onBack={() => router.push('/welcome')}
+          />
+
+          <p className="mt-3 text-sm leading-6 text-muted">
+            {otpSent ? (
+              <>
+                Enter the {CODE_LENGTH}-digit code we sent to{' '}
+                <span className="font-semibold text-ink">{displayNumber}</span>.{' '}
+                <button type="button" className="font-semibold text-brand" onClick={handleChangeNumber}>
+                  Change number
+                </button>
+              </>
             ) : (
-              <button
-                type="button"
-                className="font-semibold text-brand"
-                disabled={resend.isPending}
-                onClick={() => resend.mutate()}
-              >
-                {resend.isPending ? 'Sending…' : 'Resend'}
-              </button>
+              <>
+                Active will verify your phone number. Carrier charges may apply.{' '}
+                <button type="button" className="font-semibold text-brand" onClick={handleWhatsMyNumber}>
+                  What&apos;s my number?
+                </button>
+              </>
             )}
           </p>
-        </>
-      )}
 
-      {mutationError ? <InlineError error={mutationError} /> : null}
-      {resend.isError ? <InlineError error={resend.error} /> : null}
+          {!otpSent ? (
+            <PhoneUnderlineField value={phone} onChange={setPhone} autoFocus />
+          ) : (
+            <div className="mt-8">
+              <OtpInput value={otp} onChange={setOtp} autoFocus />
 
-      <Button
-        label={otpSent ? 'Verify' : 'Next'}
-        loading={primaryLoading}
-        disabled={primaryDisabled}
-        size="lg"
-        onClick={() => {
-          if (otpSent) verify.mutate();
-          else sendCode.mutate();
-        }}
-      />
-    </FlowScreen>
+              <p className="text-sm leading-5 text-muted">
+                Didn&apos;t get a code?{' '}
+                {resendSecondsLeft > 0 ? (
+                  <span className="font-semibold text-muted">Resend in {resendSecondsLeft}s</span>
+                ) : (
+                  <button
+                    type="button"
+                    className={resend.isPending ? 'font-semibold text-muted' : 'font-semibold text-brand'}
+                    disabled={resend.isPending}
+                    onClick={() => resend.mutate()}
+                  >
+                    {resend.isPending ? 'Sending…' : 'Resend'}
+                  </button>
+                )}
+              </p>
+            </div>
+          )}
+
+          {mutationError ? (
+            <div className="mt-3">
+              <InlineError error={mutationError} />
+            </div>
+          ) : null}
+          {resend.isError ? (
+            <div className="mt-3">
+              <InlineError error={resend.error} />
+            </div>
+          ) : null}
+        </div>
+      </KeyboardStickyFooter>
+    </Screen>
   );
 }

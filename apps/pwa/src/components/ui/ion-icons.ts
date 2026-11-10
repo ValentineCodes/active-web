@@ -1,6 +1,7 @@
 import {
   addOutline,
   alertCircleOutline,
+  arrowBackOutline,
   chevronBackOutline,
   closeOutline,
   compassOutline,
@@ -28,6 +29,7 @@ export const ionIcons = {
   add: addOutline,
   'add-circle-outline': addCircleOutline,
   'alert-circle': alertCircleOutline,
+  'arrow-back': arrowBackOutline,
   'checkmark-circle': checkmarkCircle,
   'chevron-back': chevronBackOutline,
   'chevron-forward': chevronForwardOutline,

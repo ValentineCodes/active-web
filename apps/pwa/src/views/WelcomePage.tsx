@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 
-import { AuthFooterButton } from '@/components/auth/AuthFooterButton';
+import { ActiveBarButton } from '@/components/ui/ActiveBarButton';
 import { Screen } from '@/components/ui/Screen';
 
 export function WelcomePage() {
@@ -30,9 +30,7 @@ function WelcomeHero() {
       />
       <h1 className="text-3xl font-bold text-ink">Welcome to Active</h1>
       <p className="mt-4 text-sm leading-6 text-muted">
-        If you can pay for it,
-        <br />
-        someone can do it.
+        If you can pay for it, someone can do it.
       </p>
     </div>
   );
@@ -46,7 +44,7 @@ function WelcomeFooter({ onContinue }: { onContinue: () => void }) {
         <span className="font-semibold text-brand underline">Privacy Policy</span>. Tap &ldquo;Agree and continue&rdquo; to
         accept the <span className="font-semibold text-brand underline">Terms of Service</span>.
       </p>
-      <AuthFooterButton label="Agree and continue" onClick={onContinue} />
+      <ActiveBarButton label="Agree and continue" onClick={onContinue} showChevron />
     </div>
   );
 }

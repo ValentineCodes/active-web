@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 import { LoadingScreen } from '@/components/LoadingScreen';
 import { LiveProfilePhotoCapture } from '@/components/profile/LiveProfilePhotoCapture';
 import { Avatar } from '@/components/ui/Avatar';
-import { AuthFooterButton } from '@/components/auth/AuthFooterButton';
+import { ActiveBarButton } from '@/components/ui/ActiveBarButton';
 import { Screen } from '@/components/ui/Screen';
 import { InlineError } from '@/components/ui/StateView';
 import { TextAreaField, TextField } from '@/components/ui/TextField';
@@ -86,9 +86,8 @@ export function OnboardingPage() {
           </div>
 
           <footer className="shrink-0 p-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-4">
-            <AuthFooterButton
+            <ActiveBarButton
               label="Continue"
-              showChevron={false}
               disabled={!isNameValid}
               loading={save.isPending}
               onClick={() =>

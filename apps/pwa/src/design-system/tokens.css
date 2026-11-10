@@ -59,6 +59,41 @@
   --input: var(--token-hairline);
   --ring: var(--token-brand);
   --radius: 1rem;
+
+  /* Resolved paints for Tailwind (avoids broken `<alpha-value>` in utilities). */
+  --resolved-ink: rgb(var(--token-ink));
+  --resolved-subtle: rgb(var(--token-subtle));
+  --resolved-muted-foreground: rgb(var(--token-muted));
+  --resolved-canvas: rgb(var(--token-canvas));
+  --resolved-surface: rgb(var(--token-surface));
+  --resolved-elevated: rgb(var(--token-elevated));
+  --resolved-hairline: rgb(var(--token-hairline));
+  --resolved-brand: rgb(var(--token-brand));
+  --resolved-brand-strong: rgb(var(--token-brand-strong));
+  --resolved-brand-soft: rgb(var(--token-brand-soft));
+  --resolved-active: rgb(var(--token-active));
+  --resolved-active-soft: rgb(var(--token-active-soft));
+  --resolved-on-brand: rgb(var(--token-on-brand));
+  --resolved-danger: rgb(var(--token-danger));
+  --resolved-danger-soft: rgb(var(--token-danger-soft));
+  --resolved-warning: rgb(var(--token-warning));
+  --resolved-warning-soft: rgb(var(--token-warning-soft));
+  --resolved-info: rgb(var(--token-info));
+  --resolved-info-soft: rgb(var(--token-info-soft));
+  --resolved-background: rgb(var(--token-canvas));
+  --resolved-foreground: rgb(var(--token-ink));
+  --resolved-primary: rgb(var(--token-brand));
+  --resolved-primary-foreground: rgb(var(--token-on-brand));
+  --resolved-secondary: rgb(var(--token-surface));
+  --resolved-secondary-foreground: rgb(var(--token-ink));
+  --resolved-muted: rgb(var(--token-surface));
+  --resolved-accent: rgb(var(--token-brand-soft));
+  --resolved-accent-foreground: rgb(var(--token-ink));
+  --resolved-destructive: rgb(var(--token-danger));
+  --resolved-destructive-foreground: rgb(var(--token-on-brand));
+  --resolved-border: rgb(var(--token-hairline));
+  --resolved-input: rgb(var(--token-hairline));
+  --resolved-ring: rgb(var(--token-brand));
 }
 
 .dark {

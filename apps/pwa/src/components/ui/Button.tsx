@@ -1,5 +1,6 @@
 'use client';
 
+import { ActiveBarButton } from '@/components/ui/ActiveBarButton';
 import { ShadcnButton, buttonVariants } from '@/components/ui/primitives/button';
 import { IonIcon } from '@/components/ui/IonIcon';
 import { ionIcons, type IonIconName } from '@/components/ui/ion-icons';
@@ -48,11 +49,26 @@ export function Button({
 }: Props) {
   const colors = useColors();
   const inert = disabled || loading;
-  const shadcnVariant = variantMap[variant];
+  const compact = Boolean(className?.includes('!w-auto') || className?.includes('w-auto'));
 
+  if ((variant === 'primary' || variant === 'active') && !compact) {
+    return (
+      <ActiveBarButton
+        type={type}
+        label={label}
+        onClick={onClick}
+        disabled={disabled}
+        loading={loading}
+        icon={icon}
+        className={cn(corner === 'full' ? 'rounded-2xl' : cornerClasses[corner], className)}
+      />
+    );
+  }
+
+  const shadcnVariant = variantMap[variant];
   const foregrounds: Record<Variant, string> = {
-    primary: colors.onBrand,
-    active: colors.onBrand,
+    primary: '#FFFFFF',
+    active: '#FFFFFF',
     secondary: colors.ink,
     ghost: colors.brand,
     danger: colors.danger,
@@ -66,7 +82,7 @@ export function Button({
       variant={shadcnVariant}
       size={size === 'lg' ? 'lg' : 'default'}
       onClick={onClick}
-      className={cn('w-full', cornerClasses[corner], className)}
+      className={cn(compact ? '' : 'w-full', cornerClasses[corner], className)}
     >
       {loading ? (
         <span className="opacity-80" aria-hidden>

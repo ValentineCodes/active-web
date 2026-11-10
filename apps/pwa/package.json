@@ -19,6 +19,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.4.0",
+    "input-otp": "^1.5.0",
     "ionicons": "^8.1.0",
     "next": "^15.3.2",
     "react": "^19.0.0",

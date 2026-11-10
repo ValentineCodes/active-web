@@ -9,14 +9,13 @@ export const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default:
-          '!bg-brand !text-on-brand hover:!bg-brand-strong active:opacity-90 [background-color:var(--color-brand)]',
+        default: 'btn-brand-fill active:opacity-90',
         destructive: 'bg-destructive text-destructive-foreground hover:bg-destructive/90',
         outline: 'border border-border bg-background hover:bg-accent hover:text-accent-foreground',
         secondary: 'bg-secondary text-secondary-foreground hover:bg-secondary/80',
         ghost: 'bg-transparent text-brand hover:bg-accent',
         link: 'text-primary underline-offset-4 hover:underline',
-        active: 'bg-active text-on-brand hover:bg-active/90 active:opacity-90',
+        active: 'btn-brand-fill active:opacity-90',
       },
       size: {
         default: 'h-11 rounded-full px-5 py-3.5 text-base',

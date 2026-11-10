@@ -1,67 +1,72 @@
-import { useId, type ClipboardEvent, type KeyboardEvent } from 'react';
+'use client';
 
+import { REGEXP_ONLY_DIGITS } from 'input-otp';
+
+import { InputOTP } from '@/components/ui/input-otp';
 import { cn } from '@/lib/cn';
 
 const LENGTH = 6;
 
-export function OtpInput({ value, onChange }: { value: string; onChange: (next: string) => void }) {
-  const baseId = useId();
-  const digits = value.padEnd(LENGTH, ' ').slice(0, LENGTH).split('');
+type OtpSlotProps = {
+  char: string | null;
+  isActive: boolean;
+  hasFakeCaret: boolean;
+};
 
-  const commit = (raw: string) => {
-    const cleaned = raw.replace(/\D/g, '').slice(0, LENGTH);
-    onChange(cleaned);
-  };
+export function OtpInput({
+  value,
+  onChange,
+  autoFocus,
+}: {
+  value: string;
+  onChange: (next: string) => void;
+  autoFocus?: boolean;
+}) {
+  return (
+    <InputOTP
+      maxLength={LENGTH}
+      value={value}
+      onChange={onChange}
+      autoFocus={autoFocus}
+      inputMode="numeric"
+      pattern={REGEXP_ONLY_DIGITS}
+      autoComplete="one-time-code"
+      textAlign="center"
+      containerClassName="relative my-4 flex min-h-12 w-full justify-center"
+      render={({ slots }) => (
+        <div className="flex flex-row items-center justify-center" role="presentation">
+          {slots.map((slot, index) => (
+            <OtpDashedSlot key={index} {...slot} />
+          ))}
+        </div>
+      )}
+    />
+  );
+}
 
-  const onPaste = (event: ClipboardEvent<HTMLInputElement>) => {
-    event.preventDefault();
-    commit(event.clipboardData.getData('text'));
-  };
-
-  const onKeyDown = (index: number, event: KeyboardEvent<HTMLInputElement>) => {
-    if (event.key === 'Backspace' && !digits[index]?.trim()) {
-      const prev = document.getElementById(`${baseId}-${index - 1}`) as HTMLInputElement | null;
-      prev?.focus();
-    }
-  };
+/** Dashed underline slots — parity with native `OtpDashedInput`. */
+function OtpDashedSlot({ char, isActive, hasFakeCaret }: OtpSlotProps) {
+  const underlineActive = isActive || char !== null;
 
   return (
-    <div className="my-4 flex flex-row items-center justify-center" role="group" aria-label="6-digit verification code">
-      {digits.map((digit, index) => {
-        const active = digit.trim().length > 0 || document.activeElement?.id === `${baseId}-${index}`;
-        return (
-          <span key={`${baseId}-${index}`} className="relative mx-2 flex h-12 w-12 items-center justify-center">
-            <input
-              id={`${baseId}-${index}`}
-              inputMode="numeric"
-              autoComplete={index === 0 ? 'one-time-code' : 'off'}
-              maxLength={1}
-              value={digit.trim()}
-              onChange={(event) => {
-                const nextChar = event.target.value.replace(/\D/g, '').slice(-1);
-                const next = value.split('');
-                next[index] = nextChar;
-                commit(next.join(''));
-                if (nextChar) {
-                  const nxt = document.getElementById(`${baseId}-${index + 1}`) as HTMLInputElement | null;
-                  nxt?.focus();
-                }
-              }}
-              onKeyDown={(event) => onKeyDown(index, event)}
-              onPaste={onPaste}
-              className="absolute inset-0 cursor-pointer opacity-0"
-              aria-label={`Digit ${index + 1}`}
-            />
-            {digit.trim() ? (
-              <span className="text-3xl font-medium text-ink">{digit.trim()}</span>
-            ) : null}
-            <span
-              className={cn('absolute bottom-0 w-full', active ? 'h-0.5 bg-brand' : 'h-px bg-hairline')}
-              aria-hidden
-            />
-          </span>
-        );
-      })}
+    <div
+      data-slot="input-otp-slot"
+      data-active={isActive}
+      className="relative mx-1.5 flex h-12 w-11 shrink-0 items-center justify-center sm:mx-2 sm:w-12"
+    >
+      {char !== null ? <span className="text-3xl font-medium text-ink">{char}</span> : null}
+      {hasFakeCaret ? (
+        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+          <span className="h-7 w-0.5 animate-pulse rounded-sm bg-brand" aria-hidden />
+        </div>
+      ) : null}
+      <span
+        className={cn(
+          'absolute bottom-0 left-0 right-0',
+          underlineActive ? 'border-b-2 border-brand' : 'border-b border-hairline',
+        )}
+        aria-hidden
+      />
     </div>
   );
 }

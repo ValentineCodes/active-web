@@ -1,41 +1,42 @@
 @import 'tailwindcss';
 @import '../design-system/tokens.css';
 
-@theme {
+@theme inline {
   --font-sans: 'Poppins', system-ui, -apple-system, sans-serif;
-  --color-ink: rgb(var(--token-ink) / <alpha-value>);
-  --color-subtle: rgb(var(--token-subtle) / <alpha-value>);
-  --color-muted: rgb(var(--token-muted) / <alpha-value>);
-  --color-canvas: rgb(var(--token-canvas) / <alpha-value>);
-  --color-surface: rgb(var(--token-surface) / <alpha-value>);
-  --color-elevated: rgb(var(--token-elevated) / <alpha-value>);
-  --color-hairline: rgb(var(--token-hairline) / <alpha-value>);
-  --color-brand: rgb(var(--token-brand) / <alpha-value>);
-  --color-brand-strong: rgb(var(--token-brand-strong) / <alpha-value>);
-  --color-brand-soft: rgb(var(--token-brand-soft) / <alpha-value>);
-  --color-active: rgb(var(--token-active) / <alpha-value>);
-  --color-active-soft: rgb(var(--token-active-soft) / <alpha-value>);
-  --color-on-brand: rgb(var(--token-on-brand) / <alpha-value>);
-  --color-danger: rgb(var(--token-danger) / <alpha-value>);
-  --color-danger-soft: rgb(var(--token-danger-soft) / <alpha-value>);
-  --color-warning: rgb(var(--token-warning) / <alpha-value>);
-  --color-warning-soft: rgb(var(--token-warning-soft) / <alpha-value>);
-  --color-info: rgb(var(--token-info) / <alpha-value>);
-  --color-info-soft: rgb(var(--token-info-soft) / <alpha-value>);
+  --color-ink: var(--resolved-ink);
+  --color-subtle: var(--resolved-subtle);
+  --color-muted: var(--resolved-muted-foreground);
+  --color-canvas: var(--resolved-canvas);
+  --color-surface: var(--resolved-surface);
+  --color-elevated: var(--resolved-elevated);
+  --color-hairline: var(--resolved-hairline);
+  --color-brand: var(--resolved-brand);
+  --color-brand-strong: var(--resolved-brand-strong);
+  --color-brand-soft: var(--resolved-brand-soft);
+  --color-active: var(--resolved-active);
+  --color-active-soft: var(--resolved-active-soft);
+  --color-on-brand: var(--resolved-on-brand);
+  --color-danger: var(--resolved-danger);
+  --color-danger-soft: var(--resolved-danger-soft);
+  --color-warning: var(--resolved-warning);
+  --color-warning-soft: var(--resolved-warning-soft);
+  --color-info: var(--resolved-info);
+  --color-info-soft: var(--resolved-info-soft);
 
-  --color-background: rgb(var(--background) / <alpha-value>);
-  --color-foreground: rgb(var(--foreground) / <alpha-value>);
-  --color-primary: rgb(var(--primary) / <alpha-value>);
-  --color-primary-foreground: rgb(var(--primary-foreground) / <alpha-value>);
-  --color-secondary: rgb(var(--secondary) / <alpha-value>);
-  --color-secondary-foreground: rgb(var(--secondary-foreground) / <alpha-value>);
-  --color-accent: rgb(var(--accent) / <alpha-value>);
-  --color-accent-foreground: rgb(var(--accent-foreground) / <alpha-value>);
-  --color-destructive: rgb(var(--destructive) / <alpha-value>);
-  --color-destructive-foreground: rgb(var(--destructive-foreground) / <alpha-value>);
-  --color-border: rgb(var(--border) / <alpha-value>);
-  --color-input: rgb(var(--input) / <alpha-value>);
-  --color-ring: rgb(var(--ring) / <alpha-value>);
+  --color-background: var(--resolved-background);
+  --color-foreground: var(--resolved-foreground);
+  --color-primary: var(--resolved-primary);
+  --color-primary-foreground: var(--resolved-primary-foreground);
+  --color-secondary: var(--resolved-secondary);
+  --color-secondary-foreground: var(--resolved-secondary-foreground);
+  --color-muted-foreground: var(--resolved-muted-foreground);
+  --color-accent: var(--resolved-accent);
+  --color-accent-foreground: var(--resolved-accent-foreground);
+  --color-destructive: var(--resolved-destructive);
+  --color-destructive-foreground: var(--resolved-destructive-foreground);
+  --color-border: var(--resolved-border);
+  --color-input: var(--resolved-input);
+  --color-ring: var(--resolved-ring);
   --radius-lg: var(--radius);
   --radius-md: calc(var(--radius) - 2px);
   --radius-sm: calc(var(--radius) - 4px);
@@ -53,10 +54,14 @@
   background-color: rgb(17 24 18 / 0.45);
 }
 
-/* Auth CTAs — mobile light `brandStrong` (#0E4C2A); fixed so system dark mode does not lighten the bar. */
+/* Primary CTAs — mobile light `brand` (#166A3D) + white; fixed across themes. */
 @utility auth-footer-cta {
-  background-color: #0e4c2a;
-  color: rgb(255 255 255);
+  background-color: #166a3d;
+  color: #ffffff;
+}
+@utility btn-brand-fill {
+  background-color: #166a3d;
+  color: #ffffff;
 }
 
 @utility auth-footer-cta--disabled {
@@ -81,5 +86,15 @@
 
   * {
     font-family: var(--font-sans);
+  }
+
+  button.auth-footer-cta,
+  button.btn-brand-fill {
+    background-color: #166a3d;
+    color: #ffffff;
+  }
+  button.auth-footer-cta--disabled {
+    background-color: rgb(var(--token-surface));
+    color: rgb(var(--token-muted));
   }
 }
