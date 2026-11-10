@@ -3,11 +3,13 @@
 import { useState } from 'react';
 
 import { ResponderScheduleAvailability } from '@/components/ResponderScheduleAvailability';
+import { ProfileCompletionBadge } from '@/components/profile/ProfileCompletionBadge';
 import { BottomSheet } from '@/components/ui/BottomSheet';
 import { Button } from '@/components/ui/Button';
 import { Avatar } from '@/components/ui/Avatar';
 import { StarRating } from '@/components/ui/Stars';
 import { TextAreaField } from '@/components/ui/TextField';
+import { cn } from '@/lib/cn';
 
 export type ResponderProfileSheetActions = {
   responderAvailable: boolean;
@@ -99,15 +101,25 @@ export function ResponderProfileSheet({
 
   return (
     <BottomSheet open={open} title={title} onClose={onClose} footer={footer}>
-      <div className="flex flex-col items-center gap-4 px-5 pb-4">
-        <Avatar path={avatarPath} name={displayName} size="lg" />
-        {hasRatings && ratingAverage !== null ? (
-          <StarRating average={ratingAverage} count={ratingCount ?? 0} size="md" />
-        ) : null}
-        {completionPercent != null ? (
-          <p className="text-sm font-semibold text-active">{completionPercent}% completion</p>
-        ) : null}
-        {bio ? <p className="text-center text-sm leading-5 text-muted">{bio}</p> : null}
+      <div className="flex flex-col gap-5 px-5 pb-6">
+        <div className="flex flex-row items-center gap-3">
+          <div
+            className={cn(
+              'flex min-w-0 flex-1 flex-row gap-3',
+              hasRatings ? 'items-start' : 'items-center',
+            )}
+          >
+            <Avatar path={avatarPath} name={displayName} size="md" />
+            <div className={cn('min-w-0 flex-1', hasRatings ? 'flex flex-col gap-2' : undefined)}>
+              <p className="truncate text-lg font-bold leading-7 text-ink">{title}</p>
+              {hasRatings && ratingAverage !== null ? (
+                <StarRating average={ratingAverage} count={ratingCount ?? 0} size="md" />
+              ) : null}
+            </div>
+          </div>
+          {completionPercent != null ? <ProfileCompletionBadge percent={completionPercent} /> : null}
+        </div>
+        {bio ? <p className="text-base leading-6 text-muted">{bio}</p> : null}
       </div>
     </BottomSheet>
   );

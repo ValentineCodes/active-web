@@ -28,7 +28,8 @@ export const iconSize = {
 export const overlayScrim = 'rgb(17 24 18 / 0.45)';
 
 export const zIndex = {
-  toast: 50,
-  sheet: 40,
+  toast: 60,
+  /** Stacked sheets / modals above the create composer (Vaul z-50). */
+  sheet: 80,
   header: 10,
 } as const;

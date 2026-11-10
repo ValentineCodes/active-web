@@ -4,10 +4,10 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useMutation } from '@tanstack/react-query';
 
+import { FlowScreen } from '@/components/layout/FlowScreen';
+import { ProfileCatalogueRail } from '@/components/profile/ProfileCatalogueRail';
 import { ProfileStat, SettingsGroup, SettingsRow } from '@/components/profile/SettingsRow';
 import { Avatar } from '@/components/ui/Avatar';
-import { Header } from '@/components/ui/Header';
-import { Screen } from '@/components/ui/Screen';
 import { IonIcon } from '@/components/ui/IonIcon';
 import { ionIcons } from '@/components/ui/ion-icons';
 import { StarRating } from '@/components/ui/Stars';
@@ -50,20 +50,18 @@ export function ProfilePage() {
 
   if (showQuerySkeleton(profile)) {
     return (
-      <Screen className="min-h-[100dvh]">
-        <Header title="Profile" onBack={goBack} />
+      <FlowScreen title="Profile" onBack={goBack}>
         <LoadingState />
-      </Screen>
+      </FlowScreen>
     );
   }
 
   const data = profile.data;
   if (!data) {
     return (
-      <Screen className="min-h-[100dvh]">
-        <Header title="Profile" onBack={goBack} />
+      <FlowScreen title="Profile" onBack={goBack}>
         <EmptyState icon="person-outline" title="Profile unavailable" message="Refresh when you are back online." />
-      </Screen>
+      </FlowScreen>
     );
   }
 
@@ -76,16 +74,21 @@ export function ProfilePage() {
   const responseCount = myResponses.data?.length ?? 0;
   const ratingCount = data.rating_count ?? 0;
   const ratingAverage = ratingCount > 0 && data.rating_average !== null ? data.rating_average : null;
+
   return (
-    <Screen className="min-h-[100dvh]">
-      <Header title="Profile" onBack={goBack} />
-      <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto px-5 pb-12 pt-2">
+    <FlowScreen title="Profile" onBack={goBack}>
+      <div className="flex flex-col gap-6">
       <div className="flex flex-col items-center gap-2 text-center">
         <Avatar path={data.avatar_path} name={data.display_name} size="lg" showActiveDot={hasCommitments} />
-        <p className="max-w-full truncate text-lg font-bold text-ink">{data.display_name}</p>
-        {ratingAverage !== null || completed > 0 ? (
-          <RatingRow ratingAverage={ratingAverage} ratingCount={ratingCount} completed={completed} />
-        ) : null}
+        <div className="flex max-w-full flex-row items-center justify-center gap-1.5">
+          <p className="min-w-0 truncate text-xl font-bold text-ink">{data.display_name}</p>
+          {identityStatus.data?.identityVerified ? (
+            <span className="shrink-0 rounded-full bg-brand-soft px-2 py-0.5 text-xs font-semibold text-brand">
+              Verified
+            </span>
+          ) : null}
+        </div>
+        <RatingRow ratingAverage={ratingAverage} ratingCount={ratingCount} completed={completed} />
         {data.bio ? <p className="max-w-sm text-sm leading-5 text-muted">{data.bio}</p> : null}
         {data.phone ? (
           <button
@@ -100,18 +103,20 @@ export function ProfilePage() {
             <span className="text-sm font-medium text-muted">{formatPhoneDisplay(data.phone)}</span>
           </button>
         ) : null}
-        {identityStatus.data?.identityVerified ? (
-          <span className="rounded-full bg-brand-soft px-3 py-1 text-xs font-semibold text-brand">Verified ID</span>
-        ) : null}
       </div>
 
-      <div className="flex flex-row overflow-hidden rounded-2xl border border-hairline bg-elevated">
+      <div
+        aria-label="Your activity"
+        className="flex w-full flex-row overflow-hidden rounded-2xl border border-hairline bg-elevated"
+      >
         <ProfileStat value={activeRequests} label="Requests" />
-        <StatDivider />
+        <div className="w-px shrink-0 bg-hairline" aria-hidden />
         <ProfileStat value={completed} label="Completed" />
-        <StatDivider />
+        <div className="w-px shrink-0 bg-hairline" aria-hidden />
         <ProfileStat value={responseCount} label="Responses" />
       </div>
+
+      <ProfileCatalogueRail />
 
       <button
         type="button"
@@ -168,7 +173,6 @@ export function ProfilePage() {
           {leave.isPending ? 'Signing out…' : 'Sign out'}
         </button>
       </div>
-      </div>
 
       <ReportIssueModal
         open={reportIssueOpen}
@@ -176,7 +180,8 @@ export function ProfilePage() {
         onClose={() => setReportIssueOpen(false)}
         onSubmit={() => showAppToast('Thanks — we received your report')}
       />
-    </Screen>
+      </div>
+    </FlowScreen>
   );
 }
 
@@ -189,15 +194,15 @@ function RatingRow({
   ratingCount: number;
   completed: number;
 }) {
+  if (ratingAverage === null && completed === 0) {
+    return null;
+  }
+
   return (
     <div className="flex flex-row flex-wrap items-center justify-center gap-x-1.5">
-      {ratingAverage !== null ? <StarRating average={ratingAverage} count={ratingCount} size="sm" /> : null}
+      {ratingAverage !== null ? <StarRating average={ratingAverage} count={ratingCount} size="md" /> : null}
       {ratingAverage !== null && completed > 0 ? <span className="text-sm text-muted">·</span> : null}
       {completed > 0 ? <span className="text-sm font-medium text-muted">{completed} completed</span> : null}
     </div>
   );
-}
-
-function StatDivider() {
-  return <span className="w-px self-stretch bg-hairline" aria-hidden />;
 }

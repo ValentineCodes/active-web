@@ -59,20 +59,35 @@ async function readCurrentPosition(): Promise<Position | null> {
   }
 }
 
-export async function requestPosition(options?: { fresh?: boolean }): Promise<PositionResult> {
+/**
+ * Requests a GPS fix. Calls `getCurrentPosition` immediately so the browser permission
+ * prompt stays tied to the user tap (no `await` before the geolocation call).
+ */
+export function requestPosition(options?: { fresh?: boolean }): Promise<PositionResult> {
   if (!navigator.geolocation) {
-    return { ok: false, reason: 'unavailable' };
+    return Promise.resolve({ ok: false, reason: 'unavailable' });
   }
 
-  const before = await readForegroundPermission();
-  if (before === 'denied') return { ok: false, reason: 'permission-denied' };
-
-  const position = await new Promise<Position | null>((resolve) => {
+  return new Promise((resolve) => {
     navigator.geolocation.getCurrentPosition(
-      (fix) => resolve(positionFromFix(fix.coords)),
+      (fix) => {
+        const position = positionFromFix(fix.coords);
+        if (!position) {
+          resolve({ ok: false, reason: 'unavailable' });
+          return;
+        }
+        resolve({ ok: true, position });
+      },
       (error) => {
-        if (error.code === error.PERMISSION_DENIED) resolve(null);
-        else resolve(null);
+        if (error.code === error.PERMISSION_DENIED) {
+          resolve({ ok: false, reason: 'permission-denied' });
+          return;
+        }
+        if (error.code === error.POSITION_UNAVAILABLE) {
+          resolve({ ok: false, reason: 'services-disabled' });
+          return;
+        }
+        resolve({ ok: false, reason: 'unavailable' });
       },
       {
         enableHighAccuracy: Boolean(options?.fresh),
@@ -81,13 +96,6 @@ export async function requestPosition(options?: { fresh?: boolean }): Promise<Po
       },
     );
   });
-
-  if (!position) {
-    const after = await readForegroundPermission();
-    if (after === 'denied') return { ok: false, reason: 'permission-denied' };
-    return { ok: false, reason: 'unavailable' };
-  }
-  return { ok: true, position };
 }
 
 export async function readPositionIfPermitted(): Promise<Position | null> {
@@ -109,8 +117,48 @@ export function positionErrorMessage(
   return 'We could not get your location. Try again in a moment.';
 }
 
-export async function suggestAreaLabel(): Promise<string | null> {
-  return null;
+/**
+ * Coarse area label from coordinates (shown before a helper is selected).
+ * Mirrors native `expo-location` reverse geocode shape.
+ */
+export async function suggestAreaLabel(position: Position): Promise<string | null> {
+  try {
+    const url = new URL('https://nominatim.openstreetmap.org/reverse');
+    url.searchParams.set('lat', String(position.latitude));
+    url.searchParams.set('lon', String(position.longitude));
+    url.searchParams.set('format', 'json');
+    url.searchParams.set('zoom', '14');
+
+    const response = await fetch(url.toString(), {
+      headers: {
+        Accept: 'application/json',
+        'Accept-Language': 'en',
+        'User-Agent': 'ActivePWA/1.0',
+      },
+    });
+    if (!response.ok) return null;
+
+    const data = (await response.json()) as { address?: Record<string, string | undefined> };
+    const address = data.address;
+    if (!address) return null;
+
+    const locality =
+      address.city ??
+      address.town ??
+      address.village ??
+      address.municipality ??
+      address.county ??
+      address.state;
+    const district =
+      address.suburb ?? address.neighbourhood ?? address.city_district ?? address.district ?? address.subregion;
+
+    const parts = [district, locality].filter((part): part is string => Boolean(part?.trim()));
+    if (parts.length === 0) return null;
+
+    return [...new Set(parts.map((part) => part.trim()))].join(', ');
+  } catch {
+    return null;
+  }
 }
 
 export function parsePositionParam(lat?: string, lng?: string): Position | null {

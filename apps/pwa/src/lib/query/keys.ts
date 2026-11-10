@@ -29,6 +29,8 @@ export const queryKeys = {
   avatarUrl: (path: string) => ['avatar-url', path] as const,
   requestAttachmentUrl: (path: string) => ['request-attachment-url', path] as const,
   conversationAttachmentUrl: (path: string) => ['conversation-attachment-url', path] as const,
+  catalogue: (userId: string) => ['catalogue', userId] as const,
+  catalogueMediaUrl: (path: string) => ['catalogue-media-url', path] as const,
   notificationInbox: ['notification-inbox'] as const,
   notificationUnreadCount: ['notification-unread-count'] as const,
   requestTagsSearch: (query: string) => ['request-tags-search', query] as const,

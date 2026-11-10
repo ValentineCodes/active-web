@@ -31,7 +31,7 @@ export function FlowScreen({
   const handleBack = onBack ?? (backTo != null ? () => router.push(backTo) : () => router.back());
 
   return (
-    <Screen className={cn('min-h-[100dvh]', className)}>
+    <Screen className={cn('h-full min-h-0 flex-1', className)}>
       <Header title={title} onBack={handleBack} right={right} />
       <div className={cn('min-h-0 flex-1 overflow-y-auto px-6 pb-8 pt-2', bodyClassName)}>{children}</div>
       {footer}

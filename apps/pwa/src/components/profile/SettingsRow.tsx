@@ -51,9 +51,9 @@ export function SettingsGroup({ title, children }: { title: string; children: Re
 
 export function ProfileStat({ value, label }: { value: number; label: string }) {
   return (
-    <div className="flex flex-1 flex-col items-center gap-1 py-4">
-      <p className="text-lg font-bold text-ink">{value}</p>
-      <p className="text-xs text-muted">{label}</p>
+    <div className="flex min-w-0 flex-1 flex-col items-center justify-center gap-1 py-4">
+      <p className="text-2xl font-bold leading-8 text-ink">{value}</p>
+      <p className="text-sm text-muted">{label}</p>
     </div>
   );
 }

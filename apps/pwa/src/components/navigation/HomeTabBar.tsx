@@ -1,8 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 
+import { useCreateComposer } from '@/components/create/CreateComposerProvider';
 import { IonIcon } from '@/components/ui/IonIcon';
 import { ionIcons } from '@/components/ui/ion-icons';
 import { useConversationInboxUnreadCount } from '@/features/requests/conversation-inbox-api';
@@ -52,11 +53,11 @@ function TabIcon({
 }
 
 export function HomeTabBar() {
-  const router = useRouter();
   const pathname = usePathname();
   const colors = useColors();
   const unread = useNotificationUnreadCount();
   const { data: requests } = useMyRequests();
+  const { isOpen, openCreateComposer } = useCreateComposer();
   useConversationInboxUnreadCount();
 
   const waitingResponses =
@@ -68,7 +69,8 @@ export function HomeTabBar() {
       0,
     ) ?? 0;
 
-  const createActive = pathname === '/request/new' || pathname.startsWith('/request/new/');
+  const createActive =
+    isOpen || pathname === '/request/new' || pathname.startsWith('/request/new/');
 
   return (
     <nav
@@ -95,7 +97,7 @@ export function HomeTabBar() {
         <button
           type="button"
           aria-label="Create request"
-          onClick={() => router.push('/request/new')}
+          onClick={openCreateComposer}
           className="relative flex min-h-11 flex-1 flex-col items-center justify-center py-1 active:opacity-70"
         >
           <IonIcon

@@ -31,6 +31,11 @@ import {
   star,
   starOutline,
   lockClosedOutline,
+  videocamOutline,
+  imageOutline,
+  playCircleOutline,
+  cameraOutline,
+  imagesOutline,
 } from 'ionicons/icons';
 
 /** Maps mobile Ionicons glyph names to ionicons v8 data-URI SVG strings. */
@@ -67,6 +72,11 @@ export const ionIcons = {
   star: star,
   'star-outline': starOutline,
   'lock-closed-outline': lockClosedOutline,
+  'videocam-outline': videocamOutline,
+  'image-outline': imageOutline,
+  'play-circle-outline': playCircleOutline,
+  'camera-outline': cameraOutline,
+  'images-outline': imagesOutline,
 } as const;
 
 export type IonIconName = keyof typeof ionIcons;

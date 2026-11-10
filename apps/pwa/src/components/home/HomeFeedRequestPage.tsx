@@ -41,6 +41,7 @@ type Props = {
   isOwnRequest: boolean;
   waiting: boolean;
   browsePosition: Position | null;
+  onRequesterPress: () => void;
 };
 
 function requestHref(requestId: string, position: Position | null, isOwnRequest: boolean): string {
@@ -61,6 +62,7 @@ export function HomeFeedRequestPage({
   isOwnRequest,
   waiting,
   browsePosition,
+  onRequesterPress,
 }: Props) {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -83,9 +85,9 @@ export function HomeFeedRequestPage({
     : 'text-3xl font-bold leading-9 text-ink';
   const bodyClass = lightCopy ? 'text-base leading-6 text-white/90' : 'text-base leading-6 text-muted';
   const requesterNameClass = lightCopy
-    ? 'text-lg font-semibold leading-6 text-white'
-    : 'text-lg font-semibold leading-6 text-ink';
-  const metaSubClass = lightCopy ? 'text-xs text-white/80' : 'text-xs text-muted';
+    ? 'text-sm font-semibold leading-5 text-white'
+    : 'text-sm font-semibold leading-5 text-ink';
+  const metaSubClass = lightCopy ? 'text-xs font-normal leading-3 text-white/70' : 'text-xs font-normal leading-3 text-subtle';
   const whenChipClass = lightCopy ? 'rounded-full bg-white/15 px-3 py-1' : 'rounded-full bg-surface px-3 py-1';
   const whenTextClass = lightCopy ? 'text-sm font-semibold text-white' : 'text-sm font-semibold text-ink';
   const footerBorderClass = lightCopy ? 'border-t border-white/15' : 'border-t border-hairline';
@@ -119,28 +121,16 @@ export function HomeFeedRequestPage({
   );
 
   if (showAtmosphere) {
-    const heroTone = darkAtmosphere ? DARK_SURFACE : colors.canvas;
-    const heroRequesterName = darkAtmosphere
-      ? 'text-lg font-semibold leading-6 text-white'
-      : 'text-lg font-semibold leading-6 text-ink';
-    const heroMetaSub = darkAtmosphere ? 'text-xs text-white/80' : 'text-xs text-muted';
+    const surfaceTone = darkAtmosphere ? DARK_SURFACE : colors.canvas;
 
     return (
       <article
         style={{ height: pageHeight }}
-        className="relative flex w-full shrink-0 snap-start snap-always flex-col overflow-hidden bg-canvas"
+        className="relative w-full shrink-0 snap-start snap-always overflow-hidden bg-canvas"
       >
-        <button
-          type="button"
-          aria-label={openDisabled ? 'Response pending' : `View request: ${title}`}
-          disabled={openDisabled}
-          onClick={openRequest}
-          className="absolute inset-0 z-[1] disabled:cursor-not-allowed active:opacity-95"
-        />
-
         <div
-          className="relative h-2/5 w-full shrink-0 overflow-hidden"
-          style={{ backgroundColor: heroTone }}
+          className="relative h-full min-h-0 overflow-hidden"
+          style={{ backgroundColor: surfaceTone }}
         >
           <TextRequestGlow dark={darkAtmosphere} />
           <div
@@ -152,42 +142,43 @@ export function HomeFeedRequestPage({
             }}
             aria-hidden
           />
+
+          <div
+            className="pointer-events-none absolute left-5 z-[2] flex flex-row items-center gap-2"
+            style={{ top: '29%' }}
+          >
+            <OpenRequestLabel dark={darkAtmosphere} />
+          </div>
+
+          <button
+            type="button"
+            aria-label={openDisabled ? 'Response pending' : `View request: ${title}`}
+            disabled={openDisabled}
+            onClick={openRequest}
+            className="absolute inset-0 z-[1] disabled:cursor-not-allowed active:opacity-95"
+          />
+
           <button
             type="button"
             aria-label={`View ${request.requester_display_name ?? 'requester'} profile`}
-            onClick={() => router.push(`/profile`)}
+            onClick={(event) => {
+              event.stopPropagation();
+              onRequesterPress();
+            }}
             className="absolute left-0 right-12 top-0 z-[3] flex flex-row items-center gap-2.5 p-4 text-left active:opacity-90"
           >
             <Avatar size="sm" path={request.requester_avatar_path} name={request.requester_display_name} />
             <RequesterBlock
-              requesterNameClass={heroRequesterName}
+              requesterNameClass={requesterNameClass}
               name={request.requester_display_name ?? 'Someone nearby'}
               postedLabel={postedLabel}
-              metaSubClass={heroMetaSub}
+              metaSubClass={metaSubClass}
             />
           </button>
-        </div>
 
-        <div className="pointer-events-none absolute left-5 top-1/3 z-[4] -translate-y-1/2">
-          <OpenRequestLabel dark={darkAtmosphere} />
-        </div>
-
-        <div className="pointer-events-none relative z-[2] flex min-h-0 flex-1 flex-col justify-end gap-3 px-4 pb-4 pt-2">
-          <RequestDetails
-            request={request}
-            title={title}
-            description={description}
-            proximityLabel={proximityLabel}
-            isOwnRequest={isOwnRequest}
-            waiting={waiting}
-            titleClass="text-3xl font-bold leading-9 text-ink"
-            bodyClass="text-base leading-6 text-muted"
-            whenChipClass="rounded-full bg-surface px-3 py-1"
-            whenTextClass="text-sm font-semibold text-ink"
-            footerBorderClass="border-t border-hairline"
-            locationIconColor={colors.ink}
-            locationTextClass="text-sm font-medium text-ink"
-          />
+          <div className="pointer-events-none absolute bottom-0 left-0 right-0 z-[2] flex flex-col gap-3 px-4 pb-4 pt-6">
+            {cardDetails}
+          </div>
         </div>
       </article>
     );
@@ -223,7 +214,10 @@ export function HomeFeedRequestPage({
         <button
           type="button"
           aria-label={`View ${request.requester_display_name ?? 'requester'} profile`}
-          onClick={() => router.push(`/profile`)}
+          onClick={(event) => {
+            event.stopPropagation();
+            onRequesterPress();
+          }}
           className="absolute left-0 right-12 top-0 z-[3] flex flex-row items-center gap-2.5 p-4 text-left active:opacity-90"
         >
           <Avatar size="sm" path={request.requester_avatar_path} name={request.requester_display_name} />
@@ -318,24 +312,27 @@ function TextRequestGlow({ dark }: { dark: boolean }) {
   const peak = dark ? 0.16 : 0.2;
   return (
     <>
+      {/* Match native end points ~(35%, 55%) — fade out early so glow stays top-right. */}
       <div
         className="pointer-events-none absolute inset-0"
         style={{
-          background: `linear-gradient(to bottom left, ${glowColor(color, peak)} 0%, ${glowColor(color, peak * 0.3)} 35%, transparent 72%)`,
+          background: `linear-gradient(
+            218deg,
+            ${glowColor(color, peak)} 0%,
+            ${glowColor(color, peak * 0.3)} 22%,
+            ${glowColor(color, 0)} 44%
+          )`,
         }}
         aria-hidden
       />
       <div
         className="pointer-events-none absolute inset-0"
         style={{
-          background: `linear-gradient(to bottom left, ${glowColor(color, peak * 0.65)} 0%, transparent 58%)`,
-        }}
-        aria-hidden
-      />
-      <div
-        className="pointer-events-none absolute inset-0"
-        style={{
-          background: `radial-gradient(ellipse 160% 140% at 100% 0%, ${glowColor(color, peak * 0.4)} 0%, ${glowColor(color, peak * 0.1)} 40%, transparent 85%)`,
+          background: `linear-gradient(
+            228deg,
+            ${glowColor(color, peak * 0.65)} 0%,
+            ${glowColor(color, 0)} 36%
+          )`,
         }}
         aria-hidden
       />

@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { set, startOfTomorrow } from 'date-fns';
 
 import { FlowScreen } from '@/components/layout/FlowScreen';
+import { RequestCreateWizard } from '@/components/request-flow/RequestCreateWizard';
 import { RequestAttachmentSection } from '@/components/request-flow/RequestAttachmentSection';
 import { MoneyAmountInput } from '@/components/ui/MoneyAmountInput';
 import { Button } from '@/components/ui/Button';
@@ -24,6 +25,7 @@ import {
 import { requestPosition, suggestAreaLabel, type Position } from '@/lib/geolocation';
 import { showAppToast } from '@/lib/toast';
 import { cn } from '@/lib/cn';
+import { useOptionalCreateComposer } from '@/components/create/CreateComposerProvider';
 import { useUserId } from '@/features/auth/use-user-id';
 
 function toDatetimeLocalValue(iso: string | null | undefined): string {
@@ -39,10 +41,51 @@ function isLocalAttachmentUri(uri: string) {
 }
 
 export function RequestNewPage() {
-  const router = useRouter();
   const params = useSearchParams();
-  const editId = params.get('edit');
+  return <RequestNewContent presentation="full" editId={params.get('edit')} />;
+}
+
+/** Drawer create flow — must not call `useSearchParams` (would suspend the tab page). */
+export function RequestNewContent({
+  presentation,
+  editId = null,
+}: {
+  presentation: 'full' | 'drawer';
+  editId?: string | null;
+}) {
+  if (presentation === 'drawer' && !editId) {
+    return <RequestNewDrawerFlow />;
+  }
+  return <RequestNewFullForm presentation={presentation} editId={editId} />;
+}
+
+function RequestNewDrawerFlow() {
+  const composer = useOptionalCreateComposer();
+  if (!composer) {
+    throw new Error('RequestNewDrawerFlow must render inside CreateComposerProvider');
+  }
+  return <RequestCreateWizard onClose={composer.close} onSuccess={composer.leaveAfterSuccess} />;
+}
+
+function RequestNewFullForm({
+  presentation,
+  editId = null,
+}: {
+  presentation: 'full' | 'drawer';
+  editId?: string | null;
+}) {
+  const router = useRouter();
+  const composer = useOptionalCreateComposer();
+  const closeComposer = () => {
+    if (presentation === 'drawer' && composer) composer.close();
+    else router.back();
+  };
+  const leaveAfterSuccess = (href: string) => {
+    if (presentation === 'drawer' && composer) composer.leaveAfterSuccess(href);
+    else router.push(href);
+  };
   const isEdit = Boolean(editId);
+
   const userId = useUserId();
   const create = useCreateRequest();
   const update = useUpdateRequest(editId ?? '');
@@ -108,7 +151,7 @@ export function RequestNewPage() {
       return;
     }
     setPosition(result.position);
-    const label = await suggestAreaLabel();
+    const label = await suggestAreaLabel(result.position);
     if (label) setAreaLabel(label);
   };
 
@@ -178,7 +221,7 @@ export function RequestNewPage() {
           ...(attachmentForRpc !== undefined ? { attachmentPath: attachmentForRpc } : {}),
           tags: selectedTags,
         });
-        router.push(`/request/${editId}`);
+        leaveAfterSuccess(`/request/${editId}`);
         return;
       }
 
@@ -193,7 +236,7 @@ export function RequestNewPage() {
         tags: selectedTags,
       });
       showAppToast('Request posted.');
-      router.push(`/request/${requestId}`);
+      leaveAfterSuccess(`/request/${requestId}`);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not save the request.');
     }
@@ -204,7 +247,8 @@ export function RequestNewPage() {
   return (
     <FlowScreen
       title={editId ? 'Edit request' : 'New request'}
-      backTo="/home"
+      onBack={presentation === 'drawer' ? closeComposer : undefined}
+      className={presentation === 'drawer' ? 'min-h-0 h-full max-h-full' : undefined}
       bodyClassName="flex flex-col gap-4 pb-10"
     >
       {error ? <InlineError message={error} /> : null}

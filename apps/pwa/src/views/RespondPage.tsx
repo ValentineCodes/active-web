@@ -5,6 +5,10 @@ import { useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 
 import { RequestHelpSummary } from '@/components/RequestHelpSummary';
+import {
+  PersonProfileSheet,
+  personProfileFromRespondableRequest,
+} from '@/components/profile/PersonProfileSheet';
 import { FlowScreen } from '@/components/layout/FlowScreen';
 import { RequestCallout } from '@/components/request-flow/RequestCallout';
 import { RequestFlowHeader } from '@/components/request-flow/RequestFlowHeader';
@@ -41,6 +45,7 @@ export function RespondPage() {
   const [inFlow, setInFlow] = useState(false);
   const [message, setMessage] = useState('');
   const [quote, setQuote] = useState('');
+  const [requesterProfileOpen, setRequesterProfileOpen] = useState(false);
   const profile = useMyProfile();
   const respond = useRespondToRequest();
   const withdraw = useWithdrawResponse();
@@ -188,7 +193,7 @@ export function RespondPage() {
         <RequestHelpSummary
           request={request}
           existingResponse={Boolean(existingResponse)}
-          onRequesterPress={() => router.push('/profile')}
+          onRequesterPress={() => setRequesterProfileOpen(true)}
           onRequesterDiscussPress={
             existingResponse && preHandshakeConversation.data
               ? () => router.push(`/conversation/${preHandshakeConversation.data}`)
@@ -268,6 +273,12 @@ export function RespondPage() {
         ) : null}
         </div>
       </div>
+
+      <PersonProfileSheet
+        open={requesterProfileOpen}
+        profile={personProfileFromRespondableRequest(request)}
+        onClose={() => setRequesterProfileOpen(false)}
+      />
     </div>
   );
 }

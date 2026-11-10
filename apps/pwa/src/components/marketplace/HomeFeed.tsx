@@ -4,6 +4,11 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { HomeFeedRequestPage, HomeFeedRequestPageSkeleton } from '@/components/home/HomeFeedRequestPage';
+import {
+  PersonProfileSheet,
+  personProfileFromPublicRequest,
+  type PersonProfilePreview,
+} from '@/components/profile/PersonProfileSheet';
 import { proximityLabelForRequest } from '@/features/requests/proximity-label';
 import { IonIcon } from '@/components/ui/IonIcon';
 import { EmptyState, InlineError } from '@/components/ui/StateView';
@@ -20,6 +25,13 @@ export function HomeFeed({ searchQuery }: Props) {
   const feed = useHomeBrowseFeed(searchQuery, true);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [pageHeight, setPageHeight] = useState(0);
+  const [profilePreview, setProfilePreview] = useState<PersonProfilePreview | null>(null);
+  const [profileOpen, setProfileOpen] = useState(false);
+
+  const openRequesterProfile = useCallback((request: (typeof feed.rows)[number]) => {
+    setProfilePreview(personProfileFromPublicRequest(request));
+    setProfileOpen(true);
+  }, []);
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
@@ -71,7 +83,10 @@ export function HomeFeed({ searchQuery }: Props) {
       ) : !feed.loading && feed.rows.length === 0 ? (
         <FeedEmptyBody className="min-h-0 flex-1" />
       ) : listReady ? (
-        <div className="h-full snap-y snap-mandatory overflow-y-auto overscroll-y-contain bg-canvas" onScroll={onScroll}>
+        <div
+          className="h-full snap-y snap-mandatory overflow-y-auto overscroll-y-contain bg-canvas [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          onScroll={onScroll}
+        >
           {feed.rows.map((item) => {
             const isOwnRequest = feed.ownOpenRequestIds.has(item.request_id);
             const waiting = Boolean(
@@ -91,11 +106,18 @@ export function HomeFeed({ searchQuery }: Props) {
                 isOwnRequest={isOwnRequest}
                 waiting={waiting}
                 browsePosition={feed.position}
+                onRequesterPress={() => openRequesterProfile(item)}
               />
             );
           })}
         </div>
       ) : null}
+
+      <PersonProfileSheet
+        open={profileOpen}
+        profile={profilePreview}
+        onClose={() => setProfileOpen(false)}
+      />
 
       {showFeedSearch ? (
         <button

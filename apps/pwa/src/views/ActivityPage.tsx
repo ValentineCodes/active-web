@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { type ReactNode, useMemo, useState } from 'react';
 
 import { ActivityMyRequestCard, ActivityMyResponseCard } from '@/components/activity/ActivityTabCards';
+import { useCreateComposer } from '@/components/create/CreateComposerProvider';
 import { ActivityStatusFilter } from '@/components/activity/ActivityStatusFilter';
 import { ActivitySubTabs, type ActivitySubTab } from '@/components/activity/ActivitySubTabs';
 import { Screen } from '@/components/ui/Screen';
@@ -65,7 +66,7 @@ export function ActivityPage() {
 }
 
 function RequestsTab({ rows }: { rows: NonNullable<ReturnType<typeof useMyRequests>['data']> }) {
-  const router = useRouter();
+  const { openCreateComposer } = useCreateComposer();
   const [filter, setFilter] = useState<MyRequestActivityFilter>('all');
   const filtered = useMemo(
     () => rows.filter((request) => myRequestMatchesActivityFilter(request, filter)),
@@ -81,7 +82,7 @@ function RequestsTab({ rows }: { rows: NonNullable<ReturnType<typeof useMyReques
     filtered,
     filter,
     setFilter,
-    router,
+    openCreateComposer,
   });
 }
 
@@ -92,9 +93,9 @@ function emptyInner(props: {
   filtered: NonNullable<ReturnType<typeof useMyRequests>['data']>;
   filter: MyRequestActivityFilter;
   setFilter: (v: MyRequestActivityFilter) => void;
-  router: ReturnType<typeof useRouter>;
+  openCreateComposer: () => void;
 }) {
-  const { paddingBottom, listEmpty, rows, filtered, filter, setFilter, router } = props;
+  const { paddingBottom, listEmpty, rows, filtered, filter, setFilter, openCreateComposer } = props;
   return (
     <>
       <ActivityStatusFilter
@@ -109,7 +110,7 @@ function emptyInner(props: {
             icon="add-circle-outline"
             title="No requests yet"
             message="When you need help, post a request and people nearby can respond."
-            action={{ label: 'Ask for help', onPress: () => router.push('/request/new') }}
+            action={{ label: 'Ask for help', onPress: openCreateComposer }}
           />
         ) : filtered.length === 0 ? (
           <EmptyState

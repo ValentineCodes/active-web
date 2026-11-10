@@ -111,7 +111,7 @@ export function SavedLocationsPage() {
       return;
     }
 
-    const suggestion = await suggestAreaLabel();
+    const suggestion = await suggestAreaLabel(result.position);
     const locationLabel = suggestion?.trim() || 'My location';
 
     try {
