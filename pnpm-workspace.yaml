@@ -7,6 +7,8 @@ packages:
 nodeLinker: hoisted
 
 allowBuilds:
+  # vite / vitest (PWA) and other tooling that ship a native esbuild binary.
+  esbuild: true
   # Downloads the platform-native binary the ESLint import resolver runs on.
   unrs-resolver: true
 minimumReleaseAgeExclude:

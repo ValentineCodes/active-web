@@ -40,6 +40,12 @@
     "website:dev": "pnpm --filter @active/website dev",
     "website:build": "pnpm --filter @active/website build",
     "website:typecheck": "pnpm --filter @active/website typecheck",
+    "pwa:dev": "pnpm --filter @active/pwa dev",
+    "pwa:build": "pnpm --filter @active/pwa build",
+    "pwa:preview": "pnpm --filter @active/pwa preview",
+    "pwa:typecheck": "pnpm --filter @active/pwa typecheck",
+    "pwa:lint": "pnpm --filter @active/pwa lint",
+    "pwa:test": "pnpm --filter @active/pwa test",
     "validate": "pnpm --filter @active/mobile validate && pnpm --filter @active/admin typecheck && pnpm --filter @active/website typecheck && pnpm --filter @active/website build && pnpm format"
   },
   "devDependencies": {

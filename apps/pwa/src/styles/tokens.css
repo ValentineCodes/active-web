@@ -1,0 +1,25 @@
+/**
+ * Active light palette — values aligned with the native app product chrome.
+ * Duplicated here so `apps/mobile` stays untouched.
+ */
+:root {
+  --token-ink: 17 24 18;
+  --token-subtle: 138 148 140;
+  --token-muted: 92 102 94;
+  --token-canvas: 255 255 255;
+  --token-surface: 243 245 242;
+  --token-elevated: 255 255 255;
+  --token-hairline: 230 234 228;
+  --token-brand: 22 106 61;
+  --token-brand-strong: 14 76 42;
+  --token-brand-soft: 231 244 234;
+  --token-active: 31 163 90;
+  --token-active-soft: 232 248 236;
+  --token-on-brand: 255 255 255;
+  --token-danger: 220 38 38;
+  --token-danger-soft: 253 237 236;
+  --token-warning: 180 83 9;
+  --token-warning-soft: 253 243 227;
+  --token-info: 37 99 235;
+  --token-info-soft: 239 246 255;
+}

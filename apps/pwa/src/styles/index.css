@@ -1,0 +1,49 @@
+@import 'tailwindcss';
+@import './tokens.css';
+
+@theme {
+  --font-sans: 'Poppins', system-ui, -apple-system, sans-serif;
+  --color-ink: rgb(var(--token-ink) / <alpha-value>);
+  --color-subtle: rgb(var(--token-subtle) / <alpha-value>);
+  --color-muted: rgb(var(--token-muted) / <alpha-value>);
+  --color-canvas: rgb(var(--token-canvas) / <alpha-value>);
+  --color-surface: rgb(var(--token-surface) / <alpha-value>);
+  --color-elevated: rgb(var(--token-elevated) / <alpha-value>);
+  --color-hairline: rgb(var(--token-hairline) / <alpha-value>);
+  --color-brand: rgb(var(--token-brand) / <alpha-value>);
+  --color-brand-strong: rgb(var(--token-brand-strong) / <alpha-value>);
+  --color-brand-soft: rgb(var(--token-brand-soft) / <alpha-value>);
+  --color-active: rgb(var(--token-active) / <alpha-value>);
+  --color-active-soft: rgb(var(--token-active-soft) / <alpha-value>);
+  --color-on-brand: rgb(var(--token-on-brand) / <alpha-value>);
+  --color-danger: rgb(var(--token-danger) / <alpha-value>);
+  --color-danger-soft: rgb(var(--token-danger-soft) / <alpha-value>);
+  --color-warning: rgb(var(--token-warning) / <alpha-value>);
+  --color-warning-soft: rgb(var(--token-warning-soft) / <alpha-value>);
+  --color-info: rgb(var(--token-info) / <alpha-value>);
+  --color-info-soft: rgb(var(--token-info-soft) / <alpha-value>);
+}
+
+@utility shadow-card {
+  box-shadow: 0 6px 16px rgb(17 24 18 / 0.06);
+}
+
+@utility shadow-raised {
+  box-shadow: 0 8px 24px rgb(17 24 18 / 0.1);
+}
+
+@layer base {
+  html {
+    height: 100%;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply min-h-full bg-canvas font-sans text-ink antialiased;
+    margin: 0;
+  }
+
+  #root {
+    @apply min-h-full;
+  }
+}
