@@ -5,6 +5,7 @@ import { type ReactNode, useMemo, useState } from 'react';
 
 import { ActivityMyRequestCard, ActivityMyResponseCard } from '@/components/activity/ActivityTabCards';
 import { ActivityStatusFilter } from '@/components/activity/ActivityStatusFilter';
+import { ActivitySubTabs, type ActivitySubTab } from '@/components/activity/ActivitySubTabs';
 import { Screen } from '@/components/ui/Screen';
 import { TAB_BAR_HEIGHT } from '@/components/ui/tab-bar-insets';
 import { EmptyState, InlineError, LoadingState } from '@/components/ui/StateView';
@@ -27,12 +28,8 @@ import {
 } from '@/features/requests/activity-list';
 import { useMyRequests } from '@/features/requests/requester-api';
 import { useMyResponses } from '@/features/requests/responses-api';
-import { cn } from '@/lib/cn';
-
-type SubTab = 'requests' | 'responses';
-
 export function ActivityPage() {
-  const [subTab, setSubTab] = useState<SubTab>('requests');
+  const [subTab, setSubTab] = useState<ActivitySubTab>('requests');
   const requests = useMyRequests();
   const responses = useMyResponses();
 
@@ -43,24 +40,10 @@ export function ActivityPage() {
     <Screen>
       <div className="min-h-0 flex flex-1 flex-col">
         <div className="px-5 pb-1 pt-3">
-          <h1 className="text-3xl font-bold text-ink">Activity</h1>
+          <h1 className="text-2xl font-bold text-ink">Activity</h1>
         </div>
 
-        <div className="flex flex-row border-b border-hairline px-5">
-          {(['requests', 'responses'] as const).map((key) => (
-            <button
-              key={key}
-              type="button"
-              onClick={() => setSubTab(key)}
-              className={cn(
-                'flex-1 border-b-2 py-3 text-sm font-semibold',
-                subTab === key ? 'border-active text-ink' : 'border-transparent text-muted',
-              )}
-            >
-              {key === 'requests' ? 'My Requests' : 'My Responses'}
-            </button>
-          ))}
-        </div>
+        <ActivitySubTabs value={subTab} onChange={setSubTab} />
 
         {loading ? <LoadingState label="Loading activity" /> : null}
         {error ? (

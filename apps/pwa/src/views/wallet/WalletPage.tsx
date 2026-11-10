@@ -66,7 +66,7 @@ export function WalletPage() {
       <div className="overflow-hidden rounded-3xl border border-hairline bg-elevated">
         <div className="flex flex-col gap-2 px-5 pb-4 pt-5">
           <p className="text-xs font-semibold uppercase tracking-wide text-subtle">Available</p>
-          <p className="text-4xl font-bold text-ink">{formatMoney(available, currency)}</p>
+          <p className="text-3xl font-bold text-ink">{formatMoney(available, currency)}</p>
         </div>
         <WalletHairline />
         <div className="flex flex-row">
@@ -77,12 +77,12 @@ export function WalletPage() {
                 <IonIcon icon={ionIcons['information-circle-outline']} size={14} color="#8A948C" />
               ) : null}
             </p>
-            <p className="text-lg font-semibold text-ink">{formatMoney(locked + pending, currency)}</p>
+            <p className="text-base font-semibold text-ink">{formatMoney(locked + pending, currency)}</p>
           </div>
           <WalletHairlineVertical />
           <div className="flex flex-1 flex-col gap-1 px-5 py-4">
             <p className="text-xs font-semibold uppercase tracking-wide text-subtle">Total</p>
-            <p className="text-lg font-semibold text-ink">{formatMoney(total, currency)}</p>
+            <p className="text-base font-semibold text-ink">{formatMoney(total, currency)}</p>
           </div>
         </div>
         <WalletHairline />
@@ -114,9 +114,9 @@ export function WalletPage() {
 
       <section className="flex flex-col gap-3">
         <span className="flex flex-row items-center justify-between gap-3">
-          <h2 className="text-lg font-bold text-ink">Recent activity</h2>
+          <h2 className="text-base font-bold text-ink">Recent activity</h2>
           {(activity.data?.length ?? 0) > 0 ? (
-            <Link href="/wallet/history" className="text-base font-semibold text-active active:opacity-80">
+            <Link href="/wallet/history" className="text-sm font-semibold text-active active:opacity-80">
               View all
             </Link>
           ) : null}

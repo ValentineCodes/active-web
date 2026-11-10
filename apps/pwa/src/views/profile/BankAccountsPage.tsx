@@ -53,7 +53,7 @@ export function BankAccountsPage() {
       <ul className="flex flex-col gap-3">
         {rows.map((row) => (
           <Card key={row.bank_account_id} tone="surface" className="!gap-2 !p-4">
-            <p className="text-lg font-semibold text-ink">{row.bank_name}</p>
+            <p className="text-base font-semibold text-ink">{row.bank_name}</p>
             <p className="text-sm text-muted">{maskBankAccountNumber(row.account_number)}</p>
             <p className="text-sm text-ink">{row.account_name}</p>
             <div className="mt-2 flex flex-wrap items-center gap-3">

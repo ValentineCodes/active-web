@@ -86,7 +86,7 @@ function InstallIntro() {
   return (
     <>
       <p className="text-xs font-semibold uppercase tracking-wide text-brand">Install</p>
-      <h1 className="text-2xl font-bold text-ink">Use Active from your home screen</h1>
+      <h1 className="text-xl font-bold text-ink">Use Active from your home screen</h1>
       <p className="text-sm text-muted">
         The web app works best when installed. Marketplace, wallet, and chat require a phone browser or installed app.
       </p>

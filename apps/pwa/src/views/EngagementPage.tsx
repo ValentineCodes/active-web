@@ -49,10 +49,10 @@ export function EngagementPage() {
       <RequestFlowHeader title="Engagement" onBack={() => router.push('/activity')} />
       <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-5 pb-8 pt-2">
         <Card tone="surface" className="!p-4">
-          <h2 className="text-lg font-bold text-ink">{row.title}</h2>
+          <h2 className="text-base font-bold text-ink">{row.title}</h2>
           <p className="text-sm text-subtle">Status: {row.request_status}</p>
           <p className="text-sm text-subtle">{formatWhenHome(row.scheduled_for)}</p>
-          {amount != null ? <p className="text-lg font-bold text-active">{formatMoney(amount, row.currency)}</p> : null}
+          {amount != null ? <p className="text-base font-bold text-active">{formatMoney(amount, row.currency)}</p> : null}
           {row.counterparty_display_name ? <p className="text-sm text-ink">With {row.counterparty_display_name}</p> : null}
           {row.counterparty_phone ? <p className="text-sm text-muted">Phone: {row.counterparty_phone}</p> : null}
           {row.request_latitude != null && row.request_longitude != null ? (

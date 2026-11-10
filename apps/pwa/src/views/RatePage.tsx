@@ -33,7 +33,7 @@ export function RatePage() {
             type="button"
             aria-label={`${value} stars`}
             className={cn(
-              'flex h-12 w-12 items-center justify-center rounded-full text-lg font-semibold active:opacity-80',
+              'flex h-12 w-12 items-center justify-center rounded-full text-base font-semibold active:opacity-80',
               value <= stars ? 'bg-active text-on-brand' : 'bg-surface text-subtle',
             )}
             onClick={() => setStars(value)}

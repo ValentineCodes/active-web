@@ -40,8 +40,8 @@ export function OnboardingPage() {
           <div className="min-h-0 flex-1 overflow-y-auto p-6">
             <div className="flex flex-col gap-8">
             <div className="mt-8 flex flex-col gap-3">
-              <h1 className="text-3xl font-bold text-ink">Who are you?</h1>
-              <p className="text-lg text-muted">
+              <h1 className="text-2xl font-bold text-ink">Who are you?</h1>
+              <p className="text-base text-muted">
                 People see this when you ask for help, and when you offer it.
               </p>
             </div>

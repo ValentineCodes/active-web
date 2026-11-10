@@ -29,13 +29,13 @@ export function MoneyAmountInput({
   return (
     <div className={cn('relative w-full', className)} style={{ minHeight: ROW_HEIGHT }}>
       <div className="pointer-events-none absolute inset-0 flex flex-row items-center">
-        <span className="pl-0 text-3xl font-bold text-ink">{MARKET.currencySymbol}</span>
+        <span className="pl-0 text-2xl font-bold text-ink">{MARKET.currencySymbol}</span>
         {showPlaceholder ? (
-          <span className="pl-2 text-3xl font-bold text-subtle" aria-hidden>
+          <span className="pl-2 text-2xl font-bold text-subtle" aria-hidden>
             0
           </span>
         ) : (
-          <span className="pl-2 text-3xl font-bold text-ink">{value}</span>
+          <span className="pl-2 text-2xl font-bold text-ink">{value}</span>
         )}
       </div>
       <input
@@ -46,7 +46,7 @@ export function MoneyAmountInput({
         value={value}
         maxLength={maxLength}
         onChange={(event) => onChangeText(event.target.value.replace(/\D/g, ''))}
-        className="absolute inset-0 w-full bg-transparent text-3xl font-bold text-transparent caret-brand outline-none"
+        className="absolute inset-0 w-full bg-transparent text-2xl font-bold text-transparent caret-brand outline-none"
         style={{ caretColor: colors.brand }}
       />
       {trailing ? <div className="absolute right-0 top-1/2 -translate-y-1/2">{trailing}</div> : null}

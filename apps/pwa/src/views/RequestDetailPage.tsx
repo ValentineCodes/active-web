@@ -83,15 +83,15 @@ export function RequestDetailPage() {
       <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-5 pb-8 pt-2">
         <Card tone="surface" className="!p-4">
           <div className="flex flex-row items-start justify-between gap-3">
-            <h1 className="flex-1 text-xl font-bold text-ink">{row.title}</h1>
+            <h1 className="flex-1 text-lg font-bold text-ink">{row.title}</h1>
             <Badge label={statusBadge.label} tone={statusBadge.tone} dot={false} />
           </div>
-          {row.description ? <p className="text-base leading-6 text-muted">{row.description}</p> : null}
+          {row.description ? <p className="text-sm leading-5 text-muted">{row.description}</p> : null}
           <p className="text-sm text-subtle">
             {formatWhenHome(row.scheduled_for)} · {formatRequestOfferLocationLabel(row.location_label, null)}
           </p>
           {row.offered_amount != null ? (
-            <p className="text-lg font-bold text-active">{formatMoney(row.offered_amount, row.currency)}</p>
+            <p className="text-base font-bold text-active">{formatMoney(row.offered_amount, row.currency)}</p>
           ) : null}
         </Card>
 

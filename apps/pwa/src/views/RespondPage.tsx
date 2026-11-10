@@ -107,14 +107,14 @@ export function RespondPage() {
       <RequestFlowHeader title="Respond" onBack={() => router.push('/home')} />
       <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-5 pb-8 pt-2">
         <Card tone="surface" className="!p-4">
-          <h2 className="text-lg font-bold text-ink">{request.title}</h2>
-          {request.description ? <p className="text-base leading-6 text-muted">{request.description}</p> : null}
+          <h2 className="text-base font-bold text-ink">{request.title}</h2>
+          {request.description ? <p className="text-sm leading-5 text-muted">{request.description}</p> : null}
           <p className="text-sm text-subtle">
             {formatWhenHome(request.scheduled_for)} ·{' '}
             {formatRequestOfferLocationLabel(request.location_label, request.distance_m)}
           </p>
           {request.offered_amount != null ? (
-            <p className="text-lg font-bold text-active">{formatMoney(request.offered_amount, request.currency)}</p>
+            <p className="text-base font-bold text-active">{formatMoney(request.offered_amount, request.currency)}</p>
           ) : null}
         </Card>
 

@@ -26,7 +26,7 @@ export function Header({
       {onBack ? (
         <IconButton icon="chevron-back" accessibilityLabel="Go back" onClick={onBack} />
       ) : null}
-      <h1 className={cn('min-w-0 flex-1 truncate text-xl font-bold text-ink', !onBack && 'ml-1')}>{title}</h1>
+      <h1 className={cn('min-w-0 flex-1 truncate text-lg font-bold text-ink', !onBack && 'ml-1')}>{title}</h1>
       {right}
       {onClose ? <IconButton icon="close" accessibilityLabel="Close" onClick={onClose} /> : null}
     </header>

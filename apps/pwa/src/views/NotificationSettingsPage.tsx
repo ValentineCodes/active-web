@@ -57,7 +57,7 @@ export function NotificationSettingsPage() {
       <Header title="Notification settings" onBack={() => router.back()} />
       <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto px-5 pb-12 pt-2">
         <div className="flex flex-col gap-2">
-          <h2 className="text-2xl font-bold leading-8 text-ink">Choose what reaches you</h2>
+          <h2 className="text-xl font-bold leading-7 text-ink">Choose what reaches you</h2>
           <p className="text-sm leading-5 text-muted">
             Important account and dispute updates are always sent.
           </p>
@@ -131,7 +131,7 @@ function SettingsToggleRow({
       {showDivider ? <div className="mx-4 h-px bg-hairline" /> : null}
       <label className="flex flex-row items-center gap-3 px-4 py-4">
         <span className="min-w-0 flex-1">
-          <span className="block text-base font-semibold text-ink">{label}</span>
+          <span className="block text-sm font-semibold text-ink">{label}</span>
           <span className="block text-sm leading-5 text-muted">{description}</span>
         </span>
         <input

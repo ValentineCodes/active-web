@@ -82,7 +82,7 @@ export function ProfilePage() {
       <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto px-5 pb-12 pt-2">
       <div className="flex flex-col items-center gap-2 text-center">
         <Avatar path={data.avatar_path} name={data.display_name} size="lg" showActiveDot={hasCommitments} />
-        <p className="max-w-full truncate text-xl font-bold text-ink">{data.display_name}</p>
+        <p className="max-w-full truncate text-lg font-bold text-ink">{data.display_name}</p>
         {ratingAverage !== null || completed > 0 ? (
           <RatingRow ratingAverage={ratingAverage} ratingCount={ratingCount} completed={completed} />
         ) : null}

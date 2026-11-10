@@ -31,7 +31,7 @@ export function WalletActivityRow({
           <IonIcon icon={icon} size={20} color={iconColor} />
         </div>
         <div className="min-w-0 flex-1 gap-1">
-          <p className="text-base font-semibold text-ink">{meta.title}</p>
+          <p className="text-sm font-semibold text-ink">{meta.title}</p>
           {meta.subtitle ? <p className="truncate text-sm text-muted">{meta.subtitle}</p> : null}
           <p className="text-sm text-muted">
             {meta.when}
@@ -71,7 +71,7 @@ export function WalletActivityRow({
         {meta.signedAmount ? (
           <p
             className={cn(
-              'shrink-0 text-base font-bold',
+              'shrink-0 text-sm font-bold',
               visual.incoming ? 'text-active' : 'text-ink',
             )}
           >

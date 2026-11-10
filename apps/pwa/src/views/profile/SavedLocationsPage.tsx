@@ -158,7 +158,7 @@ export function SavedLocationsPage() {
                 ) : (
                   <div className="flex flex-row items-start justify-between gap-2">
                     <div className="min-w-0 flex-1">
-                      <p className="text-base font-semibold text-ink">{savedLocationDisplayTitle(row)}</p>
+                      <p className="text-sm font-semibold text-ink">{savedLocationDisplayTitle(row)}</p>
                       {row.alias ? (
                         <p className="text-sm text-muted">{formatCoarseLocationLabel(row.location_label)}</p>
                       ) : null}

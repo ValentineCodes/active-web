@@ -42,10 +42,10 @@ export function ResponseCard({
       <div className="flex flex-row items-center gap-3">
         <Avatar path={avatarPath} name={displayName} size="md" />
         <div className="min-w-0 flex-1">
-          <p className="truncate text-lg font-semibold text-ink">{displayName ?? 'Helper'}</p>
+          <p className="truncate text-base font-semibold text-ink">{displayName ?? 'Helper'}</p>
           <p className="text-xs text-subtle">{formatAgo(createdAt)}</p>
         </div>
-        {offerLabel ? <p className="shrink-0 text-lg font-bold text-active">{offerLabel}</p> : null}
+        {offerLabel ? <p className="shrink-0 text-base font-bold text-active">{offerLabel}</p> : null}
       </div>
       {message ? <p className="text-base leading-6 text-muted">{message}</p> : null}
       {actions ? <div className="flex flex-col gap-2">{actions}</div> : null}

@@ -149,7 +149,7 @@ export function WalletWithdrawReviewPage() {
     <FlowScreen title="Review withdrawal" backTo={withdrawBack} bodyClassName="flex flex-col gap-4">
       <Card tone="surface" className="!p-5">
         <p className="text-sm text-muted">Withdraw</p>
-        <p className="text-2xl font-bold text-ink">{formatMoney(amountMajor, wallet.data?.currency ?? MARKET.currency)}</p>
+        <p className="text-xl font-bold text-ink">{formatMoney(amountMajor, wallet.data?.currency ?? MARKET.currency)}</p>
         <p className="mt-3 text-sm text-ink">
           {account.bank_name} · {maskBankAccountNumber(account.account_number)}
         </p>

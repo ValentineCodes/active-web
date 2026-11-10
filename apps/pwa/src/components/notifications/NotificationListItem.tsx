@@ -30,7 +30,7 @@ export function NotificationListItem({
         style={{ backgroundColor: visual.iconBackground }}
       >
         {visual.useNairaSymbol ? (
-          <span className="text-lg font-bold" style={{ color: visual.iconColor }}>
+          <span className="text-base font-bold" style={{ color: visual.iconColor }}>
             {MARKET.currencySymbol}
           </span>
         ) : (
@@ -39,7 +39,7 @@ export function NotificationListItem({
       </span>
 
       <span className="min-w-0 flex-1 pr-2">
-        <span className={cn('block text-base text-ink', unread ? 'font-bold' : 'font-semibold')}>{title}</span>
+        <span className={cn('block text-sm text-ink', unread ? 'font-bold' : 'font-semibold')}>{title}</span>
         {body ? <span className="mt-1 block line-clamp-2 text-sm leading-5 text-muted">{body}</span> : null}
       </span>
 

@@ -173,7 +173,7 @@ export function WalletDepositSettlement() {
     return (
       <div className="flex flex-1 flex-col gap-4 py-2">
         <div className="rounded-2xl bg-surface p-6 text-center">
-          <h2 className="text-lg font-semibold text-ink">Payment not confirmed</h2>
+          <h2 className="text-base font-semibold text-ink">Payment not confirmed</h2>
           <p className="mt-2 text-sm text-muted">
             {error?.message ?? 'Nothing was added to your wallet.'}
           </p>
@@ -187,9 +187,9 @@ export function WalletDepositSettlement() {
   return (
     <div className="flex flex-1 flex-col gap-4 py-2">
       <div className="flex flex-1 flex-col items-center justify-center gap-2 rounded-2xl bg-surface p-6 text-center">
-        <h2 className="text-xl font-semibold text-ink">Payment successful</h2>
+        <h2 className="text-lg font-semibold text-ink">Payment successful</h2>
         {amountMajor != null ? (
-          <p className="text-3xl font-bold text-brand">{formatMoney(amountMajor, MARKET.currency)}</p>
+          <p className="text-2xl font-bold text-brand">{formatMoney(amountMajor, MARKET.currency)}</p>
         ) : null}
         <p className="text-sm text-muted">Your available balance has been updated.</p>
       </div>
@@ -206,7 +206,7 @@ export function WalletDepositSettlement() {
 function SettlementCenter({ title, body }: { title: string; body: string }) {
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-3 rounded-2xl bg-surface px-6 py-12 text-center">
-      <p className="text-lg font-semibold text-ink">{title}</p>
+      <p className="text-base font-semibold text-ink">{title}</p>
       <p className="text-sm leading-relaxed text-muted">{body}</p>
     </div>
   );

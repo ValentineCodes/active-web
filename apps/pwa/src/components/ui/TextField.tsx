@@ -64,7 +64,7 @@ export function TextField({
           onBlur?.(event);
         }}
         className={cn(
-          'rounded-2xl border-2 px-4 py-4 text-base text-ink outline-none placeholder:text-subtle',
+          'rounded-2xl border-2 px-4 py-4 text-sm text-ink outline-none placeholder:text-subtle',
           error
             ? 'border-danger bg-danger-soft'
             : focused
@@ -106,7 +106,7 @@ export function TextAreaField({
           onBlur?.(event);
         }}
         className={cn(
-          'min-h-24 resize-none rounded-2xl border-2 px-4 py-4 text-base text-ink outline-none',
+          'min-h-24 resize-none rounded-2xl border-2 px-4 py-4 text-sm text-ink outline-none',
           error
             ? 'border-danger bg-danger-soft'
             : focused

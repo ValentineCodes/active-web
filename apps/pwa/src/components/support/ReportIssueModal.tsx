@@ -41,7 +41,7 @@ export function ReportIssueModal({ open, issues, onClose, onSubmit }: Props) {
         aria-modal="true"
         aria-labelledby="report-issue-title"
       >
-        <h2 id="report-issue-title" className="text-xl font-bold text-ink">
+        <h2 id="report-issue-title" className="text-lg font-bold text-ink">
           Report a problem
         </h2>
         <p className="text-sm text-muted">What&apos;s going on?</p>
@@ -52,7 +52,7 @@ export function ReportIssueModal({ open, issues, onClose, onSubmit }: Props) {
               type="button"
               onClick={() => setSelectedId(issue.id)}
               className={cn(
-                'rounded-xl border px-4 py-3 text-left text-base text-ink active:opacity-90',
+                'rounded-xl border px-4 py-3 text-left text-sm text-ink active:opacity-90',
                 selectedId === issue.id ? 'border-active bg-active-soft' : 'border-hairline bg-elevated',
               )}
             >

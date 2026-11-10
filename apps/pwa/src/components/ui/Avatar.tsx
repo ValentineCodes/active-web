@@ -2,7 +2,7 @@ import { useAvatarUrl } from '@/features/profile/avatar-url';
 import { cn } from '@/lib/cn';
 
 const SIZES = { sm: 40, m: 48, md: 56, lg: 96 } as const;
-const TEXT_SIZES = { sm: 'text-base', m: 'text-lg', md: 'text-xl', lg: 'text-3xl' } as const;
+const TEXT_SIZES = { sm: 'text-sm', m: 'text-base', md: 'text-lg', lg: 'text-2xl' } as const;
 const DOT_SIZES = { sm: 10, m: 12, md: 14, lg: 20 } as const;
 
 function initials(name: string | null | undefined): string {

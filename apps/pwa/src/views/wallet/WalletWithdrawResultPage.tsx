@@ -20,7 +20,7 @@ export function WalletWithdrawResultPage() {
   return (
     <FlowScreen title="Withdrawal" backTo="/wallet" bodyClassName="flex flex-col gap-4">
       <Card tone="surface" className="!items-center !p-6 text-center">
-        <h2 className="text-lg font-semibold text-ink">Withdrawal requested</h2>
+        <h2 className="text-base font-semibold text-ink">Withdrawal requested</h2>
         <p className="mt-2 text-sm text-muted">{message}</p>
         {withdrawalId ? <p className="mt-2 text-xs text-subtle">Reference: {withdrawalId}</p> : null}
       </Card>

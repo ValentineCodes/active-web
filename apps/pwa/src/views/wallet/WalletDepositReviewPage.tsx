@@ -79,7 +79,7 @@ export function WalletDepositReviewPage() {
     <FlowScreen title="Complete payment" backTo={addBack} bodyClassName="flex flex-col gap-4">
       <Card tone="surface" className="!items-center !p-6 text-center">
         <p className="text-sm text-muted">You will pay</p>
-        <p className="mt-2 text-3xl font-bold text-ink">{formatMoney(amountMajor, MARKET.currency)}</p>
+        <p className="mt-2 text-2xl font-bold text-ink">{formatMoney(amountMajor, MARKET.currency)}</p>
         <p className="mt-3 text-xs text-subtle">
           Paystack opens in this tab. After payment, you return here while we verify with our servers.
         </p>

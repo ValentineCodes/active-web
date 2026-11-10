@@ -54,7 +54,7 @@ export function NotificationsPage() {
     <Screen>
       <div className="flex min-h-0 flex-1 flex-col" style={{ paddingBottom }}>
         <div className="flex flex-row items-start justify-between gap-3 px-5 pb-2 pt-3">
-          <h1 className="text-3xl font-bold text-ink">Notifications</h1>
+          <h1 className="text-2xl font-bold text-ink">Notifications</h1>
           {unread.data && unread.data > 0 ? (
             <Button
               label={markingAll ? '…' : 'Mark all read'}

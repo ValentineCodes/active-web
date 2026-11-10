@@ -18,9 +18,9 @@ export const buttonVariants = cva(
         active: 'btn-brand-fill active:opacity-90',
       },
       size: {
-        default: 'h-11 rounded-full px-5 py-3.5 text-base',
-        sm: 'h-9 rounded-full px-4 text-sm',
-        lg: 'min-h-12 rounded-2xl px-6 py-4 text-lg',
+        default: 'h-11 rounded-full px-5 py-3.5 text-sm',
+        sm: 'h-9 rounded-full px-4 text-xs',
+        lg: 'min-h-12 rounded-2xl px-6 py-4 text-base',
         icon: 'h-10 w-10 rounded-full',
       },
     },

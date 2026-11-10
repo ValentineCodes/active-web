@@ -16,7 +16,7 @@ export function LoadingState({ label }: { label?: string }) {
       aria-busy
     >
       <SpinnerRing color={colors.brand} />
-      {label ? <p className="text-base text-muted">{label}</p> : null}
+      {label ? <p className="text-sm text-muted">{label}</p> : null}
     </div>
   );
 }
@@ -50,8 +50,8 @@ export function EmptyState({
           <IonIcon icon={ionIcons[icon]} size={28} color={colors.brand} />
         </div>
       ) : null}
-      <p className="text-lg font-semibold text-ink">{title}</p>
-      {body ? <p className="max-w-xs text-base text-muted">{body}</p> : null}
+      <p className="text-base font-semibold text-ink">{title}</p>
+      {body ? <p className="max-w-xs text-sm text-muted">{body}</p> : null}
       {action ? (
         <div className="mt-2 w-full max-w-sm">
           <Button label={action.label} onClick={action.onPress} variant="primary" />

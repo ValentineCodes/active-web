@@ -9,7 +9,7 @@ export default function GlobalError({
 }) {
   return (
     <div className="flex min-h-full flex-col items-center justify-center bg-canvas px-6 py-12 text-center">
-      <h1 className="text-2xl font-semibold text-ink">Something went wrong</h1>
+      <h1 className="text-xl font-semibold text-ink">Something went wrong</h1>
       <p className="mt-3 max-w-sm text-base text-muted">{error.message || 'Try refreshing the page.'}</p>
       <button
         type="button"

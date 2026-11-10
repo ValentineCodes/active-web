@@ -70,7 +70,7 @@ export function LiveProfilePhotoCapture({ userId, onClose, onSaved }: Props) {
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-canvas">
       <div className="border-b border-hairline px-5 pb-4 pt-[max(1rem,env(safe-area-inset-top))]">
-        <h2 className="text-lg font-semibold text-ink">Take profile photo</h2>
+        <h2 className="text-base font-semibold text-ink">Take profile photo</h2>
         <p className="mt-1 text-sm text-muted">
           Use your front camera. Gallery uploads do not count toward your profile photo.
         </p>

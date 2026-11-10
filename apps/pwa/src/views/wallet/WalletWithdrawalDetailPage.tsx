@@ -34,7 +34,7 @@ export function WalletWithdrawalDetailPage() {
   return (
     <FlowScreen title="Withdrawal" backTo="/wallet" bodyClassName="flex flex-col gap-4">
       <Card tone="surface" className="shadow-card !p-5">
-        <p className="text-2xl font-bold text-ink">{formatMoney(row.amountMajor, row.currency)}</p>
+        <p className="text-xl font-bold text-ink">{formatMoney(row.amountMajor, row.currency)}</p>
         <p className="mt-2 text-sm font-semibold text-brand">{status}</p>
         {row.userFacingReason ? <p className="mt-2 text-sm text-muted">{row.userFacingReason}</p> : null}
         <p className="mt-4 text-sm text-ink">

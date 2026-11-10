@@ -29,7 +29,7 @@ export function ConversationHeader({
         <div className="flex min-w-0 flex-1 flex-row items-center gap-3 py-1">
           <Avatar path={counterpartyAvatarPath} name={counterpartyName} size="sm" />
           <div className="min-w-0 flex-1 gap-0.5">
-            <p className="truncate text-lg font-bold text-ink">{firstName}</p>
+            <p className="truncate text-base font-bold text-ink">{firstName}</p>
             <p className="line-clamp-2 text-sm text-muted">{requestTitle}</p>
             {statusLabel ? <p className="line-clamp-1 text-xs text-muted">{statusLabel}</p> : null}
           </div>
