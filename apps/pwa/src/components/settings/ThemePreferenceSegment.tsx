@@ -6,7 +6,7 @@ import { cn } from '@/lib/cn';
 const OPTIONS: { value: ThemePreference; label: string }[] = [
   { value: 'dark', label: 'Dark' },
   { value: 'light', label: 'Light' },
-  { value: 'system', label: 'System Default' },
+  { value: 'system', label: 'System' },
 ];
 
 export function ThemePreferenceSegment({
@@ -17,7 +17,7 @@ export function ThemePreferenceSegment({
   onChange: (next: ThemePreference) => void;
 }) {
   return (
-    <div className="rounded-2xl bg-surface p-1.5" role="group" aria-label="Appearance">
+    <div className="rounded-xs bg-surface p-1" role="group" aria-label="Appearance">
       <div className="flex flex-row">
         {OPTIONS.map((option) => {
           const selected = value === option.value;
@@ -26,9 +26,10 @@ export function ThemePreferenceSegment({
               key={option.value}
               type="button"
               aria-pressed={selected}
+              aria-label={`Appearance: ${option.label.replace('\u00A0', ' ')}`}
               onClick={() => onChange(option.value)}
               className={cn(
-                'min-w-0 flex-1 rounded-lg px-2 py-2.5 text-sm font-semibold active:opacity-90',
+                'min-w-0 flex-1 whitespace-nowrap rounded-xs px-1 py-2 text-xs font-semibold active:opacity-90',
                 selected ? 'bg-active text-on-brand' : 'text-muted',
               )}
             >

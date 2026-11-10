@@ -19,7 +19,7 @@ export function SettingsRow({
     <>
       {showDivider ? <div className="mx-4 h-px bg-hairline" /> : null}
       <span className="flex flex-row items-center justify-between px-4 py-4">
-        <span className="text-lg text-ink">{label}</span>
+        <span className="text-base text-ink">{label}</span>
         <IonIcon icon={ionIcons['chevron-forward']} size={20} color="#8A948C" />
       </span>
     </>
@@ -52,8 +52,8 @@ export function SettingsGroup({ title, children }: { title: string; children: Re
 export function ProfileStat({ value, label }: { value: number; label: string }) {
   return (
     <div className="flex flex-1 flex-col items-center gap-1 py-4">
-      <p className="text-2xl font-bold text-ink">{value}</p>
-      <p className="text-sm text-muted">{label}</p>
+      <p className="text-xl font-bold text-ink">{value}</p>
+      <p className="text-xs text-muted">{label}</p>
     </div>
   );
 }
