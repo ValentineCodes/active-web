@@ -22,6 +22,11 @@ import {
   timeOutline,
   informationCircleOutline,
   sendOutline,
+  chatbubbleOutline,
+  ellipsisHorizontalOutline,
+  navigateOutline,
+  star,
+  starOutline,
 } from 'ionicons/icons';
 
 /** Maps mobile Ionicons glyph names to ionicons v8 data-URI SVG strings. */
@@ -49,6 +54,11 @@ export const ionIcons = {
   'time-outline': timeOutline,
   'information-circle-outline': informationCircleOutline,
   send: sendOutline,
+  'chatbubble-outline': chatbubbleOutline,
+  'ellipsis-horizontal': ellipsisHorizontalOutline,
+  'navigate-outline': navigateOutline,
+  star: star,
+  'star-outline': starOutline,
 } as const;
 
 export type IonIconName = keyof typeof ionIcons;

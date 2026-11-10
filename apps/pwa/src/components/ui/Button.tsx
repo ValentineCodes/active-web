@@ -60,7 +60,7 @@ export function Button({
         disabled={disabled}
         loading={loading}
         icon={icon}
-        className={cn(corner === 'full' ? 'rounded-2xl' : cornerClasses[corner], className)}
+        className={cn(cornerClasses[corner], className)}
       />
     );
   }

@@ -299,7 +299,8 @@ export function useCreateRequest() {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (requestId) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.myRequest(requestId) });
       queryClient.invalidateQueries({ queryKey: queryKeys.myRequests });
       queryClient.invalidateQueries({ queryKey: queryKeys.browseNearbyAll });
       queryClient.invalidateQueries({ queryKey: queryKeys.browseOpenAll });

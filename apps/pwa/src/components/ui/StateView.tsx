@@ -100,8 +100,15 @@ export function InlineError({
 function SpinnerRing({ color }: { color: string }) {
   return (
     <div
-      className="h-8 w-8 animate-spin rounded-full border-2 border-t-transparent"
-      style={{ borderColor: color, borderTopColor: 'transparent' }}
+      className="h-8 w-8 animate-spin rounded-full"
+      style={{
+        borderWidth: 2,
+        borderStyle: 'solid',
+        borderLeftColor: color,
+        borderRightColor: color,
+        borderBottomColor: color,
+        borderTopColor: 'transparent',
+      }}
       aria-hidden
     />
   );

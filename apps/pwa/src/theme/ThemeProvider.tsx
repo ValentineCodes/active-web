@@ -34,8 +34,12 @@ export function getColors(): ThemePalette {
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [preference, setPreferenceState] = useState<ThemePreference>(() => readThemePreference());
-  const [resolved, setResolved] = useState<'light' | 'dark'>(() => resolveThemeScheme(preference));
+  const [preference, setPreferenceState] = useState<ThemePreference>('system');
+  const [resolved, setResolved] = useState<'light' | 'dark'>('light');
+
+  useEffect(() => {
+    setPreferenceState(readThemePreference());
+  }, []);
 
   const applyScheme = useCallback((scheme: 'light' | 'dark') => {
     const root = document.documentElement;

@@ -1,28 +1,48 @@
 'use client';
 
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { set, startOfTomorrow } from 'date-fns';
 
 import { FlowScreen } from '@/components/layout/FlowScreen';
+import { RequestAttachmentSection } from '@/components/request-flow/RequestAttachmentSection';
 import { MoneyAmountInput } from '@/components/ui/MoneyAmountInput';
 import { Button } from '@/components/ui/Button';
 import { TextAreaField, TextField } from '@/components/ui/TextField';
 import { InlineError } from '@/components/ui/StateView';
 import { CREATE_TITLE_LIMITS, DESCRIPTION_LIMITS, MARKET } from '@/config/index';
 import { isFundedOffer, summarizeRequestFunding } from '@/features/requests/funding';
-import { pickRequestPhotos, uploadRequestPhotos } from '@/features/requests/request-media';
+import { pickRequestPhotos, uploadRequestPhoto } from '@/features/requests/request-media';
+import { useRequestAttachmentUrl } from '@/features/requests/request-attachment-url';
 import { useCreateRequest, useMyRequest, useUpdateRequest } from '@/features/requests/requester-api';
-import { MAX_REQUEST_TAGS, useTagCatalogue, type RequestTag } from '@/features/requests/tags';
+import {
+  MAX_REQUEST_TAGS,
+  resolveRequestTagsFromApiLabels,
+  useTagCatalogue,
+  type RequestTag,
+} from '@/features/requests/tags';
 import { requestPosition, suggestAreaLabel, type Position } from '@/lib/geolocation';
 import { showAppToast } from '@/lib/toast';
 import { cn } from '@/lib/cn';
 import { useUserId } from '@/features/auth/use-user-id';
 
+function toDatetimeLocalValue(iso: string | null | undefined): string {
+  if (!iso) return '';
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return '';
+  const pad = (part: number) => String(part).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
+function isLocalAttachmentUri(uri: string) {
+  return uri.startsWith('blob:') || uri.startsWith('data:');
+}
+
 export function RequestNewPage() {
   const router = useRouter();
   const params = useSearchParams();
   const editId = params.get('edit');
+  const isEdit = Boolean(editId);
   const userId = useUserId();
   const create = useCreateRequest();
   const update = useUpdateRequest(editId ?? '');
@@ -36,8 +56,34 @@ export function RequestNewPage() {
   const [position, setPosition] = useState<Position | null>(null);
   const [scheduledLocal, setScheduledLocal] = useState('');
   const [selectedTags, setSelectedTags] = useState<RequestTag[]>([]);
-  const [attachmentPath, setAttachmentPath] = useState<string | null>(null);
+  const [attachmentUri, setAttachmentUri] = useState<string | null>(null);
+  const [attachmentMimeType, setAttachmentMimeType] = useState<string | null>(null);
+  const [attachmentUploading, setAttachmentUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const seededEditRef = useRef(false);
+
+  const savedAttachmentUrl = useRequestAttachmentUrl(
+    isEdit && !attachmentUri ? existing.data?.attachment_path : null,
+  );
+  const previewUri = attachmentUri ?? savedAttachmentUrl.data ?? null;
+
+  useEffect(() => {
+    if (!editId || !existing.data || !tagsQuery.data || seededEditRef.current) return;
+    seededEditRef.current = true;
+    const row = existing.data;
+    setTitle(row.title ?? '');
+    setDescription(row.description ?? '');
+    setAmount(row.offered_amount != null ? String(row.offered_amount) : '');
+    setAreaLabel(row.location_label ?? '');
+    setPosition(
+      row.latitude != null && row.longitude != null
+        ? { latitude: row.latitude, longitude: row.longitude }
+        : null,
+    );
+    setScheduledLocal(toDatetimeLocalValue(row.scheduled_for));
+    const tags = resolveRequestTagsFromApiLabels(row.tag_slugs ?? [], tagsQuery.data);
+    if (tags.length > 0) setSelectedTags(tags);
+  }, [editId, existing.data, tagsQuery.data]);
 
   const funding = useMemo(() => {
     const parsed = Number(amount);
@@ -66,12 +112,31 @@ export function RequestNewPage() {
     if (label) setAreaLabel(label);
   };
 
-  const addPhotos = async () => {
-    if (!userId) return;
-    const assets = await pickRequestPhotos(4);
-    if (assets.length === 0) return;
-    const paths = await uploadRequestPhotos(userId, assets);
-    setAttachmentPath(paths[0] ?? null);
+  const choosePhoto = async () => {
+    const assets = await pickRequestPhotos(1);
+    const asset = assets[0];
+    if (!asset) return;
+    if (attachmentUri && isLocalAttachmentUri(attachmentUri)) {
+      URL.revokeObjectURL(attachmentUri);
+    }
+    setAttachmentUri(asset.uri);
+    setAttachmentMimeType(asset.mimeType ?? null);
+  };
+
+  const uploadAttachmentIfNeeded = async (): Promise<string | null | undefined> => {
+    if (!attachmentUri || !isLocalAttachmentUri(attachmentUri)) {
+      return isEdit ? undefined : null;
+    }
+    if (!userId) throw new Error('Sign in to create a request.');
+    setAttachmentUploading(true);
+    try {
+      return await uploadRequestPhoto(userId, {
+        uri: attachmentUri,
+        mimeType: attachmentMimeType,
+      });
+    } finally {
+      setAttachmentUploading(false);
+    }
   };
 
   const submit = async () => {
@@ -81,7 +146,7 @@ export function RequestNewPage() {
       setError(`Title must be ${CREATE_TITLE_LIMITS.min}–${CREATE_TITLE_LIMITS.max} characters.`);
       return;
     }
-  if (description.length > DESCRIPTION_LIMITS.max) {
+    if (description.length > DESCRIPTION_LIMITS.max) {
       setError('Description is too long.');
       return;
     }
@@ -99,6 +164,9 @@ export function RequestNewPage() {
     const scheduledFor = scheduledLocal ? new Date(scheduledLocal) : null;
 
     try {
+      const uploadedPath = await uploadAttachmentIfNeeded();
+      const attachmentForRpc = uploadedPath ?? (isEdit ? undefined : null);
+
       if (editId && existing.data) {
         await update.mutateAsync({
           title: trimmedTitle,
@@ -107,7 +175,7 @@ export function RequestNewPage() {
           locationLabel: label,
           scheduledFor,
           offeredAmount: offered,
-          attachmentPath,
+          ...(attachmentForRpc !== undefined ? { attachmentPath: attachmentForRpc } : {}),
           tags: selectedTags,
         });
         router.push(`/request/${editId}`);
@@ -121,7 +189,7 @@ export function RequestNewPage() {
         locationLabel: label,
         scheduledFor,
         offeredAmount: offered,
-        attachmentPath,
+        attachmentPath: attachmentForRpc ?? null,
         tags: selectedTags,
       });
       showAppToast('Request posted.');
@@ -130,6 +198,8 @@ export function RequestNewPage() {
       setError(e instanceof Error ? e.message : 'Could not save the request.');
     }
   };
+
+  const showStoredAttachmentPreview = isEdit && !attachmentUri && existing.data?.attachment_path;
 
   return (
     <FlowScreen
@@ -199,12 +269,27 @@ export function RequestNewPage() {
         </div>
       </section>
 
-      <Button label="Add photo" variant="secondary" onClick={() => void addPhotos()} />
-      {attachmentPath ? <p className="text-xs text-subtle">Photo attached</p> : null}
+      <Button
+        label={previewUri ? 'Change photo' : 'Add photo'}
+        variant="secondary"
+        onClick={() => void choosePhoto()}
+      />
+      {previewUri && isLocalAttachmentUri(previewUri) ? (
+        <div className="relative aspect-[4/3] w-full overflow-hidden rounded-2xl bg-surface">
+          <img
+            src={previewUri}
+            alt="Selected request photo"
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+        </div>
+      ) : null}
+      {showStoredAttachmentPreview ? (
+        <RequestAttachmentSection attachmentPath={existing.data!.attachment_path} />
+      ) : null}
 
       <Button
         label={editId ? 'Save changes' : 'Post request'}
-        loading={create.isPending || update.isPending}
+        loading={create.isPending || update.isPending || attachmentUploading}
         onClick={() => void submit()}
       />
     </FlowScreen>
