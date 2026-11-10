@@ -37,7 +37,7 @@ export function HomePage() {
   }
 
   return (
-    <Screen className="bg-canvas">
+    <Screen className="h-full min-h-0 overflow-hidden bg-canvas">
       <PlusMaybeActiveBanner activeRequest={activeRequest} profileSkeleton={profileSkeleton} profile={profile} attendance={attendance} wallet={wallet} searchQuery={searchQuery} />
     </Screen>
   );

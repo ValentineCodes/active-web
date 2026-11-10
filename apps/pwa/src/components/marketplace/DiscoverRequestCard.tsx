@@ -20,12 +20,9 @@ export function DiscoverRequestCard({
   positionLat,
   positionLng,
 }: Props) {
-  const href =
-    isOwn
-      ? `/request/${request.request_id}`
-      : `/respond/${request.request_id}${
-          positionLat != null && positionLng != null ? `?lat=${positionLat}&lng=${positionLng}` : ''
-        }`;
+  const href = `/request/${request.request_id}${
+    positionLat != null && positionLng != null ? `?lat=${positionLat}&lng=${positionLng}` : ''
+  }`;
 
   const whenLabel = formatWhenHome(request.scheduled_for);
   const proximity =

@@ -17,6 +17,7 @@ export const queryKeys = {
   requestSearchSuggestions: (prefix: string) => ['request-search-suggestions', prefix] as const,
   browseRequest: (requestId: string, latitude: number | null, longitude: number | null) =>
     ['browse-request', requestId, latitude, longitude] as const,
+  browseRequestPreview: (requestId: string) => ['browse-request-preview', requestId] as const,
   myResponses: ['my-responses'] as const,
   engagement: (requestId: string) => ['engagement', requestId] as const,
   requestConversation: (requestId: string) => ['request-conversation', requestId] as const,

@@ -6,7 +6,6 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { HomeFeedRequestPage, HomeFeedRequestPageSkeleton } from '@/components/home/HomeFeedRequestPage';
 import { proximityLabelForRequest } from '@/features/requests/proximity-label';
 import { IonIcon } from '@/components/ui/IonIcon';
-import { TAB_BAR_HEIGHT } from '@/components/ui/tab-bar-insets';
 import { EmptyState, InlineError } from '@/components/ui/StateView';
 import { ionIcons } from '@/components/ui/ion-icons';
 import { useHomeBrowseFeed } from '@/features/requests/use-home-browse-feed';
@@ -21,8 +20,6 @@ export function HomeFeed({ searchQuery }: Props) {
   const feed = useHomeBrowseFeed(searchQuery, true);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [pageHeight, setPageHeight] = useState(0);
-  const tabBarInset = TAB_BAR_HEIGHT + 8;
-
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
@@ -74,11 +71,7 @@ export function HomeFeed({ searchQuery }: Props) {
       ) : !feed.loading && feed.rows.length === 0 ? (
         <FeedEmptyBody className="min-h-0 flex-1" />
       ) : listReady ? (
-        <div
-          className="h-full snap-y snap-mandatory overflow-y-auto bg-canvas"
-          style={{ scrollPaddingBottom: tabBarInset }}
-          onScroll={onScroll}
-        >
+        <div className="h-full snap-y snap-mandatory overflow-y-auto overscroll-y-contain bg-canvas" onScroll={onScroll}>
           {feed.rows.map((item) => {
             const isOwnRequest = feed.ownOpenRequestIds.has(item.request_id);
             const waiting = Boolean(
@@ -97,6 +90,7 @@ export function HomeFeed({ searchQuery }: Props) {
                 proximityLabel={proximityLabelForRequest(item, isOwnRequest)}
                 isOwnRequest={isOwnRequest}
                 waiting={waiting}
+                browsePosition={feed.position}
               />
             );
           })}
@@ -110,9 +104,9 @@ export function HomeFeed({ searchQuery }: Props) {
           onClick={() =>
             router.push(searchQuery ? `/search?q=${encodeURIComponent(searchQuery)}` : '/search')
           }
-          className="absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-black/45 active:opacity-90"
+          className="absolute right-4 top-3 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-black/45 active:opacity-90"
         >
-          <IonIcon icon={ionIcons['search-outline']} size={20} color="#ffffff" />
+          <IonIcon icon={ionIcons['search-outline']} size={14} color="#ffffff" />
         </button>
       ) : null}
     </div>

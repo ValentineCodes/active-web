@@ -27,6 +27,7 @@ import {
   navigateOutline,
   star,
   starOutline,
+  lockClosedOutline,
 } from 'ionicons/icons';
 
 /** Maps mobile Ionicons glyph names to ionicons v8 data-URI SVG strings. */
@@ -59,6 +60,7 @@ export const ionIcons = {
   'navigate-outline': navigateOutline,
   star: star,
   'star-outline': starOutline,
+  'lock-closed-outline': lockClosedOutline,
 } as const;
 
 export type IonIconName = keyof typeof ionIcons;

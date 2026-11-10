@@ -4,7 +4,11 @@ import { useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 
-import { useBrowseRequest, type BrowseRequestDetail } from '@/features/requests/browse-api';
+import {
+  useBrowseRequest,
+  useBrowseRequestPreview,
+  type BrowseRequestDetail,
+} from '@/features/requests/browse-api';
 import { useUserId } from '@/features/auth/use-user-id';
 import type { Position } from '@/lib/geolocation';
 import { queryKeys } from '@/lib/query/keys';
@@ -147,14 +151,19 @@ export function useRequestForResponse(requestId: string, position: Position | nu
   );
   const browseEnabled = mine.isSuccess && !pendingRow && !declinedRow;
   const browse = useBrowseRequest(requestId, position, { enabled: browseEnabled });
+  const preview = useBrowseRequestPreview(requestId);
 
   const participationRow = pendingRow ?? declinedRow ?? null;
+
+  const previewRequest = preview.data ? fromBrowseRequest(preview.data) : null;
 
   const request: RespondableRequest | null = participationRow
     ? fromMyResponse(participationRow)
     : browse.data
       ? fromBrowseRequest(browse.data)
-      : null;
+      : browse.isSuccess && position !== null && !browse.data
+        ? null
+        : previewRequest;
 
   const existing: ExistingResponse | null = pendingRow
     ? {
@@ -172,21 +181,18 @@ export function useRequestForResponse(requestId: string, position: Position | nu
         }
       : null;
 
-  const open =
-    pendingRow != null
-      ? isOpenRequestStatus(pendingRow.request_status)
-      : declinedRow != null
-        ? true
-        : browse.data != null;
-
   return {
-    request: open ? request : null,
+    request,
     existingResponse: existing,
     pendingResponseRow: pendingRow ?? null,
     declinedParticipation,
     needsLocation: browseEnabled && position === null,
     isFetchingMatch: browse.isFetching,
-    isPending: mine.isPending || (browseEnabled && position !== null && browse.isPending),
+    browseConfirmedClosed:
+      browseEnabled && position !== null && browse.isSuccess && !browse.data && !preview.data,
+    isPending:
+      (mine.isPending && !mine.data && !preview.data) ||
+      (browseEnabled && position !== null && browse.isPending && !browse.data && !preview.data),
     isError: browse.isError || mine.isError,
     error: browse.error ?? mine.error,
     refetch: async () => {

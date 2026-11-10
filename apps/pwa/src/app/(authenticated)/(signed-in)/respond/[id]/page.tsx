@@ -1,6 +1,6 @@
 'use client';
 
 import { withSearchParamsPage } from '@/lib/client-page';
-import { RespondPage } from '@/views/RespondPage';
+import { RespondRedirectPage } from '@/views/RespondRedirectPage';
 
-export default withSearchParamsPage(RespondPage);
+export default withSearchParamsPage(RespondRedirectPage);

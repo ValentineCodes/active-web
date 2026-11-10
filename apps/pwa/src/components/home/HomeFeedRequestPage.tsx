@@ -1,20 +1,22 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import { useQueryClient } from '@tanstack/react-query';
 
 import { Avatar } from '@/components/ui/Avatar';
 import { IonIcon } from '@/components/ui/IonIcon';
 import { SkeletonBlock } from '@/components/ui/Skeleton';
 import { ionIcons } from '@/components/ui/ion-icons';
-import { TAB_BAR_HEIGHT } from '@/components/ui/tab-bar-insets';
-import type { PublicRequest } from '@/features/requests/browse-api';
+import { seedBrowseRequestFromFeed, type PublicRequest } from '@/features/requests/browse-api';
 import { useRequestAttachmentUrl } from '@/features/requests/request-attachment-url';
 import { requestOutcomeDescription } from '@/features/requests/outcome';
+import type { Position } from '@/lib/geolocation';
 import {
   formatAgo,
   formatMoney,
   formatWhenHome,
 } from '@/lib/format';
+import { useTheme } from '@/theme/ThemeProvider';
 
 const PHOTO_BOTTOM_SCRIM =
   'linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.82) 100%)';
@@ -23,7 +25,14 @@ const LIGHT_GRID_URI =
   encodeURIComponent(
     `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18"><circle cx="1" cy="1" r="0.75" fill="rgba(17,24,18,0.35)"/></svg>`,
   );
+const DARK_GRID_URI =
+  'data:image/svg+xml;utf8,' +
+  encodeURIComponent(
+    `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18"><circle cx="1" cy="1" r="0.75" fill="rgba(255,255,255,0.55)"/></svg>`,
+  );
+const DARK_SURFACE = '#111111';
 const LIGHT_GLOW_GREEN = '#1FA35A';
+const DARK_GLOW_GREEN = '#4ADE80';
 
 type Props = {
   request: PublicRequest;
@@ -31,7 +40,19 @@ type Props = {
   proximityLabel: string;
   isOwnRequest: boolean;
   waiting: boolean;
+  browsePosition: Position | null;
 };
+
+function requestHref(requestId: string, position: Position | null, isOwnRequest: boolean): string {
+  const params = new URLSearchParams();
+  if (position) {
+    params.set('lat', String(position.latitude));
+    params.set('lng', String(position.longitude));
+  }
+  if (isOwnRequest) params.set('mine', '1');
+  const query = params.toString();
+  return query ? `/request/${requestId}?${query}` : `/request/${requestId}`;
+}
 
 export function HomeFeedRequestPage({
   request,
@@ -39,73 +60,154 @@ export function HomeFeedRequestPage({
   proximityLabel,
   isOwnRequest,
   waiting,
+  browsePosition,
 }: Props) {
   const router = useRouter();
+  const queryClient = useQueryClient();
+  const { resolved, colors } = useTheme();
   const attachment = useRequestAttachmentUrl(request.attachment_path);
   const imageUri = attachment.data ?? null;
   const hasAttachmentPath = Boolean(request.attachment_path);
   const hasPhoto = Boolean(imageUri);
   const photoLoading = hasAttachmentPath && !hasPhoto && attachment.isPending;
   const showAtmosphere = !hasPhoto && !photoLoading;
+  const darkAtmosphere = showAtmosphere && resolved === 'dark';
+  const lightCopy = hasPhoto || darkAtmosphere;
 
   const title = request.title ?? 'Request';
   const description = requestOutcomeDescription(request.description);
   const postedLabel = request.posted_at ? formatAgo(request.posted_at) : null;
 
-  const lightCopy = hasPhoto;
-
-  const titleClass = lightCopy ? 'text-2xl font-bold leading-8 text-white' : 'text-2xl font-bold leading-8 text-ink';
-  const bodyClass = lightCopy ? 'text-sm leading-5 text-white/90' : 'text-sm leading-5 text-muted';
+  const titleClass = lightCopy
+    ? 'text-3xl font-bold leading-9 text-white'
+    : 'text-3xl font-bold leading-9 text-ink';
+  const bodyClass = lightCopy ? 'text-base leading-6 text-white/90' : 'text-base leading-6 text-muted';
   const requesterNameClass = lightCopy
-    ? 'text-base font-semibold leading-5 text-white'
-    : 'text-base font-semibold leading-5 text-ink';
+    ? 'text-lg font-semibold leading-6 text-white'
+    : 'text-lg font-semibold leading-6 text-ink';
   const metaSubClass = lightCopy ? 'text-xs text-white/80' : 'text-xs text-muted';
   const whenChipClass = lightCopy ? 'rounded-full bg-white/15 px-3 py-1' : 'rounded-full bg-surface px-3 py-1';
-  const whenTextClass = lightCopy ? 'text-xs font-semibold text-white' : 'text-xs font-semibold text-ink';
+  const whenTextClass = lightCopy ? 'text-sm font-semibold text-white' : 'text-sm font-semibold text-ink';
   const footerBorderClass = lightCopy ? 'border-t border-white/15' : 'border-t border-hairline';
-  const locationIconColor = lightCopy ? '#ffffff' : '#111812';
-  const locationTextClass = lightCopy ? 'text-xs font-medium text-white' : 'text-xs font-medium text-ink';
+  const locationIconColor = lightCopy ? '#ffffff' : colors.ink;
+  const locationTextClass = lightCopy ? 'text-sm font-medium text-white' : 'text-sm font-medium text-ink';
 
   const openDisabled = !isOwnRequest && waiting;
-  const tabBarInset = TAB_BAR_HEIGHT + 8;
 
   const openRequest = () => {
     if (openDisabled) return;
-    if (isOwnRequest) {
-      router.push(`/request/${request.request_id}`);
-      return;
-    }
-    router.push(`/respond/${request.request_id}`);
+    seedBrowseRequestFromFeed(queryClient, request, browsePosition);
+    router.push(requestHref(request.request_id, browsePosition, isOwnRequest));
   };
 
+  const cardDetails = (
+    <RequestDetails
+      request={request}
+      title={title}
+      description={description}
+      proximityLabel={proximityLabel}
+      isOwnRequest={isOwnRequest}
+      waiting={waiting}
+      titleClass={titleClass}
+      bodyClass={bodyClass}
+      whenChipClass={whenChipClass}
+      whenTextClass={whenTextClass}
+      footerBorderClass={footerBorderClass}
+      locationIconColor={locationIconColor}
+      locationTextClass={locationTextClass}
+    />
+  );
+
+  if (showAtmosphere) {
+    const heroTone = darkAtmosphere ? DARK_SURFACE : colors.canvas;
+    const heroRequesterName = darkAtmosphere
+      ? 'text-lg font-semibold leading-6 text-white'
+      : 'text-lg font-semibold leading-6 text-ink';
+    const heroMetaSub = darkAtmosphere ? 'text-xs text-white/80' : 'text-xs text-muted';
+
+    return (
+      <article
+        style={{ height: pageHeight }}
+        className="relative flex w-full shrink-0 snap-start snap-always flex-col overflow-hidden bg-canvas"
+      >
+        <button
+          type="button"
+          aria-label={openDisabled ? 'Response pending' : `View request: ${title}`}
+          disabled={openDisabled}
+          onClick={openRequest}
+          className="absolute inset-0 z-[1] disabled:cursor-not-allowed active:opacity-95"
+        />
+
+        <div
+          className="relative h-2/5 w-full shrink-0 overflow-hidden"
+          style={{ backgroundColor: heroTone }}
+        >
+          <TextRequestGlow dark={darkAtmosphere} />
+          <div
+            className="pointer-events-none absolute inset-0"
+            style={{
+              backgroundImage: `url(${darkAtmosphere ? DARK_GRID_URI : LIGHT_GRID_URI})`,
+              backgroundRepeat: 'repeat',
+              opacity: darkAtmosphere ? 0.4 : 0.3,
+            }}
+            aria-hidden
+          />
+          <button
+            type="button"
+            aria-label={`View ${request.requester_display_name ?? 'requester'} profile`}
+            onClick={() => router.push(`/profile`)}
+            className="absolute left-0 right-12 top-0 z-[3] flex flex-row items-center gap-2.5 p-4 text-left active:opacity-90"
+          >
+            <Avatar size="sm" path={request.requester_avatar_path} name={request.requester_display_name} />
+            <RequesterBlock
+              requesterNameClass={heroRequesterName}
+              name={request.requester_display_name ?? 'Someone nearby'}
+              postedLabel={postedLabel}
+              metaSubClass={heroMetaSub}
+            />
+          </button>
+        </div>
+
+        <div className="pointer-events-none absolute left-5 top-1/3 z-[4] -translate-y-1/2">
+          <OpenRequestLabel dark={darkAtmosphere} />
+        </div>
+
+        <div className="pointer-events-none relative z-[2] flex min-h-0 flex-1 flex-col justify-end gap-3 px-4 pb-4 pt-2">
+          <RequestDetails
+            request={request}
+            title={title}
+            description={description}
+            proximityLabel={proximityLabel}
+            isOwnRequest={isOwnRequest}
+            waiting={waiting}
+            titleClass="text-3xl font-bold leading-9 text-ink"
+            bodyClass="text-base leading-6 text-muted"
+            whenChipClass="rounded-full bg-surface px-3 py-1"
+            whenTextClass="text-sm font-semibold text-ink"
+            footerBorderClass="border-t border-hairline"
+            locationIconColor={colors.ink}
+            locationTextClass="text-sm font-medium text-ink"
+          />
+        </div>
+      </article>
+    );
+  }
+
   return (
-    <article style={{ height: pageHeight }} className="relative w-full shrink-0 snap-start snap-always bg-canvas">
-      <div className="relative h-full overflow-hidden bg-canvas">
+    <article
+      style={{ height: pageHeight }}
+      className="relative w-full shrink-0 snap-start snap-always overflow-hidden bg-canvas"
+    >
+      <div className="relative h-full min-h-0 overflow-hidden bg-canvas">
         {hasPhoto ? (
           <img src={imageUri!} alt="" className="absolute inset-0 h-full w-full object-cover" />
         ) : photoLoading ? (
           <SkeletonBlock className="absolute inset-0 rounded-none" />
-        ) : showAtmosphere ? (
-          <>
-            <div className="absolute inset-0 bg-canvas" />
-            <div
-              className="pointer-events-none absolute inset-0"
-              style={{
-                background: `radial-gradient(ellipse at 90% 0%, rgba(31,163,90,0.2) 0%, rgba(31,163,90,0.06) 35%, transparent 65%)`,
-              }}
-            />
-            <div
-              className="pointer-events-none absolute inset-0 opacity-30"
-              style={{ backgroundImage: `url(${LIGHT_GRID_URI})`, backgroundRepeat: 'repeat' }}
-              aria-hidden
-            />
-            <OpenRequestLabel />
-          </>
         ) : null}
 
         {hasPhoto ? (
           <div
-            className="pointer-events-none absolute bottom-0 left-0 right-0 h-[48%]"
+            className="pointer-events-none absolute bottom-0 left-0 right-0 h-1/2"
             style={{ background: PHOTO_BOTTOM_SCRIM }}
           />
         ) : null}
@@ -115,15 +217,14 @@ export function HomeFeedRequestPage({
           aria-label={openDisabled ? 'Response pending' : `View request: ${title}`}
           disabled={openDisabled}
           onClick={openRequest}
-          style={{ bottom: tabBarInset }}
-          className="absolute inset-x-0 top-0 z-[1] disabled:cursor-not-allowed active:opacity-95"
+          className="absolute inset-0 z-[1] disabled:cursor-not-allowed active:opacity-95"
         />
 
         <button
           type="button"
           aria-label={`View ${request.requester_display_name ?? 'requester'} profile`}
           onClick={() => router.push(`/profile`)}
-          className="absolute left-0 right-16 top-0 z-[2] flex flex-row items-center gap-2.5 p-4 text-left active:opacity-90"
+          className="absolute left-0 right-12 top-0 z-[3] flex flex-row items-center gap-2.5 p-4 text-left active:opacity-90"
         >
           <Avatar size="sm" path={request.requester_avatar_path} name={request.requester_display_name} />
           <RequesterBlock
@@ -134,51 +235,128 @@ export function HomeFeedRequestPage({
           />
         </button>
 
-        <div
-          className="pointer-events-none absolute left-0 right-0 flex flex-col gap-3 px-4 pt-6"
-          style={{ bottom: tabBarInset }}
-        >
-          <div className="flex flex-row flex-wrap items-center gap-2">
-            <span className="rounded-full bg-active px-3 py-1 text-xs font-bold text-on-brand">
-              {formatMoney(request.offered_amount!, request.currency!)}
-            </span>
-            <span className={whenChipClass}>
-              <span className={whenTextClass}>{formatWhenHome(request.scheduled_for)}</span>
-            </span>
-          </div>
-
-          <h2 className={`line-clamp-3 ${titleClass}`}>{title}</h2>
-          {description ? <p className={`line-clamp-3 ${bodyClass}`}>{description}</p> : null}
-
-          <div className={`mt-1 flex flex-row items-center justify-between gap-3 pt-3 ${footerBorderClass}`}>
-            <span className="inline-flex items-center gap-1.5">
-              <IonIcon icon={ionIcons['location-outline']} size={16} color={locationIconColor} />
-              <span className={locationTextClass}>{proximityLabel}</span>
-            </span>
-            <span className="inline-flex items-center gap-0.5">
-              {waiting && !isOwnRequest ? (
-                <span className="text-xs font-semibold text-active">Pending</span>
-              ) : (
-                <>
-                  <span className="text-xs font-semibold text-active">View request</span>
-                  <IonIcon icon={ionIcons['chevron-forward']} size={16} color="#1FA35A" />
-                </>
-              )}
-            </span>
-          </div>
+        <div className="pointer-events-none absolute bottom-0 left-0 right-0 z-[2] flex flex-col gap-3 px-4 pb-4 pt-6">
+          {cardDetails}
         </div>
       </div>
     </article>
   );
 }
 
-function OpenRequestLabel() {
+function RequestDetails({
+  request,
+  title,
+  description,
+  proximityLabel,
+  isOwnRequest,
+  waiting,
+  titleClass,
+  bodyClass,
+  whenChipClass,
+  whenTextClass,
+  footerBorderClass,
+  locationIconColor,
+  locationTextClass,
+}: {
+  request: PublicRequest;
+  title: string;
+  description: string | null;
+  proximityLabel: string;
+  isOwnRequest: boolean;
+  waiting: boolean;
+  titleClass: string;
+  bodyClass: string;
+  whenChipClass: string;
+  whenTextClass: string;
+  footerBorderClass: string;
+  locationIconColor: string;
+  locationTextClass: string;
+}) {
   return (
-    <div className="absolute left-5 flex flex-row items-center gap-2" style={{ top: '29%' }}>
-      <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: LIGHT_GLOW_GREEN }} />
+  <>
+    <div className="flex flex-row flex-wrap items-center gap-2">
+      <span className="rounded-full bg-active px-3 py-1 text-sm font-bold text-on-brand">
+        {formatMoney(request.offered_amount!, request.currency!)}
+      </span>
+      <span className={whenChipClass}>
+        <span className={whenTextClass}>{formatWhenHome(request.scheduled_for)}</span>
+      </span>
+    </div>
+
+    <h2 className={`line-clamp-3 ${titleClass}`}>{title}</h2>
+    {description ? <p className={`line-clamp-3 ${bodyClass}`}>{description}</p> : null}
+
+    <div className={`mt-1 flex flex-row items-center justify-between gap-3 pt-3 ${footerBorderClass}`}>
+      <span className="inline-flex items-center gap-1.5">
+        <IonIcon icon={ionIcons['location-outline']} size={16} color={locationIconColor} />
+        <span className={locationTextClass}>{proximityLabel}</span>
+      </span>
+      <span className="inline-flex items-center gap-0.5">
+        {waiting && !isOwnRequest ? (
+          <span className="text-xs font-semibold text-active">Pending</span>
+        ) : (
+          <>
+            <span className="text-sm font-semibold text-active">View request</span>
+            <IonIcon icon={ionIcons['chevron-forward']} size={16} color="#1FA35A" />
+          </>
+        )}
+      </span>
+    </div>
+  </>
+  );
+}
+
+function glowColor(hex: string, alpha: number) {
+  const a = Math.round(Math.max(0, Math.min(1, alpha)) * 255)
+    .toString(16)
+    .padStart(2, '0');
+  return `${hex}${a}`;
+}
+
+function TextRequestGlow({ dark }: { dark: boolean }) {
+  const color = dark ? DARK_GLOW_GREEN : LIGHT_GLOW_GREEN;
+  const peak = dark ? 0.16 : 0.2;
+  return (
+    <>
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background: `linear-gradient(to bottom left, ${glowColor(color, peak)} 0%, ${glowColor(color, peak * 0.3)} 35%, transparent 72%)`,
+        }}
+        aria-hidden
+      />
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background: `linear-gradient(to bottom left, ${glowColor(color, peak * 0.65)} 0%, transparent 58%)`,
+        }}
+        aria-hidden
+      />
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background: `radial-gradient(ellipse 160% 140% at 100% 0%, ${glowColor(color, peak * 0.4)} 0%, ${glowColor(color, peak * 0.1)} 40%, transparent 85%)`,
+        }}
+        aria-hidden
+      />
+    </>
+  );
+}
+
+function OpenRequestLabel({ dark }: { dark: boolean }) {
+  return (
+    <div className="pointer-events-none flex flex-row items-center gap-2">
+      <span
+        className="h-1.5 w-1.5 rounded-full"
+        style={{ backgroundColor: dark ? DARK_GLOW_GREEN : LIGHT_GLOW_GREEN }}
+      />
       <span
         className="font-bold uppercase"
-        style={{ fontSize: 12, letterSpacing: 2, color: 'rgba(17,24,18,0.4)' }}
+        style={{
+          fontSize: 12,
+          letterSpacing: 2,
+          color: dark ? 'rgba(255,255,255,0.35)' : 'rgba(17,24,18,0.4)',
+        }}
       >
         Open request
       </span>
@@ -206,12 +384,6 @@ function RequesterBlock({
 }
 
 export function HomeFeedRequestPageSkeleton({ pageHeight }: { pageHeight: number }) {
-  return (
-    <FeedPageSkeleton pageHeight={pageHeight} />
-  );
-}
-
-function FeedPageSkeleton({ pageHeight }: { pageHeight: number }) {
   return (
     <div style={{ height: pageHeight }} className="w-full shrink-0 snap-start bg-canvas">
       <SkeletonBlock className="h-full w-full rounded-none" />

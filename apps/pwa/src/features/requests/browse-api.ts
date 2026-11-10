@@ -1,6 +1,6 @@
 'use client';
 
-import { keepPreviousData, useInfiniteQuery, useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useInfiniteQuery, useQuery, type QueryClient } from '@tanstack/react-query';
 
 import type { Position } from '@/lib/geolocation';
 import { queryKeys } from '@/lib/query/keys';
@@ -42,6 +42,54 @@ export type BrowseRequestDetail = Nullable<
 
 function roundCoordinate(value: number) {
   return Math.round(value * 1000) / 1000;
+}
+
+/** Feed card rows lack `respond_allowed` — refreshed on `browse_request`. */
+export function publicRequestToBrowseDetail(row: PublicRequest): BrowseRequestDetail {
+  return {
+    request_id: row.request_id,
+    title: row.title,
+    description: row.description ?? '',
+    scheduled_for: row.scheduled_for,
+    offered_amount: row.offered_amount,
+    currency: row.currency,
+    location_label: row.location_label,
+    distance_m: row.distance_m ?? 0,
+    posted_at: row.posted_at ?? '',
+    requester_id: row.requester_id,
+    requester_display_name: row.requester_display_name,
+    requester_avatar_path: row.requester_avatar_path,
+    requester_bio: row.requester_bio,
+    requester_rating_average: row.requester_rating_average,
+    requester_rating_count: row.requester_rating_count,
+    requester_completion_percent: row.requester_completion_percent,
+    requester_identity_verified: row.requester_identity_verified,
+    attachment_path: row.attachment_path,
+    tag_slugs: [],
+    respond_allowed: true,
+  };
+}
+
+export function seedBrowseRequestFromFeed(
+  client: QueryClient,
+  row: PublicRequest,
+  position: Position | null,
+) {
+  const detail = publicRequestToBrowseDetail(row);
+  client.setQueryData(queryKeys.browseRequestPreview(row.request_id), detail);
+  if (!position) return;
+  const latitude = roundCoordinate(position.latitude);
+  const longitude = roundCoordinate(position.longitude);
+  client.setQueryData(queryKeys.browseRequest(row.request_id, latitude, longitude), detail);
+}
+
+export function useBrowseRequestPreview(requestId: string) {
+  return useQuery({
+    queryKey: queryKeys.browseRequestPreview(requestId),
+    enabled: false,
+    staleTime: Infinity,
+    queryFn: (): BrowseRequestDetail | null => null,
+  });
 }
 
 export const HOME_BROWSE_PAGE_SIZE = 10;
