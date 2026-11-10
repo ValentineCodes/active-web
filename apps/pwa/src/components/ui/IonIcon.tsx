@@ -1,24 +1,35 @@
 import { cn } from '@/lib/cn';
 
+/** Ionicons outline default in 512 viewBox (was applied via `ionicon-stroke-width` CSS). */
+const IONICON_OUTLINE_STROKE = 32;
+
 function svgMarkupFromDataUri(dataUri: string, size: number, color: string) {
   const raw = decodeURIComponent(dataUri.replace(/^data:image\/svg\+xml;utf8,/, ''));
   const sized = raw
     .replace('<svg ', `<svg width="${size}" height="${size}" `)
-    .replace(/ class='[^']*'/g, '')
-    .replace(/ class='ionicon-fill-none'/g, '')
-    .replace(/ class='ionicon-stroke-width'/g, '');
+    .replace(/ class='[^']*'/g, '');
 
-  // Ionicons outline glyphs ship without `stroke` on `<path>` (styled via ionicons CSS in native).
-  const withStrokes = sized.replace(/<path([^>]*)\/>/g, (match, attrs: string) => {
-    if (/stroke-width/.test(attrs)) {
-      if (/stroke=/.test(attrs)) return match;
-      return `<path${attrs} stroke="${color}" fill="none"/>`;
+  const paintOutlineNode = (tag: string, attrs: string) => {
+    const isOutlineGlyph =
+      /stroke-width/.test(attrs) ||
+      /stroke-linecap/.test(attrs) ||
+      /stroke-linejoin/.test(attrs) ||
+      /stroke-miterlimit/.test(attrs);
+    if (isOutlineGlyph || tag === 'circle') {
+      if (/stroke=/.test(attrs)) return `<${tag}${attrs}/>`;
+      const strokeWidth = /stroke-width=/.test(attrs)
+        ? ''
+        : ` stroke-width="${IONICON_OUTLINE_STROKE}"`;
+      return `<${tag}${attrs} stroke="${color}" fill="none"${strokeWidth}/>`;
     }
-    if (/fill=/.test(attrs)) return match;
-    return `<path${attrs} fill="${color}"/>`;
-  });
+    if (/fill=/.test(attrs)) return `<${tag}${attrs}/>`;
+    return `<${tag}${attrs} fill="${color}"/>`;
+  };
 
-  return withStrokes;
+  // Ionicons outline glyphs ship without `stroke` (styled via ionicons CSS in native).
+  return sized.replace(/<(path|circle|rect|ellipse|line|polyline)([^>]*)\/>/g, (match, tag: string, attrs: string) =>
+    paintOutlineNode(tag, attrs),
+  );
 }
 
 type Props = {
