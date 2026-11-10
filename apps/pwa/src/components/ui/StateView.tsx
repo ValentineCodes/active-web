@@ -28,6 +28,7 @@ export function EmptyState({
   description,
   action,
   layout = 'screen',
+  messageClassName,
 }: {
   icon?: IonIconName;
   title: string;
@@ -35,6 +36,7 @@ export function EmptyState({
   description?: string;
   action?: { label: string; onPress: () => void };
   layout?: 'screen' | 'list';
+  messageClassName?: string;
 }) {
   const colors = useColors();
   const body = message ?? description ?? '';
@@ -50,8 +52,24 @@ export function EmptyState({
           <IonIcon icon={ionIcons[icon]} size={28} color={colors.brand} />
         </div>
       ) : null}
-      <p className="text-base font-semibold text-ink">{title}</p>
-      {body ? <p className="max-w-xs text-sm text-muted">{body}</p> : null}
+      <p
+        className={cn(
+          'font-semibold text-ink',
+          layout === 'list' ? 'text-center text-lg' : 'text-base',
+        )}
+      >
+        {title}
+      </p>
+      {body ? (
+        <p
+          className={cn(
+            'max-w-xs text-muted',
+            messageClassName ?? (layout === 'list' ? 'text-center text-base' : 'text-sm'),
+          )}
+        >
+          {body}
+        </p>
+      ) : null}
       {action ? (
         <div className="mt-2 w-full max-w-sm">
           <Button label={action.label} onClick={action.onPress} variant="primary" />

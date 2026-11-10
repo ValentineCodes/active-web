@@ -10,7 +10,11 @@ export function NotificationInboxFilter({
   onChange: (next: InboxFilter) => void;
 }) {
   return (
-    <div className="flex rounded-full bg-surface p-1">
+    <div
+      className="inline-flex flex-row rounded-full bg-surface p-1"
+      role="group"
+      aria-label="Filter notifications"
+    >
       {(['all', 'unread'] as const).map((option) => {
         const selected = value === option;
         return (
@@ -22,7 +26,7 @@ export function NotificationInboxFilter({
               if (!selected) onChange(option);
             }}
             className={cn(
-              'flex-1 rounded-full px-4 py-2 text-sm font-semibold capitalize active:opacity-90',
+              'rounded-full px-4 py-2 text-sm font-semibold capitalize active:opacity-90',
               selected ? 'bg-elevated text-ink' : 'text-muted',
             )}
           >
