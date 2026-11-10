@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import Link from 'next/link';
 
 import { IonIcon } from '@/components/ui/IonIcon';
 import { ionIcons } from '@/components/ui/ion-icons';
@@ -84,7 +84,7 @@ export function WalletActivityRow({
 
   if (to) {
     return (
-      <Link to={to} className="block active:opacity-90">
+      <Link href={to} className="block active:opacity-90">
         {body}
       </Link>
     );

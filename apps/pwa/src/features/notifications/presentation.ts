@@ -2,15 +2,7 @@ import { format, formatDistanceToNowStrict, isToday, isYesterday, subDays } from
 
 import type { IonIconName } from '@/components/ui/ion-icons';
 import type { NotificationType } from '@/features/notifications/types';
-
-const CHIPS = {
-  blue: { iconBackground: '#DBEAFE', iconColor: '#2563EB' },
-  purple: { iconBackground: '#EDE9FE', iconColor: '#5B21B6' },
-  green: { iconBackground: '#BBF7D0', iconColor: '#15803D' },
-  amber: { iconBackground: '#FEF3C7', iconColor: '#B45309' },
-  red: { iconBackground: '#FEE2E2', iconColor: '#DC2626' },
-  warning: { iconBackground: '#FDF3E3', iconColor: '#B45309' },
-} as const;
+import { getColors } from '@/theme/ThemeProvider';
 
 export function formatInboxRelativeTime(iso: string): string {
   const date = new Date(iso);
@@ -51,21 +43,42 @@ type NotificationVisual = {
 };
 
 export function notificationVisual(type: NotificationType): NotificationVisual {
+  const colors = getColors();
+  const blue = {
+    iconBackground: colors.notificationChipBlueBg,
+    iconColor: colors.notificationChipBlueFg,
+  };
+  const purple = {
+    iconBackground: colors.notificationChipPurpleBg,
+    iconColor: colors.notificationChipPurpleFg,
+  };
+  const green = {
+    iconBackground: colors.notificationChipGreenBg,
+    iconColor: colors.notificationChipGreenFg,
+  };
+  const amber = {
+    iconBackground: colors.notificationChipAmberBg,
+    iconColor: colors.notificationChipAmberFg,
+  };
+  const red = {
+    iconBackground: colors.notificationChipRedBg,
+    iconColor: colors.notificationChipRedFg,
+  };
   switch (type) {
     case 'response_received':
     case 'new_responses':
-      return { icon: 'notifications-outline', ...CHIPS.blue };
+      return { icon: 'notifications-outline', ...blue };
     case 'matching_request':
-      return { icon: 'location-outline', ...CHIPS.blue };
+      return { icon: 'location-outline', ...blue };
     case 'request_expiring':
     case 'request_awaiting_review':
     case 'request_expired':
-      return { icon: 'notifications-outline', ...CHIPS.amber };
+      return { icon: 'notifications-outline', ...amber };
     case 'response_accepted':
     case 'response_not_selected':
-      return { icon: 'checkmark-circle', ...CHIPS.blue };
+      return { icon: 'checkmark-circle', ...blue };
     case 'completion_requested':
-      return { icon: 'checkmark-circle', ...CHIPS.purple };
+      return { icon: 'checkmark-circle', ...purple };
     case 'payment_secured':
     case 'funds_returned':
     case 'payment_released':
@@ -75,25 +88,27 @@ export function notificationVisual(type: NotificationType): NotificationVisual {
     case 'withdrawal_successful':
     case 'withdrawal_failed':
     case 'funds_released_after_resolution':
-      return { icon: 'notifications-outline', ...CHIPS.green, useNairaSymbol: true };
+      return { icon: 'notifications-outline', ...green, useNairaSymbol: true };
     case 'new_message':
     case 'missed_call':
-      return { icon: 'notifications-outline', ...CHIPS.blue };
+      return { icon: 'notifications-outline', ...blue };
     case 'request_cancelled':
     case 'helper_cancelled':
     case 'cancellation_confirmed':
     case 'engagement_cancellation_requested':
     case 'engagement_cancellation_declined':
-      return { icon: 'checkmark-circle', ...CHIPS.amber };
+      return { icon: 'alert-circle', ...amber };
     case 'problem_reported':
     case 'dispute_opened':
     case 'dispute_resolved':
-      return { icon: 'alert-circle', ...CHIPS.red };
+      return { icon: 'alert-circle', ...red };
     case 'rate_experience':
-      return { icon: 'notifications-outline', ...CHIPS.warning };
-    default: {
-      const _exhaustive: never = type;
-      return _exhaustive;
-    }
+      return {
+        icon: 'notifications-outline',
+        iconColor: colors.warning,
+        iconBackground: colors.warningSoft,
+      };
+    default:
+      return { icon: 'notifications-outline', ...blue };
   }
 }

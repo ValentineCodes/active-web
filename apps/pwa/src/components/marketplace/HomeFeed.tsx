@@ -1,5 +1,7 @@
+'use client';
+
+import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 
 import { HomeFeedRequestPage, HomeFeedRequestPageSkeleton } from '@/components/home/HomeFeedRequestPage';
 import { proximityLabelForRequest } from '@/features/requests/proximity-label';
@@ -14,7 +16,7 @@ type Props = {
 };
 
 export function HomeFeed({ searchQuery }: Props) {
-  const navigate = useNavigate();
+  const router = useRouter();
   const feed = useHomeBrowseFeed(searchQuery, true);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [pageHeight, setPageHeight] = useState(0);
@@ -104,7 +106,7 @@ export function HomeFeed({ searchQuery }: Props) {
           type="button"
           aria-label="Search requests"
           onClick={() =>
-            navigate(searchQuery ? `/search?q=${encodeURIComponent(searchQuery)}` : '/search')
+            router.push(searchQuery ? `/search?q=${encodeURIComponent(searchQuery)}` : '/search')
           }
           className="absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-black/45 active:opacity-90"
         >

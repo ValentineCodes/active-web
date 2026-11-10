@@ -1,3 +1,5 @@
+'use client';
+
 import { keepPreviousData, useInfiniteQuery, useQuery } from '@tanstack/react-query';
 
 import type { Position } from '@/lib/geolocation';

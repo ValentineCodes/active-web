@@ -1,3 +1,5 @@
+'use client';
+
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { resolveBankAccount, resolveErrorCode } from '@/features/profile/bank-accounts-api';

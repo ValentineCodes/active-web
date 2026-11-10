@@ -1,3 +1,5 @@
+'use client';
+
 import { useEffect, useState, type ReactNode } from 'react';
 
 import { SessionContext, type SessionState } from '@/features/auth/session-context';

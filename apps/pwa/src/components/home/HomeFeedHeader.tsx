@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import Link from 'next/link';
 
 import { Avatar } from '@/components/ui/Avatar';
 import { SkeletonBlock } from '@/components/ui/Skeleton';
@@ -42,7 +42,7 @@ export function HomeFeedHeader({
   return (
     <div className="flex flex-row items-center justify-between gap-3 px-5 pb-2 pt-1">
       <div className="flex min-w-0 flex-1 flex-row items-center gap-3">
-        <Link to="/profile" aria-label="Open your profile" className="active:opacity-90">
+        <Link href="/profile" aria-label="Open your profile" className="active:opacity-90">
           <Avatar
             size="md"
             path={avatarPath}
@@ -58,7 +58,7 @@ export function HomeFeedHeader({
 
       {walletAvailable != null && walletCurrency ? (
         <Link
-          to="/wallet"
+          href="/wallet"
           aria-label={`Wallet balance ${formatMoney(walletAvailable, walletCurrency)}`}
           className="shrink-0 text-lg font-bold text-active active:opacity-90"
         >

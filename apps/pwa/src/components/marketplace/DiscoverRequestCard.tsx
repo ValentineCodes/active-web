@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import Link from 'next/link';
 
 import type { PublicRequest } from '@/features/requests/browse-api';
 import { formatMoney, formatProximityHome, formatWhenHome } from '@/lib/format';
@@ -35,7 +35,7 @@ export function DiscoverRequestCard({
 
   return (
     <Link
-      to={href}
+      href={href}
       className="block rounded-2xl border border-hairline bg-elevated p-4 active:opacity-90"
     >
       <div className="flex items-start justify-between gap-3">

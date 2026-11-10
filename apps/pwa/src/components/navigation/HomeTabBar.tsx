@@ -1,4 +1,7 @@
-import { NavLink, useNavigate } from 'react-router-dom';
+'use client';
+
+import Link from 'next/link';
+import { usePathname, useRouter } from 'next/navigation';
 
 import { IonIcon } from '@/components/ui/IonIcon';
 import { ionIcons } from '@/components/ui/ion-icons';
@@ -8,46 +11,42 @@ import { useMyRequests } from '@/features/requests/requester-api';
 import { cn } from '@/lib/cn';
 
 function TabIcon({
-  to,
+  href,
   label,
   icon,
   badge,
   end,
 }: {
-  to: string;
+  href: string;
   label: string;
   icon: string;
   badge?: string | number;
   end?: boolean;
 }) {
+  const pathname = usePathname();
+  const isActive = end ? pathname === href : pathname === href || pathname.startsWith(`${href}/`);
+
   return (
-    <NavLink
-      to={to}
-      end={end}
+    <Link
+      href={href}
       aria-label={label}
-      className={({ isActive }) =>
-        cn(
-          'relative flex min-h-11 flex-1 flex-col items-center justify-center py-1',
-          isActive ? 'text-active' : 'text-subtle',
-        )
-      }
-    >
-      {({ isActive }) => (
-        <>
-          <IonIcon icon={icon} size={24} color={isActive ? '#1FA35A' : '#8A948C'} />
-          {badge != null && badge !== 0 && badge !== '' ? (
-            <span className="absolute right-[calc(50%-18px)] top-0 min-w-4 rounded-full bg-danger px-1 text-center text-[10px] font-bold text-white">
-              {String(badge)}
-            </span>
-          ) : null}
-        </>
+      className={cn(
+        'relative flex min-h-11 flex-1 flex-col items-center justify-center py-1',
+        isActive ? 'text-active' : 'text-subtle',
       )}
-    </NavLink>
+    >
+      <IonIcon icon={icon} size={24} color={isActive ? '#1FA35A' : '#8A948C'} />
+      {badge != null && badge !== 0 && badge !== '' ? (
+        <span className="absolute right-[calc(50%-18px)] top-0 min-w-4 rounded-full bg-danger px-1 text-center text-[10px] font-bold text-white">
+          {String(badge)}
+        </span>
+      ) : null}
+    </Link>
   );
 }
 
 export function HomeTabBar() {
-  const navigate = useNavigate();
+  const router = useRouter();
   const unread = useNotificationUnreadCount();
   const { data: requests } = useMyRequests();
   useConversationInboxUnreadCount();
@@ -67,9 +66,9 @@ export function HomeTabBar() {
       aria-label="Main"
     >
       <div className="flex flex-row items-center">
-        <TabIcon to="/home" end label="Home" icon={ionIcons['home-outline']} />
+        <TabIcon href="/home" end label="Home" icon={ionIcons['home-outline']} />
         <TabIcon
-          to="/activity"
+          href="/activity"
           label="Activity"
           icon={ionIcons['list-outline']}
           badge={waitingResponses > 0 ? waitingResponses : undefined}
@@ -78,14 +77,14 @@ export function HomeTabBar() {
           <button
             type="button"
             aria-label="Create request"
-            onClick={() => navigate('/request/new')}
+            onClick={() => router.push('/request/new')}
             className="shadow-raised flex h-11 w-11 items-center justify-center rounded-xl bg-active active:opacity-90"
           >
             <IonIcon icon={ionIcons.add} size={28} color="#111812" />
           </button>
         </div>
         <TabIcon
-          to="/notifications"
+          href="/notifications"
           label="Notifications"
           icon={ionIcons['notifications-outline']}
           badge={unread.data && unread.data > 0 ? unread.data : undefined}

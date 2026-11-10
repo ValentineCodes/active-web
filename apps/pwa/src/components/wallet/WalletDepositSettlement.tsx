@@ -1,5 +1,8 @@
+'use client';
+
+import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 
 import { Button } from '@/components/ui/Button';
@@ -24,9 +27,9 @@ import { koboToMajor } from '@/features/wallet/kobo';
 type Phase = 'processing' | 'success' | 'failed' | 'still_processing';
 
 export function WalletDepositSettlement() {
-  const navigate = useNavigate();
+  const router = useRouter();
   const queryClient = useQueryClient();
-  const [search] = useSearchParams();
+  const search = useSearchParams();
   const referenceFromRoute =
     search.get('reference') ?? search.get('trxref') ?? readPendingDepositReference();
   const returnTo =
@@ -43,9 +46,9 @@ export function WalletDepositSettlement() {
 
   useEffect(() => {
     if (!settlementReference && phase === 'failed') {
-      navigate('/wallet/add', { replace: true });
+      router.replace('/wallet/add');
     }
-  }, [navigate, phase, settlementReference]);
+  }, [router, phase, settlementReference]);
 
   const applySettlementResult = useCallback(
     async (result: Awaited<ReturnType<typeof waitForWalletDepositSettlement>>) => {
@@ -144,7 +147,7 @@ export function WalletDepositSettlement() {
 
   const leave = () => {
     clearWalletDepositNavigationState();
-    navigate(returnTo ?? '/wallet', { replace: true });
+    router.replace(returnTo ?? '/wallet');
   };
 
   if (phase === 'processing') {
@@ -192,7 +195,7 @@ export function WalletDepositSettlement() {
       </div>
       <Button label={returnTo ? 'Continue' : 'Back to wallet'} onClick={leave} />
       {returnTo ? (
-        <Link to="/wallet" className="text-center text-sm font-semibold text-brand">
+        <Link href="/wallet" className="text-center text-sm font-semibold text-brand">
           View wallet
         </Link>
       ) : null}

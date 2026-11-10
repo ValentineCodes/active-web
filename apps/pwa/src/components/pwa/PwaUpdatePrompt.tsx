@@ -1,24 +1,64 @@
-import { useRegisterSW } from 'virtual:pwa-register/react';
+'use client';
+
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { Button } from '@/components/ui/Button';
 
 const UPDATE_CHECK_MS = 60 * 60 * 1000;
 
 export function PwaUpdatePrompt() {
-  const {
-    needRefresh: [needRefresh, setNeedRefresh],
-    updateServiceWorker,
-  } = useRegisterSW({
-    onRegistered(registration) {
-      if (!registration) return;
-      window.setInterval(() => {
+  const [needRefresh, setNeedRefresh] = useState(false);
+  const waitingWorker = useRef<ServiceWorker | null>(null);
+
+  const activateUpdate = useCallback(() => {
+    const worker = waitingWorker.current;
+    if (!worker) return;
+    worker.postMessage({ type: 'SKIP_WAITING' });
+  }, []);
+
+  useEffect(() => {
+    if (!('serviceWorker' in navigator)) return;
+
+    let disposed = false;
+    let intervalId: number | undefined;
+
+    const onControllerChange = () => {
+      window.location.reload();
+    };
+
+    const trackWaiting = (registration: ServiceWorkerRegistration) => {
+      if (registration.waiting) {
+        waitingWorker.current = registration.waiting;
+        setNeedRefresh(true);
+      }
+      registration.addEventListener('updatefound', () => {
+        const installing = registration.installing;
+        if (!installing) return;
+        installing.addEventListener('statechange', () => {
+          if (installing.state === 'installed' && navigator.serviceWorker.controller) {
+            waitingWorker.current = registration.waiting;
+            setNeedRefresh(true);
+          }
+        });
+      });
+    };
+
+    void navigator.serviceWorker.ready.then((registration) => {
+      if (disposed) return;
+      trackWaiting(registration);
+      intervalId = window.setInterval(() => {
         void registration.update();
       }, UPDATE_CHECK_MS);
-    },
-    onRegisterError(error) {
-      console.error('Service worker registration failed', error);
-    },
-  });
+    });
+
+    navigator.serviceWorker.addEventListener('controllerchange', onControllerChange);
+
+    return () => {
+      disposed = true;
+      if (intervalId !== undefined) window.clearInterval(intervalId);
+      navigator.serviceWorker.removeEventListener('controllerchange', onControllerChange);
+    };
+  }, []);
 
   if (!needRefresh) return null;
 
@@ -38,7 +78,7 @@ export function PwaUpdatePrompt() {
         <Button
           label="Reload now"
           onClick={() => {
-            void updateServiceWorker(true);
+            activateUpdate();
           }}
         />
         <Button

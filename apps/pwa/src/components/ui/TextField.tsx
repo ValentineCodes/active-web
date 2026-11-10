@@ -1,13 +1,39 @@
+'use client';
+
 import { useState, type InputHTMLAttributes, type TextareaHTMLAttributes } from 'react';
 
 import { cn } from '@/lib/cn';
-
 type BaseProps = {
   label: string;
   hint?: string;
   error?: string | null;
   counterMax?: number;
 };
+
+function FieldMeta({
+  error,
+  hint,
+  counterMax,
+  length,
+}: {
+  error?: string | null;
+  hint?: string;
+  counterMax?: number;
+  length: number;
+}) {
+  return (
+    <div className="flex flex-row justify-between gap-4">
+      <p className={cn('flex-1 text-sm', error ? 'text-danger' : 'text-muted')} role={error ? 'alert' : undefined}>
+        {error ?? hint ?? ''}
+      </p>
+      {counterMax != null ? (
+        <p className="text-sm text-muted">
+          {length} / {counterMax}
+        </p>
+      ) : null}
+    </div>
+  );
+}
 
 export function TextField({
   label,
@@ -23,10 +49,12 @@ export function TextField({
   const length = typeof inputProps.value === 'string' ? inputProps.value.length : 0;
 
   return (
-    <label className="flex flex-col gap-2">
-      <span className="text-sm font-semibold text-ink">{label}</span>
+    <div className="flex flex-col gap-2">
+      <label className="text-sm font-semibold text-ink">{label}</label>
       <input
         {...inputProps}
+        aria-label={label}
+        placeholder={inputProps.placeholder}
         onFocus={(event) => {
           setFocused(true);
           onFocus?.(event);
@@ -36,7 +64,7 @@ export function TextField({
           onBlur?.(event);
         }}
         className={cn(
-          'rounded-2xl border-2 px-4 py-4 text-base text-ink outline-none',
+          'rounded-2xl border-2 px-4 py-4 text-base text-ink outline-none placeholder:text-subtle',
           error
             ? 'border-danger bg-danger-soft'
             : focused
@@ -45,14 +73,8 @@ export function TextField({
           className,
         )}
       />
-      {hint ? <span className="text-sm text-muted">{hint}</span> : null}
-      {error ? <span className="text-sm text-danger">{error}</span> : null}
-      {counterMax != null ? (
-        <span className="text-xs text-subtle">
-          {length} / {counterMax}
-        </span>
-      ) : null}
-    </label>
+      <FieldMeta error={error} hint={hint} counterMax={counterMax} length={length} />
+    </div>
   );
 }
 
@@ -70,10 +92,11 @@ export function TextAreaField({
   const length = typeof inputProps.value === 'string' ? inputProps.value.length : 0;
 
   return (
-    <label className="flex flex-col gap-2">
-      <span className="text-sm font-semibold text-ink">{label}</span>
+    <div className="flex flex-col gap-2">
+      <label className="text-sm font-semibold text-ink">{label}</label>
       <textarea
         {...inputProps}
+        aria-label={label}
         onFocus={(event) => {
           setFocused(true);
           onFocus?.(event);
@@ -92,13 +115,7 @@ export function TextAreaField({
           className,
         )}
       />
-      {hint ? <span className="text-sm text-muted">{hint}</span> : null}
-      {error ? <span className="text-sm text-danger">{error}</span> : null}
-      {counterMax != null ? (
-        <span className="text-xs text-subtle">
-          {length} / {counterMax}
-        </span>
-      ) : null}
-    </label>
+      <FieldMeta error={error} hint={hint} counterMax={counterMax} length={length} />
+    </div>
   );
 }

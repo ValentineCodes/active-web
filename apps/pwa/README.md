@@ -1,6 +1,6 @@
 # Active PWA (`@active/pwa`)
 
-Mobile-first Progressive Web App for the Active marketplace. It shares the Supabase backend with the native app but is a **separate** Vite + React codebase. It does not import from `apps/mobile`.
+Mobile-first Progressive Web App for the Active marketplace. It shares the Supabase backend with the native app but is a **separate** Next.js + React codebase. It does not import from `apps/mobile`.
 
 ## Prerequisites
 
@@ -18,8 +18,8 @@ cp apps/pwa/.env.example apps/pwa/.env
 
 | Variable | Purpose |
 | --- | --- |
-| `VITE_PUBLIC_SUPABASE_URL` | Supabase API URL |
-| `VITE_PUBLIC_SUPABASE_ANON_KEY` | Anon key (`eyJ…`) — RLS protects all data |
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase API URL (`VITE_PUBLIC_*` and root `EXPO_PUBLIC_*` still work at build via `next.config.ts`) |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Anon key (`eyJ…`) — RLS protects all data |
 
 For local dev you can mirror the Expo app values:
 

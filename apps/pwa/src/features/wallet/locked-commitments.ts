@@ -1,3 +1,5 @@
+'use client';
+
 import { useMemo } from 'react';
 
 import { summarizeRequestFunding } from '@/features/requests/funding';

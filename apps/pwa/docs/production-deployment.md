@@ -22,9 +22,9 @@ Example website snippet (for a later `apps/website` change):
 ## HTTPS and routing
 
 1. TLS certificate on the PWA origin (required for service workers, camera, and installed PWAs).
-2. Upload `apps/pwa/dist/` after `pnpm pwa:build`.
-3. **SPA fallback**: unknown paths must return `index.html` with `200` (not a redirect), except static files under `/assets/`, `/icons/`, `sw.js`, `workbox-*.js`, `manifest.webmanifest`.
-4. **Do not** cache `index.html` aggressively at the CDN without a purge strategy — stale HTML delays new bundle loads. Prefer long cache on hashed `/assets/*` only.
+2. Deploy after `pnpm pwa:build` (`.next/` for Node hosting, or export to your platform’s Next adapter).
+3. Run the app with `pnpm pwa:start` (or platform equivalent). App Router serves each URL; you do not need a SPA `index.html` fallback.
+4. **Do not** cache authenticated HTML aggressively at the CDN. Prefer long cache on hashed `/_next/static/*` only.
 
 ### Illustrative rollback
 
@@ -37,14 +37,14 @@ Example website snippet (for a later `apps/website` change):
 
 Set in CI before `pnpm pwa:build`:
 
-- `VITE_PUBLIC_SUPABASE_URL`
-- `VITE_PUBLIC_SUPABASE_ANON_KEY` (anon JWT only)
+- `NEXT_PUBLIC_SUPABASE_URL` (or legacy `VITE_PUBLIC_*` — see `next.config.ts`)
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY` (anon JWT only)
 
 Never embed service-role keys, Paystack secret keys, or VAPID private keys in the browser bundle.
 
 ## Web app manifest (generated at build)
 
-Built by `vite-plugin-pwa` from `vite.config.ts`:
+Built by Next.js `app/manifest.ts` and Serwist service worker:
 
 | Field | Value |
 | --- | --- |
@@ -65,7 +65,7 @@ Icons are PNG assets in `public/icons/`, generated from the same 1024×1024 bran
 
 | Topic | Behavior |
 | --- | --- |
-| Registration | `PwaUpdatePrompt` via `virtual:pwa-register/react`, `registerType: 'prompt'` |
+| Registration | Serwist `public/sw.js` + `PwaUpdatePrompt` (prompt before `skipWaiting`) |
 | Precache | Build output: JS, CSS, HTML shell, favicon, icons, fonts (if emitted) |
 | Updates | Hourly `registration.update()`; user must tap **Reload now** to activate (`skipWaiting: false`) |
 | Supabase | `NetworkOnly` for `*.supabase.co` |

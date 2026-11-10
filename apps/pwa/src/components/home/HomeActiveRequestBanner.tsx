@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import Link from 'next/link';
 
 import { IonIcon } from '@/components/ui/IonIcon';
 import { ionIcons } from '@/components/ui/ion-icons';
@@ -6,7 +6,7 @@ import { ionIcons } from '@/components/ui/ion-icons';
 export function HomeActiveRequestBanner({ title, to }: { title: string; to: string }) {
   return (
     <Link
-      to={to}
+      href={to}
       aria-label={`Active now: ${title}`}
       className="shadow-raised mx-5 flex flex-row items-center gap-2.5 rounded-2xl bg-active px-4 py-3 active:opacity-90"
     >

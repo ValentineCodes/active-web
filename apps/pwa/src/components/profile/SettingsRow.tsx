@@ -1,5 +1,5 @@
+import Link from 'next/link';
 import type { ReactNode } from 'react';
-import { Link } from 'react-router-dom';
 
 import { IonIcon } from '@/components/ui/IonIcon';
 import { ionIcons } from '@/components/ui/ion-icons';
@@ -27,7 +27,7 @@ export function SettingsRow({
 
   if (to) {
     return (
-      <Link to={to} className="block active:opacity-90">
+      <Link href={to} className="block active:opacity-90">
         {inner}
       </Link>
     );

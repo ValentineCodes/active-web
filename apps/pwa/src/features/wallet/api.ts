@@ -1,3 +1,5 @@
+'use client';
+
 import { useInfiniteQuery, useQuery, type QueryClient } from '@tanstack/react-query';
 
 import { useSession } from '@/features/auth/use-session';

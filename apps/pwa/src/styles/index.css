@@ -1,5 +1,5 @@
 @import 'tailwindcss';
-@import './tokens.css';
+@import '../design-system/tokens.css';
 
 @theme {
   --font-sans: 'Poppins', system-ui, -apple-system, sans-serif;
@@ -22,14 +22,50 @@
   --color-warning-soft: rgb(var(--token-warning-soft) / <alpha-value>);
   --color-info: rgb(var(--token-info) / <alpha-value>);
   --color-info-soft: rgb(var(--token-info-soft) / <alpha-value>);
+
+  --color-background: rgb(var(--background) / <alpha-value>);
+  --color-foreground: rgb(var(--foreground) / <alpha-value>);
+  --color-primary: rgb(var(--primary) / <alpha-value>);
+  --color-primary-foreground: rgb(var(--primary-foreground) / <alpha-value>);
+  --color-secondary: rgb(var(--secondary) / <alpha-value>);
+  --color-secondary-foreground: rgb(var(--secondary-foreground) / <alpha-value>);
+  --color-accent: rgb(var(--accent) / <alpha-value>);
+  --color-accent-foreground: rgb(var(--accent-foreground) / <alpha-value>);
+  --color-destructive: rgb(var(--destructive) / <alpha-value>);
+  --color-destructive-foreground: rgb(var(--destructive-foreground) / <alpha-value>);
+  --color-border: rgb(var(--border) / <alpha-value>);
+  --color-input: rgb(var(--input) / <alpha-value>);
+  --color-ring: rgb(var(--ring) / <alpha-value>);
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
 }
 
 @utility shadow-card {
-  box-shadow: 0 6px 16px rgb(17 24 18 / 0.06);
+  box-shadow: 0 var(--shadow-card-y) var(--shadow-card-blur) rgb(var(--shadow-tint) / var(--shadow-card-opacity));
 }
 
 @utility shadow-raised {
-  box-shadow: 0 8px 24px rgb(17 24 18 / 0.1);
+  box-shadow: 0 var(--shadow-raised-y) var(--shadow-raised-blur) rgb(var(--shadow-tint) / var(--shadow-raised-opacity));
+}
+
+@utility overlay-scrim {
+  background-color: rgb(17 24 18 / 0.45);
+}
+
+/* Auth CTAs — mobile light `brandStrong` (#0E4C2A); fixed so system dark mode does not lighten the bar. */
+@utility auth-footer-cta {
+  background-color: #0e4c2a;
+  color: rgb(255 255 255);
+}
+
+@utility auth-footer-cta--disabled {
+  background-color: rgb(var(--token-surface));
+  color: rgb(var(--token-muted));
+}
+
+@utility auth-footer-cta-label {
+  color: inherit;
 }
 
 @layer base {
@@ -43,7 +79,7 @@
     margin: 0;
   }
 
-  #root {
-    @apply min-h-full;
+  * {
+    font-family: var(--font-sans);
   }
 }

@@ -1,0 +1,120 @@
+/**
+ * Native palette channels — light `:root`, dark `.dark` (see `apps/mobile/src/theme/palette.js`).
+ */
+:root {
+  --token-ink: 17 24 18;
+  --token-subtle: 138 148 140;
+  --token-muted: 92 102 94;
+  --token-canvas: 255 255 255;
+  --token-surface: 243 245 242;
+  --token-elevated: 255 255 255;
+  --token-hairline: 230 234 228;
+  --token-brand: 22 106 61;
+  --token-brand-strong: 14 76 42;
+  --token-brand-soft: 231 244 234;
+  --token-active: 31 163 90;
+  --token-active-soft: 232 248 236;
+  --token-on-brand: 255 255 255;
+  --token-danger: 220 38 38;
+  --token-danger-soft: 253 237 236;
+  --token-warning: 180 83 9;
+  --token-warning-soft: 253 243 227;
+  --token-info: 37 99 235;
+  --token-info-soft: 234 241 254;
+  --token-notification-chip-blue-bg: 219 234 254;
+  --token-notification-chip-blue-fg: 37 99 235;
+  --token-notification-chip-purple-bg: 237 233 254;
+  --token-notification-chip-purple-fg: 91 33 182;
+  --token-notification-chip-green-bg: 187 247 208;
+  --token-notification-chip-green-fg: 21 128 61;
+  --token-notification-chip-amber-bg: 254 243 199;
+  --token-notification-chip-amber-fg: 180 83 9;
+  --token-notification-chip-red-bg: 254 226 226;
+  --token-notification-chip-red-fg: 220 38 38;
+  --token-switch-track-on: 31 163 90;
+  --token-switch-track-off: 209 213 219;
+  --token-switch-thumb: 255 255 255;
+  --shadow-tint: 17 24 18;
+  --shadow-card-opacity: 0.06;
+  --shadow-raised-opacity: 0.1;
+  --shadow-card-y: 6px;
+  --shadow-card-blur: 16px;
+  --shadow-raised-y: 8px;
+  --shadow-raised-blur: 24px;
+
+  /* shadcn/ui semantic tokens (Active palette) */
+  --background: var(--token-canvas);
+  --foreground: var(--token-ink);
+  --primary: var(--token-brand);
+  --primary-foreground: var(--token-on-brand);
+  --secondary: var(--token-surface);
+  --secondary-foreground: var(--token-ink);
+  --muted: var(--token-surface);
+  --muted-foreground: var(--token-muted);
+  --accent: var(--token-brand-soft);
+  --accent-foreground: var(--token-ink);
+  --destructive: var(--token-danger);
+  --destructive-foreground: var(--token-on-brand);
+  --border: var(--token-hairline);
+  --input: var(--token-hairline);
+  --ring: var(--token-brand);
+  --radius: 1rem;
+}
+
+.dark {
+  --token-ink: 255 255 255;
+  --token-subtle: 118 118 119;
+  --token-muted: 102 102 102;
+  --token-canvas: 17 17 17;
+  --token-surface: 20 20 20;
+  --token-elevated: 28 28 30;
+  --token-hairline: 51 51 51;
+  --token-brand: 119 219 137;
+  --token-brand-strong: 84 155 97;
+  --token-brand-soft: 37 47 41;
+  --token-active: 119 219 137;
+  --token-active-soft: 37 47 41;
+  --token-on-brand: 17 17 17;
+  --token-danger: 255 69 58;
+  --token-danger-soft: 44 21 20;
+  --token-warning: 245 188 30;
+  --token-warning-soft: 42 36 16;
+  --token-info: 10 132 255;
+  --token-info-soft: 21 36 56;
+  --token-notification-chip-blue-bg: 30 41 59;
+  --token-notification-chip-blue-fg: 96 165 250;
+  --token-notification-chip-purple-bg: 46 16 101;
+  --token-notification-chip-purple-fg: 221 214 254;
+  --token-notification-chip-green-bg: 27 46 30;
+  --token-notification-chip-green-fg: 74 222 128;
+  --token-notification-chip-amber-bg: 66 32 6;
+  --token-notification-chip-amber-fg: 245 188 30;
+  --token-notification-chip-red-bg: 59 18 18;
+  --token-notification-chip-red-fg: 255 69 58;
+  --token-switch-track-on: 74 222 128;
+  --token-switch-track-off: 66 66 66;
+  --token-switch-thumb: 255 255 255;
+  --shadow-tint: 119 219 137;
+  --shadow-card-opacity: 0.03;
+  --shadow-raised-opacity: 0.18;
+  --shadow-card-y: 2px;
+  --shadow-card-blur: 6px;
+  --shadow-raised-y: 4px;
+  --shadow-raised-blur: 12px;
+
+  --background: var(--token-canvas);
+  --foreground: var(--token-ink);
+  --primary: var(--token-brand);
+  --primary-foreground: var(--token-on-brand);
+  --secondary: var(--token-surface);
+  --secondary-foreground: var(--token-ink);
+  --muted: var(--token-surface);
+  --muted-foreground: var(--token-muted);
+  --accent: var(--token-brand-soft);
+  --accent-foreground: var(--token-ink);
+  --destructive: var(--token-danger);
+  --destructive-foreground: var(--token-on-brand);
+  --border: var(--token-hairline);
+  --input: var(--token-hairline);
+  --ring: var(--token-brand);
+}

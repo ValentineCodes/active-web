@@ -1,3 +1,5 @@
+'use client';
+
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { useUserId } from '@/features/auth/use-user-id';

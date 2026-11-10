@@ -1,7 +1,10 @@
+'use client';
+
+import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
 
 import { hasProfilePhotoReady, useMyProfile } from '@/features/profile/api';
+import { requestProfileEditLivePhoto } from '@/features/profile/profile-edit-intent';
 import {
   ChatSendBlockedByProfilePhotoError,
   isChatSendBlockedByProfilePhoto,
@@ -10,7 +13,7 @@ import {
 type PendingChatSend = () => void | Promise<void>;
 
 export function useChatSendGate() {
-  const navigate = useNavigate();
+  const router = useRouter();
   const profile = useMyProfile();
   const photoReady = hasProfilePhotoReady(profile.data);
   const pendingSendRef = useRef<PendingChatSend | null>(null);
@@ -32,12 +35,14 @@ export function useChatSendGate() {
   );
 
   const runCapture = useCallback(() => {
-    navigate('/profile/edit', { state: { openLivePhoto: true } });
-  }, [navigate]);
+    requestProfileEditLivePhoto();
+    router.push('/profile/edit');
+  }, [router]);
 
   const openCameraSettings = useCallback(() => {
-    navigate('/profile/edit', { state: { openLivePhoto: true } });
-  }, [navigate]);
+    requestProfileEditLivePhoto();
+    router.push('/profile/edit');
+  }, [router]);
 
   return {
     profile,

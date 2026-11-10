@@ -1,3 +1,5 @@
+'use client';
+
 import { useQuery } from '@tanstack/react-query';
 
 import { CONVERSATION_MEDIA_BUCKET } from '@/features/requests/conversation-media';

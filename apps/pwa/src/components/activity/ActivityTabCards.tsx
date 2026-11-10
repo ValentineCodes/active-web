@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import Link from 'next/link';
 
 import { Badge } from '@/components/ui/Badge';
 import { cn } from '@/lib/cn';
@@ -20,7 +20,7 @@ export function ActivityMyRequestCard({
 }) {
   return (
     <Link
-      to={to}
+      href={to}
       className={cn(
         'shadow-card flex flex-col gap-4 rounded-2xl border border-hairline bg-elevated p-4 active:opacity-90',
       )}
@@ -52,7 +52,7 @@ export function ActivityMyResponseCard({
 }) {
   return (
     <Link
-      to={to}
+      href={to}
       className={cn(
         'shadow-card flex flex-col gap-2 rounded-2xl border border-hairline bg-elevated p-4 active:opacity-90',
       )}

@@ -1,5 +1,7 @@
+'use client';
+
+import { useRouter } from 'next/navigation';
 import type { ReactNode } from 'react';
-import { useNavigate } from 'react-router-dom';
 
 import { Header } from '@/components/ui/Header';
 import { Screen } from '@/components/ui/Screen';
@@ -25,8 +27,8 @@ export function FlowScreen({
   bodyClassName?: string;
   footer?: ReactNode;
 }) {
-  const navigate = useNavigate();
-  const handleBack = onBack ?? (backTo != null ? () => navigate(backTo) : () => navigate(-1));
+  const router = useRouter();
+  const handleBack = onBack ?? (backTo != null ? () => router.push(backTo) : () => router.back());
 
   return (
     <Screen className={cn('min-h-[100dvh]', className)}>

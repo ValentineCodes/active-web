@@ -1,3 +1,5 @@
+'use client';
+
 import { useQuery } from '@tanstack/react-query';
 
 import { REQUEST_MEDIA_BUCKET } from '@/features/requests/request-media';

@@ -20,6 +20,7 @@ import {
   arrowUpOutline,
   timeOutline,
   informationCircleOutline,
+  sendOutline,
 } from 'ionicons/icons';
 
 /** Maps mobile Ionicons glyph names to ionicons v8 data-URI SVG strings. */
@@ -45,6 +46,7 @@ export const ionIcons = {
   'arrow-up': arrowUpOutline,
   'time-outline': timeOutline,
   'information-circle-outline': informationCircleOutline,
+  send: sendOutline,
 } as const;
 
 export type IonIconName = keyof typeof ionIcons;

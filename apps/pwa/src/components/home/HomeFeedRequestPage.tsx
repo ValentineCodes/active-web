@@ -1,4 +1,6 @@
-import { useNavigate } from 'react-router-dom';
+'use client';
+
+import { useRouter } from 'next/navigation';
 
 import { Avatar } from '@/components/ui/Avatar';
 import { IonIcon } from '@/components/ui/IonIcon';
@@ -38,7 +40,7 @@ export function HomeFeedRequestPage({
   isOwnRequest,
   waiting,
 }: Props) {
-  const navigate = useNavigate();
+  const router = useRouter();
   const attachment = useRequestAttachmentUrl(request.attachment_path);
   const imageUri = attachment.data ?? null;
   const hasAttachmentPath = Boolean(request.attachment_path);
@@ -70,10 +72,10 @@ export function HomeFeedRequestPage({
   const openRequest = () => {
     if (openDisabled) return;
     if (isOwnRequest) {
-      navigate(`/request/${request.request_id}`);
+      router.push(`/request/${request.request_id}`);
       return;
     }
-    navigate(`/respond/${request.request_id}`);
+    router.push(`/respond/${request.request_id}`);
   };
 
   return (
@@ -120,7 +122,7 @@ export function HomeFeedRequestPage({
         <button
           type="button"
           aria-label={`View ${request.requester_display_name ?? 'requester'} profile`}
-          onClick={() => navigate(`/profile`)}
+          onClick={() => router.push(`/profile`)}
           className="absolute left-0 right-16 top-0 z-[2] flex flex-row items-center gap-2.5 p-4 text-left active:opacity-90"
         >
           <Avatar size="sm" path={request.requester_avatar_path} name={request.requester_display_name} />

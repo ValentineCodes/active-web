@@ -1,10 +1,13 @@
-import { Navigate, Outlet, useLocation } from 'react-router-dom';
+'use client';
+
+import { useRouter } from 'next/navigation';
+import { useEffect, type ReactNode } from 'react';
+import { useQuery } from '@tanstack/react-query';
 
 import { resolveAuthRouteState } from '@/features/auth/auth-state';
 import { useSession } from '@/features/auth/use-session';
 import { profileQueryOptions } from '@/features/profile/api';
 import { LoadingScreen } from '@/components/LoadingScreen';
-import { useQuery } from '@tanstack/react-query';
 
 function useAuthRouteState() {
   const { session, isAuthHydrated } = useSession();
@@ -25,45 +28,67 @@ function useAuthRouteState() {
   return { loading, state, profile };
 }
 
-export function GuestOnlyRoute() {
+export function GuestOnlyLayout({ children }: { children: ReactNode }) {
   const { loading, state } = useAuthRouteState();
-  const location = useLocation();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (loading) return;
+    if (state === 'needs_onboarding') router.replace('/onboarding');
+    if (state === 'signed_in') router.replace('/home');
+  }, [loading, state, router]);
 
   if (loading) return <LoadingScreen label="Loading…" />;
-  if (state === 'needs_onboarding') return <Navigate to="/onboarding" replace />;
-  if (state === 'signed_in') return <Navigate to="/home" replace state={{ from: location }} />;
+  if (state === 'needs_onboarding' || state === 'signed_in') return <LoadingScreen label="Loading…" />;
 
-  return <Outlet />;
+  return children;
 }
 
-export function RequireAuthRoute() {
+export function RequireAuthLayout({ children }: { children: ReactNode }) {
   const { loading, state } = useAuthRouteState();
-  const location = useLocation();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (loading) return;
+    if (state === 'guest') router.replace('/welcome');
+  }, [loading, state, router]);
 
   if (loading) return <LoadingScreen label="Loading…" />;
-  if (state === 'guest') {
-    return <Navigate to="/welcome" replace state={{ from: location }} />;
+  if (state === 'guest') return <LoadingScreen label="Loading…" />;
+
+  return children;
+}
+
+export function RequireOnboardingLayout({ children }: { children: ReactNode }) {
+  const { loading, state } = useAuthRouteState();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (loading) return;
+    if (state === 'guest') router.replace('/welcome');
+    if (state === 'signed_in') router.replace('/home');
+  }, [loading, state, router]);
+
+  if (loading) return <LoadingScreen label="Loading…" />;
+  if (state === 'guest' || state === 'signed_in') return <LoadingScreen label="Loading…" />;
+
+  return children;
+}
+
+export function RequireSignedInLayout({ children }: { children: ReactNode }) {
+  const { loading, state } = useAuthRouteState();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (loading) return;
+    if (state === 'guest') router.replace('/welcome');
+    if (state === 'needs_onboarding') router.replace('/onboarding');
+  }, [loading, state, router]);
+
+  if (loading) return <LoadingScreen label="Loading…" />;
+  if (state === 'guest' || state === 'needs_onboarding') {
+    return <LoadingScreen label="Loading…" />;
   }
-  return <Outlet />;
-}
 
-export function RequireOnboardingRoute() {
-  const { loading, state } = useAuthRouteState();
-
-  if (loading) return <LoadingScreen label="Loading…" />;
-  if (state === 'guest') return <Navigate to="/welcome" replace />;
-  if (state === 'signed_in') return <Navigate to="/home" replace />;
-
-  return <Outlet />;
-}
-
-export function RequireSignedInRoute() {
-  const { loading, state } = useAuthRouteState();
-  const location = useLocation();
-
-  if (loading) return <LoadingScreen label="Loading…" />;
-  if (state === 'guest') return <Navigate to="/welcome" replace state={{ from: location }} />;
-  if (state === 'needs_onboarding') return <Navigate to="/onboarding" replace />;
-
-  return <Outlet />;
+  return children;
 }

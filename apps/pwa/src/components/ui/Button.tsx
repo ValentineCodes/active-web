@@ -1,20 +1,24 @@
-import { cn } from '@/lib/cn';
+'use client';
+
+import { ShadcnButton, buttonVariants } from '@/components/ui/primitives/button';
 import { IonIcon } from '@/components/ui/IonIcon';
 import { ionIcons, type IonIconName } from '@/components/ui/ion-icons';
+import { useColors } from '@/theme/ThemeProvider';
+import { cn } from '@/lib/cn';
 
 type Variant = 'primary' | 'active' | 'secondary' | 'ghost' | 'danger';
 
-const containers: Record<Variant, string> = {
-  primary: 'bg-brand text-on-brand',
-  active: 'bg-active text-on-brand',
-  secondary: 'bg-surface text-ink',
-  ghost: 'bg-transparent text-brand',
-  danger: 'bg-danger-soft text-danger',
+const variantMap: Record<Variant, NonNullable<Parameters<typeof buttonVariants>[0]>['variant']> = {
+  primary: 'default',
+  active: 'active',
+  secondary: 'secondary',
+  ghost: 'ghost',
+  danger: 'destructive',
 };
 
 const cornerClasses = {
   full: 'rounded-full',
-  '2xl': 'rounded-2xl',
+  '2xl': '!rounded-2xl',
 } as const;
 
 type Props = {
@@ -42,31 +46,40 @@ export function Button({
   disabled = false,
   className,
 }: Props) {
+  const colors = useColors();
   const inert = disabled || loading;
-  const fg = variant === 'primary' || variant === 'active' ? '#ffffff' : variant === 'danger' ? '#DC2626' : '#166A3D';
+  const shadcnVariant = variantMap[variant];
+
+  const foregrounds: Record<Variant, string> = {
+    primary: colors.onBrand,
+    active: colors.onBrand,
+    secondary: colors.ink,
+    ghost: colors.brand,
+    danger: colors.danger,
+  };
 
   return (
-    <button
+    <ShadcnButton
       type={type}
       disabled={inert}
+      aria-busy={loading}
+      variant={shadcnVariant}
+      size={size === 'lg' ? 'lg' : 'default'}
       onClick={onClick}
-      className={cn(
-        'flex w-full items-center justify-center active:opacity-80 disabled:opacity-40',
-        cornerClasses[corner],
-        size === 'lg' ? 'px-6 py-4 text-lg' : 'px-5 py-3.5 text-base',
-        'font-semibold',
-        containers[variant],
-        className,
-      )}
+      className={cn('w-full', cornerClasses[corner], className)}
     >
       {loading ? (
-        <span className="opacity-80">Please wait…</span>
-      ) : (
-        <span className="inline-flex items-center gap-2">
-          {icon ? <IonIcon icon={ionIcons[icon]} size={size === 'lg' ? 20 : 18} color={fg} /> : null}
-          {label}
+        <span className="opacity-80" aria-hidden>
+          …
         </span>
+      ) : (
+        <>
+          {icon ? (
+            <IonIcon icon={ionIcons[icon]} size={size === 'lg' ? 20 : 18} color={foregrounds[variant]} />
+          ) : null}
+          {label}
+        </>
       )}
-    </button>
+    </ShadcnButton>
   );
 }
