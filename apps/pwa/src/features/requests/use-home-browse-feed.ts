@@ -131,12 +131,6 @@ export function useHomeBrowseFeed(searchQuery: string, screenFocused = true) {
         ? showQuerySkeleton(nearby)
         : openBrowseEnabled && showQuerySkeleton(open));
 
-  const showSortNearest =
-    position === null &&
-    activeSearch.length === 0 &&
-    foregroundPermission === 'undetermined' &&
-    !loading;
-
   const refetch = useCallback(async () => {
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: queryKeys.browseNearbyAll }),
@@ -163,7 +157,6 @@ export function useHomeBrowseFeed(searchQuery: string, screenFocused = true) {
     hasNextPage: activeQuery?.hasNextPage ?? false,
     isFetchingNextPage: activeQuery?.isFetchingNextPage ?? false,
     searchNeedsLocation,
-    showSortNearest,
     sortByNearest,
     ownOpenRequestIds,
     myResponses: myResponses.data,

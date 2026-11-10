@@ -10,6 +10,7 @@ import { TAB_BAR_HEIGHT } from '@/components/ui/tab-bar-insets';
 import { EmptyState, InlineError } from '@/components/ui/StateView';
 import { ionIcons } from '@/components/ui/ion-icons';
 import { useHomeBrowseFeed } from '@/features/requests/use-home-browse-feed';
+import { useColors } from '@/theme/ThemeProvider';
 
 type Props = {
   searchQuery: string;
@@ -45,10 +46,11 @@ export function HomeFeed({ searchQuery }: Props) {
   );
 
   const listReady = pageHeight > 0;
-  const showFeedSearch = !feed.searchNeedsLocation;
+  const hasPosts = feed.rows.length > 0;
+  const showFeedSearch = !feed.searchNeedsLocation && !feed.loading && hasPosts;
 
   return (
-    <div ref={containerRef} className="relative min-h-0 flex-1 bg-canvas">
+    <div ref={containerRef} className="relative flex min-h-0 flex-1 flex-col bg-canvas">
       {feed.isError ? (
         <div className="px-5 pt-4">
           <InlineError error={feed.error} onRetry={() => void feed.refetch()} />
@@ -70,7 +72,7 @@ export function HomeFeed({ searchQuery }: Props) {
           <HomeFeedRequestPageSkeleton pageHeight={pageHeight} />
         ) : null
       ) : !feed.loading && feed.rows.length === 0 ? (
-        <FeedEmptyList feed={feed} />
+        <FeedEmptyBody className="min-h-0 flex-1" />
       ) : listReady ? (
         <div
           className="h-full snap-y snap-mandatory overflow-y-auto bg-canvas"
@@ -117,36 +119,21 @@ export function HomeFeed({ searchQuery }: Props) {
   );
 }
 
-function FeedEmptyList({ feed }: { feed: ReturnType<typeof useHomeBrowseFeed> }) {
+function FeedEmptyBody({ className }: { className?: string }) {
+  const colors = useColors();
   return (
-    <FeedEmptyBody showSortNearest={feed.showSortNearest} onSortNearest={() => void feed.sortByNearest()} />
-  );
-}
-
-function FeedEmptyBody({
-  showSortNearest,
-  onSortNearest,
-}: {
-  showSortNearest: boolean;
-  onSortNearest: () => void;
-}) {
-  return (
-    <div className="flex flex-1 flex-col justify-center px-5 pb-8">
-      {showSortNearest ? (
-        <button
-          type="button"
-          onClick={onSortNearest}
-          className="mb-4 self-start py-1 text-sm font-semibold text-brand"
-        >
-          Sort by nearest
-        </button>
-      ) : null}
-      <EmptyState
-        layout="list"
-        icon="compass-outline"
-        title="Nothing open right now"
-        message="New requests show up here when people need help. Check back soon."
-      />
+    <div
+      className={`flex flex-col items-center justify-center px-5 pb-8 text-center ${className ?? ''}`}
+    >
+      <div className="flex w-full max-w-xs flex-col items-center gap-2">
+        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-brand-soft">
+          <IonIcon icon={ionIcons['compass-outline']} size={24} color={colors.brand} />
+        </div>
+        <p className="text-base font-semibold text-ink">Nothing open right now</p>
+        <p className="text-sm leading-5 text-muted">
+          New requests show up here when people need help. Check back soon.
+        </p>
+      </div>
     </div>
   );
 }

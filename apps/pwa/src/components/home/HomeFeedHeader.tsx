@@ -44,15 +44,15 @@ export function HomeFeedHeader({
       <div className="flex min-w-0 flex-1 flex-row items-center gap-3">
         <Link href="/profile" aria-label="Open your profile" className="active:opacity-90">
           <Avatar
-            size="md"
+            size="m"
             path={avatarPath}
             name={displayName}
             showActiveDot={hasProviderCommitments(attendance)}
           />
         </Link>
         <div className="min-w-0 flex-1">
-          <p className="text-sm leading-5 text-muted">{formatGreetingPeriod()}</p>
-          <p className="truncate text-2xl font-bold leading-8 text-ink">{firstName ?? 'Welcome'}</p>
+          <p className="text-xs leading-4 text-muted">{formatGreetingPeriod()}</p>
+          <p className="truncate text-xl font-bold leading-7 text-ink">{firstName ?? 'Welcome'}</p>
         </div>
       </div>
 
@@ -60,7 +60,7 @@ export function HomeFeedHeader({
         <Link
           href="/wallet"
           aria-label={`Wallet balance ${formatMoney(walletAvailable, walletCurrency)}`}
-          className="shrink-0 text-lg font-bold text-active active:opacity-90"
+          className="shrink-0 text-base font-bold text-active active:opacity-90"
         >
           {formatMoney(walletAvailable, walletCurrency)}
         </Link>

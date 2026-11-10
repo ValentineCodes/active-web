@@ -54,17 +54,17 @@ export function HomeFeedRequestPage({
 
   const lightCopy = hasPhoto;
 
-  const titleClass = lightCopy ? 'text-3xl font-bold leading-9 text-white' : 'text-3xl font-bold leading-9 text-ink';
-  const bodyClass = lightCopy ? 'text-base leading-6 text-white/90' : 'text-base leading-6 text-muted';
+  const titleClass = lightCopy ? 'text-2xl font-bold leading-8 text-white' : 'text-2xl font-bold leading-8 text-ink';
+  const bodyClass = lightCopy ? 'text-sm leading-5 text-white/90' : 'text-sm leading-5 text-muted';
   const requesterNameClass = lightCopy
-    ? 'text-lg font-semibold leading-6 text-white'
-    : 'text-lg font-semibold leading-6 text-ink';
+    ? 'text-base font-semibold leading-5 text-white'
+    : 'text-base font-semibold leading-5 text-ink';
   const metaSubClass = lightCopy ? 'text-xs text-white/80' : 'text-xs text-muted';
   const whenChipClass = lightCopy ? 'rounded-full bg-white/15 px-3 py-1' : 'rounded-full bg-surface px-3 py-1';
-  const whenTextClass = lightCopy ? 'text-sm font-semibold text-white' : 'text-sm font-semibold text-ink';
+  const whenTextClass = lightCopy ? 'text-xs font-semibold text-white' : 'text-xs font-semibold text-ink';
   const footerBorderClass = lightCopy ? 'border-t border-white/15' : 'border-t border-hairline';
   const locationIconColor = lightCopy ? '#ffffff' : '#111812';
-  const locationTextClass = lightCopy ? 'text-sm font-medium text-white' : 'text-sm font-medium text-ink';
+  const locationTextClass = lightCopy ? 'text-xs font-medium text-white' : 'text-xs font-medium text-ink';
 
   const openDisabled = !isOwnRequest && waiting;
   const tabBarInset = TAB_BAR_HEIGHT + 8;
@@ -139,7 +139,7 @@ export function HomeFeedRequestPage({
           style={{ bottom: tabBarInset }}
         >
           <div className="flex flex-row flex-wrap items-center gap-2">
-            <span className="rounded-full bg-active px-3 py-1 text-sm font-bold text-on-brand">
+            <span className="rounded-full bg-active px-3 py-1 text-xs font-bold text-on-brand">
               {formatMoney(request.offered_amount!, request.currency!)}
             </span>
             <span className={whenChipClass}>
@@ -157,10 +157,10 @@ export function HomeFeedRequestPage({
             </span>
             <span className="inline-flex items-center gap-0.5">
               {waiting && !isOwnRequest ? (
-                <span className="text-sm font-semibold text-active">Pending</span>
+                <span className="text-xs font-semibold text-active">Pending</span>
               ) : (
                 <>
-                  <span className="text-sm font-semibold text-active">View request</span>
+                  <span className="text-xs font-semibold text-active">View request</span>
                   <IonIcon icon={ionIcons['chevron-forward']} size={16} color="#1FA35A" />
                 </>
               )}
