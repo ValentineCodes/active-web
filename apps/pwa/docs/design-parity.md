@@ -27,7 +27,7 @@ pnpm pwa:typecheck && pnpm pwa:lint && pnpm pwa:test && pnpm pwa:build
 | `/notifications` | `NotificationsPage` | notifications | Aligned | Filter chips, rows, skeletons |
 | `/request/new` | `RequestNewPage` | create/edit request | **Updated** | `FlowScreen`, `MoneyAmountInput`, active tag chips |
 | `/request/[id]` | `RequestDetailPage` | request detail | Aligned | `RequestFlowHeader`, `ResponseCard` |
-| `/respond/[id]` | `RespondPage` | respond | Aligned | Flow header, money input |
+| `/request/[id]` (respond) | `RespondPage` | `app/respond/[id]` | Aligned | Browse preview without blocking on location; `RequestLocationModal` on Respond (saved places + share), wizard, header menu, `?start=1` |
 | `/engagement/[id]` | `EngagementPage` | engagement | Aligned | `RequestFlowHeader`, `Card`, report sheet |
 | `/rate/[id]` | `RatePage` | rate | Aligned | Star pills `bg-active` |
 | `/conversation/[id]` | `ConversationPage` | chat | Mostly | Bubbles, header, attach `BottomSheet`; composer simpler than native |

@@ -29,6 +29,7 @@ export function RequestLocationModal({
   body = 'Pick a saved place or share your current location. Others only see a rough area until you choose someone.',
   onSelectSavedPlace,
   onShareLocation,
+  nested = true,
 }: {
   open: boolean;
   onClose: () => void;
@@ -44,6 +45,7 @@ export function RequestLocationModal({
   body?: string;
   onSelectSavedPlace: (place: SavedLocation) => void;
   onShareLocation: () => void;
+  nested?: boolean;
 }) {
   const colors = useColors();
   const hasSavedPlaces = savedPlaces.length > 0;
@@ -53,7 +55,7 @@ export function RequestLocationModal({
     <VaulSheet
       open={open}
       onClose={onClose}
-      nested
+      nested={nested}
       dismissible={!loading}
       contentClassName="pb-[max(0.5rem,env(safe-area-inset-bottom))]"
     >

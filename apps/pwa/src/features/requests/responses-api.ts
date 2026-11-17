@@ -341,7 +341,15 @@ export function useRespondToRequest() {
       quotedAmount: number | null;
       position: Position | null;
     }) => {
-      if (!input.position) throw new Error('Location is required to respond.');
+      if (!input.position) {
+        const { error } = await supabase.rpc('respond_to_request', {
+          p_request_id: input.requestId,
+          p_message: input.message ?? undefined,
+          p_quoted_amount: input.quotedAmount ?? undefined,
+        });
+        if (error) throw error;
+        return;
+      }
 
       const { error } = await supabase.rpc('respond_to_request', {
         p_request_id: input.requestId,

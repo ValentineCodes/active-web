@@ -1,276 +1,455 @@
 'use client';
 
-import { useRouter } from '@/lib/navigation';
-import { useSearchParams } from '@/lib/navigation';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Navigate } from 'react-router-dom';
 
 import { RequestHelpSummary } from '@/components/RequestHelpSummary';
 import {
   PersonProfileSheet,
   personProfileFromRespondableRequest,
 } from '@/components/profile/PersonProfileSheet';
-import { FlowScreen } from '@/components/layout/FlowScreen';
 import { RequestCallout } from '@/components/request-flow/RequestCallout';
 import { RequestFlowHeader } from '@/components/request-flow/RequestFlowHeader';
+import { ResponseCreationFlow } from '@/components/request-flow/ResponseCreationFlow';
+import { RequestLocationModal } from '@/components/RequestLocationModal';
 import { Button } from '@/components/ui/Button';
 import { IonIcon } from '@/components/ui/IonIcon';
-import { MoneyAmountInput } from '@/components/ui/MoneyAmountInput';
-import { TextAreaField } from '@/components/ui/TextField';
 import { EmptyState, InlineError, LoadingState } from '@/components/ui/StateView';
 import { ionIcons } from '@/components/ui/ion-icons';
-import { MARKET } from '@/config/index';
 import { hasProfilePhotoReady, useMyProfile } from '@/features/profile/api';
 import {
+  savedLocationPosition,
+  useMySavedLocations,
+  type SavedLocation,
+} from '@/features/profile/saved-locations-api';
+import {
   canRespondToRequest,
+  responseWizardInitialOffer,
+  useMyResponses,
   useRequestForResponse,
   useResponderPreHandshakeConversation,
   useRespondToRequest,
   useWithdrawResponse,
 } from '@/features/requests/responses-api';
-import { parsePositionParam, readPositionIfPermitted, requestPosition } from '@/lib/geolocation';
+import {
+  parsePositionParam,
+  positionErrorMessage,
+  readForegroundPermission,
+  readPositionIfPermitted,
+  requestPosition,
+  type ForegroundPermission,
+  type Position,
+} from '@/lib/geolocation';
+import { useRouter, useSearchParams } from '@/lib/navigation';
 import { useRouteParam } from '@/lib/route-param';
-import { useColors } from '@/theme/ThemeProvider';
 import { showAppToast } from '@/lib/toast';
+import { useColors } from '@/theme/ThemeProvider';
+
+type PendingSubmit = {
+  message: string | null;
+  quotedAmount: number | null;
+};
+
+type PendingLocationAction =
+  | { type: 'begin-flow' }
+  | { type: 'submit'; payload: PendingSubmit };
 
 export function RespondPage() {
   const router = useRouter();
   const colors = useColors();
   const id = useRouteParam('id');
   const search = useSearchParams();
-  const seed = useMemo(
+  const start = search.get('start');
+  const seedPosition = useMemo(
     () => parsePositionParam(search.get('lat') ?? undefined, search.get('lng') ?? undefined),
     [search],
   );
-  const [position, setPosition] = useState(seed);
-  const [inFlow, setInFlow] = useState(false);
-  const [message, setMessage] = useState('');
-  const [quote, setQuote] = useState('');
-  const [requesterProfileOpen, setRequesterProfileOpen] = useState(false);
+
+  const myResponses = useMyResponses();
   const profile = useMyProfile();
   const respond = useRespondToRequest();
-  const withdraw = useWithdrawResponse();
+  const withdrawResponse = useWithdrawResponse();
   const preHandshakeConversation = useResponderPreHandshakeConversation(id);
+  const savedLocations = useMySavedLocations();
 
-  useEffect(() => {
-    if (seed) setPosition(seed);
-  }, [seed]);
+  const [position, setPosition] = useState<Position | null>(() => seedPosition);
+  const [locationChecked, setLocationChecked] = useState(() => seedPosition !== null);
+  const [inFlow, setInFlow] = useState(false);
+  const [flowStep, setFlowStep] = useState(0);
+  const [flowKey, setFlowKey] = useState(0);
+  const [needsPhotoStep, setNeedsPhotoStep] = useState(false);
+  const [locationModalOpen, setLocationModalOpen] = useState(false);
+  const [locationModalLoading, setLocationModalLoading] = useState(false);
+  const [locationModalError, setLocationModalError] = useState<string | null>(null);
+  const [foregroundPermission, setForegroundPermission] = useState<ForegroundPermission | null>(
+    null,
+  );
+  const [requesterProfileOpen, setRequesterProfileOpen] = useState(false);
 
-  useEffect(() => {
-    if (seed) return;
-    let active = true;
-    void (async () => {
-      const existing = await readPositionIfPermitted();
-      if (!active || !existing) return;
-      setPosition(existing);
-    })();
-    return () => {
-      active = false;
-    };
-  }, [seed]);
+  const autoStartPending = useRef(start === '1');
+  const pendingLocationRef = useRef<PendingLocationAction | null>(null);
 
   const {
     request,
     existingResponse,
-    pendingResponseRow,
     declinedParticipation,
     needsLocation,
-    browseConfirmedClosed,
     isPending,
     isError,
     error,
     refetch,
   } = useRequestForResponse(id, position);
 
-  const ensureLocation = async () => {
-    if (position) return position;
-    const granted = await readPositionIfPermitted();
-    if (granted) {
-      setPosition(granted);
-      return granted;
-    }
-    const result = await requestPosition({ fresh: true });
-    if (result.ok) {
-      setPosition(result.position);
-      return result.position;
-    }
-    return null;
-  };
-
-  const beginRespond = async () => {
-    if (!hasProfilePhotoReady(profile.data)) {
-      showAppToast('Take a live profile photo before responding.', 'warning');
+  useEffect(() => {
+    if (seedPosition) {
+      setPosition(seedPosition);
+      setLocationChecked(true);
       return;
     }
-    if (needsLocation) {
-      const pos = await ensureLocation();
-      if (!pos) {
-        showAppToast('Location is required to respond.', 'warning');
-        return;
-      }
-    }
+
+    let active = true;
+    void (async () => {
+      const existing = await readPositionIfPermitted();
+      if (!active) return;
+      setPosition(existing);
+      setLocationChecked(true);
+    })();
+
+    return () => {
+      active = false;
+    };
+  }, [seedPosition]);
+
+  const requesterOffer = request?.offered_amount ?? null;
+  const initialOfferInput = useMemo(
+    () =>
+      requesterOffer !== null
+        ? responseWizardInitialOffer(existingResponse?.quotedAmount, requesterOffer)
+        : '',
+    [existingResponse?.quotedAmount, requesterOffer],
+  );
+  const initialMessage = existingResponse?.message ?? '';
+
+  const beginFlow = useCallback(() => {
+    respond.reset();
+    setNeedsPhotoStep(!hasProfilePhotoReady(profile.data));
+    setFlowStep(0);
+    setFlowKey((current) => current + 1);
     setInFlow(true);
-  };
+  }, [profile.data, respond]);
 
-  const submit = async () => {
-    if (!request) return;
-    const pos = await ensureLocation();
-    if (!pos) {
-      showAppToast('Location is required to respond.', 'warning');
+  const openLocationSheet = useCallback((pending: PendingLocationAction) => {
+    void (async () => {
+      const permission = await readForegroundPermission();
+      setForegroundPermission(permission);
+      if (permission === 'denied') {
+        showAppToast(
+          'Location access is off. Turn it on in browser settings to respond to this request.',
+          'warning',
+        );
+      }
+      pendingLocationRef.current = pending;
+      setLocationModalError(null);
+      setLocationModalOpen(true);
+    })();
+  }, []);
+
+  const tryBeginFlow = useCallback(() => {
+    if (position || existingResponse) {
+      beginFlow();
       return;
     }
-    const quoted = quote.trim() ? Number(quote) : null;
-    await respond.mutateAsync({
-      requestId: id,
-      message: message.trim() || null,
-      quotedAmount: quoted,
-      position: pos,
-    });
-    showAppToast('Response sent.');
+    openLocationSheet({ type: 'begin-flow' });
+  }, [position, existingResponse, beginFlow, openLocationSheet]);
+
+  useEffect(() => {
+    if (!autoStartPending.current || isPending || !request) return;
+    if (!canRespondToRequest(request) && !needsLocation) {
+      autoStartPending.current = false;
+      return;
+    }
+    autoStartPending.current = false;
+    const handle = window.setTimeout(() => tryBeginFlow(), 0);
+    return () => window.clearTimeout(handle);
+  }, [isPending, request, needsLocation, tryBeginFlow]);
+
+  const exitFlow = () => {
     setInFlow(false);
-    void refetch();
+    setFlowStep(0);
   };
 
-  if (isPending && !request) {
+  const activeAsHelper = myResponses.data?.find(
+    (row) =>
+      row.request_id === id &&
+      row.response_status === 'accepted' &&
+      ['accepted', 'in_progress', 'completion_pending'].includes(row.request_status),
+  );
+
+  const mutateResponse = (postPosition: Position | null, payload: PendingSubmit) => {
+    if (!request) return;
+
+    respond.mutate(
+      {
+        requestId: request.request_id,
+        message: payload.message,
+        quotedAmount: payload.quotedAmount,
+        position: postPosition,
+      },
+      {
+        onSuccess: () => {
+          showAppToast(existingResponse ? 'Response updated' : 'Response sent');
+          router.back();
+        },
+      },
+    );
+  };
+
+  const completeAfterLocation = (nextPosition: Position) => {
+    setPosition(nextPosition);
+    setLocationModalLoading(false);
+    setLocationModalOpen(false);
+    const pending = pendingLocationRef.current;
+    pendingLocationRef.current = null;
+    if (!pending) return;
+    if (pending.type === 'begin-flow') beginFlow();
+    else mutateResponse(nextPosition, pending.payload);
+  };
+
+  const submitResponse = (payload: PendingSubmit) => {
+    if (position) {
+      mutateResponse(position, payload);
+      return;
+    }
+    if (existingResponse) {
+      mutateResponse(null, payload);
+      return;
+    }
+    openLocationSheet({ type: 'submit', payload });
+  };
+
+  const selectSavedPlaceForRespond = (place: SavedLocation) => {
+    if (locationModalLoading) return;
+    setLocationModalLoading(true);
+    setLocationModalError(null);
+    completeAfterLocation(savedLocationPosition(place));
+  };
+
+  const shareLocationForResponse = () => {
+    if (locationModalLoading) return;
+
+    setLocationModalLoading(true);
+    setLocationModalError(null);
+
+    const positionRequest = requestPosition({ fresh: true });
+
+    void (async () => {
+      try {
+        const result = await positionRequest;
+        setForegroundPermission(await readForegroundPermission());
+
+        if (!result.ok) {
+          setLocationModalError(
+            positionErrorMessage(result, 'Turn it on in browser settings to send your response.'),
+          );
+          return;
+        }
+
+        completeAfterLocation(result.position);
+      } catch {
+        setLocationModalError('Could not get your location. Try again.');
+      } finally {
+        setLocationModalLoading(false);
+      }
+    })();
+  };
+
+  const dismissLocationModal = () => {
+    if (locationModalLoading) return;
+    pendingLocationRef.current = null;
+    setLocationModalError(null);
+    setLocationModalOpen(false);
+  };
+
+  const confirmWithdraw = () => {
+    if (!existingResponse) return;
+    const confirmed = window.confirm(
+      'Cancel response?\n\nYou can respond again later if the request is still open.',
+    );
+    if (!confirmed) return;
+
+    withdrawResponse.mutate(existingResponse.responseId, {
+      onSuccess: () => {
+        showAppToast('Response withdrawn');
+        router.back();
+      },
+    });
+  };
+
+  const responseMenuActions =
+    existingResponse && !declinedParticipation
+      ? [
+          { label: 'Update response', onPress: tryBeginFlow },
+          { label: 'Cancel response', destructive: true, onPress: confirmWithdraw },
+        ]
+      : undefined;
+
+  const locationModal = (
+    <RequestLocationModal
+      open={locationModalOpen}
+      onClose={dismissLocationModal}
+      nested={false}
+      title="Location needed to respond"
+      body="We use your location once to confirm this request is near you. Nobody sees your exact address — only roughly how close you are — until you are selected."
+      loading={locationModalLoading}
+      errorMessage={locationModalError}
+      showSaveForFuture={false}
+      locationPermissionDenied={foregroundPermission === 'denied'}
+      savedPlaces={savedLocations.data ?? []}
+      savedPlacesLoading={savedLocations.isPending}
+      onSelectSavedPlace={selectSavedPlaceForRespond}
+      onShareLocation={shareLocationForResponse}
+    />
+  );
+
+  if (!locationChecked || (isPending && !request)) {
     return (
-      <FlowScreen title="Request" backTo="/home">
+      <div className="flex min-h-0 flex-1 flex-col bg-canvas">
+        <RequestFlowHeader title="Request" onBack={() => router.back()} />
         <LoadingState label="Loading request…" />
-      </FlowScreen>
+      </div>
     );
   }
+
+  if (activeAsHelper) {
+    return <Navigate to={`/engagement/${id}`} replace />;
+  }
+
   if (isError) {
     return (
-      <FlowScreen title="Request" backTo="/home">
-        <InlineError message={error instanceof Error ? error.message : 'Could not load this request.'} />
-      </FlowScreen>
+      <div className="flex min-h-0 flex-1 flex-col bg-canvas">
+        <RequestFlowHeader title="Request" onBack={() => router.back()} />
+        <InlineError error={error} onRetry={() => void refetch()} />
+      </div>
     );
   }
-  if (!request || browseConfirmedClosed) {
+
+  if (!request || requesterOffer === null) {
     return (
-      <FlowScreen title="Request" backTo="/home">
+      <div className="flex min-h-0 flex-1 flex-col bg-canvas">
+        <RequestFlowHeader title="Request" onBack={() => router.back()} />
         <EmptyState
           layout="list"
           icon="alert-circle"
           title="This request has moved on"
           message="It was answered, withdrawn, or is no longer open."
-          action={{ label: 'Back', onPress: () => router.push('/home') }}
+          action={{ label: 'Back', onPress: () => router.back() }}
         />
-      </FlowScreen>
+      </div>
     );
   }
 
-  const respondAllowed = !needsLocation && canRespondToRequest(request);
+  const respondAllowed = canRespondToRequest(request);
 
   if (inFlow) {
     return (
-      <div className="flex min-h-0 flex-1 flex-col bg-canvas">
-        <RequestFlowHeader title="Respond" onBack={() => setInFlow(false)} />
-        <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-8 pt-2">
-          <div className="flex flex-col gap-4">
-          <TextAreaField label="Message (optional)" value={message} onChange={(e) => setMessage(e.target.value)} />
-          <div className="flex flex-col gap-2">
-            <p className="text-sm font-semibold text-ink">Counteroffer ({MARKET.currencySymbol}, optional)</p>
-            <MoneyAmountInput
-              accessibilityLabel="Counteroffer amount"
-              value={quote}
-              onChangeText={setQuote}
-            />
-          </div>
-          <Button label="Send response" loading={respond.isPending} onClick={() => void submit()} corner="2xl" size="lg" />
-          {respond.isError ? (
-            <InlineError message={respond.error instanceof Error ? respond.error.message : 'Could not send response.'} />
-          ) : null}
-          </div>
+      <>
+        <div className="flex min-h-0 flex-1 flex-col bg-canvas">
+          <ResponseCreationFlow
+            key={flowKey}
+            step={flowStep}
+            onStepChange={setFlowStep}
+            onExit={exitFlow}
+            request={request}
+            initialYourOffer={initialOfferInput}
+            initialMessage={initialMessage}
+            needsPhotoStep={needsPhotoStep}
+            isUpdate={Boolean(existingResponse)}
+            submitting={respond.isPending}
+            submitError={respond.error instanceof Error ? respond.error : null}
+            onSubmit={submitResponse}
+          />
         </div>
-      </div>
+        {locationModal}
+      </>
     );
   }
 
   return (
     <div className="flex min-h-0 flex-1 flex-col bg-canvas">
-      <RequestFlowHeader title="Request" onBack={() => router.push('/home')} />
+      <RequestFlowHeader
+        title="Request"
+        onBack={() => router.back()}
+        menuActions={responseMenuActions}
+      />
+
       <div className="min-h-0 flex-1 overflow-y-auto p-5 pb-12">
         <div className="flex flex-col gap-6">
-        <RequestHelpSummary
-          request={request}
-          existingResponse={Boolean(existingResponse)}
-          onRequesterPress={() => setRequesterProfileOpen(true)}
-          onRequesterDiscussPress={
-            existingResponse && preHandshakeConversation.data
-              ? () => router.push(`/conversation/${preHandshakeConversation.data}`)
-              : undefined
-          }
-          requesterDiscussLoading={preHandshakeConversation.isPending}
-        />
-
-        {declinedParticipation ? (
-          <RequestCallout
-            tone="danger"
-            title={
-              declinedParticipation.requestStillOpen
-                ? 'You were rejected for this task'
-                : "You weren't selected for this task"
+          <RequestHelpSummary
+            request={request}
+            existingResponse={Boolean(existingResponse)}
+            onRequesterPress={() => setRequesterProfileOpen(true)}
+            onRequesterDiscussPress={
+              existingResponse && preHandshakeConversation.data
+                ? () => router.push(`/conversation/${preHandshakeConversation.data}`)
+                : undefined
             }
-          >
-            <p className="text-sm leading-5 text-muted">
-              {declinedParticipation.declineReason ??
-                (declinedParticipation.requestStillOpen
-                  ? 'The requester decided not to move forward with your offer.'
-                  : 'Someone else was chosen for this request.')}
-            </p>
-          </RequestCallout>
-        ) : !respondAllowed && !existingResponse && !needsLocation ? (
-          <RequestCallout tone="warning" title="Too far away to respond">
-            <p className="text-sm text-muted">
-              You can read this request, but only helpers within the local discovery area can send a response.
-            </p>
-          </RequestCallout>
-        ) : null}
-
-        {declinedParticipation ? null : existingResponse ? (
-          <RequestCallout tone="warning" title="Response awaiting acceptance">
-            <p className="text-sm text-muted">
-              You can respond to other requests anytime. You are only committed to a job after the requester selects
-              you for that time.
-            </p>
-          </RequestCallout>
-        ) : respondAllowed || needsLocation ? (
-          <div className="flex flex-row items-start gap-3 rounded-2xl bg-surface p-4">
-            <IonIcon icon={ionIcons['lock-closed-outline']} size={18} color={colors.muted} />
-            <p className="flex-1 text-sm text-muted">
-              They see your name, rating, and roughly how close you are. Exact location and phone are shared only if
-              you are selected.
-            </p>
-          </div>
-        ) : null}
-
-        {respond.isError ? (
-          <InlineError message={respond.error instanceof Error ? respond.error.message : 'Could not send response.'} />
-        ) : null}
-        {withdraw.isError ? (
-          <InlineError
-            message={withdraw.error instanceof Error ? withdraw.error.message : 'Could not withdraw response.'}
+            requesterDiscussLoading={preHandshakeConversation.isPending}
           />
-        ) : null}
 
-        {!declinedParticipation && !existingResponse ? (
-          <Button
-            label="Respond to request"
-            variant="active"
-            size="lg"
-            corner="2xl"
-            onClick={() => void beginRespond()}
-            disabled={!needsLocation && !respondAllowed}
-          />
-        ) : null}
+          {declinedParticipation ? (
+            <RequestCallout
+              tone="danger"
+              title={
+                declinedParticipation.requestStillOpen
+                  ? 'You were rejected for this task'
+                  : "You weren't selected for this task"
+              }
+            >
+              <p className="text-sm leading-5 text-muted">
+                {declinedParticipation.declineReason ??
+                  (declinedParticipation.requestStillOpen
+                    ? 'The requester decided not to move forward with your offer.'
+                    : 'Someone else was chosen for this request.')}
+              </p>
+            </RequestCallout>
+          ) : !respondAllowed && !existingResponse ? (
+            <RequestCallout tone="warning" title="Too far away to respond">
+              <p className="text-sm text-muted">
+                You can read this request, but only helpers within the local discovery area can send a
+                response.
+              </p>
+            </RequestCallout>
+          ) : null}
 
-        {pendingResponseRow?.response_status === 'pending' && existingResponse ? (
-          <Button
-            label="Withdraw response"
-            variant="secondary"
-            loading={withdraw.isPending}
-            onClick={() => void withdraw.mutateAsync(existingResponse.responseId)}
-          />
-        ) : null}
+          {declinedParticipation ? null : existingResponse ? (
+            <RequestCallout tone="warning" title="Response awaiting acceptance">
+              <p className="text-sm text-muted">
+                You can respond to other requests anytime. You are only committed to a job after the
+                requester selects you for that time.
+              </p>
+            </RequestCallout>
+          ) : respondAllowed || needsLocation ? (
+            <div className="flex flex-row items-start gap-3 rounded-2xl bg-surface p-4">
+              <IonIcon icon={ionIcons['lock-closed-outline']} size={18} color={colors.muted} />
+              <p className="flex-1 text-sm text-muted">
+                They see your name, rating, and roughly how close you are. Exact location and phone are
+                shared only if you are selected.
+              </p>
+            </div>
+          ) : null}
+
+          {respond.isError ? <InlineError error={respond.error} /> : null}
+          {withdrawResponse.isError ? <InlineError error={withdrawResponse.error} /> : null}
+
+          {!declinedParticipation && !existingResponse && (respondAllowed || needsLocation) ? (
+            <Button
+              label="Respond to request"
+              variant="active"
+              size="lg"
+              corner="2xl"
+              onClick={tryBeginFlow}
+            />
+          ) : null}
         </div>
       </div>
 
@@ -279,6 +458,7 @@ export function RespondPage() {
         profile={personProfileFromRespondableRequest(request)}
         onClose={() => setRequesterProfileOpen(false)}
       />
+      {locationModal}
     </div>
   );
 }
