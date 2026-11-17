@@ -18,6 +18,7 @@ import {
   useMyWalletWithdrawals,
 } from '@/features/wallet/withdrawals-api';
 import { walletActivityHref } from '@/lib/wallet-navigation';
+import { cn } from '@/lib/cn';
 import { formatMoney } from '@/lib/format';
 import { showQuerySkeleton } from '@/lib/query/show-skeleton';
 import { useQueryClient } from '@tanstack/react-query';
@@ -63,11 +64,11 @@ export function WalletPage() {
   const hasLockedFunds = locked > 0 || pending > 0;
 
   return (
-    <FlowScreen title="Wallet" onBack={() => router.back()} bodyClassName="flex flex-col gap-6">
-      <div className="overflow-hidden rounded-3xl border border-hairline bg-elevated">
+    <FlowScreen title="Wallet" onBack={() => router.back()} bodyClassName="space-y-6">
+      <div className="relative z-10 shrink-0 overflow-hidden rounded-3xl border border-hairline bg-elevated">
         <div className="flex flex-col gap-2 px-5 pb-4 pt-5">
           <p className="text-xs font-semibold uppercase tracking-wide text-subtle">Available</p>
-          <p className="text-3xl font-bold text-ink">{formatMoney(available, currency)}</p>
+          <p className="text-4xl font-bold text-ink">{formatMoney(available, currency)}</p>
         </div>
         <WalletHairline />
         <div className="flex flex-row">
@@ -78,22 +79,22 @@ export function WalletPage() {
                 <IonIcon icon={ionIcons['information-circle-outline']} size={14} color="#8A948C" />
               ) : null}
             </p>
-            <p className="text-base font-semibold text-ink">{formatMoney(locked + pending, currency)}</p>
+            <p className="text-lg font-semibold text-ink">{formatMoney(locked + pending, currency)}</p>
           </div>
           <WalletHairlineVertical />
           <div className="flex flex-1 flex-col gap-1 px-5 py-4">
             <p className="text-xs font-semibold uppercase tracking-wide text-subtle">Total</p>
-            <p className="text-base font-semibold text-ink">{formatMoney(total, currency)}</p>
+            <p className="text-lg font-semibold text-ink">{formatMoney(total, currency)}</p>
           </div>
         </div>
         <WalletHairline />
         <div className="flex flex-row gap-3 border-t border-hairline p-4">
           <Button
-            label="Deposit"
+            label="Add Money"
             variant="active"
             size="lg"
             corner="2xl"
-            className="flex-1"
+            className="min-w-0 flex-1 basis-0"
             onClick={() => router.push('/wallet/add')}
             type="button"
           />
@@ -103,7 +104,7 @@ export function WalletPage() {
               variant="secondary"
               size="lg"
               corner="2xl"
-              className="flex-1"
+              className="min-w-0 flex-1 basis-0"
               onClick={() => router.push('/wallet/withdraw')}
             />
           ) : null}
@@ -111,14 +112,14 @@ export function WalletPage() {
       </div>
 
       {hasLockedFunds ? (
-        <LockedNotice amount={formatMoney(locked + pending, currency)} />
+        <LockedNotice amount={formatMoney(locked + pending, currency)} className="shrink-0" />
       ) : null}
 
-      <section className="flex flex-col gap-3">
+      <section className="relative z-0 flex shrink-0 flex-col gap-3">
         <span className="flex flex-row items-center justify-between gap-3">
-          <h2 className="text-base font-bold text-ink">Recent activity</h2>
+          <h2 className="text-lg font-bold text-ink">Recent activity</h2>
           {(activity.data?.length ?? 0) > 0 ? (
-            <Link href="/wallet/history" className="text-sm font-semibold text-active active:opacity-80">
+            <Link href="/wallet/history" className="text-base font-semibold text-active active:opacity-80">
               View all
             </Link>
           ) : null}
@@ -159,9 +160,14 @@ function WalletHairlineVertical() {
   return <span className="w-px bg-hairline" aria-hidden />;
 }
 
-function LockedNotice({ amount }: { amount: string }) {
+function LockedNotice({ amount, className }: { amount: string; className?: string }) {
   return (
-    <div className="flex flex-row items-center gap-3 rounded-2xl border border-hairline bg-elevated px-4 py-3.5">
+    <div
+      className={cn(
+        'flex flex-row items-center gap-3 rounded-2xl border border-hairline bg-elevated px-4 py-3.5',
+        className,
+      )}
+    >
       <span className="flex h-9 w-9 items-center justify-center rounded-full bg-warning-soft">
         <IonIcon icon={ionIcons['time-outline']} size={18} color="#B45309" />
       </span>

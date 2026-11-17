@@ -1,6 +1,5 @@
 'use client';
 
-import Link from '@/components/AppLink';
 import { useRouter, useSearchParams } from '@/lib/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
@@ -13,9 +12,11 @@ import {
   waitForWalletDepositSettlement,
 } from '@/features/wallet/deposit-api';
 import {
+  exitWalletDepositAfterSuccess,
+  exitWalletDepositLeaving,
+  exitWalletDepositToHome,
   readWalletReturnTo,
   WALLET_RETURN_TO_PARAM,
-  clearWalletDepositNavigationState,
 } from '@/features/wallet/deposit-navigation';
 import { invalidateWalletQueries } from '@/features/wallet/api';
 import { MARKET } from '@/config/index';
@@ -145,10 +146,8 @@ export function WalletDepositSettlement() {
     }
   };
 
-  const leave = () => {
-    clearWalletDepositNavigationState();
-    router.replace(returnTo ?? '/wallet');
-  };
+  const leaveAfterSuccess = () => exitWalletDepositAfterSuccess(router, returnTo);
+  const leaveDepositFlow = () => exitWalletDepositLeaving(router, returnTo);
 
   if (phase === 'processing') {
     return (
@@ -164,7 +163,7 @@ export function WalletDepositSettlement() {
           body="Your payment may still be on its way. Your available balance will update only after we confirm it."
         />
         <Button label="Check again" loading={retrying} onClick={() => void checkOnce()} />
-        <Button label={returnTo ? 'Back to request' : 'Back to wallet'} variant="secondary" onClick={leave} />
+        <Button label={returnTo ? 'Back to request' : 'Back to wallet'} variant="secondary" onClick={leaveDepositFlow} />
       </div>
     );
   }
@@ -179,7 +178,7 @@ export function WalletDepositSettlement() {
           </p>
         </div>
         <Button label="Try again" loading={retrying} onClick={() => void retryConfirmation()} />
-        <Button label={returnTo ? 'Back to request' : 'Back to wallet'} variant="secondary" onClick={leave} />
+        <Button label={returnTo ? 'Back to request' : 'Back to wallet'} variant="secondary" onClick={leaveDepositFlow} />
       </div>
     );
   }
@@ -193,11 +192,15 @@ export function WalletDepositSettlement() {
         ) : null}
         <p className="text-sm text-muted">Your available balance has been updated.</p>
       </div>
-      <Button label={returnTo ? 'Continue' : 'Back to wallet'} onClick={leave} />
+      <Button label={returnTo ? 'Continue' : 'Back to wallet'} onClick={leaveAfterSuccess} />
       {returnTo ? (
-        <Link href="/wallet" className="text-center text-sm font-semibold text-brand">
+        <button
+          type="button"
+          onClick={() => exitWalletDepositToHome(router)}
+          className="text-center text-sm font-semibold text-brand"
+        >
           View wallet
-        </Link>
+        </button>
       ) : null}
     </div>
   );

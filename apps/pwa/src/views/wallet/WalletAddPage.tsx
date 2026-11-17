@@ -49,11 +49,11 @@ export function WalletAddPage() {
       amount: String(parsedAmount),
       ...walletDepositFlowParams({ returnTo }),
     });
-    router.push(`/wallet/deposit/review?${params.toString()}`);
+    router.replace(`/wallet/deposit/review?${params.toString()}`);
   };
 
   return (
-    <FlowScreen title="Deposit" onBack={goBack} bodyClassName="flex flex-col gap-6">
+    <FlowScreen title="Add money" onBack={goBack} bodyClassName="flex flex-col gap-6">
       <div className="flex flex-col gap-2">
         <h2 className="text-3xl font-bold leading-9 text-ink">How much?</h2>
         <p className="text-base text-muted">

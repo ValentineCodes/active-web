@@ -47,6 +47,7 @@ import {
   play,
   videocam,
   receiptOutline,
+  shieldCheckmarkOutline,
   walletOutline,
 } from 'ionicons/icons';
 
@@ -100,6 +101,7 @@ export const ionIcons = {
   play: play,
   videocam: videocam,
   'receipt-outline': receiptOutline,
+  'shield-checkmark': shieldCheckmarkOutline,
   'wallet-outline': walletOutline,
 } as const;
 

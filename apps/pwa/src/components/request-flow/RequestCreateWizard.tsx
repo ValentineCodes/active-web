@@ -3,6 +3,7 @@
 import { addHours, format, set, startOfTomorrow } from 'date-fns';
 import { useEffect, useRef, useState } from 'react';
 
+import { KeyboardStickyFooter } from '@/components/layout/KeyboardStickyFooter';
 import { RequestLocationModal } from '@/components/RequestLocationModal';
 import { RequestReviewBeforePostCard } from '@/components/request-flow/RequestReviewBeforePostCard';
 import { RequestTagPickerAfterNavigation } from '@/components/request-flow/RequestTagPicker';
@@ -265,6 +266,41 @@ function StepTextArea({
   );
 }
 
+function StepFieldError({ message }: { message: string }) {
+  return <p className="text-sm text-danger">{message}</p>;
+}
+
+function titleValidationMessage(title: string): string | null {
+  const trimmed = title.trim();
+  if (trimmed.length > CREATE_TITLE_LIMITS.max) {
+    return `Keep the title under ${CREATE_TITLE_LIMITS.max} characters.`;
+  }
+  if (trimmed.length < CREATE_TITLE_LIMITS.min) {
+    return `Use at least ${CREATE_TITLE_LIMITS.min} characters in the title.`;
+  }
+  return null;
+}
+
+function descriptionValidationMessage(description: string): string | null {
+  if (description.length > DESCRIPTION_LIMITS.max) {
+    return `Keep the description under ${DESCRIPTION_LIMITS.max} characters.`;
+  }
+  return null;
+}
+
+function amountValidationMessage(
+  amount: string,
+  parsedAmount: number | null,
+  amountError: string | null,
+): string | null {
+  if (amountError) return amountError;
+  if (!REQUEST_REQUIRES_FUNDING) return null;
+  if (!amount.trim() || parsedAmount === null || !isFundedOffer(parsedAmount)) {
+    return 'Enter a valid offer amount to continue.';
+  }
+  return null;
+}
+
 function WhenPill({
   label,
   selected,
@@ -308,6 +344,11 @@ export function RequestCreateWizard({
   const [whenMode, setWhenMode] = useState<WhenMode>('now');
   const [laterAt, setLaterAt] = useState(defaultLaterAt);
   const [laterTimeError, setLaterTimeError] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState({
+    title: null as string | null,
+    description: null as string | null,
+    amount: null as string | null,
+  });
   const [amount, setAmount] = useState('');
   const [position, setPosition] = useState<Position | null>(null);
   const [areaLabel, setAreaLabel] = useState('');
@@ -354,44 +395,48 @@ export function RequestCreateWizard({
   const reviewLocation = areaLabel.trim() || 'My location';
 
   useEffect(() => {
-    if (step > 2) return;
-    const id = setTimeout(() => {
+    if (step !== 0 && step !== 2) return;
+    const delayMs = step === 0 ? 150 : 50;
+    const id = window.setTimeout(() => {
       if (step === 0) titleInputRef.current?.focus();
-      else if (step === 1) descriptionInputRef.current?.focus();
       else if (step === 2) amountInputRef.current?.focus();
-    }, 50);
-    return () => clearTimeout(id);
+    }, delayMs);
+    return () => window.clearTimeout(id);
   }, [step]);
 
   const goBack = () => setStep((s) => Math.max(0, s - 1));
 
   const goNext = () => {
     if (isLastStep) return;
-    if (!stepValid[step]) {
-      if (step === 0) {
-        showAppToast(`Use at least ${CREATE_TITLE_LIMITS.min} characters in the title.`, 'warning');
+    if (step === 0) {
+      const message = titleValidationMessage(title);
+      if (message) {
+        setFieldErrors((current) => ({ ...current, title: message }));
         return;
       }
-      if (step === 1) {
-        showAppToast(
-          trimmedDescription.length > DESCRIPTION_LIMITS.max
-            ? `Keep the description under ${DESCRIPTION_LIMITS.max} characters.`
-            : 'Describe what needs to be done to continue.',
-          'warning',
-        );
+      setFieldErrors((current) => ({ ...current, title: null }));
+    }
+    if (step === 1) {
+      const message = descriptionValidationMessage(description);
+      if (message) {
+        setFieldErrors((current) => ({ ...current, description: message }));
         return;
       }
-      if (step === 2) {
-        showAppToast(amountError ?? 'Enter a valid offer amount to continue.', 'warning');
+      setFieldErrors((current) => ({ ...current, description: null }));
+    }
+    if (step === 2) {
+      const message = amountValidationMessage(amount, parsedAmount, amountError);
+      if (message) {
+        setFieldErrors((current) => ({ ...current, amount: message }));
         return;
       }
-      if (step === 3) {
-        setLaterTimeError(true);
-        showAppToast('Choose a date and time in the future.', 'warning');
-        return;
-      }
+      setFieldErrors((current) => ({ ...current, amount: null }));
+    }
+    if (step === 3 && !stepValid[3]) {
+      setLaterTimeError(true);
       return;
     }
+
     setLaterTimeError(false);
     setStep((s) => Math.min(s + 1, STEP_COUNT - 1));
   };
@@ -529,20 +574,26 @@ export function RequestCreateWizard({
 
     if (!formCoreValid) {
       if (!stepValid[0]) {
-        showAppToast(`Use at least ${CREATE_TITLE_LIMITS.min} characters in the title.`, 'warning');
+        const message = titleValidationMessage(title);
+        setFieldErrors((current) => ({ ...current, title: message }));
+        setStep(0);
         return;
       }
       if (!stepValid[1]) {
-        showAppToast('Describe what needs to be done to continue.', 'warning');
+        const message = descriptionValidationMessage(description);
+        setFieldErrors((current) => ({ ...current, description: message }));
+        setStep(1);
         return;
       }
       if (!stepValid[2]) {
-        showAppToast(amountError ?? 'Enter a valid offer amount to continue.', 'warning');
+        const message = amountValidationMessage(amount, parsedAmount, amountError);
+        setFieldErrors((current) => ({ ...current, amount: message }));
+        setStep(2);
         return;
       }
       if (whenMode === 'later' && scheduledFor === null) {
         setLaterTimeError(true);
-        showAppToast('Choose a date and time in the future.', 'warning');
+        setStep(3);
       }
       return;
     }
@@ -562,10 +613,7 @@ export function RequestCreateWizard({
       const permission = await readForegroundPermission();
       setForegroundPermission(permission);
       if (permission === 'denied') {
-        showAppToast(
-          'Location access is off. Turn it on in browser settings to post this request.',
-          'warning',
-        );
+        setError('Location access is off. Turn it on in browser settings to post this request.');
       }
       setLocationModalError(null);
       setLocationModalOpen(true);
@@ -576,17 +624,33 @@ export function RequestCreateWizard({
     create.isPending || wallet.isPending || locationModalLoading || attachmentUploading;
   const saveDisabled = !formCoreValid || posting;
 
-  return (
-    <div className="flex min-h-0 flex-1 flex-col bg-canvas">
-      <WizardHeader
-        step={step}
-        stepCount={STEP_COUNT}
-        onClose={onClose}
-        onBack={step > 0 ? goBack : undefined}
-      />
-      <WizardProgress step={step} stepCount={STEP_COUNT} />
+  const wizardFooter = (
+    <div className="flex flex-col gap-3 px-5 pb-1 pt-1">
+      {isLastStep ? (
+        <WizardPrimaryButton
+          label="Post request"
+          loading={posting}
+          disabled={saveDisabled}
+          onClick={handlePostPress}
+        />
+      ) : (
+        <WizardPrimaryButton label="Next" inactive={!stepValid[step]} onClick={goNext} />
+      )}
+    </div>
+  );
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-4 pt-5">
+  return (
+    <>
+      <KeyboardStickyFooter className="min-h-0 flex-1" footer={wizardFooter}>
+        <WizardHeader
+          step={step}
+          stepCount={STEP_COUNT}
+          onClose={onClose}
+          onBack={step > 0 ? goBack : undefined}
+        />
+        <WizardProgress step={step} stepCount={STEP_COUNT} />
+
+        <div className="flex flex-col gap-5 px-5 pb-8 pt-5">
         {step === 0 ? (
           <div className="flex flex-col gap-3">
             <h2 className="text-3xl font-bold leading-9 text-ink">What do you need?</h2>
@@ -594,13 +658,18 @@ export function RequestCreateWizard({
             <StepTextArea
               inputRef={titleInputRef}
               value={title}
-              onChange={setTitle}
-              placeholder="e.g. Fix my leaking sink, Need a ride to the airport…"
+              onChange={(value) => {
+                setTitle(value);
+                setFieldErrors((current) => ({ ...current, title: null }));
+              }}
+              placeholder="e.g. Wash my car, Fix my sink, I need a ride, …"
               maxLength={CREATE_TITLE_LIMITS.max}
               minHeight={120}
               textClassName="text-xl font-semibold"
             />
-            {trimmedTitle.length > 0 && trimmedTitle.length < CREATE_TITLE_LIMITS.min ? (
+            {fieldErrors.title ? (
+              <StepFieldError message={fieldErrors.title} />
+            ) : trimmedTitle.length > 0 && trimmedTitle.length < CREATE_TITLE_LIMITS.min ? (
               <p className="text-sm text-muted">At least {CREATE_TITLE_LIMITS.min} characters to continue.</p>
             ) : null}
           </div>
@@ -613,12 +682,16 @@ export function RequestCreateWizard({
             <StepTextArea
               inputRef={descriptionInputRef}
               value={description}
-              onChange={setDescription}
-              placeholder="e.g. Move my 3-seater sofa from the ground floor to the second floor…"
+              onChange={(value) => {
+                setDescription(value);
+                setFieldErrors((current) => ({ ...current, description: null }));
+              }}
+              placeholder="e.g. Move my BIG Generator from the ground floor to the second floor…"
               maxLength={DESCRIPTION_LIMITS.max}
               minHeight={200}
               textClassName="text-lg"
             />
+            {fieldErrors.description ? <StepFieldError message={fieldErrors.description} /> : null}
           </div>
         ) : null}
 
@@ -631,7 +704,10 @@ export function RequestCreateWizard({
                 inputRef={amountInputRef}
                 accessibilityLabel="Offer amount"
                 value={amount}
-                onChangeText={(text) => setAmount(text.replace(/[^\d]/g, ''))}
+                onChangeText={(text) => {
+                  setAmount(text.replace(/[^\d]/g, ''));
+                  setFieldErrors((current) => ({ ...current, amount: null }));
+                }}
                 trailing={
                   <div className="flex flex-col items-end pl-3">
                     <span className="text-xs font-medium text-muted">Available</span>
@@ -648,7 +724,9 @@ export function RequestCreateWizard({
                 }
               />
             </div>
-            {amountError ? <p className="text-sm text-warning">{amountError}</p> : null}
+            {fieldErrors.amount ?? amountError ? (
+              <StepFieldError message={fieldErrors.amount ?? amountError ?? ''} />
+            ) : null}
           </div>
         ) : null}
 
@@ -736,20 +814,8 @@ export function RequestCreateWizard({
             {error ? <InlineError message={error} /> : null}
           </div>
         ) : null}
-      </div>
-
-      <footer className="shrink-0 bg-canvas p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
-        {isLastStep ? (
-          <WizardPrimaryButton
-            label="Post request"
-            loading={posting}
-            disabled={saveDisabled}
-            onClick={handlePostPress}
-          />
-        ) : (
-          <WizardPrimaryButton label="Next" inactive={!stepValid[step]} onClick={goNext} />
-        )}
-      </footer>
+        </div>
+      </KeyboardStickyFooter>
 
       <RequestLocationModal
         open={locationModalOpen}
@@ -768,6 +834,6 @@ export function RequestCreateWizard({
         onSelectSavedPlace={selectSavedPlaceForPost}
         onShareLocation={() => void shareLocationForPost()}
       />
-    </div>
+    </>
   );
 }

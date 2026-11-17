@@ -50,8 +50,9 @@ export function Button({
   const colors = useColors();
   const inert = disabled || loading;
   const compact = Boolean(className?.includes('!w-auto') || className?.includes('w-auto'));
+  const inButtonRow = Boolean(className?.includes('flex-1'));
 
-  if ((variant === 'primary' || variant === 'active') && !compact) {
+  if ((variant === 'primary' || variant === 'active') && !compact && !inButtonRow) {
     return (
       <ActiveBarButton
         type={type}
@@ -82,7 +83,12 @@ export function Button({
       variant={shadcnVariant}
       size={size === 'lg' ? 'lg' : 'default'}
       onClick={onClick}
-      className={cn(compact ? '' : 'w-full', cornerClasses[corner], className)}
+      className={cn(
+        compact ? '' : inButtonRow ? 'flex w-full min-w-0' : 'w-full',
+        size === 'lg' && 'text-lg font-semibold',
+        cornerClasses[corner],
+        className,
+      )}
     >
       {loading ? (
         <span className="opacity-80" aria-hidden>
