@@ -3,6 +3,7 @@
 import { useRouter } from '@/lib/navigation';
 
 import { ActiveBarButton } from '@/components/ui/ActiveBarButton';
+import { ActiveLogo } from '@/components/ui/ActiveLogo';
 import { Screen } from '@/components/ui/Screen';
 
 export function WelcomePage() {
@@ -21,13 +22,7 @@ export function WelcomePage() {
 function WelcomeHero() {
   return (
     <div className="mt-20 flex flex-col items-center text-center">
-      <img
-        src="/images/logo.png"
-        alt="Active"
-        width={160}
-        height={160}
-        className="mb-4 h-40 w-40 object-contain"
-      />
+      <ActiveLogo size={160} className="mb-4 h-40 w-40" />
       <h1 className="text-3xl font-bold text-ink">Welcome to Active</h1>
       <p className="mt-4 text-sm leading-6 text-muted">
         If you can pay for it, someone can do it.
