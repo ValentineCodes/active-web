@@ -8,6 +8,7 @@ import {
   PersonProfileSheet,
   personProfileFromRespondableRequest,
 } from '@/components/profile/PersonProfileSheet';
+import { ExistingResponseCard } from '@/components/request-flow/ExistingResponseCard';
 import { RequestCallout } from '@/components/request-flow/RequestCallout';
 import { RequestFlowHeader } from '@/components/request-flow/RequestFlowHeader';
 import { ResponseCreationFlow } from '@/components/request-flow/ResponseCreationFlow';
@@ -165,6 +166,10 @@ export function RespondPage() {
 
   useEffect(() => {
     if (!autoStartPending.current || isPending || !request) return;
+    if (existingResponse) {
+      autoStartPending.current = false;
+      return;
+    }
     if (!canRespondToRequest(request) && !needsLocation) {
       autoStartPending.current = false;
       return;
@@ -172,7 +177,7 @@ export function RespondPage() {
     autoStartPending.current = false;
     const handle = window.setTimeout(() => tryBeginFlow(), 0);
     return () => window.clearTimeout(handle);
-  }, [isPending, request, needsLocation, tryBeginFlow]);
+  }, [isPending, request, needsLocation, existingResponse, tryBeginFlow]);
 
   const exitFlow = () => {
     setInFlow(false);
@@ -286,14 +291,6 @@ export function RespondPage() {
     });
   };
 
-  const responseMenuActions =
-    existingResponse && !declinedParticipation
-      ? [
-          { label: 'Update response', onPress: tryBeginFlow },
-          { label: 'Cancel response', destructive: true, onPress: confirmWithdraw },
-        ]
-      : undefined;
-
   const locationModal = (
     <RequestLocationModal
       open={locationModalOpen}
@@ -377,11 +374,7 @@ export function RespondPage() {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col bg-canvas">
-      <RequestFlowHeader
-        title="Request"
-        onBack={() => router.back()}
-        menuActions={responseMenuActions}
-      />
+      <RequestFlowHeader title="Request" onBack={() => router.back()} />
 
       <div className="min-h-0 flex-1 overflow-y-auto p-5 pb-12">
         <div className="flex flex-col gap-6">
@@ -426,12 +419,15 @@ export function RespondPage() {
           ) : null}
 
           {declinedParticipation ? null : existingResponse ? (
-            <RequestCallout tone="warning" title="Response awaiting acceptance">
-              <p className="text-sm text-muted">
-                You can respond to other requests anytime. You are only committed to a job after the
-                requester selects you for that time.
-              </p>
-            </RequestCallout>
+            <ExistingResponseCard
+              currency={request.currency}
+              quotedAmount={existingResponse.quotedAmount}
+              requesterOffer={requesterOffer}
+              message={existingResponse.message}
+              onEdit={tryBeginFlow}
+              onCancel={confirmWithdraw}
+              cancelLoading={withdrawResponse.isPending}
+            />
           ) : respondAllowed || needsLocation ? (
             <div className="flex flex-row items-start gap-3 rounded-2xl bg-surface p-4">
               <IonIcon icon={ionIcons['lock-closed-outline']} size={18} color={colors.muted} />

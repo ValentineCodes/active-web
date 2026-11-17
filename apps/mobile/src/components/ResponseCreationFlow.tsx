@@ -305,7 +305,7 @@ export function ResponseCreationFlow({
             <View className="flex-row items-stretch gap-3">
               <WizardSecondaryButton label="Back" onPress={() => onStepChange(offerStep)} />
               <WizardPrimaryButton
-                label={isUpdate ? 'Update response' : 'Send Response'}
+                label={isUpdate ? 'Edit response' : 'Send Response'}
                 disabled={!offerStepReady}
                 loading={submitting}
                 onPress={send}

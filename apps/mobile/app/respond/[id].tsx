@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import type { BottomSheetModal } from '@gorhom/bottom-sheet';
 
 import { PersonProfileBottomSheet } from '@/components/PersonProfileBottomSheet';
+import { ExistingResponseCard } from '@/components/request-flow/ExistingResponseCard';
 import { RequestCallout } from '@/components/request-flow/RequestCallout';
 import { RequestFlowHeader } from '@/components/request-flow/RequestFlowHeader';
 import { RequestHelpSummary } from '@/components/RequestHelpSummary';
@@ -137,6 +138,10 @@ export default function RespondScreen() {
 
   useEffect(() => {
     if (!autoStartPending.current || isPending || !request) return;
+    if (existingResponse) {
+      autoStartPending.current = false;
+      return;
+    }
     if (!canRespondToRequest(request)) {
       autoStartPending.current = false;
       return;
@@ -144,7 +149,7 @@ export default function RespondScreen() {
     autoStartPending.current = false;
     const handle = setTimeout(() => beginFlow(), 0);
     return () => clearTimeout(handle);
-  }, [isPending, request, beginFlow]);
+  }, [isPending, request, existingResponse, beginFlow]);
 
   const exitFlow = () => {
     setInFlow(false);
@@ -326,21 +331,9 @@ export default function RespondScreen() {
     ]);
   };
 
-  const responseMenuActions =
-    existingResponse && !declinedParticipation
-      ? [
-          { label: 'Update response', onPress: beginFlow },
-          { label: 'Cancel response', destructive: true, onPress: confirmWithdraw },
-        ]
-      : undefined;
-
   return (
     <Screen edges={['top', 'bottom']}>
-      <RequestFlowHeader
-        title="Request"
-        onBack={() => router.back()}
-        menuActions={responseMenuActions}
-      />
+      <RequestFlowHeader title="Request" onBack={() => router.back()} />
 
       <ScrollView
         contentContainerClassName="gap-6 p-5 pb-12"
@@ -391,12 +384,15 @@ export default function RespondScreen() {
         ) : null}
 
         {declinedParticipation ? null : existingResponse ? (
-          <RequestCallout tone="warning" title="Response awaiting acceptance">
-            <Text className="text-sm text-muted">
-              You can respond to other requests anytime. You are only committed to a job after the
-              requester selects you for that time.
-            </Text>
-          </RequestCallout>
+          <ExistingResponseCard
+            currency={request.currency}
+            quotedAmount={existingResponse.quotedAmount}
+            requesterOffer={requesterOffer}
+            message={existingResponse.message}
+            onEdit={beginFlow}
+            onCancel={confirmWithdraw}
+            cancelLoading={withdrawResponse.isPending}
+          />
         ) : respondAllowed ? (
           <View className="flex-row items-start gap-3 rounded-2xl bg-surface p-4">
             <Ionicons name="lock-closed-outline" size={18} color={colors.muted} />
