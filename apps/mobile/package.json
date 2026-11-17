@@ -28,6 +28,7 @@
     "test:withdraw-nin-flow": "node --experimental-strip-types src/features/wallet/withdraw-nin-flow.test.ts",
     "test:chat-send-eligibility": "node --experimental-strip-types src/features/requests/chat-send-eligibility.test.ts",
     "test:completion-proof": "node --experimental-strip-types src/features/requests/completion-proof.test.ts",
+    "test:milestones": "node --experimental-strip-types src/features/requests/milestones.test.ts",
     "validate": "pnpm typecheck && pnpm lint"
   },
   "dependencies": {

@@ -1,18 +1,22 @@
 import { Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
+import { MilestonePlanCard } from '@/components/request-flow/MilestonePlanCard';
 import { Button } from '@/components/ui/Button';
+import type { MilestoneProposalItem } from '@/features/requests/milestones';
 import { formatMoney } from '@/lib/format';
 import { useColors } from '@/theme';
 
 type Props = {
   currency: string;
   quotedAmount: number | null;
-  requesterOffer: number;
+  requesterOffer: number | null;
   message: string | null;
   onEdit: () => void;
   onCancel: () => void;
   cancelLoading?: boolean;
+  proposedMilestones?: MilestoneProposalItem[];
+  proposedMilestoneTotalMajor?: number;
 };
 
 /** Pending response the helper already sent — offer preview and edit / withdraw actions. */
@@ -24,10 +28,13 @@ export function ExistingResponseCard({
   onEdit,
   onCancel,
   cancelLoading,
+  proposedMilestones,
+  proposedMilestoneTotalMajor,
 }: Props) {
   const colors = useColors();
   const offerLabel = quotedAmount !== null ? formatMoney(quotedAmount, currency) : '—';
-  const requestLabel = formatMoney(requesterOffer, currency);
+  const requestLabel =
+    requesterOffer !== null ? formatMoney(requesterOffer, currency) : '—';
   const trimmedMessage = message?.trim() ?? '';
 
   return (
@@ -71,6 +78,17 @@ export function ExistingResponseCard({
         ) : (
           <Text className="text-sm italic text-subtle">No message with your response.</Text>
         )}
+
+        {proposedMilestones && proposedMilestones.length >= 2 ? (
+          <MilestonePlanCard
+            paymentStructure="milestone"
+            totalMajor={proposedMilestoneTotalMajor ?? requesterOffer ?? 0}
+            milestones={proposedMilestones}
+            currency={currency}
+            heading="Your proposed milestones"
+            variant="proposed"
+          />
+        ) : null}
 
         <View className="flex-row gap-3 pt-1">
           <Button

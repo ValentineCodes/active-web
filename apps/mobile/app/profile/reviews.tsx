@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { RefreshControl, ScrollView, Text, View } from 'react-native';
 import { router } from 'expo-router';
 
@@ -12,10 +12,20 @@ import { usePullToRefresh } from '@/lib/query/use-pull-to-refresh';
 import { showQuerySkeleton } from '@/lib/query/show-skeleton';
 import { useProfile } from '@/features/profile/api';
 import { useMyReceivedRatings } from '@/features/profile/reviews-api';
+import { participationRequestPath } from '@/features/requests/activity-list';
+import { useMyResponses } from '@/features/requests/responses-api';
+import { useMyRequests } from '@/features/requests/requester-api';
 
 export default function ProfileReviewsScreen() {
   const profile = useProfile();
   const reviews = useMyReceivedRatings();
+  const myRequests = useMyRequests();
+  const myResponses = useMyResponses();
+
+  const myRequestIds = useMemo(
+    () => new Set(myRequests.data?.map((row) => row.request_id) ?? []),
+    [myRequests.data],
+  );
   useQueryErrorToast(reviews);
 
   const onPullRefresh = useCallback(
@@ -24,7 +34,7 @@ export default function ProfileReviewsScreen() {
   );
   const { refreshing, onRefresh } = usePullToRefresh(onPullRefresh);
 
-  if (showQuerySkeleton(profile) || showQuerySkeleton(reviews)) {
+  if (showQuerySkeleton(profile) || showQuerySkeleton(reviews) || showQuerySkeleton(myResponses)) {
     return (
       <Screen>
         <Header title="Reviews" onBack={() => router.back()} />
@@ -73,7 +83,15 @@ export default function ProfileReviewsScreen() {
           ) : (
             <View className="overflow-hidden rounded-2xl border border-hairline bg-elevated px-4">
               {items.map((review, index) => (
-                <ProfileReviewRow key={review.ratingId} review={review} showDivider={index > 0} />
+                <ProfileReviewRow
+                  key={review.ratingId}
+                  review={review}
+                  showDivider={index > 0}
+                  requestPath={participationRequestPath(review.requestId, {
+                    myRequestIds,
+                    myResponses: myResponses.data,
+                  })}
+                />
               ))}
             </View>
           )}

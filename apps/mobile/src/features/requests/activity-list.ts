@@ -267,6 +267,56 @@ export function myResponseActivitySubtitle(response: {
   return joinActivityParts([statusLine, amount, activityDayLabel(response.created_at)]);
 }
 
+const HELPER_ENGAGEMENT_REQUEST_STATUSES: RequestStatus[] = [
+  'accepted',
+  'in_progress',
+  'completion_pending',
+  'completed',
+  'disputed',
+  'no_show',
+];
+
+export function isHelperEngagementView(input: {
+  responseStatus: ResponseStatus;
+  requestStatus: RequestStatus;
+}): boolean {
+  return (
+    input.responseStatus === 'accepted' &&
+    HELPER_ENGAGEMENT_REQUEST_STATUSES.includes(input.requestStatus)
+  );
+}
+
+/** Pick request / respond / engagement from cached my-requests + my-responses (reviews, deep links). */
+export function participationRequestPath(
+  requestId: string,
+  input: {
+    myRequestIds: Iterable<string>;
+    myResponses?:
+      | Array<{
+          request_id: string;
+          response_status: ResponseStatus;
+          request_status: RequestStatus;
+        }>
+      | undefined;
+  },
+): `/request/${string}` | `/respond/${string}` | `/engagement/${string}` {
+  for (const id of input.myRequestIds) {
+    if (id === requestId) return `/request/${requestId}`;
+  }
+
+  const response = input.myResponses?.find((row) => row.request_id === requestId);
+  if (response) {
+    return requestNavigationPath({
+      role: 'helper',
+      requestId,
+      requestStatus: response.request_status,
+      responseStatus: response.response_status,
+    });
+  }
+
+  return `/request/${requestId}`;
+}
+
 export function requestNavigationPath(input: {
   role: 'requester' | 'helper';
   requestId: string;

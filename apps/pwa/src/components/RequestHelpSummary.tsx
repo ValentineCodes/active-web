@@ -6,6 +6,8 @@ import { RequestOfferWhenCard } from '@/components/request-flow/RequestOfferWhen
 import { RequestPersonCard } from '@/components/request-flow/RequestPersonCard';
 import { RequestTagsLine } from '@/components/request-flow/RequestTagsLine';
 import { RequestTitleSection } from '@/components/request-flow/RequestTitleSection';
+import { MilestonePlanCard } from '@/components/request-flow/MilestonePlanCard';
+import type { MilestoneProposalItem, PaymentStructure } from '@/features/requests/milestones';
 import type { RespondableRequest } from '@/features/requests/responses-api';
 import { nearbyRequestBadge } from '@/features/requests/status';
 import {
@@ -22,6 +24,11 @@ type Props = {
   onRequesterPress?: () => void;
   onRequesterDiscussPress?: () => void;
   requesterDiscussLoading?: boolean;
+  paymentStructure?: PaymentStructure;
+  milestoneItems?: MilestoneProposalItem[];
+  milestoneHeading?: string;
+  milestoneVariant?: 'default' | 'proposed';
+  milestoneTotalMajor?: number;
 };
 
 /** Respond / pending-response detail — matches mobile request mocks. */
@@ -31,6 +38,11 @@ export function RequestHelpSummary({
   onRequesterPress,
   onRequesterDiscussPress,
   requesterDiscussLoading,
+  paymentStructure = 'single',
+  milestoneItems = [],
+  milestoneHeading = 'Milestone payment plan',
+  milestoneVariant = 'default',
+  milestoneTotalMajor,
 }: Props) {
   const amount =
     request.offered_amount !== null ? formatMoney(request.offered_amount, request.currency) : null;
@@ -55,6 +67,20 @@ export function RequestHelpSummary({
           whenLabel={formatWhenRequestCard(request.scheduled_for)}
           whenDetail={formatWhenHome(request.scheduled_for)}
           locationLabel={formatRequestOfferLocationLabel(request.location_label, request.distance_m)}
+        />
+      ) : null}
+
+      {paymentStructure === 'milestone' &&
+      request.offered_amount != null &&
+      !existingResponse &&
+      milestoneItems.length >= 2 ? (
+        <MilestonePlanCard
+          paymentStructure="milestone"
+          totalMajor={milestoneTotalMajor ?? request.offered_amount}
+          milestones={milestoneItems}
+          currency={request.currency}
+          heading={milestoneHeading}
+          variant={milestoneVariant}
         />
       ) : null}
 

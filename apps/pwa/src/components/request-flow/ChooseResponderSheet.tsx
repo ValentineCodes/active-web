@@ -1,5 +1,7 @@
 'use client';
 
+import type { ReactNode } from 'react';
+
 import { BottomSheet } from '@/components/ui/BottomSheet';
 import { Button } from '@/components/ui/Button';
 import { IonIcon } from '@/components/ui/IonIcon';
@@ -13,15 +15,19 @@ export function ChooseResponderSheet({
   displayName,
   onConfirm,
   confirmLoading,
+  milestonePayments,
+  planPreview,
 }: {
   open: boolean;
   onClose: () => void;
   displayName: string | null;
   onConfirm: () => void;
   confirmLoading?: boolean;
+  milestonePayments?: boolean;
+  planPreview?: ReactNode;
 }) {
   const colors = useColors();
-  const dialog = chooseResponderDialog(displayName);
+  const dialog = chooseResponderDialog(displayName, milestonePayments);
 
   return (
     <BottomSheet
@@ -60,6 +66,7 @@ export function ChooseResponderSheet({
           <h2 className="text-2xl font-bold leading-8 text-ink">{dialog.title}</h2>
           <p className="text-base leading-6 text-muted">{dialog.message}</p>
         </div>
+        {planPreview}
       </div>
     </BottomSheet>
   );

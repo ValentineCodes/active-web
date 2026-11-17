@@ -7,10 +7,12 @@ import { HomeRequestCard, HomeRequestCardSkeleton } from '@/components/HomeReque
 import { SectionHeader } from '@/components/ui/SectionHeader';
 import { EmptyState, InlineError } from '@/components/ui/StateView';
 import {
+  seedBrowseRequestFromFeed,
   useBrowseNearbyRequests,
   useBrowseOpenRequests,
   useSearchRequests,
 } from '@/features/requests/browse-api';
+import { useQueryClient } from '@tanstack/react-query';
 import { useMyRequests } from '@/features/requests/requester-api';
 import { useMyResponses } from '@/features/requests/responses-api';
 import { requestOutcomeDescription } from '@/features/requests/outcome';
@@ -85,6 +87,7 @@ export function NearbyRequests({
   variant = 'default',
   searchQuery = null,
 }: NearbyRequestsProps) {
+  const queryClient = useQueryClient();
   const isHome = variant === 'home';
   const screenFocusedRef = useRef(false);
   const activeSearch = searchQuery?.trim() ?? '';
@@ -270,6 +273,7 @@ export function NearbyRequests({
             router.push(`/request/${request.request_id}`);
             return;
           }
+          seedBrowseRequestFromFeed(queryClient, request, position);
           router.push({
             pathname: '/respond/[id]',
             params: {

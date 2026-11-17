@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { conversationHref } from '@/lib/conversation-navigation';
 import { useRouter } from '@/lib/navigation';
 import { addHours, format } from 'date-fns';
@@ -8,6 +8,7 @@ import { addHours, format } from 'date-fns';
 import { ResponseCard } from '@/components/ResponseCard';
 import { ReportIssueModal } from '@/components/support/ReportIssueModal';
 import { ChooseResponderSheet } from '@/components/request-flow/ChooseResponderSheet';
+import { MilestonePlanCard } from '@/components/request-flow/MilestonePlanCard';
 import { ExtendResponseDeadlineSheet } from '@/components/request-flow/ExtendResponseDeadlineSheet';
 import { InsufficientWalletSheet } from '@/components/request-flow/InsufficientWalletSheet';
 import { RequestAttachmentSection } from '@/components/request-flow/RequestAttachmentSection';
@@ -63,6 +64,13 @@ import {
 import { useRouteParam } from '@/lib/route-param';
 import { showQuerySkeleton } from '@/lib/query/show-skeleton';
 import { showAppToast } from '@/lib/toast';
+import {
+  milestoneProposalItems,
+  proposedMilestonesForResponseCard,
+  useRequestMilestoneProposals,
+  useRequestPaymentStructure,
+} from '@/features/requests/milestone-api';
+import { resolveAcceptMilestonePlan } from '@/features/requests/milestone-negotiation';
 
 type ResponderProfilePreview = {
   userId: string;
@@ -111,6 +119,11 @@ export function RequestDetailPage() {
   const declineResponse = useDeclineResponse(id);
   const openPreHandshakeChat = useOpenPreHandshakeConversation();
   const wallet = useMyWallet();
+  const paymentStructure = useRequestPaymentStructure(id);
+  const milestoneProposals = useRequestMilestoneProposals(
+    id,
+    paymentStructure.data === 'milestone',
+  );
 
   useLiveRequest(id);
 
@@ -179,8 +192,47 @@ export function RequestDetailPage() {
   const confirmChooseResponder = useCallback(() => {
     if (!chooseResponderPrompt) return;
     const { responseId, onAccepted } = chooseResponderPrompt;
+
     acceptResponder(responseId, onAccepted);
-  }, [acceptResponder, chooseResponderPrompt]);
+  }, [
+    acceptResponder,
+    chooseResponderPrompt,
+    milestoneProposals.data,
+    paymentStructure.data,
+    request.data?.offered_amount,
+    responses.data,
+  ]);
+
+  const chooseResponderMilestonePreview = useMemo(() => {
+    if (!chooseResponderPrompt || paymentStructure.data !== 'milestone') return null;
+    if (!milestoneProposals.data || request.data?.offered_amount == null) return null;
+    const quoted =
+      responses.data?.find((row) => row.response_id === chooseResponderPrompt.responseId)
+        ?.quoted_amount ?? null;
+    const { items, totalMajor } = resolveAcceptMilestonePlan(
+      milestoneProposals.data,
+      chooseResponderPrompt.responseId,
+      request.data.offered_amount,
+      quoted,
+    );
+    if (items.length === 0) return null;
+    return (
+      <MilestonePlanCard
+        paymentStructure="milestone"
+        totalMajor={totalMajor}
+        milestones={items}
+        currency={request.data.currency}
+        heading="Final milestone plan"
+      />
+    );
+  }, [
+    chooseResponderPrompt,
+    milestoneProposals.data,
+    paymentStructure.data,
+    request.data?.currency,
+    request.data?.offered_amount,
+    responses.data,
+  ]);
 
   if (showQuerySkeleton(request)) {
     return (
@@ -325,34 +377,48 @@ export function RequestDetailPage() {
       statusLabel?: string;
       statusTone?: 'neutral' | 'brand' | 'active' | 'danger' | 'warning' | 'info';
     },
-  ) => (
-    <ResponseCard
-      key={response.response_id}
-      displayName={response.display_name}
-      avatarPath={response.avatar_path}
-      ratingAverage={response.rating_average}
-      ratingCount={response.rating_count}
-      completionPercent={response.completion_percent}
-      onViewProfile={() =>
-        setProfilePreview(responderProfileFromResponse(response, options.allowSelection))
-      }
-      message={response.message}
-      quotedAmount={response.quoted_amount}
-      currency={data.currency}
-      createdAt={response.created_at}
-      responderAvailable={Boolean(response.responder_available)}
-      statusLabel={options.statusLabel}
-      statusTone={options.statusTone}
-      onDiscussPress={
-        options.allowSelection ? () => discussResponse(response.response_id) : undefined
-      }
-      discussLoading={
-        options.allowSelection &&
-        openPreHandshakeChat.isPending &&
-        openPreHandshakeChat.variables === response.response_id
-      }
-    />
-  );
+  ) => {
+    const proposedMilestonePlan =
+      paymentStructure.data === 'milestone' && data.offered_amount != null
+        ? proposedMilestonesForResponseCard(
+            milestoneProposals.data,
+            response.response_id,
+            data.offered_amount,
+            response.quoted_amount,
+          )
+        : null;
+
+    return (
+      <ResponseCard
+        key={response.response_id}
+        displayName={response.display_name}
+        avatarPath={response.avatar_path}
+        ratingAverage={response.rating_average}
+        ratingCount={response.rating_count}
+        completionPercent={response.completion_percent}
+        onViewProfile={() =>
+          setProfilePreview(responderProfileFromResponse(response, options.allowSelection))
+        }
+        message={response.message}
+        quotedAmount={response.quoted_amount}
+        currency={data.currency}
+        createdAt={response.created_at}
+        responderAvailable={Boolean(response.responder_available)}
+        statusLabel={options.statusLabel}
+        statusTone={options.statusTone}
+        proposedMilestones={proposedMilestonePlan?.items}
+        proposedMilestoneTotalMajor={proposedMilestonePlan?.totalMajor}
+        onDiscussPress={
+          options.allowSelection ? () => discussResponse(response.response_id) : undefined
+        }
+        discussLoading={
+          options.allowSelection &&
+          openPreHandshakeChat.isPending &&
+          openPreHandshakeChat.variables === response.response_id
+        }
+      />
+    );
+  };
 
   const showResponsePanels =
     isOpen ||
@@ -411,6 +477,20 @@ export function RequestDetailPage() {
             whenLabel={formatWhenRequestCard(data.scheduled_for)}
             whenDetail={formatWhenHome(data.scheduled_for)}
             locationLabel={formatRequestOfferLocationLabel(data.location_label, null)}
+          />
+        ) : null}
+
+        {paymentStructure.data === 'milestone' && data.offered_amount != null ? (
+          <MilestonePlanCard
+            paymentStructure="milestone"
+            totalMajor={data.offered_amount}
+            milestones={milestoneProposalItems(
+              milestoneProposals.data?.find(
+                (row) => row.response_id === null && row.status === 'draft',
+              ) ?? null,
+            )}
+            currency={data.currency}
+            helperNote="The full offer locks from your wallet when you choose a helper. Each milestone pays out after you approve it."
           />
         ) : null}
 
@@ -649,6 +729,8 @@ export function RequestDetailPage() {
         open={chooseResponderPrompt !== null}
         displayName={chooseResponderPrompt?.displayName ?? null}
         confirmLoading={acceptResponse.isPending}
+        milestonePayments={paymentStructure.data === 'milestone'}
+        planPreview={chooseResponderMilestonePreview}
         onClose={() => {
           if (acceptResponse.isPending) return;
           setChooseResponderPrompt(null);

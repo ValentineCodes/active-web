@@ -12,6 +12,7 @@ import {
 import type { BottomSheetModal } from '@gorhom/bottom-sheet';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
+import { useQueryClient } from '@tanstack/react-query';
 
 import { PersonProfileBottomSheet } from '@/components/PersonProfileBottomSheet';
 import {
@@ -20,7 +21,10 @@ import {
   proximityLabelForRequest,
 } from '@/components/home/HomeFeedRequestPage';
 import { EmptyState, InlineError } from '@/components/ui/StateView';
-import type { PublicRequest } from '@/features/requests/browse-api';
+import {
+  seedBrowseRequestFromFeed,
+  type PublicRequest,
+} from '@/features/requests/browse-api';
 import { useHomeBrowseFeed } from '@/features/requests/use-home-browse-feed';
 import { useHomeFeedContentInset } from '@/components/ui/tab-bar-insets';
 import { usePullToRefresh } from '@/lib/query/use-pull-to-refresh';
@@ -31,6 +35,7 @@ type HomeFeedProps = {
 };
 
 export function HomeFeed({ searchQuery, onOpenSearch }: HomeFeedProps) {
+  const queryClient = useQueryClient();
   const feed = useHomeBrowseFeed(searchQuery);
   const tabBarInset = useHomeFeedContentInset();
   const [pageHeight, setPageHeight] = useState(0);
@@ -51,6 +56,7 @@ export function HomeFeed({ searchQuery, onOpenSearch }: HomeFeedProps) {
         router.push(`/request/${request.request_id}`);
         return;
       }
+      seedBrowseRequestFromFeed(queryClient, request, position);
       router.push({
         pathname: '/respond/[id]',
         params: {
@@ -59,7 +65,7 @@ export function HomeFeed({ searchQuery, onOpenSearch }: HomeFeedProps) {
         },
       });
     },
-    [feed.ownOpenRequestIds, feed.position],
+    [feed.ownOpenRequestIds, feed.position, queryClient],
   );
 
   const openRequesterProfile = useCallback((request: PublicRequest) => {

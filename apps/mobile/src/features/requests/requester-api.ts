@@ -271,6 +271,8 @@ export function useCreateRequest() {
       sourceRequestId?: string;
       attachmentPath?: string | null;
       tags?: Pick<RequestTag, 'slug'>[];
+      paymentStructure?: Database['public']['Enums']['payment_structure'];
+      milestones?: Array<{ title: string; description: string; amount: number }>;
     }) => {
       if (!userId) throw new Error('Sign in to create a request.');
 
@@ -280,6 +282,10 @@ export function useCreateRequest() {
       }
 
       const tagIds = await resolveRequestTagIdsForRpc(input.tags ?? []);
+
+      const paymentStructure = input.paymentStructure ?? 'single';
+      const milestones =
+        paymentStructure === 'milestone' ? (input.milestones ?? undefined) : undefined;
 
       const { data, error } = await supabase.rpc('create_request', {
         p_title: input.title.trim(),
@@ -292,13 +298,21 @@ export function useCreateRequest() {
         p_source_request_id: input.sourceRequestId,
         p_attachment_path: input.attachmentPath || undefined,
         p_tag_ids: tagIds,
+        ...(paymentStructure === 'milestone'
+          ? { p_payment_structure: paymentStructure, p_milestones: milestones }
+          : {}),
       });
 
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (requestId) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.myRequests });
+      if (requestId) {
+        queryClient.invalidateQueries({ queryKey: queryKeys.requestMilestonePlan(requestId) });
+        queryClient.invalidateQueries({ queryKey: queryKeys.requestMilestoneProposals(requestId) });
+        queryClient.invalidateQueries({ queryKey: queryKeys.requestPaymentStructure(requestId) });
+      }
       queryClient.invalidateQueries({ queryKey: queryKeys.browseNearbyAll });
       queryClient.invalidateQueries({ queryKey: queryKeys.browseOpenAll });
       queryClient.invalidateQueries({ queryKey: queryKeys.requestSearchAll });
@@ -436,6 +450,8 @@ export function useAcceptResponse(requestId: string) {
       queryClient.invalidateQueries({ queryKey: queryKeys.myRequests });
       queryClient.invalidateQueries({ queryKey: queryKeys.requestResponses(requestId) });
       queryClient.invalidateQueries({ queryKey: queryKeys.engagement(requestId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.engagementMilestones(requestId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.requestMilestoneProposals(requestId) });
       queryClient.invalidateQueries({ queryKey: queryKeys.requestConversation(requestId) });
       queryClient.invalidateQueries({ queryKey: queryKeys.attendance });
       queryClient.invalidateQueries({ queryKey: queryKeys.myResponses });

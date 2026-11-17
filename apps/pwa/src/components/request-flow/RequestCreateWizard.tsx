@@ -5,6 +5,8 @@ import { useEffect, useRef, useState } from 'react';
 
 import { KeyboardStickyFooter } from '@/components/layout/KeyboardStickyFooter';
 import { RequestLocationModal } from '@/components/RequestLocationModal';
+import { MilestonePlanEditor } from '@/components/request-flow/MilestonePlanEditor';
+import { PaymentStructureSelector } from '@/components/request-flow/PaymentStructureSelector';
 import { RequestReviewBeforePostCard } from '@/components/request-flow/RequestReviewBeforePostCard';
 import { RequestTagPickerAfterNavigation } from '@/components/request-flow/RequestTagPicker';
 import { IconButton } from '@/components/ui/IconButton';
@@ -26,6 +28,13 @@ import {
   takeRequestPhoto,
   uploadRequestPhoto,
 } from '@/features/requests/request-media';
+import {
+  defaultMilestoneDraftItems,
+  milestoneDraftsAllocatedMajor,
+  validateMilestoneDraftItems,
+  type MilestoneDraftItem,
+  type PaymentStructure,
+} from '@/features/requests/milestones';
 import { useCreateRequest } from '@/features/requests/requester-api';
 import { MAX_REQUEST_TAGS, type RequestTag } from '@/features/requests/tags';
 import { useMyWallet } from '@/features/wallet/api';
@@ -350,6 +359,11 @@ export function RequestCreateWizard({
     amount: null as string | null,
   });
   const [amount, setAmount] = useState('');
+  const [paymentStructure, setPaymentStructure] = useState<PaymentStructure>('single');
+  const [milestoneDrafts, setMilestoneDrafts] = useState<MilestoneDraftItem[]>(
+    defaultMilestoneDraftItems(),
+  );
+  const [milestoneValidationMessage, setMilestoneValidationMessage] = useState<string | null>(null);
   const [position, setPosition] = useState<Position | null>(null);
   const [areaLabel, setAreaLabel] = useState('');
   const [selectedTags, setSelectedTags] = useState<RequestTag[]>([]);
@@ -376,10 +390,18 @@ export function RequestCreateWizard({
       : null;
   const descriptionValid = trimmedDescription.length <= DESCRIPTION_LIMITS.max;
 
+  const milestoneStepValid =
+    paymentStructure !== 'milestone' ||
+    (parsedAmount !== null &&
+      !amountError &&
+      isFundedOffer(parsedAmount) &&
+      validateMilestoneDraftItems(milestoneDrafts, parsedAmount).ok);
+
   const stepValid = [
     trimmedTitle.length >= CREATE_TITLE_LIMITS.min && trimmedTitle.length <= CREATE_TITLE_LIMITS.max,
     descriptionValid,
-    REQUEST_REQUIRES_FUNDING ? isFundedOffer(parsedAmount) && !amountError : amountError === null,
+    (REQUEST_REQUIRES_FUNDING ? isFundedOffer(parsedAmount) && !amountError : amountError === null) &&
+      milestoneStepValid,
     whenMode === 'now' || isFutureSchedule(laterAt),
     true,
     true,
@@ -393,6 +415,16 @@ export function RequestCreateWizard({
   const reviewAmount =
     parsedAmount !== null && isFundedOffer(parsedAmount) ? formatMoney(parsedAmount, MARKET.currency) : null;
   const reviewLocation = areaLabel.trim() || 'My location';
+
+  const onMilestoneDraftsChange = (next: MilestoneDraftItem[]) => {
+    setMilestoneDrafts(next);
+    if (paymentStructure === 'milestone') {
+      const allocated = milestoneDraftsAllocatedMajor(next);
+      if (allocated > 0) {
+        setAmount(String(allocated));
+      }
+    }
+  };
 
   useEffect(() => {
     if (step !== 0 && step !== 2) return;
@@ -429,6 +461,15 @@ export function RequestCreateWizard({
       if (message) {
         setFieldErrors((current) => ({ ...current, amount: message }));
         return;
+      }
+      if (paymentStructure === 'milestone' && parsedAmount !== null) {
+        const validation = validateMilestoneDraftItems(milestoneDrafts, parsedAmount);
+        if (!validation.ok) {
+          setMilestoneValidationMessage(validation.message);
+          showAppToast(validation.message, 'warning');
+          return;
+        }
+        setMilestoneValidationMessage(null);
       }
       setFieldErrors((current) => ({ ...current, amount: null }));
     }
@@ -476,6 +517,20 @@ export function RequestCreateWizard({
     const scheduledFor: Date | null =
       whenMode === 'now' ? null : isFutureSchedule(laterAt) ? laterAt : null;
 
+    const milestonePayload =
+      paymentStructure === 'milestone' && parsedAmount !== null
+        ? (() => {
+            const validation = validateMilestoneDraftItems(milestoneDrafts, parsedAmount);
+            if (!validation.ok) {
+              showAppToast(validation.message, 'warning');
+              return null;
+            }
+            return validation.items;
+          })()
+        : undefined;
+
+    if (milestonePayload === null) return;
+
     try {
       const attachmentPath = await uploadAttachmentIfNeeded();
       const requestId = await create.mutateAsync({
@@ -487,6 +542,8 @@ export function RequestCreateWizard({
         offeredAmount: parsedAmount!,
         attachmentPath,
         tags: selectedTags.map((tag) => ({ slug: tag.slug })),
+        paymentStructure,
+        milestones: paymentStructure === 'milestone' ? milestonePayload : undefined,
       });
       showAppToast('Request posted.');
       onSuccess(`/request/${requestId}`);
@@ -696,7 +753,7 @@ export function RequestCreateWizard({
         ) : null}
 
         {step === 2 ? (
-          <div className="flex flex-col gap-3">
+          <div className="flex min-w-0 w-full max-w-full flex-col gap-3">
             <h2 className="text-3xl font-bold leading-9 text-ink">What are you offering?</h2>
             <p className="text-base text-muted">How much you&apos;re willing to pay.</p>
             <div className="rounded-2xl bg-surface px-5 py-6">
@@ -726,6 +783,24 @@ export function RequestCreateWizard({
             </div>
             {fieldErrors.amount ?? amountError ? (
               <StepFieldError message={fieldErrors.amount ?? amountError ?? ''} />
+            ) : null}
+            <PaymentStructureSelector
+              value={paymentStructure}
+              onChange={(next) => {
+                setPaymentStructure(next);
+                setMilestoneValidationMessage(null);
+                if (next === 'milestone' && milestoneDrafts.length < 2) {
+                  setMilestoneDrafts(defaultMilestoneDraftItems());
+                }
+              }}
+            />
+            {paymentStructure === 'milestone' && isFundedOffer(parsedAmount) ? (
+              <MilestonePlanEditor
+                items={milestoneDrafts}
+                onChange={onMilestoneDraftsChange}
+                totalMajor={parsedAmount}
+                validationMessage={milestoneValidationMessage}
+              />
             ) : null}
           </div>
         ) : null}

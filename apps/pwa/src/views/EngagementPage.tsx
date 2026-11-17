@@ -28,7 +28,12 @@ import { BottomSheet } from '@/components/ui/BottomSheet';
 import { Button } from '@/components/ui/Button';
 import { Screen } from '@/components/ui/Screen';
 import { EmptyState, InlineError, LoadingState } from '@/components/ui/StateView';
+import { EngagementMilestoneProgress } from '@/components/request-flow/EngagementMilestoneProgress';
 import { resolveAgreedAmount } from '@/features/requests/payment-display';
+import {
+  useEngagementMilestones,
+  useRequestPaymentStructure,
+} from '@/features/requests/milestone-api';
 import {
   invalidateConversationInboxQueries,
   useRequestConversation,
@@ -104,6 +109,11 @@ export function EngagementPage() {
   const id = useRouteParam('id');
 
   const engagement = useEngagement(id);
+  const paymentStructure = useRequestPaymentStructure(id, Boolean(engagement.data));
+  const engagementMilestones = useEngagementMilestones(
+    id,
+    paymentStructure.data === 'milestone',
+  );
   const myResponses = useMyResponses();
   const markServiceComplete = useMarkServiceComplete(id);
   const completeRequest = useCompleteRequest(id);
@@ -124,11 +134,13 @@ export function EngagementPage() {
   const [footerHeight, setFooterHeight] = useState(0);
 
   const engagementSnapshot = engagement.data;
+  const isMilestoneEngagement = paymentStructure.data === 'milestone';
   const helperCanMarkComplete =
     engagementSnapshot != null &&
     !engagementSnapshot.viewer_is_requester &&
-    ['accepted', 'in_progress'].includes(engagementSnapshot.request_status);
-  const requestConversation = useRequestConversation(id, engagementSnapshot != null);
+    ['accepted', 'in_progress'].includes(engagementSnapshot.request_status) &&
+    !isMilestoneEngagement;
+  const requestConversation = useRequestConversation(id, Boolean(engagementSnapshot));
 
   const myRequest = useQuery({
     ...myRequestQueryOptions(id),
@@ -450,11 +462,27 @@ export function EngagementPage() {
 
             {showPaymentSecured ? (
               <RequestCallout tone="info" title="Payment secured">
-                <p className="text-sm text-muted">Release payment only after the request is complete.</p>
+                <p className="text-sm text-muted">
+                  {isMilestoneEngagement
+                    ? 'The full offer is locked. Milestone payouts release when you approve each step.'
+                    : 'Release payment only after the request is complete.'}
+                </p>
               </RequestCallout>
             ) : null}
 
-            {helperActive ? (
+            {isMilestoneEngagement && agreedAmount !== null ? (
+              <EngagementMilestoneProgress
+                requestId={id}
+                conversationId={requestConversation.data?.conversationId ?? null}
+                milestones={engagementMilestones.data ?? []}
+                currency={data.currency}
+                viewerIsRequester={data.viewer_is_requester}
+                paymentDisputed={data.payment_status === 'disputed' || data.request_status === 'disputed'}
+                onOpenChat={() => router.push(chatHref)}
+              />
+            ) : null}
+
+            {helperActive && !isMilestoneEngagement ? (
               <RequestCallout
                 tone="info"
                 title={`You're committed to this request on ${formatCommitmentDayLabel(data.scheduled_for)}.`}
@@ -565,7 +593,9 @@ export function EngagementPage() {
               <>
                 {markServiceComplete.isError ? <InlineError error={markServiceComplete.error} /> : null}
                 {completeRequest.isError ? <InlineError error={completeRequest.error} /> : null}
-                {helperActive && ['accepted', 'in_progress'].includes(data.request_status) ? (
+                {helperActive &&
+                !isMilestoneEngagement &&
+                ['accepted', 'in_progress'].includes(data.request_status) ? (
                   <Button
                     label="I'm done"
                     variant="active"
@@ -577,7 +607,7 @@ export function EngagementPage() {
                   />
                 ) : null}
 
-                {requesterActive ? (
+                {requesterActive && !isMilestoneEngagement ? (
                   <Button
                     label="Confirm completion"
                     variant="active"

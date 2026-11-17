@@ -103,6 +103,7 @@ export async function sendCompletionProofMessage(input: {
   conversationId: string;
   staged: CompletionProofStagedMedia;
   session: CompletionProofSendSession;
+  caption?: string;
   onUploadProgress?: (fraction: number) => void;
 }): Promise<CompletionProofSendSession> {
   const session: CompletionProofSendSession = {
@@ -118,7 +119,7 @@ export async function sendCompletionProofMessage(input: {
     if (!session.messageId || session.slots.length === 0) {
       const slots = await reserveConversationChatMessageSlots({
         conversationId: input.conversationId,
-        caption: COMPLETION_PROOF_MESSAGE_CAPTION,
+        caption: input.caption?.trim() || COMPLETION_PROOF_MESSAGE_CAPTION,
         plannedAttachments: [input.staged.prepared],
         clientSendId: session.clientSendId,
       });

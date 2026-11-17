@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef, type ReactNode } from 'react';
 import { Text, View } from 'react-native';
 import {
   BottomSheetBackdrop,
@@ -20,18 +20,22 @@ export function ChooseResponderSheet({
   displayName,
   onConfirm,
   confirmLoading,
+  milestonePayments,
+  planPreview,
 }: {
   open: boolean;
   onClose: () => void;
   displayName: string | null;
   onConfirm: () => void;
   confirmLoading?: boolean;
+  milestonePayments?: boolean;
+  planPreview?: ReactNode;
 }) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const sheetRef = useRef<BottomSheetModal>(null);
-  const snapPoints = useMemo(() => ['44%'], []);
-  const dialog = chooseResponderDialog(displayName);
+  const snapPoints = useMemo(() => [planPreview ? '70%' : '44%'], [planPreview]);
+  const dialog = chooseResponderDialog(displayName, milestonePayments);
 
   useEffect(() => {
     if (open) sheetRef.current?.present();
@@ -77,6 +81,8 @@ export function ChooseResponderSheet({
             <Text className="text-2xl font-bold leading-8 text-ink">{dialog.title}</Text>
             <Text className="text-base leading-6 text-muted">{dialog.message}</Text>
           </View>
+
+          {planPreview}
 
           <View className="flex-row gap-3">
             <Button

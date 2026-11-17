@@ -54,6 +54,15 @@ import {
   isRequestEditLockedError,
   showRequestEditLockedToast,
 } from '@/features/requests/request-edit-locked';
+import { MilestonePlanEditor } from '@/components/request-flow/MilestonePlanEditor';
+import { PaymentStructureSelector } from '@/components/request-flow/PaymentStructureSelector';
+import {
+  defaultMilestoneDraftItems,
+  milestoneDraftsAllocatedMajor,
+  validateMilestoneDraftItems,
+  type MilestoneDraftItem,
+  type PaymentStructure,
+} from '@/features/requests/milestones';
 import { useRequestAttachmentUrl } from '@/features/requests/request-attachment-url';
 import {
   useCreateRequest,
@@ -361,6 +370,11 @@ export function NewRequestForm({
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [amount, setAmount] = useState(seeded.amount);
+  const [paymentStructure, setPaymentStructure] = useState<PaymentStructure>('single');
+  const [milestoneDrafts, setMilestoneDrafts] = useState<MilestoneDraftItem[]>(
+    defaultMilestoneDraftItems,
+  );
+  const [milestoneValidationMessage, setMilestoneValidationMessage] = useState<string | null>(null);
   const [position, setPosition] = useState<Position | null>(seeded.position);
   const [areaLabel, setAreaLabel] = useState(seeded.areaLabel);
   const [laterTimeError, setLaterTimeError] = useState(false);
@@ -451,11 +465,25 @@ export function NewRequestForm({
 
   const descriptionValid = trimmedDescription.length <= DESCRIPTION_LIMITS.max;
 
+  const milestoneValidation =
+    !isEdit &&
+    paymentStructure === 'milestone' &&
+    parsedAmount !== null &&
+    !amountError &&
+    isFundedOffer(parsedAmount)
+      ? validateMilestoneDraftItems(milestoneDrafts, parsedAmount)
+      : null;
+
+  const milestoneStepValid =
+    paymentStructure !== 'milestone' ||
+    (milestoneValidation !== null && milestoneValidation.ok === true);
+
   const stepValid = [
     trimmedTitle.length >= CREATE_TITLE_LIMITS.min &&
       trimmedTitle.length <= CREATE_TITLE_LIMITS.max,
     descriptionValid,
-    REQUEST_REQUIRES_FUNDING ? isFundedOffer(parsedAmount) && !amountError : amountError === null,
+  (REQUEST_REQUIRES_FUNDING ? isFundedOffer(parsedAmount) && !amountError : amountError === null) &&
+      milestoneStepValid,
     whenMode === 'now' || isFutureSchedule(laterAt),
     true,
     true,
@@ -465,6 +493,19 @@ export function NewRequestForm({
 
   const isLastStep = step === stepCount - 1;
   const funding = isFundedOffer(parsedAmount) ? summarizeRequestFunding(parsedAmount) : null;
+
+  const onMilestoneDraftsChange = useCallback(
+    (next: MilestoneDraftItem[]) => {
+      setMilestoneDrafts(next);
+      if (paymentStructure === 'milestone') {
+        const allocated = milestoneDraftsAllocatedMajor(next);
+        if (allocated > 0) {
+          setAmount(String(allocated));
+        }
+      }
+    },
+    [paymentStructure],
+  );
 
   useEffect(() => {
     if (step > 2) return;
@@ -501,7 +542,20 @@ export function NewRequestForm({
         return;
       }
       if (step === 2) {
-        showAppToast(amountError ?? 'Enter a valid offer amount to continue.', 'warning');
+        if (amountError || !isFundedOffer(parsedAmount)) {
+          showAppToast(amountError ?? 'Enter a valid offer amount to continue.', 'warning');
+          return;
+        }
+        if (paymentStructure === 'milestone' && !isEdit) {
+          const validation = validateMilestoneDraftItems(milestoneDrafts, parsedAmount);
+          if (!validation.ok) {
+            setMilestoneValidationMessage(validation.message);
+            showAppToast(validation.message, 'warning');
+            return;
+          }
+          setMilestoneValidationMessage(null);
+        }
+        showAppToast(amountError ?? 'Set up your milestones to continue.', 'warning');
         return;
       }
       if (step === 3) {
@@ -554,6 +608,20 @@ export function NewRequestForm({
       return;
     }
 
+    const milestonePayload =
+      !isEdit && paymentStructure === 'milestone' && parsedAmount !== null
+        ? (() => {
+            const validation = validateMilestoneDraftItems(milestoneDrafts, parsedAmount);
+            if (!validation.ok) {
+              showAppToast(validation.message, 'warning');
+              return null;
+            }
+            return validation.items;
+          })()
+        : undefined;
+
+    if (milestonePayload === null) return;
+
     const payload = {
       title: trimmedTitle,
       description: trimmedDescription,
@@ -563,6 +631,12 @@ export function NewRequestForm({
       offeredAmount: parsedAmount!,
       attachmentPath: attachmentForRpc,
       tags: selectedTags.slice(0, MAX_REQUEST_TAGS).map((tag) => ({ slug: tag.slug })),
+      ...(isEdit
+        ? {}
+        : {
+            paymentStructure,
+            milestones: paymentStructure === 'milestone' ? milestonePayload : undefined,
+          }),
     };
 
     if (isEdit && editRequestId) {
@@ -956,7 +1030,7 @@ export function NewRequestForm({
             ) : null}
 
             {step === 2 ? (
-              <View className="gap-3">
+              <View className="w-full max-w-full gap-3">
                 <Text className="text-3xl font-bold leading-9 text-ink">
                   What are you offering?
                 </Text>
@@ -987,6 +1061,26 @@ export function NewRequestForm({
                   />
                 </View>
                 {amountError ? <Text className="text-sm text-warning">{amountError}</Text> : null}
+                {!isEdit ? (
+                  <PaymentStructureSelector
+                    value={paymentStructure}
+                    onChange={(next) => {
+                      setPaymentStructure(next);
+                      setMilestoneValidationMessage(null);
+                      if (next === 'milestone' && milestoneDrafts.length < 2) {
+                        setMilestoneDrafts(defaultMilestoneDraftItems());
+                      }
+                    }}
+                  />
+                ) : null}
+                {!isEdit && paymentStructure === 'milestone' && isFundedOffer(parsedAmount) ? (
+                  <MilestonePlanEditor
+                    items={milestoneDrafts}
+                    onChange={onMilestoneDraftsChange}
+                    totalMajor={parsedAmount}
+                    validationMessage={milestoneValidationMessage}
+                  />
+                ) : null}
               </View>
             ) : null}
 

@@ -75,7 +75,7 @@ export function MoneyAmountInput({
   const symbolStyle = [amountDisplayTypography, { color: colors.active }];
 
   return (
-    <View className={cn('flex-row items-center', className)}>
+    <View className={cn('w-full min-w-0 flex-row items-center', className)}>
       <Text style={symbolStyle}>{MARKET.currencySymbol}</Text>
 
       <View className="min-w-0 flex-1 flex-row items-center">

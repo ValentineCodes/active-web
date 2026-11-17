@@ -1,8 +1,10 @@
 import { Text, View } from 'react-native';
 
 import { ResponderScheduleAvailability } from '@/components/ResponderScheduleAvailability';
+import { MilestonePlanCard } from '@/components/request-flow/MilestonePlanCard';
 import { RequestPersonCard } from '@/components/request-flow/RequestPersonCard';
 import { Badge } from '@/components/ui/Badge';
+import type { MilestoneProposalItem } from '@/features/requests/milestones';
 import { formatAgo, formatMoney } from '@/lib/format';
 import { useTheme } from '@/theme';
 
@@ -26,6 +28,8 @@ export function ResponseCard({
   discussLoading,
   statusLabel,
   statusTone,
+  proposedMilestones,
+  proposedMilestoneTotalMajor,
 }: {
   displayName: string | null;
   avatarPath: string | null;
@@ -43,6 +47,8 @@ export function ResponseCard({
   discussLoading?: boolean;
   statusLabel?: string;
   statusTone?: 'neutral' | 'brand' | 'active' | 'danger' | 'warning' | 'info';
+  proposedMilestones?: MilestoneProposalItem[];
+  proposedMilestoneTotalMajor?: number;
 }) {
   const { shadow } = useTheme();
   const offerLabel = quotedAmount !== null ? formatMoney(quotedAmount, currency) : null;
@@ -64,7 +70,7 @@ export function ResponseCard({
         />
       </View>
 
-      {message || offerLabel ? (
+      {message || offerLabel || (proposedMilestones && proposedMilestones.length >= 2) ? (
         <View className="gap-2 rounded-2xl bg-surface p-3">
           <View className="flex-row items-center justify-between gap-2">
             <Text className="text-sm text-muted">{formatAgo(createdAt)}</Text>
@@ -73,6 +79,16 @@ export function ResponseCard({
             ) : null}
           </View>
           {message ? <Text className="text-base leading-6 text-ink">{message}</Text> : null}
+          {proposedMilestones && proposedMilestones.length >= 2 && proposedMilestoneTotalMajor != null ? (
+            <MilestonePlanCard
+              paymentStructure="milestone"
+              totalMajor={proposedMilestoneTotalMajor}
+              milestones={proposedMilestones}
+              currency={currency}
+              heading="Their proposed plan"
+              variant="proposed"
+            />
+          ) : null}
         </View>
       ) : null}
 

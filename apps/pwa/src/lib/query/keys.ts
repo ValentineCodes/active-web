@@ -6,6 +6,11 @@ export const queryKeys = {
   myRequests: ['my-requests'] as const,
   myRequest: (requestId: string) => ['my-requests', requestId] as const,
   requestResponses: (requestId: string) => ['request-responses', requestId] as const,
+  requestPaymentStructure: (requestId: string) => ['request-payment-structure', requestId] as const,
+  requestMilestonePlan: (requestId: string) => ['request-milestone-plan', requestId] as const,
+  requestMilestoneProposals: (requestId: string) =>
+    ['request-milestone-proposals', requestId] as const,
+  engagementMilestones: (requestId: string) => ['engagement-milestones', requestId] as const,
   browseNearbyAll: ['browse-nearby'] as const,
   browseNearby: (latitude: number | null, longitude: number | null) =>
     ['browse-nearby', latitude, longitude] as const,

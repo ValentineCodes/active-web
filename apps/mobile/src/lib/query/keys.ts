@@ -6,6 +6,11 @@ export const queryKeys = {
   myRequests: ['my-requests'] as const,
   myRequest: (requestId: string) => ['my-requests', requestId] as const,
   requestResponses: (requestId: string) => ['request-responses', requestId] as const,
+  requestPaymentStructure: (requestId: string) => ['request-payment-structure', requestId] as const,
+  requestMilestonePlan: (requestId: string) => ['request-milestone-plan', requestId] as const,
+  requestMilestoneProposals: (requestId: string) =>
+    ['request-milestone-proposals', requestId] as const,
+  engagementMilestones: (requestId: string) => ['engagement-milestones', requestId] as const,
   browseNearbyAll: ['browse-nearby'] as const,
   browseNearby: (latitude: number | null, longitude: number | null) =>
     ['browse-nearby', latitude, longitude] as const,
@@ -20,6 +25,7 @@ export const queryKeys = {
   requestSearchSuggestions: (prefix: string) => ['request-search-suggestions', prefix] as const,
   browseRequest: (requestId: string, latitude: number | null, longitude: number | null) =>
     ['browse-request', requestId, latitude, longitude] as const,
+  browseRequestPreview: (requestId: string) => ['browse-request-preview', requestId] as const,
   myResponses: ['my-responses'] as const,
   engagement: (requestId: string) => ['engagement', requestId] as const,
   requestConversation: (requestId: string) => ['request-conversation', requestId] as const,

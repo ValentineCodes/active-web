@@ -405,6 +405,118 @@ export type Database = {
           },
         ]
       }
+      engagement_milestones: {
+        Row: {
+          amount_major: number
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string
+          description: string
+          fee_kobo: number
+          id: string
+          payout_reference: string | null
+          position: number
+          proposal_id: string
+          provider_kobo: number
+          request_id: string
+          revision_requested_at: string | null
+          revision_requested_by: string | null
+          status: Database["public"]["Enums"]["milestone_status"]
+          submitted_at: string | null
+          submitted_by: string | null
+          title: string
+          total_kobo: number
+          updated_at: string
+        }
+        Insert: {
+          amount_major: number
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          description?: string
+          fee_kobo: number
+          id?: string
+          payout_reference?: string | null
+          position: number
+          proposal_id: string
+          provider_kobo: number
+          request_id: string
+          revision_requested_at?: string | null
+          revision_requested_by?: string | null
+          status?: Database["public"]["Enums"]["milestone_status"]
+          submitted_at?: string | null
+          submitted_by?: string | null
+          title: string
+          total_kobo: number
+          updated_at?: string
+        }
+        Update: {
+          amount_major?: number
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          description?: string
+          fee_kobo?: number
+          id?: string
+          payout_reference?: string | null
+          position?: number
+          proposal_id?: string
+          provider_kobo?: number
+          request_id?: string
+          revision_requested_at?: string | null
+          revision_requested_by?: string | null
+          status?: Database["public"]["Enums"]["milestone_status"]
+          submitted_at?: string | null
+          submitted_by?: string | null
+          title?: string
+          total_kobo?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "engagement_milestones_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "engagement_milestones_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: false
+            referencedRelation: "request_milestone_proposals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "engagement_milestones_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "my_requests"
+            referencedColumns: ["request_id"]
+          },
+          {
+            foreignKeyName: "engagement_milestones_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "engagement_milestones_revision_requested_by_fkey"
+            columns: ["revision_requested_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "engagement_milestones_submitted_by_fkey"
+            columns: ["submitted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       handshakes: {
         Row: {
           created_at: string
@@ -629,6 +741,9 @@ export type Database = {
           currency: string
           id: string
           provider_amount: number
+          released_fee_kobo: number
+          released_provider_kobo: number
+          released_total_kobo: number
           request_id: string
           service_fee: number
           status: Database["public"]["Enums"]["payment_lock_status"]
@@ -643,6 +758,9 @@ export type Database = {
           currency?: string
           id?: string
           provider_amount: number
+          released_fee_kobo?: number
+          released_provider_kobo?: number
+          released_total_kobo?: number
           request_id: string
           service_fee: number
           status?: Database["public"]["Enums"]["payment_lock_status"]
@@ -657,6 +775,9 @@ export type Database = {
           currency?: string
           id?: string
           provider_amount?: number
+          released_fee_kobo?: number
+          released_provider_kobo?: number
+          released_total_kobo?: number
           request_id?: string
           service_fee?: number
           status?: Database["public"]["Enums"]["payment_lock_status"]
@@ -1147,6 +1268,96 @@ export type Database = {
           },
         ]
       }
+      request_milestone_proposal_items: {
+        Row: {
+          amount_major: number
+          created_at: string
+          description: string
+          id: string
+          position: number
+          proposal_id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          amount_major: number
+          created_at?: string
+          description?: string
+          id?: string
+          position: number
+          proposal_id: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          amount_major?: number
+          created_at?: string
+          description?: string
+          id?: string
+          position?: number
+          proposal_id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "request_milestone_proposal_items_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: false
+            referencedRelation: "request_milestone_proposals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      request_milestone_proposals: {
+        Row: {
+          created_at: string
+          id: string
+          request_id: string
+          response_id: string | null
+          status: Database["public"]["Enums"]["milestone_proposal_status"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          request_id: string
+          response_id?: string | null
+          status?: Database["public"]["Enums"]["milestone_proposal_status"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          request_id?: string
+          response_id?: string | null
+          status?: Database["public"]["Enums"]["milestone_proposal_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "request_milestone_proposals_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "my_requests"
+            referencedColumns: ["request_id"]
+          },
+          {
+            foreignKeyName: "request_milestone_proposals_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "request_milestone_proposals_response_id_fkey"
+            columns: ["response_id"]
+            isOneToOne: false
+            referencedRelation: "request_responses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       request_responses: {
         Row: {
           created_at: string
@@ -1342,6 +1553,7 @@ export type Database = {
           location_label: string
           offered_amount: number | null
           payment_status: Database["public"]["Enums"]["payment_status"]
+          payment_structure: Database["public"]["Enums"]["payment_structure"]
           requester_id: string
           scheduled_for: string | null
           selected_user_id: string | null
@@ -1372,6 +1584,7 @@ export type Database = {
           location_label: string
           offered_amount?: number | null
           payment_status?: Database["public"]["Enums"]["payment_status"]
+          payment_structure?: Database["public"]["Enums"]["payment_structure"]
           requester_id: string
           scheduled_for?: string | null
           selected_user_id?: string | null
@@ -1402,6 +1615,7 @@ export type Database = {
           location_label?: string
           offered_amount?: number | null
           payment_status?: Database["public"]["Enums"]["payment_status"]
+          payment_structure?: Database["public"]["Enums"]["payment_structure"]
           requester_id?: string
           scheduled_for?: string | null
           selected_user_id?: string | null
@@ -2469,6 +2683,10 @@ export type Database = {
         Returns: undefined
       }
       accept_response: { Args: { p_response_id: string }; Returns: string }
+      admin_actor_may_reveal_user_nin: {
+        Args: { p_actor_admin_id: string }
+        Returns: boolean
+      }
       admin_add_report_note: {
         Args: { p_body: string; p_report_id: string }
         Returns: undefined
@@ -2704,6 +2922,15 @@ export type Database = {
         Returns: Json
       }
       admin_revoke_member: { Args: { p_user_id: string }; Returns: undefined }
+      admin_service_user_nin_decrypt_bundle: {
+        Args: {
+          p_actor_admin_id: string
+          p_idempotency_key: string
+          p_reason: string
+          p_target_user_id: string
+        }
+        Returns: Json
+      }
       admin_suspend_user: {
         Args: { p_idempotency_key: string; p_reason: string; p_user_id: string }
         Returns: undefined
@@ -2757,6 +2984,10 @@ export type Database = {
         Args: { p_type: Database["public"]["Enums"]["wallet_transaction_type"] }
         Returns: string
       }
+      agree_to_response_milestone_proposal: {
+        Args: { p_response_id: string }
+        Returns: undefined
+      }
       align_request_escrow_to_agreed_amount: {
         Args: {
           p_agreed_provider_amount: number
@@ -2782,6 +3013,10 @@ export type Database = {
         }
         Returns: Database["public"]["Enums"]["payment_status"]
       }
+      approve_engagement_milestone: {
+        Args: { p_milestone_id: string }
+        Returns: undefined
+      }
       assert_admin_caller: { Args: never; Returns: undefined }
       assert_authenticated: { Args: never; Returns: string }
       assert_coordinates: {
@@ -2790,6 +3025,10 @@ export type Database = {
       }
       assert_dispute_evidence_paths: {
         Args: { p_paths: string[]; p_reporter_id: string }
+        Returns: undefined
+      }
+      assert_in_app_profile_photo: {
+        Args: { p_user_id: string }
         Returns: undefined
       }
       assert_onboarded: { Args: never; Returns: string }
@@ -2838,8 +3077,8 @@ export type Database = {
       browse_nearby_requests: {
         Args: {
           p_latitude: number
-          p_longitude: number
           p_limit?: number
+          p_longitude: number
           p_offset?: number
         }
         Returns: {
@@ -3076,7 +3315,9 @@ export type Database = {
           p_latitude: number
           p_location_label: string
           p_longitude: number
+          p_milestones?: Json
           p_offered_amount?: number
+          p_payment_structure?: Database["public"]["Enums"]["payment_structure"]
           p_scheduled_for?: string
           p_source_request_id?: string
           p_tag_ids?: string[]
@@ -3134,6 +3375,14 @@ export type Database = {
         Args: {
           p_actor_id: string
           p_payment_idempotency_key: string
+          p_request_id: string
+          p_status_event_key: string
+        }
+        Returns: boolean
+      }
+      finalize_milestone_engagement: {
+        Args: {
+          p_actor_id: string
           p_request_id: string
           p_status_event_key: string
         }
@@ -3259,6 +3508,14 @@ export type Database = {
           sender_id: string
         }[]
       }
+      get_request_milestone_plan_for_respond: {
+        Args: { p_request_id: string }
+        Returns: {
+          milestones: Json
+          my_proposed_milestones: Json
+          payment_structure: Database["public"]["Enums"]["payment_structure"]
+        }[]
+      }
       get_responder_pre_handshake_conversation: {
         Args: { p_request_id: string }
         Returns: string
@@ -3304,6 +3561,19 @@ export type Database = {
         Returns: string
       }
       kobo_to_ngn_major: { Args: { p_kobo: number }; Returns: number }
+      list_engagement_milestones: {
+        Args: { p_request_id: string }
+        Returns: {
+          amount_major: number
+          approved_at: string
+          description: string
+          milestone_id: string
+          milestone_position: number
+          status: Database["public"]["Enums"]["milestone_status"]
+          submitted_at: string
+          title: string
+        }[]
+      }
       list_my_bank_accounts: {
         Args: never
         Returns: {
@@ -3396,6 +3666,9 @@ export type Database = {
           destination_account_name: string
           destination_account_number_masked: string
           destination_bank_name: string
+          failed_at: string
+          processing_at: string
+          rejected_at: string
           status: string
           updated_at: string
           user_facing_reason: string
@@ -3422,6 +3695,15 @@ export type Database = {
           metadata: Json
           read_at: string
           sender_id: string
+        }[]
+      }
+      list_request_milestone_proposals: {
+        Args: { p_request_id: string }
+        Returns: {
+          items: Json
+          proposal_id: string
+          response_id: string
+          status: Database["public"]["Enums"]["milestone_proposal_status"]
         }[]
       }
       list_request_responses: {
@@ -3498,15 +3780,20 @@ export type Database = {
         Args: { p_recipient_id: string; p_request_id: string }
         Returns: string
       }
+      milestone_items_sum_matches_total: {
+        Args: { p_items: Json; p_total_major: number }
+        Returns: boolean
+      }
       my_received_ratings: {
         Args: never
         Returns: {
-          comment: string | null
+          comment: string
           created_at: string
-          rating_id: string
-          rater_avatar_path: string | null
-          rater_display_name: string | null
+          rater_avatar_path: string
+          rater_display_name: string
           rater_id: string
+          rating_id: string
+          request_id: string
           stars: number
         }[]
       }
@@ -3596,6 +3883,15 @@ export type Database = {
         Args: { p_request_id: string }
         Returns: undefined
       }
+      parse_milestone_items_json: {
+        Args: { p_items: Json }
+        Returns: {
+          amount_major: number
+          description: string
+          milestone_position: number
+          title: string
+        }[]
+      }
       platform_is_local_deployment: { Args: never; Returns: boolean }
       post_wallet_ledger: {
         Args: {
@@ -3660,6 +3956,10 @@ export type Database = {
         Returns: undefined
       }
       release_provider: { Args: { p_provider_id: string }; Returns: undefined }
+      replace_milestone_proposal_items: {
+        Args: { p_items: Json; p_proposal_id: string }
+        Returns: undefined
+      }
       report_service_problem: {
         Args: {
           p_description?: string
@@ -3696,6 +3996,10 @@ export type Database = {
           p_status: Database["public"]["Enums"]["request_status"]
         }
         Returns: Database["public"]["Enums"]["request_status"]
+      }
+      request_engagement_milestone_revision: {
+        Args: { p_milestone_id: string }
+        Returns: undefined
       }
       request_expires_at: { Args: { p_scheduled_for: string }; Returns: string }
       request_in_awaiting_review: {
@@ -3763,6 +4067,10 @@ export type Database = {
         Args: { p_limit?: number }
         Returns: number
       }
+      resolve_milestone_proposal_for_accept: {
+        Args: { p_request_id: string; p_response_id: string }
+        Returns: string
+      }
       resolve_request_conversation_for_viewer: {
         Args: { p_lookup_id: string }
         Returns: {
@@ -3811,10 +4119,10 @@ export type Database = {
       search_requests: {
         Args: {
           p_latitude: number
-          p_longitude: number
-          p_query: string
           p_limit?: number
+          p_longitude: number
           p_offset?: number
+          p_query: string
         }
         Returns: {
           attachment_path: string
@@ -3893,11 +4201,27 @@ export type Database = {
         Args: { p_conversation_id: string }
         Returns: undefined
       }
+      set_request_milestone_draft: {
+        Args: { p_milestones: Json; p_request_id: string }
+        Returns: undefined
+      }
       set_user_attendance: {
         Args: { p_request_id: string; p_user_id: string }
         Returns: undefined
       }
+      snapshot_engagement_milestones: {
+        Args: { p_proposal_id: string; p_request_id: string }
+        Returns: undefined
+      }
       start_request: { Args: { p_request_id: string }; Returns: undefined }
+      submit_engagement_milestone: {
+        Args: { p_milestone_id: string }
+        Returns: undefined
+      }
+      submit_response_milestone_proposal: {
+        Args: { p_milestones: Json; p_response_id: string }
+        Returns: string
+      }
       submit_user_nin_encrypted: {
         Args: {
           p_ciphertext: string
@@ -3989,6 +4313,10 @@ export type Database = {
         Args: { p_day: string; p_user_id: string }
         Returns: number
       }
+      validate_proposal_matches_total: {
+        Args: { p_proposal_id: string; p_total_major: number }
+        Returns: undefined
+      }
       wallet_adjust_active_lock_kobo: {
         Args: {
           p_new_provider_amount_kobo: number
@@ -4073,6 +4401,18 @@ export type Database = {
         }
         Returns: undefined
       }
+      wallet_release_milestone_kobo: {
+        Args: {
+          p_fee_kobo: number
+          p_milestone_id: string
+          p_provider_kobo: number
+          p_recipient_user_id: string
+          p_reference: string
+          p_request_id: string
+          p_total_kobo: number
+        }
+        Returns: undefined
+      }
       wallet_shift_lock_bucket: {
         Args: {
           p_reference: string
@@ -4136,6 +4476,18 @@ export type Database = {
         | "declined"
         | "expired"
         | "superseded"
+      milestone_proposal_status:
+        | "draft"
+        | "proposed"
+        | "requester_agreed"
+        | "locked"
+        | "superseded"
+      milestone_status:
+        | "pending"
+        | "in_progress"
+        | "submitted"
+        | "revision_requested"
+        | "approved_paid"
       notification_type:
         | "response_received"
         | "new_responses"
@@ -4176,6 +4528,7 @@ export type Database = {
         | "released"
         | "refunded"
         | "disputed"
+      payment_structure: "single" | "milestone"
       profile_catalogue_kind: "photo" | "video"
       request_status:
         | "draft"
@@ -4390,6 +4743,20 @@ export const Constants = {
         "expired",
         "superseded",
       ],
+      milestone_proposal_status: [
+        "draft",
+        "proposed",
+        "requester_agreed",
+        "locked",
+        "superseded",
+      ],
+      milestone_status: [
+        "pending",
+        "in_progress",
+        "submitted",
+        "revision_requested",
+        "approved_paid",
+      ],
       notification_type: [
         "response_received",
         "new_responses",
@@ -4432,6 +4799,7 @@ export const Constants = {
         "refunded",
         "disputed",
       ],
+      payment_structure: ["single", "milestone"],
       profile_catalogue_kind: ["photo", "video"],
       request_status: [
         "draft",

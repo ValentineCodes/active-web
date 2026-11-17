@@ -23,6 +23,7 @@ import {
   useMySavedLocations,
   type SavedLocation,
 } from '@/features/profile/saved-locations-api';
+import { isHelperEngagementView } from '@/features/requests/activity-list';
 import {
   canRespondToRequest,
   responseWizardInitialOffer,
@@ -42,7 +43,15 @@ import {
   type Position,
 } from '@/lib/geolocation';
 import { conversationHref } from '@/lib/conversation-navigation';
+import { useQueryClient } from '@tanstack/react-query';
+import {
+  useRequestMilestonePlanForRespond,
+  useSubmitResponseMilestoneProposal,
+} from '@/features/requests/milestone-api';
+import type { MilestoneRpcItem } from '@/features/requests/milestones';
+import { queryKeys } from '@/lib/query/keys';
 import { useRouter, useSearchParams } from '@/lib/navigation';
+import { supabase } from '@/lib/supabase/client';
 import { useRouteParam } from '@/lib/route-param';
 import { showAppToast } from '@/lib/toast';
 import { useColors } from '@/theme/ThemeProvider';
@@ -50,6 +59,7 @@ import { useColors } from '@/theme/ThemeProvider';
 type PendingSubmit = {
   message: string | null;
   quotedAmount: number | null;
+  milestoneProposal?: MilestoneRpcItem[] | null;
 };
 
 type PendingLocationAction =
@@ -71,6 +81,9 @@ export function RespondPage() {
   const profile = useMyProfile();
   const respond = useRespondToRequest();
   const withdrawResponse = useWithdrawResponse();
+  const submitMilestoneProposal = useSubmitResponseMilestoneProposal();
+  const milestonePlan = useRequestMilestonePlanForRespond(id);
+  const queryClient = useQueryClient();
   const preHandshakeConversation = useResponderPreHandshakeConversation(id);
   const savedLocations = useMySavedLocations();
 
@@ -132,6 +145,16 @@ export function RespondPage() {
   );
   const initialMessage = existingResponse?.message ?? '';
 
+  const requesterMilestones = milestonePlan.data?.requesterMilestones ?? [];
+  const myProposedMilestones = milestonePlan.data?.myProposedMilestones ?? [];
+
+  const responseProposedMilestoneTotalMajor = useMemo(() => {
+    if (myProposedMilestones.length < 2) return undefined;
+    const quoted = existingResponse?.quotedAmount;
+    if (quoted != null && quoted > 0) return quoted;
+    return request?.offered_amount ?? undefined;
+  }, [myProposedMilestones.length, existingResponse?.quotedAmount, request?.offered_amount]);
+
   const beginFlow = useCallback(() => {
     respond.reset();
     setNeedsPhotoStep(!hasProfilePhotoReady(profile.data));
@@ -187,8 +210,10 @@ export function RespondPage() {
   const activeAsHelper = myResponses.data?.find(
     (row) =>
       row.request_id === id &&
-      row.response_status === 'accepted' &&
-      ['accepted', 'in_progress', 'completion_pending'].includes(row.request_status),
+      isHelperEngagementView({
+        responseStatus: row.response_status,
+        requestStatus: row.request_status,
+      }),
   );
 
   const mutateResponse = (postPosition: Position | null, payload: PendingSubmit) => {
@@ -203,8 +228,34 @@ export function RespondPage() {
       },
       {
         onSuccess: () => {
-          showAppToast(existingResponse ? 'Response updated' : 'Response sent');
-          router.back();
+          void (async () => {
+            if (payload.milestoneProposal && payload.milestoneProposal.length >= 2) {
+              await queryClient.invalidateQueries({ queryKey: queryKeys.myResponses });
+              const { data, error } = await supabase.rpc('my_responses');
+              if (error) throw error;
+              const row = data?.find(
+                (entry: { request_id: string; response_status: string; response_id?: string }) =>
+                  entry.request_id === request.request_id && entry.response_status === 'pending',
+              );
+              if (row?.response_id) {
+                await submitMilestoneProposal.mutateAsync({
+                  responseId: row.response_id,
+                  requestId: request.request_id,
+                  items: payload.milestoneProposal,
+                });
+              }
+            }
+            await queryClient.invalidateQueries({
+              queryKey: queryKeys.requestMilestonePlan(request.request_id),
+            });
+            showAppToast(existingResponse ? 'Response updated' : 'Response sent');
+            exitFlow();
+          })().catch((err: unknown) => {
+            showAppToast(
+              err instanceof Error ? err.message : 'Could not save milestone proposal.',
+              'warning',
+            );
+          });
         },
       },
     );
@@ -331,16 +382,16 @@ export function RespondPage() {
     );
   }
 
-  if (!request || requesterOffer === null) {
+  if (!request) {
     return (
       <div className="flex min-h-0 flex-1 flex-col bg-canvas">
         <RequestFlowHeader title="Request" onBack={() => router.back()} />
         <EmptyState
           layout="list"
           icon="alert-circle"
-          title="This request has moved on"
-          message="It was answered, withdrawn, or is no longer open."
-          action={{ label: 'Back', onPress: () => router.back() }}
+          title="Couldn't load this request"
+          message="Check your connection and try again."
+          action={{ label: 'Retry', onPress: () => void refetch() }}
         />
       </div>
     );
@@ -365,6 +416,8 @@ export function RespondPage() {
             submitting={respond.isPending}
             submitError={respond.error instanceof Error ? respond.error : null}
             onSubmit={submitResponse}
+            milestoneMode={milestonePlan.data?.paymentStructure === 'milestone'}
+            requesterMilestones={milestonePlan.data?.requesterMilestones ?? []}
           />
         </div>
         {locationModal}
@@ -380,6 +433,12 @@ export function RespondPage() {
         <div className="flex flex-col gap-6">
           <RequestHelpSummary
             request={request}
+            paymentStructure={
+              existingResponse
+                ? 'single'
+                : (milestonePlan.data?.paymentStructure ?? 'single')
+            }
+            milestoneItems={existingResponse ? [] : requesterMilestones}
             existingResponse={Boolean(existingResponse)}
             onRequesterPress={() => setRequesterProfileOpen(true)}
             onRequesterDiscussPress={
@@ -424,6 +483,10 @@ export function RespondPage() {
               quotedAmount={existingResponse.quotedAmount}
               requesterOffer={requesterOffer}
               message={existingResponse.message}
+              proposedMilestones={
+                myProposedMilestones.length >= 2 ? myProposedMilestones : undefined
+              }
+              proposedMilestoneTotalMajor={responseProposedMilestoneTotalMajor}
               onEdit={tryBeginFlow}
               onCancel={confirmWithdraw}
               cancelLoading={withdrawResponse.isPending}

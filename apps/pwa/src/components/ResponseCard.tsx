@@ -1,8 +1,10 @@
 'use client';
 
 import { ResponderScheduleAvailability } from '@/components/ResponderScheduleAvailability';
+import { MilestonePlanCard } from '@/components/request-flow/MilestonePlanCard';
 import { RequestPersonCard } from '@/components/request-flow/RequestPersonCard';
 import { Badge } from '@/components/ui/Badge';
+import type { MilestoneProposalItem } from '@/features/requests/milestones';
 import { formatAgo, formatMoney } from '@/lib/format';
 
 type BadgeTone = 'neutral' | 'brand' | 'active' | 'danger' | 'warning' | 'info';
@@ -23,6 +25,8 @@ export function ResponseCard({
   discussLoading,
   statusLabel,
   statusTone,
+  proposedMilestones,
+  proposedMilestoneTotalMajor,
 }: {
   displayName: string | null;
   avatarPath: string | null;
@@ -39,6 +43,8 @@ export function ResponseCard({
   discussLoading?: boolean;
   statusLabel?: string;
   statusTone?: BadgeTone;
+  proposedMilestones?: MilestoneProposalItem[];
+  proposedMilestoneTotalMajor?: number;
 }) {
   const offerLabel = quotedAmount !== null ? formatMoney(quotedAmount, currency) : null;
 
@@ -58,13 +64,23 @@ export function ResponseCard({
         />
       </div>
 
-      {message || offerLabel ? (
+      {message || offerLabel || (proposedMilestones && proposedMilestones.length >= 2) ? (
         <div className="flex flex-col gap-2 rounded-2xl bg-surface p-3">
           <div className="flex flex-row items-center justify-between gap-2">
             <p className="text-sm text-muted">{formatAgo(createdAt)}</p>
             {offerLabel ? <p className="text-base font-bold text-active">{offerLabel}</p> : null}
           </div>
           {message ? <p className="text-base leading-6 text-ink">{message}</p> : null}
+          {proposedMilestones && proposedMilestones.length >= 2 && proposedMilestoneTotalMajor != null ? (
+            <MilestonePlanCard
+              paymentStructure="milestone"
+              totalMajor={proposedMilestoneTotalMajor}
+              milestones={proposedMilestones}
+              currency={currency}
+              heading="Their proposed plan"
+              variant="proposed"
+            />
+          ) : null}
         </div>
       ) : null}
 

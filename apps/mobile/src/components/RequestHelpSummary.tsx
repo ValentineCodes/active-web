@@ -6,6 +6,9 @@ import { RequestOfferWhenCard } from '@/components/request-flow/RequestOfferWhen
 import { RequestPersonCard } from '@/components/request-flow/RequestPersonCard';
 import { RequestTagsLine } from '@/components/request-flow/RequestTagsLine';
 import { RequestTitleSection } from '@/components/request-flow/RequestTitleSection';
+import { MilestonePlanCard } from '@/components/request-flow/MilestonePlanCard';
+import type { MilestoneProposalItem } from '@/features/requests/milestones';
+import type { PaymentStructure } from '@/features/requests/milestones';
 import type { RespondableRequest } from '@/features/requests/responses-api';
 import { nearbyRequestBadge } from '@/features/requests/status';
 import {
@@ -22,6 +25,11 @@ type RequestHelpSummaryProps = {
   onRequesterPress?: () => void;
   onRequesterDiscussPress?: () => void;
   requesterDiscussLoading?: boolean;
+  paymentStructure?: PaymentStructure;
+  milestoneItems?: MilestoneProposalItem[];
+  milestoneHeading?: string;
+  milestoneVariant?: 'default' | 'proposed';
+  milestoneTotalMajor?: number;
 };
 
 /** Respond / pending-response detail — matches request_1 and request_0 mocks. */
@@ -31,6 +39,11 @@ export function RequestHelpSummary({
   onRequesterPress,
   onRequesterDiscussPress,
   requesterDiscussLoading,
+  paymentStructure = 'single',
+  milestoneItems = [],
+  milestoneHeading = 'Milestone payment plan',
+  milestoneVariant = 'default',
+  milestoneTotalMajor,
 }: RequestHelpSummaryProps) {
   const amount =
     request.offered_amount !== null ? formatMoney(request.offered_amount, request.currency) : null;
@@ -61,6 +74,20 @@ export function RequestHelpSummary({
         />
       ) : null}
 
+      {paymentStructure === 'milestone' &&
+      request.offered_amount != null &&
+      !existingResponse &&
+      milestoneItems.length >= 2 ? (
+        <MilestonePlanCard
+          paymentStructure="milestone"
+          totalMajor={milestoneTotalMajor ?? request.offered_amount}
+          milestones={milestoneItems}
+          currency={request.currency}
+          heading={milestoneHeading}
+          variant={milestoneVariant}
+        />
+      ) : null}
+
       <RequestTagsLine slugs={request.tag_slugs} />
 
       {request.requester_display_name ? (
@@ -70,7 +97,7 @@ export function RequestHelpSummary({
           ratingAverage={request.requester_rating_average}
           ratingCount={request.requester_rating_count}
           completionPercent={request.requester_completion_percent}
-          identityVerified={request.requester_identity_verified}
+          identityVerified={request.requester_identity_verified ?? false}
           onPress={onRequesterPress}
           onDiscussPress={onRequesterDiscussPress}
           discussLoading={requesterDiscussLoading}

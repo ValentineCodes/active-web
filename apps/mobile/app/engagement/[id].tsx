@@ -36,7 +36,12 @@ import { Button } from '@/components/ui/Button';
 import { Screen } from '@/components/ui/Screen';
 import { EmptyState, InlineError, LoadingState } from '@/components/ui/StateView';
 import { useQueryErrorToast } from '@/lib/query/use-query-error-toast';
+import { EngagementMilestoneProgress } from '@/components/request-flow/EngagementMilestoneProgress';
 import { resolveAgreedAmount } from '@/features/requests/payment-display';
+import {
+  useEngagementMilestones,
+  useRequestPaymentStructure,
+} from '@/features/requests/milestone-api';
 import { requestEngagementStatusBadge } from '@/features/requests/status';
 import { useMarkServiceComplete, useMyResponses } from '@/features/requests/responses-api';
 import {
@@ -98,6 +103,11 @@ export default function EngagementScreen() {
 
   const engagement = useEngagement(id);
   useQueryErrorToast(engagement, { enabled: engagement.isError && !engagement.data });
+  const paymentStructure = useRequestPaymentStructure(id, Boolean(engagement.data));
+  const engagementMilestones = useEngagementMilestones(
+    id,
+    paymentStructure.data === 'milestone',
+  );
   const myResponses = useMyResponses();
   const markServiceComplete = useMarkServiceComplete(id);
   const completeRequest = useCompleteRequest(id);
@@ -118,11 +128,13 @@ export default function EngagementScreen() {
   const proofSendSessionRef = useRef<CompletionProofSendSession | null>(null);
   const queryClient = useQueryClient();
   const engagementSnapshot = engagement.data;
+  const isMilestoneEngagement = paymentStructure.data === 'milestone';
   const helperCanMarkComplete =
     engagementSnapshot != null &&
     !engagementSnapshot.viewer_is_requester &&
-    ['accepted', 'in_progress'].includes(engagementSnapshot.request_status);
-  const requestConversation = useRequestConversation(id, helperCanMarkComplete);
+    ['accepted', 'in_progress'].includes(engagementSnapshot.request_status) &&
+    !isMilestoneEngagement;
+  const requestConversation = useRequestConversation(id, Boolean(engagementSnapshot));
 
   const finishMarkingComplete = useCallback(() => {
     if (completionActionLockRef.current || markServiceComplete.isPending) return;
@@ -464,12 +476,26 @@ export default function EngagementScreen() {
           {showPaymentSecured ? (
             <RequestCallout tone="info" title="Payment secured">
               <Text className="text-sm text-muted">
-                Release payment only after the request is complete.
+                {paymentStructure.data === 'milestone'
+                  ? 'The full offer is locked. Milestone payouts release when you approve each step.'
+                  : 'Release payment only after the request is complete.'}
               </Text>
             </RequestCallout>
           ) : null}
 
-          {helperActive ? (
+          {isMilestoneEngagement && agreedAmount !== null ? (
+            <EngagementMilestoneProgress
+              requestId={id}
+              conversationId={requestConversation.data?.conversationId ?? null}
+              milestones={engagementMilestones.data ?? []}
+              currency={data.currency}
+              viewerIsRequester={data.viewer_is_requester}
+              paymentDisputed={data.payment_status === 'disputed' || data.request_status === 'disputed'}
+              onOpenChat={() => router.push(`/conversation/${id}`)}
+            />
+          ) : null}
+
+          {helperActive && !isMilestoneEngagement ? (
             <RequestCallout
               tone="info"
               title={`You're committed to this request on ${formatCommitmentDayLabel(data.scheduled_for)}.`}
@@ -584,7 +610,9 @@ export default function EngagementScreen() {
                   <InlineError error={markServiceComplete.error} />
                 ) : null}
                 {completeRequest.isError ? <InlineError error={completeRequest.error} /> : null}
-                {helperActive && ['accepted', 'in_progress'].includes(data.request_status) ? (
+                {helperActive &&
+                !isMilestoneEngagement &&
+                ['accepted', 'in_progress'].includes(data.request_status) ? (
                   <Button
                     label="I'm done"
                     variant="active"
@@ -595,7 +623,7 @@ export default function EngagementScreen() {
                   />
                 ) : null}
 
-                {requesterActive ? (
+                {requesterActive && !isMilestoneEngagement ? (
                   <Button
                     label="Confirm completion"
                     variant="active"

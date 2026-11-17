@@ -1,7 +1,8 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 
+import { MilestonePlanEditor } from '@/components/request-flow/MilestonePlanEditor';
 import { LiveProfilePhotoCapture } from '@/components/profile/LiveProfilePhotoCapture';
 import { ProfilePhotoCaptureContent } from '@/components/profile/ProfilePhotoCaptureContent';
 import { KeyboardStickyFooter } from '@/components/layout/KeyboardStickyFooter';
@@ -18,8 +19,15 @@ import {
   parseResponseOfferAmount,
   type RespondableRequest,
 } from '@/features/requests/responses-api';
+import {
+  defaultMilestoneDraftItems,
+  milestoneDraftsAllocatedMajor,
+  validateMilestoneDraftItems,
+  type MilestoneDraftItem,
+  type MilestoneProposalItem,
+  type MilestoneRpcItem,
+} from '@/features/requests/milestones';
 import { cn } from '@/lib/cn';
-import { formatMoney } from '@/lib/format';
 import { showAppToast } from '@/lib/toast';
 import { useColors } from '@/theme/ThemeProvider';
 
@@ -37,7 +45,13 @@ type ResponseCreationFlowProps = {
   isUpdate: boolean;
   submitting: boolean;
   submitError: Error | null;
-  onSubmit: (input: { message: string | null; quotedAmount: number | null }) => void;
+  onSubmit: (input: {
+    message: string | null;
+    quotedAmount: number | null;
+    milestoneProposal?: MilestoneRpcItem[] | null;
+  }) => void;
+  milestoneMode?: boolean;
+  requesterMilestones?: MilestoneProposalItem[];
 };
 
 function StepProgress({ step, stepCount }: { step: number; stepCount: number }) {
@@ -132,11 +146,13 @@ function OfferAmountStepper({
   onChangeText,
   onAdjust,
   error,
+  editable = true,
 }: {
   value: string;
   onChangeText: (text: string) => void;
   onAdjust: (delta: number) => void;
   error: string | null;
+  editable?: boolean;
 }) {
   const colors = useColors();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -155,30 +171,32 @@ function OfferAmountStepper({
           value={value}
           onChangeText={onChangeText}
           trailing={
-            <div className="flex flex-col gap-1">
-              <button
-                type="button"
-                aria-label="Increase offer"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  onAdjust(OFFER_STEP);
-                }}
-                className="flex items-center justify-center rounded-lg bg-elevated p-1 active:opacity-80"
-              >
-                <IonIcon icon={ionIcons['arrow-up']} size={18} color={colors.muted} />
-              </button>
-              <button
-                type="button"
-                aria-label="Decrease offer"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  onAdjust(-OFFER_STEP);
-                }}
-                className="flex items-center justify-center rounded-lg bg-elevated p-1 active:opacity-80"
-              >
-                <IonIcon icon={ionIcons['arrow-down']} size={18} color={colors.muted} />
-              </button>
-            </div>
+            editable ? (
+              <div className="flex flex-col gap-1">
+                <button
+                  type="button"
+                  aria-label="Increase offer"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onAdjust(OFFER_STEP);
+                  }}
+                  className="flex items-center justify-center rounded-lg bg-elevated p-1 active:opacity-80"
+                >
+                  <IonIcon icon={ionIcons['arrow-up']} size={18} color={colors.muted} />
+                </button>
+                <button
+                  type="button"
+                  aria-label="Decrease offer"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onAdjust(-OFFER_STEP);
+                  }}
+                  className="flex items-center justify-center rounded-lg bg-elevated p-1 active:opacity-80"
+                >
+                  <IonIcon icon={ionIcons['arrow-down']} size={18} color={colors.muted} />
+                </button>
+              </div>
+            ) : undefined
           }
         />
       </button>
@@ -199,6 +217,8 @@ export function ResponseCreationFlow({
   submitting,
   submitError,
   onSubmit,
+  milestoneMode = false,
+  requesterMilestones = [],
 }: ResponseCreationFlowProps) {
   const profile = useMyProfile();
   const userId = useUserId();
@@ -206,6 +226,19 @@ export function ResponseCreationFlow({
   const [message, setMessage] = useState(initialMessage);
   const [captureOpen, setCaptureOpen] = useState(false);
   const [captureError, setCaptureError] = useState<Error | null>(null);
+
+  const [proposeMilestones, setProposeMilestones] = useState(false);
+  const [milestoneDrafts, setMilestoneDrafts] = useState<MilestoneDraftItem[]>(() =>
+    requesterMilestones.length >= 2
+      ? requesterMilestones.map((item) => ({
+          id: `seed-${item.position}`,
+          title: item.title,
+          description: item.description,
+          amount: String(item.amount),
+        }))
+      : defaultMilestoneDraftItems(),
+  );
+  const [milestoneValidationMessage, setMilestoneValidationMessage] = useState<string | null>(null);
 
   const stepCount = needsPhotoStep ? 3 : 2;
   const offerStep = needsPhotoStep ? 1 : 0;
@@ -236,6 +269,14 @@ export function ResponseCreationFlow({
     setYourOffer(String(next));
   };
 
+  const agreedTotal = useMemo(() => {
+    const offerRaw =
+      parsedYourOffer !== null && parsedYourOffer > 0 ? yourOffer : initialYourOffer;
+    const parsed = parseResponseOfferAmount(offerRaw);
+    if (parsed !== null && parsed > 0) return parsed;
+    return requesterOffer;
+  }, [initialYourOffer, parsedYourOffer, requesterOffer, yourOffer]);
+
   const send = () => {
     if (!offerStepReady) return;
     if (needsPhotoStep && !photoReady) {
@@ -245,7 +286,23 @@ export function ResponseCreationFlow({
     const offerRaw = parsedYourOffer !== null && parsedYourOffer > 0 ? yourOffer : initialYourOffer;
     const quoted = counterOfferForRpc(requesterOffer, offerRaw);
     if (quoted === 'invalid') return;
-    onSubmit({ message: message.trim() || null, quotedAmount: quoted });
+
+    let milestoneProposal: MilestoneRpcItem[] | null | undefined;
+    if (milestoneMode && proposeMilestones) {
+      const validation = validateMilestoneDraftItems(milestoneDrafts, agreedTotal);
+      if (!validation.ok) {
+        setMilestoneValidationMessage(validation.message);
+        showAppToast(validation.message, 'warning');
+        return;
+      }
+      milestoneProposal = validation.items;
+    }
+
+    onSubmit({
+      message: message.trim() || null,
+      quotedAmount: quoted,
+      milestoneProposal: milestoneMode ? (milestoneProposal ?? null) : undefined,
+    });
   };
 
   const handleHeaderBack = () => {
@@ -255,6 +312,25 @@ export function ResponseCreationFlow({
 
   const offerStepNumber = needsPhotoStep ? 2 : 1;
   const messageStepNumber = needsPhotoStep ? 3 : 2;
+
+  const syncOfferFromMilestoneDrafts = (drafts: MilestoneDraftItem[]) => {
+    setMilestoneDrafts(drafts);
+    const allocated = milestoneDraftsAllocatedMajor(drafts);
+    if (allocated > 0) {
+      setYourOffer(String(allocated));
+    }
+  };
+
+  const handleProposeMilestonesChange = (next: boolean) => {
+    setProposeMilestones(next);
+    setMilestoneValidationMessage(null);
+    if (next) {
+      const allocated = milestoneDraftsAllocatedMajor(milestoneDrafts);
+      if (allocated > 0) {
+        setYourOffer(String(allocated));
+      }
+    }
+  };
 
   return (
     <>
@@ -329,11 +405,34 @@ export function ResponseCreationFlow({
                 onChangeText={setYourOffer}
                 onAdjust={adjustOffer}
                 error={offerError}
+                editable={!(milestoneMode && proposeMilestones)}
               />
 
-              <p className="text-sm text-muted">
-                Requester is offering {formatMoney(requesterOffer, request.currency)}.
-              </p>
+              {milestoneMode ? (
+                <>
+                  <label className="flex flex-row items-center justify-between gap-3 rounded-2xl bg-surface px-4 py-3">
+                    <span className="flex-1 text-base font-semibold text-ink">
+                      Propose different milestones
+                    </span>
+                    <input
+                      type="checkbox"
+                      checked={proposeMilestones}
+                      onChange={(e) => handleProposeMilestonesChange(e.target.checked)}
+                      className="h-5 w-5 accent-[var(--color-active)]"
+                    />
+                  </label>
+
+                  {proposeMilestones ? (
+                    <MilestonePlanEditor
+                      items={milestoneDrafts}
+                      onChange={syncOfferFromMilestoneDrafts}
+                      totalMajor={agreedTotal}
+                      validationMessage={milestoneValidationMessage}
+                      showIntro={false}
+                    />
+                  ) : null}
+                </>
+              ) : null}
             </div>
           ) : null}
 
@@ -358,6 +457,7 @@ export function ResponseCreationFlow({
               {submitError ? <InlineError error={submitError} /> : null}
             </div>
           ) : null}
+
         </div>
       </KeyboardStickyFooter>
 

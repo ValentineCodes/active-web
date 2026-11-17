@@ -1,18 +1,30 @@
 'use client';
 
+import { useMemo } from 'react';
+
 import { FlowScreen } from '@/components/layout/FlowScreen';
 import { ProfileReviewRow } from '@/components/profile/ProfileReviewRow';
 import { StarRating } from '@/components/ui/Stars';
 import { EmptyState, InlineError, LoadingState } from '@/components/ui/StateView';
 import { useMyProfile } from '@/features/profile/api';
 import { useMyReceivedRatings } from '@/features/profile/reviews-api';
+import { participationRequestPath } from '@/features/requests/activity-list';
+import { useMyResponses } from '@/features/requests/responses-api';
+import { useMyRequests } from '@/features/requests/requester-api';
 import { showQuerySkeleton } from '@/lib/query/show-skeleton';
 
 export function ReviewsPage() {
   const profile = useMyProfile();
   const reviews = useMyReceivedRatings();
+  const myRequests = useMyRequests();
+  const myResponses = useMyResponses();
 
-  if (showQuerySkeleton(profile) || showQuerySkeleton(reviews)) {
+  const myRequestIds = useMemo(
+    () => new Set(myRequests.data?.map((row) => row.request_id) ?? []),
+    [myRequests.data],
+  );
+
+  if (showQuerySkeleton(profile) || showQuerySkeleton(reviews) || showQuerySkeleton(myResponses)) {
     return (
       <FlowScreen title="Reviews" backTo="/profile">
         <LoadingState />
@@ -55,7 +67,14 @@ export function ReviewsPage() {
       ) : (
         <div className="overflow-hidden rounded-2xl border border-hairline bg-elevated px-4">
           {items.map((review) => (
-            <ProfileReviewRow key={review.ratingId} review={review} />
+            <ProfileReviewRow
+              key={review.ratingId}
+              review={review}
+              requestPath={participationRequestPath(review.requestId, {
+                myRequestIds,
+                myResponses: myResponses.data,
+              })}
+            />
           ))}
         </div>
       )}

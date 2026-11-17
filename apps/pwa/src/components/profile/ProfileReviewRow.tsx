@@ -1,20 +1,40 @@
 'use client';
 
+import { useNavigate } from 'react-router-dom';
+
 import { AvatarWithViewer } from '@/components/profile/AvatarWithViewer';
 import { cn } from '@/lib/cn';
 import { formatAgo } from '@/lib/format';
 
 import type { ReceivedRating } from '@/features/profile/reviews-api';
 
-export function ProfileReviewRow({ review }: { review: ReceivedRating }) {
+export function ProfileReviewRow({
+  review,
+  requestPath,
+}: {
+  review: ReceivedRating;
+  requestPath: string;
+}) {
+  const navigate = useNavigate();
   const name = review.raterDisplayName?.trim() || 'Community member';
   const comment = review.comment?.trim();
   const hasComment = Boolean(comment);
 
+  const openRequest = () => navigate(requestPath);
+
   return (
     <article
+      role="link"
+      tabIndex={0}
+      onClick={openRequest}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          openRequest();
+        }
+      }}
       className={cn(
-        'grid gap-3 border-b border-hairline py-5 last:border-b-0',
+        'cursor-pointer grid gap-3 border-b border-hairline py-5 outline-none last:border-b-0 hover:bg-surface/60',
         hasComment ? 'grid-cols-[minmax(0,1fr)_auto] grid-rows-[auto_auto]' : 'grid-cols-[minmax(0,1fr)_auto]',
       )}
     >

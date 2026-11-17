@@ -3,6 +3,7 @@
 CREATE OR REPLACE FUNCTION public.my_received_ratings()
 RETURNS TABLE(
   rating_id uuid,
+  request_id uuid,
   stars smallint,
   comment text,
   created_at timestamp with time zone,
@@ -18,6 +19,7 @@ AS $$
   WITH me AS (SELECT public.assert_onboarded() AS user_id)
   SELECT
     rating.id,
+    rating.request_id,
     rating.stars,
     rating.comment,
     rating.created_at,

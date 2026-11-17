@@ -125,7 +125,12 @@ function fromMyResponse(row: MyResponse): RespondableRequest {
     attachment_path: row.attachment_path,
     tag_slugs: [],
     posted_at: row.posted_at,
-    respond_allowed: true,
+    respond_allowed:
+      row.response_status === 'pending'
+        ? true
+        : row.response_status === 'declined'
+          ? isOpenRequestStatus(row.request_status)
+          : false,
   };
 }
 
@@ -149,11 +154,13 @@ export function useRequestForResponse(requestId: string, position: Position | nu
   const declinedRow = mine.data?.find(
     (row) => row.request_id === requestId && row.response_status === 'declined',
   );
-  const browseEnabled = mine.isSuccess && !pendingRow && !declinedRow;
+  const acceptedRow = mine.data?.find(
+    (row) => row.request_id === requestId && row.response_status === 'accepted',
+  );
+  const participationRow = pendingRow ?? declinedRow ?? acceptedRow ?? null;
+  const browseEnabled = mine.isSuccess && !participationRow;
   const browse = useBrowseRequest(requestId, position, { enabled: browseEnabled });
   const preview = useBrowseRequestPreview(requestId);
-
-  const participationRow = pendingRow ?? declinedRow ?? null;
 
   const previewRequest = preview.data ? fromBrowseRequest(preview.data) : null;
 
@@ -161,9 +168,7 @@ export function useRequestForResponse(requestId: string, position: Position | nu
     ? fromMyResponse(participationRow)
     : browse.data
       ? fromBrowseRequest(browse.data)
-      : browse.isSuccess && position !== null && !browse.data
-        ? null
-        : previewRequest;
+      : previewRequest;
 
   const existing: ExistingResponse | null = pendingRow
     ? {
