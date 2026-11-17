@@ -120,7 +120,7 @@ export function RequestDetailPage() {
   const showInsufficientWalletConfirm = useCallback(
     (error: unknown, requiredLockMajor: number) => {
       const addMoney = window.confirm(
-        `${toUserMessage(error)}\n\nAdd money to your wallet now?`,
+        `${toUserMessage(error)}\n\nDeposit to your wallet now?`,
       );
       if (addMoney) {
         router.push(

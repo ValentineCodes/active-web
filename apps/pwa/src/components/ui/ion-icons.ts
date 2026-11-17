@@ -41,6 +41,8 @@ import {
   openOutline,
   play,
   videocam,
+  receiptOutline,
+  walletOutline,
 } from 'ionicons/icons';
 
 /** Maps mobile Ionicons glyph names to ionicons v8 data-URI SVG strings. */
@@ -87,6 +89,8 @@ export const ionIcons = {
   'open-outline': openOutline,
   play: play,
   videocam: videocam,
+  'receipt-outline': receiptOutline,
+  'wallet-outline': walletOutline,
 } as const;
 
 export type IonIconName = keyof typeof ionIcons;

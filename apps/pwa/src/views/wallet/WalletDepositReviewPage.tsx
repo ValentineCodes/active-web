@@ -36,7 +36,7 @@ export function WalletDepositReviewPage() {
 
   if (validationError) {
     return (
-      <FlowScreen title="Add money" backTo={addBack}>
+      <FlowScreen title="Deposit" backTo={addBack}>
         <InlineError message={validationError} />
         <Button label="Go back" variant="secondary" onClick={() => router.back()} />
       </FlowScreen>

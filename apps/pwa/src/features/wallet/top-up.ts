@@ -100,5 +100,5 @@ export function walletTopUpPath(context: WalletTopUpContext): string {
 
 export function walletTopUpAddSubtitle(shortfallMajor: number): string | null {
   if (shortfallMajor <= 0) return null;
-  return `Add at least ${formatMoney(shortfallMajor, MARKET.currency)} so you have enough available to continue.`;
+  return `Deposit at least ${formatMoney(shortfallMajor, MARKET.currency)} so you have enough available to continue.`;
 }

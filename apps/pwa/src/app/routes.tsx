@@ -39,6 +39,7 @@ import { WalletWithdrawPage } from '@/views/wallet/WalletWithdrawPage';
 import { WalletWithdrawResultPage } from '@/views/wallet/WalletWithdrawResultPage';
 import { WalletWithdrawReviewPage } from '@/views/wallet/WalletWithdrawReviewPage';
 import { WalletWithdrawalDetailPage } from '@/views/wallet/WalletWithdrawalDetailPage';
+import { WalletTransactionPage } from '@/views/wallet/WalletTransactionPage';
 
 function GuestShell() {
   return (
@@ -139,6 +140,7 @@ export function AppRoutes() {
           <Route path="/rate/:id" element={<RatePage />} />
           <Route path="/wallet" element={<WalletPage />} />
           <Route path="/wallet/history" element={<WalletHistoryPage />} />
+          <Route path="/wallet/transaction/:id" element={<WalletTransactionPage />} />
           <Route path="/wallet/add" element={<WalletAddPageRoute />} />
           <Route path="/wallet/withdraw" element={<WalletWithdrawPageRoute />} />
           <Route path="/wallet/withdraw/review" element={<WalletWithdrawReviewPageRoute />} />

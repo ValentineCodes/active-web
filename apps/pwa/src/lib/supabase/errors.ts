@@ -69,7 +69,7 @@ export function toUserMessage(error: unknown): string {
       }
       if (INTENTIONAL_ERROR_CODES.has(code)) {
         if (message.toLowerCase().includes('insufficient wallet balance')) {
-          return 'You don\u2019t have enough available money in your wallet. Add money, then try accepting again.';
+          return 'You don\u2019t have enough available money in your wallet. Deposit funds, then try accepting again.';
         }
         if (message.toLowerCase().includes('insufficient available balance')) {
           return 'You don\u2019t have enough available money for this action.';

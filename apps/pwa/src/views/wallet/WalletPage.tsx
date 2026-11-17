@@ -17,6 +17,7 @@ import {
   enrichActivityWithWithdrawals,
   useMyWalletWithdrawals,
 } from '@/features/wallet/withdrawals-api';
+import { walletActivityHref } from '@/lib/wallet-navigation';
 import { formatMoney } from '@/lib/format';
 import { showQuerySkeleton } from '@/lib/query/show-skeleton';
 import { useQueryClient } from '@tanstack/react-query';
@@ -88,12 +89,13 @@ export function WalletPage() {
         <WalletHairline />
         <div className="flex flex-row gap-3 border-t border-hairline p-4">
           <Button
-            label="Add Money"
+            label="Deposit"
             variant="active"
             size="lg"
             corner="2xl"
             className="flex-1"
             onClick={() => router.push('/wallet/add')}
+            type="button"
           />
           {available > 0 ? (
             <Button
@@ -129,7 +131,7 @@ export function WalletPage() {
             layout="list"
             icon="notifications-outline"
             title="No transactions yet"
-            message="Money you add and payments for requests will show up here."
+            message="Deposits and payments for requests will show up here."
           />
         ) : (
           <div className="overflow-hidden rounded-2xl border border-hairline bg-elevated px-4">
@@ -139,11 +141,7 @@ export function WalletPage() {
                 row={row}
                 currency={currency}
                 showDivider={index > 0}
-                to={
-                  row.withdrawal?.withdrawalId
-                    ? `/wallet/withdrawal/${row.withdrawal.withdrawalId}`
-                    : undefined
-                }
+                to={walletActivityHref(row)}
               />
             ))}
           </div>
