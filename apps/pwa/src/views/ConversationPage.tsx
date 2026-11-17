@@ -1,6 +1,6 @@
 'use client';
 
-import { parseConversationReturnTo } from '@/lib/conversation-navigation';
+import { leaveMessageThread, parseConversationReturnTo } from '@/lib/conversation-navigation';
 import { useRouter, useSearchParams } from '@/lib/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
@@ -47,10 +47,7 @@ export function ConversationPage() {
   const id = useRouteParam('id');
   const returnTo = parseConversationReturnTo(search.get('returnTo'));
 
-  const goBack = () => {
-    if (returnTo) router.push(returnTo);
-    else router.back();
-  };
+  const goBack = () => leaveMessageThread(router, returnTo);
   const userId = useUserId();
   const conversation = useResolvedRequestConversation(id);
   const conversationId = conversation.data?.conversationId;

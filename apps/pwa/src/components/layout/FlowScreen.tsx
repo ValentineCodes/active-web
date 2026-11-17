@@ -28,7 +28,7 @@ export function FlowScreen({
   footer?: ReactNode;
 }) {
   const router = useRouter();
-  const handleBack = onBack ?? (backTo != null ? () => router.push(backTo) : () => router.back());
+  const handleBack = onBack ?? (backTo != null ? () => router.replace(backTo) : () => router.back());
 
   return (
     <Screen className={cn('h-full min-h-0 flex-1', className)}>

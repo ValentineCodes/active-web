@@ -11,3 +11,15 @@ export function messageThreadHref(conversationId: string, returnTo: string): str
 
 /** @deprecated Prefer `messageThreadHref`. */
 export const conversationHref = messageThreadHref;
+
+/** Pop the thread without stacking duplicate history entries (avoids back loops). */
+export function leaveMessageThread(
+  router: { replace: (href: string) => void; back: () => void },
+  returnTo: string | null,
+) {
+  if (returnTo) {
+    router.replace(returnTo);
+    return;
+  }
+  router.back();
+}
