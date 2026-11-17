@@ -93,7 +93,12 @@ export function ProfilePage() {
             </span>
           ) : null}
         </div>
-        <RatingRow ratingAverage={ratingAverage} ratingCount={ratingCount} completed={completed} />
+        <RatingRow
+          ratingAverage={ratingAverage}
+          ratingCount={ratingCount}
+          completed={completed}
+          onPress={() => router.push('/profile/reviews')}
+        />
         {data.bio ? <p className="max-w-sm text-sm leading-5 text-muted">{data.bio}</p> : null}
         {data.phone ? (
           <button
@@ -146,6 +151,7 @@ export function ProfilePage() {
 
       <SettingsGroup title="Account">
         <SettingsRow label="Edit profile" to="/profile/edit" />
+        <SettingsRow label="Reviews" to="/profile/reviews" showDivider />
         <SettingsRow label="Saved places" to="/profile/locations" showDivider />
         <SettingsRow label="Bank accounts" to="/profile/bank-accounts" showDivider />
       </SettingsGroup>
@@ -194,20 +200,40 @@ function RatingRow({
   ratingAverage,
   ratingCount,
   completed,
+  onPress,
 }: {
   ratingAverage: number | null;
   ratingCount: number;
   completed: number;
+  onPress: () => void;
 }) {
-  if (ratingAverage === null && completed === 0) {
-    return null;
+  const showRating = ratingAverage !== null;
+  const showCompleted = completed > 0;
+
+  if (!showRating && !showCompleted) {
+    return (
+      <button
+        type="button"
+        onClick={onPress}
+        className="flex flex-row items-center gap-1 text-sm font-medium text-brand active:opacity-80"
+      >
+        <span>Reviews</span>
+        <IonIcon icon={ionIcons['chevron-forward']} size={16} color="#2D6A4F" />
+      </button>
+    );
   }
 
   return (
-    <div className="flex flex-row flex-wrap items-center justify-center gap-x-1.5">
-      {ratingAverage !== null ? <StarRating average={ratingAverage} count={ratingCount} size="md" /> : null}
-      {ratingAverage !== null && completed > 0 ? <span className="text-sm text-muted">·</span> : null}
-      {completed > 0 ? <span className="text-sm font-medium text-muted">{completed} completed</span> : null}
-    </div>
+    <button
+      type="button"
+      onClick={onPress}
+      className="flex flex-row flex-wrap items-center justify-center gap-x-1.5 active:opacity-80"
+      aria-label="View reviews"
+    >
+      {showRating ? <StarRating average={ratingAverage} count={ratingCount} size="md" /> : null}
+      {showRating && showCompleted ? <span className="text-sm text-muted">·</span> : null}
+      {showCompleted ? <span className="text-sm font-medium text-muted">{completed} completed</span> : null}
+      <IonIcon icon={ionIcons['chevron-forward']} size={16} color="#8A948C" />
+    </button>
   );
 }

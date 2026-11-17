@@ -180,19 +180,27 @@ export default function ProfileScreen() {
             </Text>
             {identityStatus.data?.identityVerified ? <IdentityVerifiedBadge size={22} /> : null}
           </View>
-          {ratingAverage !== null || completed > 0 ? (
+          <Pressable
+            onPress={() => router.push('/profile/reviews' as Href)}
+            accessibilityRole="button"
+            accessibilityLabel="View reviews"
+            className="active:opacity-80"
+          >
             <View className="flex-row flex-wrap items-center justify-center gap-x-1.5">
               {ratingAverage !== null ? (
                 <StarRating average={ratingAverage} count={data.rating_count} size="md" />
-              ) : null}
+              ) : (
+                <Text className="text-sm font-medium text-brand">Reviews</Text>
+              )}
               {ratingAverage !== null && completed > 0 ? (
                 <Text className="text-base text-muted">·</Text>
               ) : null}
               {completed > 0 ? (
                 <Text className="text-base font-medium text-muted">{completed} completed</Text>
               ) : null}
+              <Ionicons name="chevron-forward" size={16} color={colors.subtle} />
             </View>
-          ) : null}
+          </Pressable>
           {data.bio ? (
             <Text className="max-w-sm text-center text-base leading-6 text-muted">{data.bio}</Text>
           ) : null}
@@ -260,6 +268,11 @@ export default function ProfileScreen() {
 
         <SettingsGroup title="Account">
           <SettingsRow label="Edit profile" onPress={() => router.push('/profile/edit')} />
+          <SettingsRow
+            label="Reviews"
+            onPress={() => router.push('/profile/reviews' as Href)}
+            showDivider
+          />
           <SettingsRow
             label="Saved places"
             onPress={() => router.push('/profile/locations' as Href)}

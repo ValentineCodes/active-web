@@ -29,6 +29,7 @@ import { WelcomePage } from '@/views/WelcomePage';
 import { BankAccountAddPage } from '@/views/profile/BankAccountAddPage';
 import { BankAccountsPage } from '@/views/profile/BankAccountsPage';
 import { SavedLocationsPage } from '@/views/profile/SavedLocationsPage';
+import { ReviewsPage } from '@/views/profile/ReviewsPage';
 import { WalletAddPage } from '@/views/wallet/WalletAddPage';
 import { WalletDepositCallbackPage } from '@/views/wallet/WalletDepositCallbackPage';
 import { WalletDepositCheckoutPage } from '@/views/wallet/WalletDepositCheckoutPage';
@@ -127,6 +128,7 @@ export function AppRoutes() {
           <Route path="/search" element={<SearchPageRoute />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/profile/edit" element={<ProfileEditPage />} />
+          <Route path="/profile/reviews" element={<ReviewsPage />} />
           <Route path="/profile/locations" element={<SavedLocationsPage />} />
           <Route path="/profile/bank-accounts" element={<BankAccountsPage />} />
           <Route path="/profile/bank-accounts/add" element={<BankAccountAddPageRoute />} />

@@ -3498,6 +3498,18 @@ export type Database = {
         Args: { p_recipient_id: string; p_request_id: string }
         Returns: string
       }
+      my_received_ratings: {
+        Args: never
+        Returns: {
+          comment: string | null
+          created_at: string
+          rating_id: string
+          rater_avatar_path: string | null
+          rater_display_name: string | null
+          rater_id: string
+          stars: number
+        }[]
+      }
       my_responses: {
         Args: never
         Returns: {

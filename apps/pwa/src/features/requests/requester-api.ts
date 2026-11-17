@@ -553,6 +553,8 @@ export function useRateRequest(requestId: string) {
       queryClient.invalidateQueries({ queryKey: queryKeys.myRequests });
       queryClient.invalidateQueries({ queryKey: queryKeys.myResponses });
       queryClient.invalidateQueries({ queryKey: queryKeys.engagement(requestId) });
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
+      queryClient.invalidateQueries({ queryKey: ['my-received-ratings'] });
     },
   });
 }
