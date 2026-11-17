@@ -1,6 +1,6 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { useRouter } from '@/lib/navigation';
 
 import { FlowScreen } from '@/components/layout/FlowScreen';
 import { Button } from '@/components/ui/Button';

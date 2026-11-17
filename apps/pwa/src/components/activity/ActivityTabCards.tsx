@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import Link from '@/components/AppLink';
 
 import { Badge } from '@/components/ui/Badge';
 import { cn } from '@/lib/cn';

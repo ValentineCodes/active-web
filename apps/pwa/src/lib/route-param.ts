@@ -1,6 +1,6 @@
-import { useParams } from 'next/navigation';
+import { useParams } from '@/lib/navigation';
 
-/** Reads a dynamic App Router segment as a plain string. */
+/** Reads a dynamic route segment as a plain string. */
 export function useRouteParam(name: string): string {
   const params = useParams();
   const raw = params[name];

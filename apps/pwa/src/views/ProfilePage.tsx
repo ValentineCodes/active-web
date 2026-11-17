@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter } from '@/lib/navigation';
 import { useMutation } from '@tanstack/react-query';
 
 import { FlowScreen } from '@/components/layout/FlowScreen';

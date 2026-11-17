@@ -1,6 +1,6 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { useRouter } from '@/lib/navigation';
 import type { ReactNode } from 'react';
 
 import { Header } from '@/components/ui/Header';

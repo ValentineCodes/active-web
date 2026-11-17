@@ -1,6 +1,6 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { useRouter } from '@/lib/navigation';
 import { useCallback, useEffect, useRef } from 'react';
 
 import { hasProfilePhotoReady, useMyProfile } from '@/features/profile/api';

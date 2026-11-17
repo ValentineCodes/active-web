@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import Link from '@/components/AppLink';
 
 import { FlowScreen } from '@/components/layout/FlowScreen';
 import { Avatar } from '@/components/ui/Avatar';

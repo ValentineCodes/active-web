@@ -1,6 +1,6 @@
 'use client';
 
-import { usePathname } from 'next/navigation';
+import { usePathname } from '@/lib/navigation';
 import { useEffect } from 'react';
 
 import { noteActiveTabPath } from '@/features/navigation/create-tab-return';

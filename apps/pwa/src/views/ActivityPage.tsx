@@ -1,6 +1,6 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { useRouter } from '@/lib/navigation';
 import { type ReactNode, useMemo, useState } from 'react';
 
 import { ActivityMyRequestCard, ActivityMyResponseCard } from '@/components/activity/ActivityTabCards';

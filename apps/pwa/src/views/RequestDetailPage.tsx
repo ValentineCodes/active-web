@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter } from '@/lib/navigation';
 import { addHours, format } from 'date-fns';
 
 import { ResponseCard } from '@/components/ResponseCard';

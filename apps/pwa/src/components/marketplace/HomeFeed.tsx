@@ -1,6 +1,6 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { useRouter } from '@/lib/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { HomeFeedRequestPage, HomeFeedRequestPageSkeleton } from '@/components/home/HomeFeedRequestPage';

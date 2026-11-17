@@ -1,6 +1,6 @@
 'use client';
 
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams } from '@/lib/navigation';
 
 import { useMyRequests } from '@/features/requests/requester-api';
 import { useRouteParam } from '@/lib/route-param';

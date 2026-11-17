@@ -37,14 +37,14 @@ Example website snippet (for a later `apps/website` change):
 
 Set in CI before `pnpm pwa:build`:
 
-- `NEXT_PUBLIC_SUPABASE_URL` (or legacy `VITE_PUBLIC_*` — see `next.config.ts`)
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY` (anon JWT only)
+- `VITE_PUBLIC_SUPABASE_URL` (`NEXT_PUBLIC_*` / `EXPO_PUBLIC_*` fallbacks in `vite.config.ts`)
+- `VITE_PUBLIC_SUPABASE_ANON_KEY` (anon JWT only)
 
 Never embed service-role keys, Paystack secret keys, or VAPID private keys in the browser bundle.
 
 ## Web app manifest (generated at build)
 
-Built by Next.js `app/manifest.ts` and Serwist service worker:
+Built from `public/manifest.webmanifest` and the Serwist service worker (`src/sw.ts`):
 
 | Field | Value |
 | --- | --- |

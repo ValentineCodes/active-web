@@ -1,7 +1,7 @@
 'use client';
 
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import Link from '@/components/AppLink';
+import { usePathname } from '@/lib/navigation';
 
 import { useCreateComposer } from '@/components/create/CreateComposerProvider';
 import { IonIcon } from '@/components/ui/IonIcon';

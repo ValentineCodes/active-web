@@ -1,7 +1,7 @@
 'use client';
 
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import Link from '@/components/AppLink';
+import { useRouter } from '@/lib/navigation';
 import { useMemo } from 'react';
 
 import { FlowScreen } from '@/components/layout/FlowScreen';

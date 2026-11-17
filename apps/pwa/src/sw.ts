@@ -1,6 +1,5 @@
 /// <reference lib="webworker" />
 
-import { defaultCache } from '@serwist/next/worker';
 import type { PrecacheEntry, SerwistGlobalConfig } from 'serwist';
 import { NetworkOnly, Serwist } from 'serwist';
 
@@ -18,9 +17,9 @@ const serwist = new Serwist({
   clientsClaim: false,
   navigationPreload: true,
   runtimeCaching: [
-    ...defaultCache,
     {
-      matcher: /^https?:\/\/(127\.0\.0\.1|localhost)(:\d+)?\/.*$/i,
+      matcher:
+        /^https?:\/\/(127\.0\.0\.1|localhost|192\.168\.\d{1,3}\.\d{1,3}|10\.\d{1,3}\.\d{1,3}\.\d{1,3})(:\d+)?\/.*$/i,
       handler: new NetworkOnly(),
     },
     {

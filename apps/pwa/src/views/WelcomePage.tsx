@@ -1,6 +1,6 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { useRouter } from '@/lib/navigation';
 
 import { ActiveBarButton } from '@/components/ui/ActiveBarButton';
 import { Screen } from '@/components/ui/Screen';

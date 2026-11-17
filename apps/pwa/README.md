@@ -1,6 +1,6 @@
 # Active PWA (`@active/pwa`)
 
-Mobile-first Progressive Web App for the Active marketplace. It shares the Supabase backend with the native app but is a **separate** Next.js + React codebase. It does not import from `apps/mobile`.
+Mobile-first Progressive Web App for the Active marketplace. It shares the Supabase backend with the native app but is a **separate** Vite + React Router codebase. It does not import from `apps/mobile`.
 
 ## Prerequisites
 
@@ -18,8 +18,8 @@ cp apps/pwa/.env.example apps/pwa/.env
 
 | Variable | Purpose |
 | --- | --- |
-| `NEXT_PUBLIC_SUPABASE_URL` | Supabase API URL (`VITE_PUBLIC_*` and root `EXPO_PUBLIC_*` still work at build via `next.config.ts`) |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Anon key (`eyJ…`) — RLS protects all data |
+| `VITE_PUBLIC_SUPABASE_URL` | Supabase API URL (`NEXT_PUBLIC_*` / root `EXPO_PUBLIC_*` also work via `vite.config.ts`) |
+| `VITE_PUBLIC_SUPABASE_ANON_KEY` | Anon key (`eyJ…`) — RLS protects all data |
 
 For local dev you can mirror the Expo app values:
 
@@ -55,13 +55,13 @@ Manual checks: [`docs/auth-profile-manual-tests.md`](docs/auth-profile-manual-te
 
 Production deployment, CSP, rollback: [`docs/production-deployment.md`](docs/production-deployment.md).
 
-## Architecture (foundation phase)
+## Architecture
 
-- **Vite 8** + **React 19** + **Tailwind CSS 4**
-- **React Router 7** — SPA routing, error boundaries
-- **TanStack Query** — data layer for upcoming marketplace modules
-- **Supabase JS** — browser client with chunked `localStorage` session storage (not SecureStore)
-- **vite-plugin-pwa** — manifest + service worker (static precache only; Supabase traffic is `NetworkOnly`)
+- **Vite 8** + **React 19** + **Tailwind CSS 4** (`@tailwindcss/vite`)
+- **React Router 7** — client routing in `src/app/routes.tsx`
+- **TanStack Query** — data layer
+- **Supabase JS** — browser client with `localStorage` session storage (not SecureStore)
+- **Serwist** (`@serwist/vite`) — manifest + service worker; Supabase/Paystack/local API are `NetworkOnly`
 
 ## Mobile-only gate
 

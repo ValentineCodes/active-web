@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import Link from '@/components/AppLink';
 
 import type { PublicRequest } from '@/features/requests/browse-api';
 import { formatMoney, formatProximityHome, formatWhenHome } from '@/lib/format';

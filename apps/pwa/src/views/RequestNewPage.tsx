@@ -1,6 +1,6 @@
 'use client';
 
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from '@/lib/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { set, startOfTomorrow } from 'date-fns';
 

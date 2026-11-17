@@ -1,7 +1,7 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
-import { useSearchParams } from 'next/navigation';
+import { useRouter } from '@/lib/navigation';
+import { useSearchParams } from '@/lib/navigation';
 import { useEffect, useMemo, useState } from 'react';
 
 import { RequestHelpSummary } from '@/components/RequestHelpSummary';

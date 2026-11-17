@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import Link from '@/components/AppLink';
 
 import { IonIcon } from '@/components/ui/IonIcon';
 import { ionIcons } from '@/components/ui/ion-icons';

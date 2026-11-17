@@ -1,6 +1,6 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { useRouter } from '@/lib/navigation';
 import { useEffect, type ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
 

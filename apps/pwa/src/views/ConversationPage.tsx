@@ -1,6 +1,6 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { useRouter } from '@/lib/navigation';
 import { useEffect, useState } from 'react';
 
 import { ConversationComposer } from '@/components/conversation/ConversationComposer';

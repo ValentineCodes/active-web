@@ -1,6 +1,6 @@
 'use client';
 
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams } from '@/lib/navigation';
 
 import { HomeActiveRequestBanner } from '@/components/home/HomeActiveRequestBanner';
 import { HomeFeedHeader } from '@/components/home/HomeFeedHeader';

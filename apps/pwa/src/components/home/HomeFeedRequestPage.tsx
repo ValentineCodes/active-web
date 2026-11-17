@@ -1,6 +1,6 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { useRouter } from '@/lib/navigation';
 import { useQueryClient } from '@tanstack/react-query';
 
 import { Avatar } from '@/components/ui/Avatar';

@@ -1,6 +1,6 @@
 'use client';
 
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from '@/lib/navigation';
 import { useState } from 'react';
 
 import { FlowScreen } from '@/components/layout/FlowScreen';

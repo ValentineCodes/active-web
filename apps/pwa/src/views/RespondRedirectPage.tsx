@@ -1,6 +1,6 @@
 'use client';
 
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from '@/lib/navigation';
 import { useEffect } from 'react';
 
 import { LoadingState } from '@/components/ui/StateView';

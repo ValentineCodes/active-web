@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import Link from '@/components/AppLink';
 
 import { Avatar } from '@/components/ui/Avatar';
 import { SkeletonBlock } from '@/components/ui/Skeleton';
