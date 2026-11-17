@@ -50,7 +50,8 @@ async function readHttpErrorBody(response: Response): Promise<EdgeFunctionErrorB
 function isLocalSupabaseUrl(url: string): boolean {
   try {
     const host = new URL(url).hostname;
-    return host === '127.0.0.1' || host === 'localhost';
+    if (host === '127.0.0.1' || host === 'localhost') return true;
+    return /^(192\.168\.|10\.|172\.(1[6-9]|2\d|3[01])\.)/.test(host);
   } catch {
     return false;
   }
