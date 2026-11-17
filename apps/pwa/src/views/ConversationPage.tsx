@@ -12,8 +12,7 @@ import {
 } from '@/components/conversation/ConversationComposer';
 import { ConversationDateSeparator } from '@/components/conversation/ConversationDateSeparator';
 import { ConversationHeader } from '@/components/conversation/ConversationHeader';
-import { AttachmentMessageBubble } from '@/components/conversation/AttachmentMessageBubble';
-import { MessageBubble } from '@/components/conversation/MessageBubble';
+import { ConversationMessageItem } from '@/components/conversation/ConversationMessageItem';
 import { Button } from '@/components/ui/Button';
 import { Screen } from '@/components/ui/Screen';
 import { InlineError, LoadingState } from '@/components/ui/StateView';
@@ -312,15 +311,12 @@ export function ConversationPage() {
               {shouldShowChatDaySeparatorChronological(rows, index) ? (
                 <ConversationDateSeparator label={formatAgo(message.createdAt)} />
               ) : null}
-              {message.attachments?.length ? (
-                <AttachmentMessageBubble
-                  message={message}
-                  isOutgoing={message.senderId === userId}
-                  uploadStateByAttachmentId={outgoingUploadByMessageId[message.id]}
-                />
-              ) : (
-                <MessageBubble message={message} isOutgoing={message.senderId === userId} />
-              )}
+              <ConversationMessageItem
+                message={message}
+                isOutgoing={message.senderId === userId}
+                viewerUserId={userId}
+                outgoingUploadStateByAttachmentId={outgoingUploadByMessageId[message.id]}
+              />
             </div>
           ))}
           <div ref={messagesEndRef} />

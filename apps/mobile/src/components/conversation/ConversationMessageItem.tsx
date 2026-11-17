@@ -13,18 +13,20 @@ import {
 export const ConversationMessageItem = memo(function ConversationMessageItem({
   message,
   isOutgoing,
+  viewerUserId,
   outgoingUploadStateByAttachmentId,
   onRetryOutgoing,
   onDeleteOutgoing,
 }: {
   message: RequestMessage;
   isOutgoing: boolean;
+  viewerUserId?: string | null;
   outgoingUploadStateByAttachmentId?: Record<string, ConversationAttachmentUploadState>;
   onRetryOutgoing?: () => void;
   onDeleteOutgoing?: () => void;
 }) {
   if (isSystemMessage(message)) {
-    return <SystemMessageRow message={message} />;
+    return <SystemMessageRow message={message} viewerUserId={viewerUserId} />;
   }
 
   if (isTextMessage(message)) {
@@ -54,5 +56,5 @@ export const ConversationMessageItem = memo(function ConversationMessageItem({
     return null;
   }
 
-  return <SystemMessageRow message={message} />;
+  return <SystemMessageRow message={message} viewerUserId={viewerUserId} />;
 });

@@ -344,6 +344,7 @@ export default function ConversationScreen() {
         <ConversationMessageItem
           message={item}
           isOutgoing={item.senderId === userId}
+          viewerUserId={userId}
           outgoingUploadStateByAttachmentId={outgoingUploadByMessageId[item.id]}
           onRetryOutgoing={
             outgoingMessageUploadFailed(outgoingUploadByMessageId[item.id])
