@@ -31,5 +31,7 @@ export const zIndex = {
   toast: 60,
   /** Stacked sheets / modals above the create composer (Vaul z-50). */
   sheet: 80,
+  /** Confirm prompts above profile `VaulSheet` (z-100). */
+  sheetElevated: 110,
   header: 10,
 } as const;

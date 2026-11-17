@@ -15,10 +15,12 @@ import { addHours, format, set } from 'date-fns';
 import type { BottomSheetModal } from '@gorhom/bottom-sheet';
 
 import { PersonProfileBottomSheet } from '@/components/PersonProfileBottomSheet';
+import { ChooseResponderSheet } from '@/components/request-flow/ChooseResponderSheet';
 import {
   ExtendResponseDeadlineSheet,
   type ExtendResponseDeadlineSheetHandle,
 } from '@/components/request-flow/ExtendResponseDeadlineSheet';
+import { InsufficientWalletSheet } from '@/components/request-flow/InsufficientWalletSheet';
 import { ReportIssueModal } from '@/components/ReportIssueModal';
 import { RequestAttachmentSection } from '@/components/request-flow/RequestAttachmentSection';
 import { RequestCallout } from '@/components/request-flow/RequestCallout';
@@ -45,7 +47,6 @@ import {
   useRequestResponses,
 } from '@/features/requests/requester-api';
 import { useOpenPreHandshakeConversation } from '@/features/requests/conversation-api';
-import { chooseResponderDialog } from '@/features/requests/selection-copy';
 import { myRequestActivityBadge } from '@/features/requests/activity-list';
 import { partitionRequestResponsesForRequester } from '@/features/requests/request-response-sections';
 import { responseStatusBadge } from '@/features/requests/status';
@@ -91,6 +92,17 @@ type ResponderProfilePreview = {
   };
 };
 
+type ChooseResponderPrompt = {
+  displayName: string | null;
+  responseId: string;
+  onAccepted?: () => void;
+};
+
+type InsufficientWalletPrompt = {
+  message: string;
+  requiredLockMajor: number;
+};
+
 export default function RequestDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const profileSheetRef = useRef<BottomSheetModal>(null);
@@ -98,6 +110,10 @@ export default function RequestDetailScreen() {
   const reopenExtendSheetAfterPickerRef = useRef(false);
   const [profilePreview, setProfilePreview] = useState<ResponderProfilePreview | null>(null);
   const [reportIssueOpen, setReportIssueOpen] = useState(false);
+  const [chooseResponderPrompt, setChooseResponderPrompt] = useState<ChooseResponderPrompt | null>(null);
+  const [insufficientWalletPrompt, setInsufficientWalletPrompt] = useState<InsufficientWalletPrompt | null>(
+    null,
+  );
 
   const request = useMyRequest(id);
   const responses = useRequestResponses(id);
@@ -136,24 +152,6 @@ export default function RequestDetailScreen() {
     setProfilePreview(null);
   }, []);
 
-  const showInsufficientWalletAlert = useCallback(
-    (error: unknown, requiredLockMajor: number) => {
-      Alert.alert('Not enough in your wallet', toUserMessage(error), [
-        { text: 'Not now', style: 'cancel' },
-        {
-          text: 'Add money',
-          onPress: () =>
-            openWalletTopUp({
-              returnTo: `/request/${id}`,
-              requiredLockMajor,
-              availableMajor: wallet.data?.available ?? 0,
-            }),
-        },
-      ]);
-    },
-    [id, wallet.data?.available],
-  );
-
   const discussResponse = useCallback(
     (responseId: string) => {
       openPreHandshakeChat.mutate(responseId, {
@@ -180,25 +178,30 @@ export default function RequestDetailScreen() {
 
       acceptResponse.mutate(responseId, {
         onSuccess: () => {
+          setChooseResponderPrompt(null);
           onAccepted?.();
           showAppToast('Helper confirmed — open the engagement for chat and details', 'info');
         },
         onError: (error) => {
           if (isInsufficientWalletBalanceError(error)) {
             dismissProfileSheet();
-            showInsufficientWalletAlert(error, requiredLockMajor);
+            setChooseResponderPrompt(null);
+            setInsufficientWalletPrompt({
+              message: toUserMessage(error),
+              requiredLockMajor,
+            });
           }
         },
       });
     },
-    [
-      acceptResponse,
-      dismissProfileSheet,
-      request.data?.offered_amount,
-      responses.data,
-      showInsufficientWalletAlert,
-    ],
+    [acceptResponse, dismissProfileSheet, request.data?.offered_amount, responses.data],
   );
+
+  const confirmChooseResponder = useCallback(() => {
+    if (!chooseResponderPrompt) return;
+    const { responseId, onAccepted } = chooseResponderPrompt;
+    acceptResponder(responseId, onAccepted);
+  }, [acceptResponder, chooseResponderPrompt]);
 
   useFocusEffect(
     useCallback(() => {
@@ -853,26 +856,49 @@ export default function RequestDetailScreen() {
                       },
                     ),
                   onAccept: () => {
-                    const dialog = chooseResponderDialog(profilePreview.displayName);
-                    Alert.alert(dialog.title, dialog.message, [
-                      { text: dialog.cancel, style: 'cancel' },
-                      {
-                        text: dialog.confirm,
-                        onPress: () => {
-                          const responseId = profilePreview.pendingResponse!.responseId;
-                          acceptResponder(responseId, () => {
-                            profileSheetRef.current?.dismiss();
-                            setProfilePreview(null);
-                          });
-                        },
+                    setChooseResponderPrompt({
+                      displayName: profilePreview.displayName,
+                      responseId: profilePreview.pendingResponse!.responseId,
+                      onAccepted: () => {
+                        profileSheetRef.current?.dismiss();
+                        setProfilePreview(null);
                       },
-                    ]);
+                    });
+                    profileSheetRef.current?.dismiss();
+                    setProfilePreview(null);
                   },
                 }
               : undefined
           }
         />
       ) : null}
+
+      <ChooseResponderSheet
+        open={chooseResponderPrompt !== null}
+        displayName={chooseResponderPrompt?.displayName ?? null}
+        confirmLoading={acceptResponse.isPending}
+        onClose={() => {
+          if (acceptResponse.isPending) return;
+          setChooseResponderPrompt(null);
+        }}
+        onConfirm={confirmChooseResponder}
+      />
+
+      <InsufficientWalletSheet
+        open={insufficientWalletPrompt !== null}
+        message={insufficientWalletPrompt?.message ?? ''}
+        onClose={() => setInsufficientWalletPrompt(null)}
+        onAddMoney={() => {
+          const prompt = insufficientWalletPrompt;
+          if (!prompt) return;
+          setInsufficientWalletPrompt(null);
+          openWalletTopUp({
+            returnTo: `/request/${id}`,
+            requiredLockMajor: prompt.requiredLockMajor,
+            availableMajor: wallet.data?.available ?? 0,
+          });
+        }}
+      />
     </Screen>
   );
 }

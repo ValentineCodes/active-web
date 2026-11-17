@@ -7,7 +7,9 @@ import { addHours, format } from 'date-fns';
 
 import { ResponseCard } from '@/components/ResponseCard';
 import { ReportIssueModal } from '@/components/support/ReportIssueModal';
+import { ChooseResponderSheet } from '@/components/request-flow/ChooseResponderSheet';
 import { ExtendResponseDeadlineSheet } from '@/components/request-flow/ExtendResponseDeadlineSheet';
+import { InsufficientWalletSheet } from '@/components/request-flow/InsufficientWalletSheet';
 import { RequestAttachmentSection } from '@/components/request-flow/RequestAttachmentSection';
 import { RequestResponseCountChip } from '@/components/activity/RequestResponseCountChip';
 import { RequestCallout } from '@/components/request-flow/RequestCallout';
@@ -46,7 +48,6 @@ import {
   isExpiredRequestView,
   reuseRequestButtonLabelForRequest,
 } from '@/features/requests/reuse';
-import { chooseResponderDialog } from '@/features/requests/selection-copy';
 import { responseStatusBadge } from '@/features/requests/status';
 import { REQUEST_REPORT_ISSUES } from '@/features/support/report-issue-options';
 import { useMyWallet } from '@/features/wallet/api';
@@ -78,6 +79,17 @@ type ResponderProfilePreview = {
   };
 };
 
+type ChooseResponderPrompt = {
+  displayName: string | null;
+  responseId: string;
+  onAccepted?: () => void;
+};
+
+type InsufficientWalletPrompt = {
+  message: string;
+  requiredLockMajor: number;
+};
+
 export function RequestDetailPage() {
   const router = useRouter();
   const id = useRouteParam('id');
@@ -85,6 +97,10 @@ export function RequestDetailPage() {
   const [reportIssueOpen, setReportIssueOpen] = useState(false);
   const [extendSheetOpen, setExtendSheetOpen] = useState(false);
   const [extendDeadlineAt, setExtendDeadlineAt] = useState(() => addHours(new Date(), REQUEST_MAX_LIFETIME_HOURS));
+  const [chooseResponderPrompt, setChooseResponderPrompt] = useState<ChooseResponderPrompt | null>(null);
+  const [insufficientWalletPrompt, setInsufficientWalletPrompt] = useState<InsufficientWalletPrompt | null>(
+    null,
+  );
 
   const request = useMyRequest(id);
   const responses = useRequestResponses(id);
@@ -117,24 +133,6 @@ export function RequestDetailPage() {
     setProfilePreview(null);
   }, []);
 
-  const showInsufficientWalletConfirm = useCallback(
-    (error: unknown, requiredLockMajor: number) => {
-      const addMoney = window.confirm(
-        `${toUserMessage(error)}\n\nDeposit to your wallet now?`,
-      );
-      if (addMoney) {
-        router.push(
-          walletTopUpPath({
-            returnTo: `/request/${id}`,
-            requiredLockMajor,
-            availableMajor: wallet.data?.available ?? 0,
-          }),
-        );
-      }
-    },
-    [id, router, wallet.data?.available],
-  );
-
   const discussResponse = useCallback(
     (responseId: string) => {
       void openPreHandshakeChat.mutateAsync(responseId).then((conversationId) => {
@@ -159,25 +157,30 @@ export function RequestDetailPage() {
 
       acceptResponse.mutate(responseId, {
         onSuccess: () => {
+          setChooseResponderPrompt(null);
           onAccepted?.();
           showAppToast('Helper confirmed — open the engagement for chat and details', 'info');
         },
         onError: (error) => {
           if (isInsufficientWalletBalanceError(error)) {
             dismissProfile();
-            showInsufficientWalletConfirm(error, requiredLockMajor);
+            setChooseResponderPrompt(null);
+            setInsufficientWalletPrompt({
+              message: toUserMessage(error),
+              requiredLockMajor,
+            });
           }
         },
       });
     },
-    [
-      acceptResponse,
-      dismissProfile,
-      request.data?.offered_amount,
-      responses.data,
-      showInsufficientWalletConfirm,
-    ],
+    [acceptResponse, dismissProfile, request.data?.offered_amount, responses.data],
   );
+
+  const confirmChooseResponder = useCallback(() => {
+    if (!chooseResponderPrompt) return;
+    const { responseId, onAccepted } = chooseResponderPrompt;
+    acceptResponder(responseId, onAccepted);
+  }, [acceptResponder, chooseResponderPrompt]);
 
   if (showQuerySkeleton(request)) {
     return (
@@ -375,11 +378,13 @@ export function RequestDetailPage() {
               },
             ),
           onAccept: () => {
-            const dialog = chooseResponderDialog(profilePreview.displayName);
-            const confirmed = window.confirm(`${dialog.title}\n\n${dialog.message}`);
-            if (!confirmed) return;
             const responseId = profilePreview.pendingResponse!.responseId;
-            acceptResponder(responseId, dismissProfile);
+            setChooseResponderPrompt({
+              displayName: profilePreview.displayName,
+              responseId,
+              onAccepted: dismissProfile,
+            });
+            dismissProfile();
           },
         }
       : undefined;
@@ -638,6 +643,35 @@ export function RequestDetailPage() {
         ratingCount={profilePreview?.ratingCount ?? null}
         completionPercent={profilePreview?.completionPercent}
         responseActions={profileSheetActions}
+      />
+
+      <ChooseResponderSheet
+        open={chooseResponderPrompt !== null}
+        displayName={chooseResponderPrompt?.displayName ?? null}
+        confirmLoading={acceptResponse.isPending}
+        onClose={() => {
+          if (acceptResponse.isPending) return;
+          setChooseResponderPrompt(null);
+        }}
+        onConfirm={confirmChooseResponder}
+      />
+
+      <InsufficientWalletSheet
+        open={insufficientWalletPrompt !== null}
+        message={insufficientWalletPrompt?.message ?? ''}
+        onClose={() => setInsufficientWalletPrompt(null)}
+        onAddMoney={() => {
+          const prompt = insufficientWalletPrompt;
+          if (!prompt) return;
+          setInsufficientWalletPrompt(null);
+          router.push(
+            walletTopUpPath({
+              returnTo: `/request/${id}`,
+              requiredLockMajor: prompt.requiredLockMajor,
+              availableMajor: wallet.data?.available ?? 0,
+            }),
+          );
+        }}
       />
     </Screen>
   );

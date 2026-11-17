@@ -18,6 +18,7 @@ export function BottomSheet({
   title,
   onClose,
   dismissible = true,
+  elevated = false,
   children,
   footer,
   className,
@@ -27,6 +28,8 @@ export function BottomSheet({
   onClose: () => void;
   /** When false, backdrop, drag, and Escape do not dismiss (e.g. while loading). */
   dismissible?: boolean;
+  /** Renders above Vaul profile sheets (z-100). */
+  elevated?: boolean;
   children: ReactNode;
   footer?: ReactNode;
   className?: string;
@@ -95,7 +98,7 @@ export function BottomSheet({
   const sheet = (
     <div
       className="fixed inset-0 flex flex-col"
-      style={{ zIndex: zIndex.sheet }}
+      style={{ zIndex: elevated ? zIndex.sheetElevated : zIndex.sheet }}
       role="presentation"
     >
       <button
