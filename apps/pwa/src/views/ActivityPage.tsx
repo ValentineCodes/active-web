@@ -8,7 +8,7 @@ import { useCreateComposer } from '@/components/create/CreateComposerProvider';
 import { ActivityStatusFilter } from '@/components/activity/ActivityStatusFilter';
 import { ActivitySubTabs, type ActivitySubTab } from '@/components/activity/ActivitySubTabs';
 import { Screen } from '@/components/ui/Screen';
-import { TAB_BAR_HEIGHT } from '@/components/ui/tab-bar-insets';
+import { readAppTabBarInset } from '@/components/ui/tab-bar-insets';
 import { EmptyState, InlineError, LoadingState } from '@/components/ui/StateView';
 import {
   MY_REQUEST_ACTIVITY_FILTER_OPTIONS,
@@ -73,7 +73,7 @@ function RequestsTab({ rows }: { rows: NonNullable<ReturnType<typeof useMyReques
     [filter, rows],
   );
   const listEmpty = rows.length === 0 || filtered.length === 0;
-  const paddingBottom = TAB_BAR_HEIGHT + 24;
+  const paddingBottom = readAppTabBarInset(24);
 
   return emptyInner({
     paddingBottom,
@@ -176,7 +176,7 @@ function ResponsesTab({ rows }: { rows: NonNullable<ReturnType<typeof useMyRespo
     [filter, rows],
   );
   const listEmpty = rows.length === 0 || filtered.length === 0;
-  const paddingBottom = TAB_BAR_HEIGHT + 24;
+  const paddingBottom = readAppTabBarInset(24);
 
   return (
     <>

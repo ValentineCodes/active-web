@@ -42,6 +42,7 @@ type Props = {
   waiting: boolean;
   browsePosition: Position | null;
   onRequesterPress: () => void;
+  tabBarInset: number;
 };
 
 function requestHref(requestId: string, position: Position | null, isOwnRequest: boolean): string {
@@ -63,6 +64,7 @@ export function HomeFeedRequestPage({
   waiting,
   browsePosition,
   onRequesterPress,
+  tabBarInset,
 }: Props) {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -155,7 +157,8 @@ export function HomeFeedRequestPage({
             aria-label={openDisabled ? 'Response pending' : `View request: ${title}`}
             disabled={openDisabled}
             onClick={openRequest}
-            className="absolute inset-0 z-[1] disabled:cursor-not-allowed active:opacity-95"
+            style={{ bottom: tabBarInset }}
+            className="absolute inset-x-0 top-0 z-[1] disabled:cursor-not-allowed active:opacity-95"
           />
 
           <button
@@ -176,7 +179,10 @@ export function HomeFeedRequestPage({
             />
           </button>
 
-          <div className="pointer-events-none absolute bottom-0 left-0 right-0 z-[2] flex flex-col gap-3 px-4 pb-4 pt-6">
+          <div
+            className="pointer-events-none absolute left-0 right-0 z-[2] flex flex-col gap-3 px-4 pb-4 pt-6"
+            style={{ bottom: tabBarInset }}
+          >
             {cardDetails}
           </div>
         </div>
@@ -208,7 +214,8 @@ export function HomeFeedRequestPage({
           aria-label={openDisabled ? 'Response pending' : `View request: ${title}`}
           disabled={openDisabled}
           onClick={openRequest}
-          className="absolute inset-0 z-[1] disabled:cursor-not-allowed active:opacity-95"
+          style={{ bottom: tabBarInset }}
+          className="absolute inset-x-0 top-0 z-[1] disabled:cursor-not-allowed active:opacity-95"
         />
 
         <button
@@ -229,7 +236,10 @@ export function HomeFeedRequestPage({
           />
         </button>
 
-        <div className="pointer-events-none absolute bottom-0 left-0 right-0 z-[2] flex flex-col gap-3 px-4 pb-4 pt-6">
+        <div
+          className="pointer-events-none absolute left-0 right-0 z-[2] flex flex-col gap-3 px-4 pb-4 pt-6"
+          style={{ bottom: tabBarInset }}
+        >
           {cardDetails}
         </div>
       </div>

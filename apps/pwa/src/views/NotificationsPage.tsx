@@ -17,7 +17,7 @@ import { Card } from '@/components/ui/Card';
 import { IconButton } from '@/components/ui/IconButton';
 import { Screen } from '@/components/ui/Screen';
 import { SkeletonBlock } from '@/components/ui/Skeleton';
-import { TAB_BAR_HEIGHT } from '@/components/ui/tab-bar-insets';
+import { readAppTabBarInset } from '@/components/ui/tab-bar-insets';
 import { EmptyState, InlineError } from '@/components/ui/StateView';
 import {
   markNotificationInboxItemRead,
@@ -74,7 +74,7 @@ export function NotificationsPage() {
 
   const inboxSkeleton = showQuerySkeleton(inbox);
   const inboxEmpty = (inbox.isSuccess || inbox.isError) && filteredItems.length === 0;
-  const paddingBottom = TAB_BAR_HEIGHT + 24;
+  const paddingBottom = readAppTabBarInset(24);
 
   const pushPrefEnabled = profile.data?.push_notifications_enabled !== false;
   const osGranted = permission === 'granted';

@@ -14,6 +14,7 @@ import { IonIcon } from '@/components/ui/IonIcon';
 import { EmptyState, InlineError } from '@/components/ui/StateView';
 import { ionIcons } from '@/components/ui/ion-icons';
 import { useHomeBrowseFeed } from '@/features/requests/use-home-browse-feed';
+import { useHomeFeedTabBarInset } from '@/components/ui/tab-bar-insets';
 import { useColors } from '@/theme/ThemeProvider';
 
 type Props = {
@@ -23,6 +24,7 @@ type Props = {
 export function HomeFeed({ searchQuery }: Props) {
   const router = useRouter();
   const feed = useHomeBrowseFeed(searchQuery, true);
+  const tabBarInset = useHomeFeedTabBarInset();
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [pageHeight, setPageHeight] = useState(0);
   const [profilePreview, setProfilePreview] = useState<PersonProfilePreview | null>(null);
@@ -107,6 +109,7 @@ export function HomeFeed({ searchQuery }: Props) {
                 waiting={waiting}
                 browsePosition={feed.position}
                 onRequesterPress={() => openRequesterProfile(item)}
+                tabBarInset={tabBarInset}
               />
             );
           })}

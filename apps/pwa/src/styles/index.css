@@ -51,6 +51,51 @@
   box-shadow: 0 var(--shadow-raised-y) var(--shadow-raised-blur) rgb(var(--shadow-tint) / var(--shadow-raised-opacity));
 }
 
+@layer components {
+  .tab-bar-glass {
+    border-radius: 9999px;
+    overflow: hidden;
+    background-color: var(--tab-bar-glass-bg);
+    border: 1px solid var(--tab-bar-glass-edge);
+    box-shadow:
+      0 0 0 0.5px rgb(var(--token-hairline) / 0.35),
+      0 12px 48px rgb(var(--shadow-tint) / 0.16),
+      inset 0 1px 0 var(--tab-bar-glass-highlight),
+      inset 0 -1px 0 rgb(var(--token-hairline) / 0.12);
+  }
+
+  .tab-bar-slot {
+    display: flex;
+    min-height: 2.75rem;
+    width: 100%;
+    align-items: center;
+    justify-content: center;
+    border-radius: 9999px;
+  }
+
+  .tab-bar-selection-pill {
+    position: absolute;
+    left: 0;
+    top: 0.125rem;
+    z-index: 0;
+    height: calc(100% - 0.25rem);
+    border-radius: 9999px;
+    background-color: var(--tab-bar-selection-bg);
+    pointer-events: none;
+    transition:
+      transform 0.42s cubic-bezier(0.32, 0.72, 0, 1),
+      width 0.42s cubic-bezier(0.32, 0.72, 0, 1),
+      opacity 0.2s ease;
+    will-change: transform, width;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .tab-bar-selection-pill {
+      transition: none;
+    }
+  }
+}
+
 @utility overlay-scrim {
   background-color: rgb(17 24 18 / 0.45);
 }

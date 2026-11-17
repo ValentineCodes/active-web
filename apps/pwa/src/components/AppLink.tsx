@@ -1,7 +1,10 @@
+import { forwardRef } from 'react';
 import { Link as RouterLink, type LinkProps } from 'react-router-dom';
 
 type AppLinkProps = Omit<LinkProps, 'to'> & { href: string };
 
-export default function Link({ href, ...rest }: AppLinkProps) {
-  return <RouterLink to={href} {...rest} />;
-}
+const Link = forwardRef<HTMLAnchorElement, AppLinkProps>(function Link({ href, ...rest }, ref) {
+  return <RouterLink to={href} ref={ref} {...rest} />;
+});
+
+export default Link;

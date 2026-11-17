@@ -1,4 +1,5 @@
 import {
+  add,
   addOutline,
   alertCircleOutline,
   arrowBackOutline,
@@ -6,9 +7,12 @@ import {
   closeOutline,
   compassOutline,
   filterOutline,
+  home,
   homeOutline,
+  list,
   listOutline,
   locationOutline,
+  notifications,
   notificationsOutline,
   radioOutline,
   searchOutline,
@@ -47,7 +51,8 @@ import {
 
 /** Maps mobile Ionicons glyph names to ionicons v8 data-URI SVG strings. */
 export const ionIcons = {
-  add: addOutline,
+  add,
+  'add-outline': addOutline,
   'add-circle-outline': addCircleOutline,
   'alert-circle': alertCircleOutline,
   'arrow-back': arrowBackOutline,
@@ -57,9 +62,12 @@ export const ionIcons = {
   close: closeOutline,
   'compass-outline': compassOutline,
   'filter-outline': filterOutline,
+  home,
   'home-outline': homeOutline,
+  list,
   'list-outline': listOutline,
   'location-outline': locationOutline,
+  notifications,
   'notifications-outline': notificationsOutline,
   'radio-outline': radioOutline,
   'search-outline': searchOutline,
