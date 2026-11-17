@@ -115,7 +115,7 @@ export function ProfileCatalogueRail() {
         }}
       />
 
-      <div className="-mx-1 flex gap-3 overflow-x-auto px-1 pb-1">
+      <div className="-mx-1 flex gap-3 overflow-x-auto px-1 pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {video ? (
           <VideoTile path={video.storage_path} />
         ) : (

@@ -1,10 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { Drawer } from 'vaul';
 
 import { ResponderScheduleAvailability } from '@/components/ResponderScheduleAvailability';
+import { ProfileCataloguePreview } from '@/components/profile/ProfileCataloguePreview';
 import { ProfileCompletionBadge } from '@/components/profile/ProfileCompletionBadge';
-import { BottomSheet } from '@/components/ui/BottomSheet';
+import { VaulSheet } from '@/components/ui/VaulSheet';
 import { Button } from '@/components/ui/Button';
 import { Avatar } from '@/components/ui/Avatar';
 import { StarRating } from '@/components/ui/Stars';
@@ -22,6 +24,7 @@ export type ResponderProfileSheetActions = {
 export function ResponderProfileSheet({
   open,
   onClose,
+  userId,
   displayName,
   avatarPath,
   bio,
@@ -32,6 +35,7 @@ export function ResponderProfileSheet({
 }: {
   open: boolean;
   onClose: () => void;
+  userId?: string | null;
   displayName: string | null;
   avatarPath: string | null;
   bio?: string | null;
@@ -46,6 +50,13 @@ export function ResponderProfileSheet({
   const title = displayName?.trim() || 'Profile';
   const hasRatings = (ratingCount ?? 0) > 0 && ratingAverage != null;
 
+  useEffect(() => {
+    if (!open) {
+      setDeclining(false);
+      setReason('');
+    }
+  }, [open]);
+
   const footer =
     responseActions && !declining ? (
       <div className="flex flex-col gap-3">
@@ -54,12 +65,14 @@ export function ResponderProfileSheet({
             label="Not this one"
             variant="secondary"
             className="flex-1"
+            size="lg"
             loading={responseActions.declineLoading}
             onClick={() => setDeclining(true)}
           />
           <Button
             label="Accept"
             className="flex-1"
+            size="lg"
             loading={responseActions.acceptLoading}
             disabled={!responseActions.responderAvailable}
             onClick={responseActions.onAccept}
@@ -100,8 +113,9 @@ export function ResponderProfileSheet({
     ) : undefined;
 
   return (
-    <BottomSheet open={open} title={title} onClose={onClose} footer={footer}>
-      <div className="flex flex-col gap-5 px-5 pb-6">
+    <VaulSheet open={open} onClose={onClose} footer={footer} dismissible={!responseActions?.acceptLoading && !responseActions?.declineLoading}>
+      <div className="flex flex-col gap-5 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+        <Drawer.Title className="sr-only">{title}</Drawer.Title>
         <div className="flex flex-row items-center gap-3">
           <div
             className={cn(
@@ -120,7 +134,8 @@ export function ResponderProfileSheet({
           {completionPercent != null ? <ProfileCompletionBadge percent={completionPercent} /> : null}
         </div>
         {bio ? <p className="text-base leading-6 text-muted">{bio}</p> : null}
+        {userId ? <ProfileCataloguePreview userId={userId} /> : null}
       </div>
-    </BottomSheet>
+    </VaulSheet>
   );
 }

@@ -630,6 +630,7 @@ export function RequestDetailPage() {
       <ResponderProfileSheet
         open={profilePreview != null}
         onClose={dismissProfile}
+        userId={profilePreview?.userId}
         displayName={profilePreview?.displayName ?? null}
         avatarPath={profilePreview?.avatarPath ?? null}
         bio={profilePreview?.bio}

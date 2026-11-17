@@ -1,14 +1,19 @@
 'use client';
 
+import { Drawer } from 'vaul';
+
+import { ProfileCataloguePreview } from '@/components/profile/ProfileCataloguePreview';
 import { ProfileCompletionBadge } from '@/components/profile/ProfileCompletionBadge';
-import { BottomSheet } from '@/components/ui/BottomSheet';
+import { VaulSheet } from '@/components/ui/VaulSheet';
 import { Avatar } from '@/components/ui/Avatar';
 import { StarRating } from '@/components/ui/Stars';
+import { cn } from '@/lib/cn';
 
 import type { PublicRequest } from '@/features/requests/browse-api';
 import type { RespondableRequest } from '@/features/requests/responses-api';
 
 export type PersonProfilePreview = {
+  userId: string;
   displayName: string | null;
   avatarPath: string | null;
   bio?: string | null;
@@ -20,6 +25,7 @@ export type PersonProfilePreview = {
 
 export function personProfileFromPublicRequest(request: PublicRequest): PersonProfilePreview {
   return {
+    userId: request.requester_id,
     displayName: request.requester_display_name,
     avatarPath: request.requester_avatar_path,
     bio: request.requester_bio,
@@ -32,6 +38,7 @@ export function personProfileFromPublicRequest(request: PublicRequest): PersonPr
 
 export function personProfileFromRespondableRequest(request: RespondableRequest): PersonProfilePreview {
   return {
+    userId: request.requester_id,
     displayName: request.requester_display_name,
     avatarPath: request.requester_avatar_path,
     bio: request.requester_bio,
@@ -52,31 +59,43 @@ export function PersonProfileSheet({
   profile: PersonProfilePreview | null;
 }) {
   const title = profile?.displayName?.trim() || 'Profile';
+  const hasRatings = (profile?.ratingCount ?? 0) > 0 && profile?.ratingAverage != null;
 
   return (
-    <BottomSheet open={open && profile != null} title={title} onClose={onClose}>
+    <VaulSheet open={open && profile != null} onClose={onClose}>
       {profile ? (
-        <div className="flex flex-col gap-5">
-          <div className="flex min-w-0 flex-row items-start gap-3">
-            <Avatar path={profile.avatarPath} name={profile.displayName} size="md" />
-            <div className="flex min-w-0 flex-1 flex-col gap-2">
-              <div className="flex max-w-full flex-row items-center gap-1">
-                <p className="min-w-0 truncate text-lg font-bold leading-7 text-ink">{title}</p>
-                {profile.identityVerified ? (
-                  <span className="shrink-0 rounded-full bg-brand-soft px-2 py-0.5 text-xs font-semibold text-brand">
-                    Verified
-                  </span>
+        <div className="flex flex-col gap-5 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+          <Drawer.Title className="sr-only">{title}</Drawer.Title>
+          <div className="flex min-w-0 flex-row items-center gap-3">
+            <div
+              className={cn(
+                'flex min-w-0 flex-1 flex-row gap-3',
+                hasRatings ? 'items-start' : 'items-center',
+              )}
+            >
+              <Avatar path={profile.avatarPath} name={profile.displayName} size="md" />
+              <div className={cn('min-w-0 flex-1', hasRatings ? 'flex flex-col gap-2' : undefined)}>
+                <div className="flex max-w-full flex-row items-center gap-1">
+                  <p className="min-w-0 truncate text-lg font-bold leading-7 text-ink">{title}</p>
+                  {profile.identityVerified ? (
+                    <span className="shrink-0 rounded-full bg-brand-soft px-2 py-0.5 text-xs font-semibold text-brand">
+                      Verified
+                    </span>
+                  ) : null}
+                </div>
+                {hasRatings ? (
+                  <StarRating average={profile.ratingAverage} count={profile.ratingCount ?? 0} size="md" />
                 ) : null}
               </div>
-              <StarRating average={profile.ratingAverage} count={profile.ratingCount ?? 0} size="md" />
             </div>
             {profile.completionPercent != null ? (
               <ProfileCompletionBadge percent={profile.completionPercent} />
             ) : null}
           </div>
           {profile.bio ? <p className="text-base leading-6 text-muted">{profile.bio}</p> : null}
+          <ProfileCataloguePreview userId={profile.userId} />
         </div>
       ) : null}
-    </BottomSheet>
+    </VaulSheet>
   );
 }

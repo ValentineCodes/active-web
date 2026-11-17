@@ -45,12 +45,15 @@ export function catalogueQueryOptions(userId: string) {
   };
 }
 
-export function useMyCatalogue() {
-  const userId = useUserId();
+export function useUserCatalogue(userId: string | undefined) {
   return useQuery({
     ...catalogueQueryOptions(userId ?? ''),
     enabled: Boolean(userId),
   });
+}
+
+export function useMyCatalogue() {
+  return useUserCatalogue(useUserId() ?? undefined);
 }
 
 export function useCatalogueMediaUrl(path: string | null | undefined) {
