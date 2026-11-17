@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { ConversationComposer } from '@/components/conversation/ConversationComposer';
 import { ConversationDateSeparator } from '@/components/conversation/ConversationDateSeparator';
 import { ConversationHeader } from '@/components/conversation/ConversationHeader';
+import { AttachmentMessageBubble } from '@/components/conversation/AttachmentMessageBubble';
 import { MessageBubble } from '@/components/conversation/MessageBubble';
 import { BottomSheet } from '@/components/ui/BottomSheet';
 import { Button } from '@/components/ui/Button';
@@ -155,16 +156,11 @@ export function ConversationPage() {
               {shouldShowChatDaySeparator(rows, index) ? (
                 <ConversationDateSeparator label={formatAgo(message.createdAt)} />
               ) : null}
-              <MessageBubble message={message} isOutgoing={message.senderId === userId} />
               {message.attachments?.length ? (
-                <ul className={message.senderId === userId ? 'self-end text-right' : ''}>
-                  {message.attachments.map((a) => (
-                    <li key={a.id} className="mt-1 text-xs text-subtle">
-                      {a.fileName ?? a.attachmentType}
-                    </li>
-                  ))}
-                </ul>
-              ) : null}
+                <AttachmentMessageBubble message={message} isOutgoing={message.senderId === userId} />
+              ) : (
+                <MessageBubble message={message} isOutgoing={message.senderId === userId} />
+              )}
             </div>
           ))}
         </div>

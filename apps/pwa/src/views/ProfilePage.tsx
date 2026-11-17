@@ -5,9 +5,9 @@ import { useRouter } from '@/lib/navigation';
 import { useMutation } from '@tanstack/react-query';
 
 import { FlowScreen } from '@/components/layout/FlowScreen';
+import { AvatarWithViewer } from '@/components/profile/AvatarWithViewer';
 import { ProfileCatalogueRail } from '@/components/profile/ProfileCatalogueRail';
 import { ProfileStat, SettingsGroup, SettingsRow } from '@/components/profile/SettingsRow';
-import { Avatar } from '@/components/ui/Avatar';
 import { IonIcon } from '@/components/ui/IonIcon';
 import { ionIcons } from '@/components/ui/ion-icons';
 import { StarRating } from '@/components/ui/Stars';
@@ -79,7 +79,12 @@ export function ProfilePage() {
     <FlowScreen title="Profile" onBack={goBack}>
       <div className="flex flex-col gap-6">
       <div className="flex flex-col items-center gap-2 text-center">
-        <Avatar path={data.avatar_path} name={data.display_name} size="lg" showActiveDot={hasCommitments} />
+        <AvatarWithViewer
+          path={data.avatar_path}
+          name={data.display_name}
+          size="lg"
+          showActiveDot={hasCommitments}
+        />
         <div className="flex max-w-full flex-row items-center justify-center gap-1.5">
           <p className="min-w-0 truncate text-xl font-bold text-ink">{data.display_name}</p>
           {identityStatus.data?.identityVerified ? (

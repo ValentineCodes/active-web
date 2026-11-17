@@ -2,7 +2,7 @@
 
 import type { ReactNode } from 'react';
 
-import { Avatar } from '@/components/ui/Avatar';
+import { AvatarWithViewer } from '@/components/profile/AvatarWithViewer';
 import { IconButton } from '@/components/ui/IconButton';
 
 export function ConversationHeader({
@@ -27,7 +27,7 @@ export function ConversationHeader({
       <div className="flex flex-row items-center gap-1">
         <IconButton icon="chevron-back" accessibilityLabel="Go back" onClick={onBack} />
         <div className="flex min-w-0 flex-1 flex-row items-center gap-3 py-1">
-          <Avatar path={counterpartyAvatarPath} name={counterpartyName} size="sm" />
+          <AvatarWithViewer path={counterpartyAvatarPath} name={counterpartyName} size="sm" />
           <div className="min-w-0 flex-1 gap-0.5">
             <p className="truncate text-base font-bold text-ink">{firstName}</p>
             <p className="line-clamp-2 text-sm text-muted">{requestTitle}</p>

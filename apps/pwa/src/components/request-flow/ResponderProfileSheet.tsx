@@ -8,7 +8,7 @@ import { ProfileCataloguePreview } from '@/components/profile/ProfileCataloguePr
 import { ProfileCompletionBadge } from '@/components/profile/ProfileCompletionBadge';
 import { VaulSheet } from '@/components/ui/VaulSheet';
 import { Button } from '@/components/ui/Button';
-import { Avatar } from '@/components/ui/Avatar';
+import { AvatarWithViewer } from '@/components/profile/AvatarWithViewer';
 import { StarRating } from '@/components/ui/Stars';
 import { TextAreaField } from '@/components/ui/TextField';
 import { cn } from '@/lib/cn';
@@ -123,7 +123,7 @@ export function ResponderProfileSheet({
               hasRatings ? 'items-start' : 'items-center',
             )}
           >
-            <Avatar path={avatarPath} name={displayName} size="md" />
+            <AvatarWithViewer path={avatarPath} name={displayName} size="md" />
             <div className={cn('min-w-0 flex-1', hasRatings ? 'flex flex-col gap-2' : undefined)}>
               <p className="truncate text-lg font-bold leading-7 text-ink">{title}</p>
               {hasRatings && ratingAverage !== null ? (

@@ -5,7 +5,7 @@ import { Drawer } from 'vaul';
 import { ProfileCataloguePreview } from '@/components/profile/ProfileCataloguePreview';
 import { ProfileCompletionBadge } from '@/components/profile/ProfileCompletionBadge';
 import { VaulSheet } from '@/components/ui/VaulSheet';
-import { Avatar } from '@/components/ui/Avatar';
+import { AvatarWithViewer } from '@/components/profile/AvatarWithViewer';
 import { StarRating } from '@/components/ui/Stars';
 import { cn } from '@/lib/cn';
 
@@ -73,7 +73,7 @@ export function PersonProfileSheet({
                 hasRatings ? 'items-start' : 'items-center',
               )}
             >
-              <Avatar path={profile.avatarPath} name={profile.displayName} size="md" />
+              <AvatarWithViewer path={profile.avatarPath} name={profile.displayName} size="md" />
               <div className={cn('min-w-0 flex-1', hasRatings ? 'flex flex-col gap-2' : undefined)}>
                 <div className="flex max-w-full flex-row items-center gap-1">
                   <p className="min-w-0 truncate text-lg font-bold leading-7 text-ink">{title}</p>

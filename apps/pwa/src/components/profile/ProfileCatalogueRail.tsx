@@ -1,7 +1,9 @@
 'use client';
 
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 
+import { MediaViewer } from '@/components/media/MediaViewer';
+import { catalogueRowsToMediaItems } from '@/components/media/media-viewer-types';
 import { IonIcon } from '@/components/ui/IonIcon';
 import { ionIcons } from '@/components/ui/ion-icons';
 import { InlineError } from '@/components/ui/StateView';
@@ -39,29 +41,39 @@ function MediaPlaceholder({
   );
 }
 
-function PhotoTile({ path }: { path: string }) {
+function PhotoTile({ path, onPress }: { path: string; onPress: () => void }) {
   const url = useCatalogueMediaUrl(path);
   return (
-    <div className="size-32 shrink-0 overflow-hidden rounded-2xl bg-surface">
+    <button
+      type="button"
+      aria-label="View photo"
+      onClick={onPress}
+      className="size-32 shrink-0 overflow-hidden rounded-2xl bg-surface active:opacity-90"
+    >
       {url.data ? (
         <img src={url.data} alt="" className="h-full w-full object-cover" />
       ) : (
         <div className="h-full w-full bg-surface" />
       )}
-    </div>
+    </button>
   );
 }
 
-function VideoTile({ path }: { path: string }) {
+function VideoTile({ path, onPress }: { path: string; onPress: () => void }) {
   const colors = useColors();
   const url = useCatalogueMediaUrl(path);
   return (
-    <div className="relative flex size-32 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-ink">
+    <button
+      type="button"
+      aria-label="Play profile video"
+      onClick={onPress}
+      className="relative flex size-32 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-ink active:opacity-90"
+    >
       {url.data ? (
         <video src={url.data} className="absolute inset-0 h-full w-full object-cover opacity-80" muted />
       ) : null}
       <IonIcon icon={ionIcons['play-circle-outline']} size={40} color={colors.canvas} />
-    </div>
+    </button>
   );
 }
 
@@ -72,6 +84,7 @@ export function ProfileCatalogueRail() {
   const setVideo = useSetCatalogueVideo();
   const photoInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
+  const [viewerIndex, setViewerIndex] = useState<number | null>(null);
 
   if (catalogue.isPending) {
     return <div className="h-32 shrink-0" aria-hidden />;
@@ -86,6 +99,7 @@ export function ProfileCatalogueRail() {
     .sort((a, b) => a.sort_order - b.sort_order);
   const video = catalogue.data.find((row) => row.kind === 'video');
   const photoSlotsLeft = PROFILE_CATALOGUE_PHOTO_LIMIT - photos.length;
+  const viewerItems = catalogueRowsToMediaItems(catalogue.data);
 
   return (
     <div className="flex shrink-0 flex-col gap-2">
@@ -117,7 +131,7 @@ export function ProfileCatalogueRail() {
 
       <div className="-mx-1 flex gap-3 overflow-x-auto px-1 pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {video ? (
-          <VideoTile path={video.storage_path} />
+          <VideoTile path={video.storage_path} onPress={() => setViewerIndex(0)} />
         ) : (
           <MediaPlaceholder
             icon="videocam-outline"
@@ -127,8 +141,12 @@ export function ProfileCatalogueRail() {
           />
         )}
 
-        {photos.map((photo) => (
-          <PhotoTile key={photo.id} path={photo.storage_path} />
+        {photos.map((photo, index) => (
+          <PhotoTile
+            key={photo.id}
+            path={photo.storage_path}
+            onPress={() => setViewerIndex((video ? 1 : 0) + index)}
+          />
         ))}
 
         {Array.from({ length: photoSlotsLeft }, (_, index) => (
@@ -144,6 +162,14 @@ export function ProfileCatalogueRail() {
 
       {addPhoto.isError ? <InlineError error={addPhoto.error} /> : null}
       {setVideo.isError ? <InlineError error={setVideo.error} /> : null}
+
+      {viewerIndex !== null ? (
+        <MediaViewer
+          items={viewerItems}
+          initialIndex={viewerIndex}
+          onClose={() => setViewerIndex(null)}
+        />
+      ) : null}
     </div>
   );
 }

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 
 import { FlowScreen } from '@/components/layout/FlowScreen';
-import { Avatar } from '@/components/ui/Avatar';
+import { AvatarWithViewer } from '@/components/profile/AvatarWithViewer';
 import { Button } from '@/components/ui/Button';
 import { TextAreaField, TextField } from '@/components/ui/TextField';
 import { InlineError } from '@/components/ui/StateView';
@@ -40,7 +40,7 @@ export function ProfileEditPage() {
     <>
       <FlowScreen title="Edit profile" backTo="/profile" bodyClassName="flex flex-col gap-6 pb-10">
         <div className="flex flex-col items-center gap-3">
-          <Avatar path={profile.data?.avatar_path} name={trimmedName || null} size="lg" />
+          <AvatarWithViewer path={profile.data?.avatar_path} name={trimmedName || null} size="lg" />
           <button type="button" className="text-base font-medium text-brand" onClick={() => setCaptureOpen(true)}>
             Take profile photo
           </button>
