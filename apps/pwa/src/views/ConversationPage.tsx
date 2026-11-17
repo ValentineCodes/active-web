@@ -2,32 +2,42 @@
 
 import { parseConversationReturnTo } from '@/lib/conversation-navigation';
 import { useRouter, useSearchParams } from '@/lib/navigation';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { LiveProfilePhotoCapture } from '@/components/profile/LiveProfilePhotoCapture';
 import { ProfilePhotoCaptureContent } from '@/components/profile/ProfilePhotoCaptureContent';
-import { ConversationComposer } from '@/components/conversation/ConversationComposer';
+import {
+  ConversationComposer,
+  type ComposerPendingAttachment,
+} from '@/components/conversation/ConversationComposer';
 import { ConversationDateSeparator } from '@/components/conversation/ConversationDateSeparator';
 import { ConversationHeader } from '@/components/conversation/ConversationHeader';
 import { AttachmentMessageBubble } from '@/components/conversation/AttachmentMessageBubble';
 import { MessageBubble } from '@/components/conversation/MessageBubble';
-import { BottomSheet } from '@/components/ui/BottomSheet';
 import { Button } from '@/components/ui/Button';
 import { Screen } from '@/components/ui/Screen';
 import { InlineError, LoadingState } from '@/components/ui/StateView';
 import { useRouteParam } from '@/lib/route-param';
 import { useUserId } from '@/features/auth/use-user-id';
 import { useChatSendGate } from '@/features/profile/use-chat-send-gate';
-import { uploadConversationChatAttachment } from '@/features/requests/conversation-attachment-upload';
-import { shouldShowChatDaySeparator } from '@/features/requests/chat-day-separators';
+import { shouldShowChatDaySeparatorChronological } from '@/features/requests/chat-day-separators';
 import {
   createPendingMessageId,
   useLiveConversationMessages,
   useResolvedRequestConversation,
   useRequestMessages,
   useSendRequestMessage,
+  useSendRequestMessageAttachment,
 } from '@/features/requests/conversation-api';
-import { chooseConversationFile, pickConversationPhotosFromLibrary } from '@/features/requests/conversation-media';
+import {
+  initialUploadStates,
+  isConversationUploadCancelledError,
+  type ConversationAttachmentUploadState,
+} from '@/features/requests/conversation-attachment-upload-state';
+import {
+  assertConversationMessageSendable,
+  createConversationClientSendId,
+} from '@/features/requests/conversation-message-send';
 import { formatAgo } from '@/lib/format';
 import { showAppToast } from '@/lib/toast';
 
@@ -47,6 +57,7 @@ export function ConversationPage() {
   const requestId = conversation.data?.requestId ?? '';
   const messages = useRequestMessages(conversationId);
   const sendText = useSendRequestMessage(conversationId ?? '', requestId);
+  const sendAttachment = useSendRequestMessageAttachment(conversationId ?? '', requestId);
   const {
     profile,
     gateChatSend,
@@ -57,10 +68,38 @@ export function ConversationPage() {
     isChatSendBlockedByProfilePhoto,
   } = useChatSendGate();
   const [focused, setFocused] = useState(true);
-  const [attachOpen, setAttachOpen] = useState(false);
   const [captureOpen, setCaptureOpen] = useState(false);
 
+  const sendLockRef = useRef(false);
+  const cancelUploadRef = useRef(false);
+  const clientSendIdRef = useRef<string | null>(null);
+  const [outgoingUploadByMessageId, setOutgoingUploadByMessageId] = useState<
+    Record<string, Record<string, ConversationAttachmentUploadState>>
+  >({});
+
   const openCapture = () => setCaptureOpen(true);
+
+  const clearOutgoingUploadState = useCallback((messageId: string) => {
+    setOutgoingUploadByMessageId((current) => {
+      if (!current[messageId]) return current;
+      const next = { ...current };
+      delete next[messageId];
+      return next;
+    });
+  }, []);
+
+  const setOutgoingAttachmentState = useCallback(
+    (messageId: string, attachmentId: string, state: ConversationAttachmentUploadState) => {
+      setOutgoingUploadByMessageId((current) => ({
+        ...current,
+        [messageId]: {
+          ...current[messageId],
+          [attachmentId]: state,
+        },
+      }));
+    },
+    [],
+  );
 
   useLiveConversationMessages(
     conversationId,
@@ -75,65 +114,131 @@ export function ConversationPage() {
     return () => document.removeEventListener('visibilitychange', onVis);
   }, []);
 
-  const rows = messages.messages ?? [];
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const scrollToLatest = useCallback(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, []);
 
-  const onSend = async (body: string) => {
-    if (!body || !conversationId || !userId) return;
-    try {
-      await gateChatSend(async () => {
-        await sendText.mutateAsync({ body, pendingId: createPendingMessageId() });
-      });
-    } catch (error) {
-      if (isChatSendBlockedByProfilePhoto(error)) openCapture();
-      else showAppToast(error instanceof Error ? error.message : 'Could not send.', { type: 'warning' });
-    }
-  };
+  const rows = messages.messagesChronological ?? [];
 
-  const attachPhotos = async () => {
-    setAttachOpen(false);
-    if (!conversationId || !userId) return;
-    try {
-      const picks = await pickConversationPhotosFromLibrary(3);
-      if (picks.length === 0) return;
-      await gateChatSend(async () => {
-        for (const pick of picks) {
-          await uploadConversationChatAttachment({
-            conversationId,
-            userId,
-            localFile: pick,
-            kindHint: 'image',
-            caption: null,
+  const sendOutgoingAttachments = useCallback(
+    async (pendingId: string, body: string, pending: ComposerPendingAttachment[], isRetry: boolean) => {
+      if (!conversationId || !userId) return;
+
+      const attachmentIds = pending.map((item) => item.id);
+      const optimisticBody = body.trim();
+
+      setOutgoingUploadByMessageId((current) => ({
+        ...current,
+        [pendingId]: initialUploadStates(attachmentIds, isRetry ? 'retrying' : 'uploading'),
+      }));
+
+      if (!clientSendIdRef.current || !isRetry) {
+        clientSendIdRef.current = createConversationClientSendId();
+      }
+
+      try {
+        await sendAttachment.mutateAsync({
+          items: pending.map((item) => ({
+            localFile: item.attachment,
+            kindHint: item.kindHint,
+            prepared: item.prepared,
+          })),
+          attachmentIds,
+          caption: optimisticBody,
+          clientSendId: clientSendIdRef.current ?? createConversationClientSendId(),
+          shouldCancel: () => cancelUploadRef.current,
+          onAttachmentStateChange: (attachmentId, state) => {
+            setOutgoingAttachmentState(pendingId, attachmentId, state);
+          },
+          onUploadProgress: (fraction) => {
+            for (const attachmentId of attachmentIds) {
+              setOutgoingAttachmentState(pendingId, attachmentId, {
+                phase: 'uploading',
+                progress: fraction,
+              });
+            }
+          },
+          pendingId,
+          optimisticBody,
+        });
+      } catch (error) {
+        if (!isConversationUploadCancelledError(error)) {
+          setOutgoingUploadByMessageId((current) => {
+            const perAttachment = current[pendingId];
+            if (!perAttachment) return current;
+            const next: Record<string, ConversationAttachmentUploadState> = { ...perAttachment };
+            for (const attachmentId of attachmentIds) {
+              if (next[attachmentId]?.phase !== 'failed') {
+                next[attachmentId] = {
+                  phase: 'failed',
+                  errorMessage: 'Could not send',
+                };
+              }
+            }
+            return { ...current, [pendingId]: next };
           });
         }
-        void messages.refetch();
-      });
-    } catch (error) {
-      if (isChatSendBlockedByProfilePhoto(error)) openCapture();
-    }
-  };
+        throw error;
+      }
 
-  const attachFile = async () => {
-    setAttachOpen(false);
-    if (!conversationId || !userId) return;
+      clearOutgoingUploadState(pendingId);
+      clientSendIdRef.current = null;
+    },
+    [clearOutgoingUploadState, conversationId, sendAttachment, setOutgoingAttachmentState, userId],
+  );
+
+  const executeComposerSend = async (body: string, pending: ComposerPendingAttachment[]) => {
+    if (!conversationId || !userId || sendLockRef.current) return;
+
+    assertConversationMessageSendable(body, pending.length);
+
+    sendLockRef.current = true;
+    cancelUploadRef.current = false;
+    const pendingId = createPendingMessageId();
+
     try {
-      const pick = await chooseConversationFile();
-      if (!pick) return;
-      await gateChatSend(async () => {
-        await uploadConversationChatAttachment({
-          conversationId,
-          userId,
-          localFile: pick,
-          kindHint: 'file',
-          caption: null,
-        });
-        void messages.refetch();
-      });
+      if (pending.length === 0) {
+        await sendText.mutateAsync({ body, pendingId });
+      } else {
+        scrollToLatest();
+        await sendOutgoingAttachments(pendingId, body, pending, false);
+        scrollToLatest();
+      }
     } catch (error) {
-      if (isChatSendBlockedByProfilePhoto(error)) openCapture();
+      if (isConversationUploadCancelledError(error)) {
+        clearOutgoingUploadState(pendingId);
+        clientSendIdRef.current = null;
+        showAppToast('Upload cancelled.', { type: 'info' });
+      }
+      throw error;
+    } finally {
+      sendLockRef.current = false;
     }
   };
 
-  if (conversation.isLoading) {
+  const onComposerSend = async (body: string, pending: ComposerPendingAttachment[]) => {
+    try {
+      await gateChatSend(() => executeComposerSend(body, pending));
+    } catch (error) {
+      if (isChatSendBlockedByProfilePhoto(error)) openCapture();
+      else if (!(error instanceof Error && error.message === 'Upload cancelled.')) {
+        showAppToast(error instanceof Error ? error.message : 'Could not send.', { type: 'warning' });
+      }
+    }
+  };
+
+  const composerSending = sendText.isPending || sendAttachment.isPending;
+
+  if (!id) {
+    return (
+      <Screen className="px-5 pt-4">
+        <InlineError message="Invalid conversation link." />
+      </Screen>
+    );
+  }
+
+  if (conversation.isPending) {
     return (
       <Screen>
         <LoadingState label="Loading chat…" />
@@ -162,19 +267,27 @@ export function ConversationPage() {
       />
 
       <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-4 py-3">
+        {messages.isPending && rows.length === 0 ? (
+          <LoadingState label="Loading messages…" />
+        ) : null}
         <div className="flex flex-col gap-2">
           {rows.map((message, index) => (
             <div key={message.id} className="flex flex-col">
-              {shouldShowChatDaySeparator(rows, index) ? (
+              {shouldShowChatDaySeparatorChronological(rows, index) ? (
                 <ConversationDateSeparator label={formatAgo(message.createdAt)} />
               ) : null}
               {message.attachments?.length ? (
-                <AttachmentMessageBubble message={message} isOutgoing={message.senderId === userId} />
+                <AttachmentMessageBubble
+                  message={message}
+                  isOutgoing={message.senderId === userId}
+                  uploadStateByAttachmentId={outgoingUploadByMessageId[message.id]}
+                />
               ) : (
                 <MessageBubble message={message} isOutgoing={message.senderId === userId} />
               )}
             </div>
           ))}
+          <div ref={messagesEndRef} />
         </div>
       </div>
 
@@ -198,20 +311,12 @@ export function ConversationPage() {
           </div>
         ) : null}
         <ConversationComposer
-          onSend={onSend}
-          sending={sendText.isPending}
+          onSend={onComposerSend}
+          sending={composerSending}
           disabled={!messagingEnabled}
           disabledHint="Messaging is read-only for this conversation."
-          onAttach={() => setAttachOpen(true)}
         />
       </div>
-
-      <BottomSheet open={attachOpen} title="Attach" onClose={() => setAttachOpen(false)}>
-        <div className="flex flex-col gap-2 py-2">
-          <Button label="Photos" variant="secondary" onClick={() => void attachPhotos()} />
-          <Button label="File" variant="secondary" onClick={() => void attachFile()} />
-        </div>
-      </BottomSheet>
 
       {captureOpen && userId ? (
         <LiveProfilePhotoCapture

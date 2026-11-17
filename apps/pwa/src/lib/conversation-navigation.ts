@@ -4,7 +4,10 @@ export function parseConversationReturnTo(value: string | null): string | null {
   return value;
 }
 
-export function conversationHref(conversationId: string, returnTo: string): string {
+export function messageThreadHref(conversationId: string, returnTo: string): string {
   const params = new URLSearchParams({ returnTo });
-  return `/conversation/${conversationId}?${params.toString()}`;
+  return `/messages/${conversationId}?${params.toString()}`;
 }
+
+/** @deprecated Prefer `messageThreadHref`. */
+export const conversationHref = messageThreadHref;

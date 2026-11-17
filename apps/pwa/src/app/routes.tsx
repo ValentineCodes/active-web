@@ -131,7 +131,7 @@ export function AppRoutes() {
           <Route path="/profile/bank-accounts/add" element={<BankAccountAddPageRoute />} />
           <Route path="/notification-settings" element={<NotificationSettingsPage />} />
           <Route path="/messages" element={<MessagesPage />} />
-          <Route path="/conversation/:id" element={<ConversationPage />} />
+          <Route path="/messages/:id" element={<ConversationPage />} />
           <Route path="/request/new" element={<RequestNewPageRoute />} />
           <Route path="/request/:id" element={<RequestRoutePage />} />
           <Route path="/respond/:id" element={<RespondRedirectPageRoute />} />

@@ -142,7 +142,7 @@ export function NotificationsPage() {
       router.push(stored);
       return;
     }
-    if (stored && /^\/(request|respond|engagement|conversation|rate)\//.test(stored)) {
+    if (stored && /^\/(request|respond|engagement|messages|rate)\//.test(stored)) {
       router.push(stored);
       return;
     }

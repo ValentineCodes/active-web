@@ -4,6 +4,7 @@ import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 
 import { ConversationAttachmentUploadOverlay } from '@/components/conversation/ConversationComposerAttachmentPreview';
+import { ConversationImageCountBadge } from '@/components/conversation/ConversationImageCountBadge';
 import {
   ConversationAttachmentViewer,
   ConversationImageGalleryViewer,
@@ -135,11 +136,7 @@ const ImageGalleryStack = memo(function ImageGalleryStack({
           style={{ width: THUMB_WIDTH, height: THUMB_HEIGHT }}
           contentFit="cover"
         />
-        {images.length > 1 ? (
-          <View className="absolute bottom-2 right-2 min-h-6 min-w-6 items-center justify-center rounded-md bg-black/60 px-1.5">
-            <Text className="text-lg font-semibold leading-5 text-white">{countLabel}</Text>
-          </View>
-        ) : null}
+        <ConversationImageCountBadge count={images.length} className="absolute bottom-2 right-2" />
         {showUploadOverlay ? (
           <ConversationAttachmentUploadOverlay
             upload={upload}

@@ -36,6 +36,11 @@ import {
   playCircleOutline,
   cameraOutline,
   imagesOutline,
+  folderOpenOutline,
+  documentOutline,
+  openOutline,
+  play,
+  videocam,
 } from 'ionicons/icons';
 
 /** Maps mobile Ionicons glyph names to ionicons v8 data-URI SVG strings. */
@@ -77,6 +82,11 @@ export const ionIcons = {
   'play-circle-outline': playCircleOutline,
   'camera-outline': cameraOutline,
   'images-outline': imagesOutline,
+  'folder-open-outline': folderOpenOutline,
+  'document-outline': documentOutline,
+  'open-outline': openOutline,
+  play: play,
+  videocam: videocam,
 } as const;
 
 export type IonIconName = keyof typeof ionIcons;

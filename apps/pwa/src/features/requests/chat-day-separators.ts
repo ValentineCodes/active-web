@@ -17,3 +17,18 @@ export function shouldShowChatDaySeparator(messages: RequestMessage[], index: nu
 
   return !isSameDay(current, newer);
 }
+
+/** `messages` is oldest-first (standard scrollable column). */
+export function shouldShowChatDaySeparatorChronological(messages: RequestMessage[], index: number): boolean {
+  if (messages.length === 0) return false;
+  if (index === 0) return true;
+
+  const currentMsg = messages[index];
+  const olderMsg = messages[index - 1];
+  if (!currentMsg || !olderMsg) return false;
+  const current = new Date(currentMsg.createdAt);
+  const older = new Date(olderMsg.createdAt);
+  if (Number.isNaN(current.getTime()) || Number.isNaN(older.getTime())) return false;
+
+  return !isSameDay(current, older);
+}
