@@ -99,8 +99,9 @@ export function SignInPage() {
   };
 
   return (
-    <Screen className="min-h-[100dvh]">
+    <Screen className="h-full min-h-[100dvh]">
       <KeyboardStickyFooter
+        className="min-h-0 flex-1"
         footer={
           <div className="px-6 pb-8">
             <ActiveBarButton

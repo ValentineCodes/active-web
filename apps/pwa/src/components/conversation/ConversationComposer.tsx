@@ -37,7 +37,9 @@ export type ComposerPendingAttachment = {
 
 export function ConversationComposer({
   onSend,
+  onShareCurrentLocation,
   sending,
+  sharingLocation = false,
   disabled = false,
   disabledHint,
   uploadStateById,
@@ -46,7 +48,9 @@ export function ConversationComposer({
   onClearUploadState,
 }: {
   onSend: (body: string, pendingAttachments: ComposerPendingAttachment[]) => void | Promise<void>;
+  onShareCurrentLocation?: () => void | Promise<void>;
   sending: boolean;
+  sharingLocation?: boolean;
   disabled?: boolean;
   disabledHint?: string;
   uploadStateById?: Record<string, ConversationAttachmentUploadState>;
@@ -63,6 +67,8 @@ export function ConversationComposer({
   const hasAttachments = pendingAttachments.length > 0;
   const canSend = (trimmed.length > 0 || hasAttachments) && !sending && !disabled && !uploadActive;
   const canAttach = !disabled && !uploadActive && pendingAttachments.length < CONVERSATION_ATTACHMENTS.maxPerMessage;
+  const canShareLocation =
+    !disabled && !sending && !sharingLocation && !uploadActive && Boolean(onShareCurrentLocation);
 
   const removePending = useCallback(
     (id: string) => {
@@ -177,33 +183,62 @@ export function ConversationComposer({
         onRetry={() => void submit()}
         onCancelUpload={onCancelUpload}
       />
-      <div className="flex flex-row items-end gap-1 border-t border-hairline bg-canvas px-4 py-3">
-        <textarea
-          aria-label="Message"
-          placeholder={disabled ? (disabledHint ?? 'Read-only') : 'Message'}
-          maxLength={MAX_LENGTH}
-          disabled={disabled || sending || uploadActive}
-          value={text}
-          rows={1}
-          onChange={(event) => setText(event.target.value)}
+      <div className="px-4 py-3">
+        <div
           className={cn(
-            'max-h-32 min-h-11 flex-1 resize-none rounded-2xl border border-hairline bg-elevated px-4 py-2.5 text-base text-ink outline-none placeholder:text-subtle',
+            'flex w-full flex-row items-end gap-0.5 rounded-[1.75rem] border border-hairline bg-elevated py-1.5 pl-0.5 pr-1.5',
             (disabled || sending || uploadActive) && 'opacity-60',
           )}
-        />
-        <div className={cn(canAttach ? '' : 'opacity-35')}>
-          <IconButton
-            icon="add"
-            accessibilityLabel="Add photo, video, or file"
-            variant="surface"
-            onClick={() => {
-              if (!canAttach) return;
-              setAttachOpen(true);
-            }}
+        >
+          <span className={cn('shrink-0 self-end', canAttach ? '' : 'opacity-35')}>
+            <IconButton
+              icon="add"
+              accessibilityLabel="Add photo, video, or file"
+              variant="ghost"
+              size={44}
+              iconSize={30}
+              onClick={() => {
+                if (!canAttach) return;
+                setAttachOpen(true);
+              }}
+            />
+          </span>
+
+          <textarea
+            aria-label="Message"
+            placeholder={disabled ? (disabledHint ?? 'Read-only') : 'Message'}
+            maxLength={MAX_LENGTH}
+            disabled={disabled || sending || uploadActive}
+            value={text}
+            rows={1}
+            onChange={(event) => setText(event.target.value)}
+            className="max-h-32 min-h-[2.25rem] min-w-0 flex-1 resize-none border-0 bg-transparent px-1 py-2 text-base leading-6 text-ink outline-none placeholder:text-subtle"
           />
-        </div>
-        <div className={cn(canSend ? '' : 'opacity-35')}>
-          <IconButton icon="send" accessibilityLabel="Send message" variant="brand" onClick={() => void submit()} />
+
+          <span className="flex shrink-0 flex-row items-center gap-0.5 self-end">
+            <span className={cn('px-2', canShareLocation ? '' : 'opacity-35')}>
+              <IconButton
+                icon="location-outline"
+                accessibilityLabel="Share current location"
+                variant="ghost"
+                size={40}
+                iconSize={24}
+                onClick={() => {
+                  if (!canShareLocation) return;
+                  void onShareCurrentLocation?.();
+                }}
+              />
+            </span>
+            <span className={cn(canSend ? '' : 'opacity-35')}>
+              <IconButton
+                icon="send"
+                accessibilityLabel="Send message"
+                variant="brand"
+                size={36}
+                onClick={() => void submit()}
+              />
+            </span>
+          </span>
         </div>
       </div>
 

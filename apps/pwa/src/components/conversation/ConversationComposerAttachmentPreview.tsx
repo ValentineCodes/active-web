@@ -186,7 +186,7 @@ export function ConversationComposerAttachmentPreview({
   if (items.length === 0) return null;
 
   return (
-    <div className="border-t border-hairline bg-canvas px-4 pt-3">
+    <div className="bg-canvas/95 px-4 pt-3">
       {uploadActive ? (
         <div className="mb-2 flex flex-row items-center justify-between gap-2">
           <span className="text-sm text-muted">Sending attachments…</span>

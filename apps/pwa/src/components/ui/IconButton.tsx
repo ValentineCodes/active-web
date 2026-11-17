@@ -19,12 +19,14 @@ export function IconButton({
   accessibilityLabel,
   variant = 'ghost',
   size = 40,
+  iconSize,
 }: {
   icon: IonIconName;
   onClick: () => void;
   accessibilityLabel: string;
   variant?: Variant;
   size?: number;
+  iconSize?: number;
 }) {
   const colors = useColors();
   const glyph = ionIcons[icon];
@@ -42,7 +44,7 @@ export function IconButton({
       style={{ width: size, height: size, borderRadius: size / 2 }}
       className={cn('inline-flex items-center justify-center active:opacity-70', containers[variant])}
     >
-      <IonIcon icon={glyph} size={Math.round(size * 0.55)} color={foregrounds[variant]} />
+      <IonIcon icon={glyph} size={iconSize ?? Math.round(size * 0.55)} color={foregrounds[variant]} />
     </button>
   );
 }

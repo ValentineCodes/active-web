@@ -38,7 +38,9 @@ import {
   assertConversationMessageSendable,
   createConversationClientSendId,
 } from '@/features/requests/conversation-message-send';
+import { formatSharedLocationMessageBody } from '@/features/requests/conversation-shared-location';
 import { formatAgo } from '@/lib/format';
+import { positionErrorMessage, requestPosition } from '@/lib/geolocation';
 import { showAppToast } from '@/lib/toast';
 
 export function ConversationPage() {
@@ -66,6 +68,7 @@ export function ConversationPage() {
   } = useChatSendGate();
   const [focused, setFocused] = useState(true);
   const [captureOpen, setCaptureOpen] = useState(false);
+  const [sharingLocation, setSharingLocation] = useState(false);
 
   const sendLockRef = useRef(false);
   const cancelUploadRef = useRef(false);
@@ -225,6 +228,42 @@ export function ConversationPage() {
     }
   };
 
+  const onShareCurrentLocation = useCallback(async () => {
+    if (!conversationId || !userId || sharingLocation || sendLockRef.current) return;
+
+    setSharingLocation(true);
+    try {
+      const positionResult = await requestPosition({ fresh: true });
+      if (!positionResult.ok) {
+        showAppToast(
+          positionErrorMessage(positionResult, 'Allow location in your browser settings and try again.'),
+          { type: 'warning' },
+        );
+        return;
+      }
+
+      const body = formatSharedLocationMessageBody(positionResult.position);
+      const pendingId = createPendingMessageId();
+
+      await gateChatSend(async () => {
+        if (sendLockRef.current) return;
+        sendLockRef.current = true;
+        try {
+          await sendText.mutateAsync({ body, pendingId });
+        } finally {
+          sendLockRef.current = false;
+        }
+      });
+    } catch (error) {
+      if (isChatSendBlockedByProfilePhoto(error)) openCapture();
+      else {
+        showAppToast(error instanceof Error ? error.message : 'Could not share location.', { type: 'warning' });
+      }
+    } finally {
+      setSharingLocation(false);
+    }
+  }, [conversationId, gateChatSend, sendText, sharingLocation, userId, isChatSendBlockedByProfilePhoto]);
+
   const composerSending = sendText.isPending || sendAttachment.isPending;
 
   if (!id) {
@@ -255,7 +294,7 @@ export function ConversationPage() {
   const messagingEnabled = conversation.data.messagingEnabled;
 
   return (
-    <Screen className="min-h-[100dvh]">
+    <Screen className="relative min-h-[100dvh] overflow-hidden">
       <ConversationHeader
         counterpartyName={conversation.data.counterpartyDisplayName}
         counterpartyAvatarPath={conversation.data.counterpartyAvatarPath}
@@ -263,7 +302,7 @@ export function ConversationPage() {
         onBack={goBack}
       />
 
-      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-4 py-3">
+      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-4 pt-3 pb-[calc(6.25rem+env(safe-area-inset-bottom,0px))]">
         {messages.isPending && rows.length === 0 ? (
           <LoadingState label="Loading messages…" />
         ) : null}
@@ -288,31 +327,35 @@ export function ConversationPage() {
         </div>
       </div>
 
-      <div className="shrink-0 bg-canvas pb-[max(0px,env(safe-area-inset-bottom))]">
-        {messagingEnabled && !photoReady ? (
-          <div className="flex flex-col gap-3 border-t border-hairline px-4 pb-2 pt-4">
-            <ProfilePhotoCaptureContent
-              variant="chat"
-              compact
-              avatarPath={profile.data?.avatar_path}
-              displayName={profile.data?.display_name}
-              error={capturePhoto.error}
-            />
-            <Button
-              label={captureButtonLabel}
-              size="lg"
-              variant="secondary"
-              loading={capturePhoto.isPending}
-              onClick={openCapture}
-            />
-          </div>
-        ) : null}
-        <ConversationComposer
-          onSend={onComposerSend}
-          sending={composerSending}
-          disabled={!messagingEnabled}
-          disabledHint="Messaging is read-only for this conversation."
-        />
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 flex flex-col pb-[max(0px,env(safe-area-inset-bottom))]">
+        <div className="pointer-events-auto flex w-full flex-col bg-gradient-to-t from-canvas from-70% to-transparent pt-4">
+          {messagingEnabled && !photoReady ? (
+            <div className="flex flex-col gap-3 px-4 pb-2">
+              <ProfilePhotoCaptureContent
+                variant="chat"
+                compact
+                avatarPath={profile.data?.avatar_path}
+                displayName={profile.data?.display_name}
+                error={capturePhoto.error}
+              />
+              <Button
+                label={captureButtonLabel}
+                size="lg"
+                variant="secondary"
+                loading={capturePhoto.isPending}
+                onClick={openCapture}
+              />
+            </div>
+          ) : null}
+          <ConversationComposer
+            onSend={onComposerSend}
+            onShareCurrentLocation={messagingEnabled && photoReady ? onShareCurrentLocation : undefined}
+            sending={composerSending}
+            sharingLocation={sharingLocation}
+            disabled={!messagingEnabled}
+            disabledHint="Messaging is read-only for this conversation."
+          />
+        </div>
       </div>
 
       {captureOpen && userId ? (

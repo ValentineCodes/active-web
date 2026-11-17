@@ -1,6 +1,8 @@
 'use client';
 
+import { SharedLocationMessageBubble } from '@/components/conversation/SharedLocationMessageBubble';
 import type { RequestMessage } from '@/features/requests/conversation-message-model';
+import { parseSharedLocationMessageBody } from '@/features/requests/conversation-shared-location';
 import { cn } from '@/lib/cn';
 
 export function MessageBubble({
@@ -10,6 +12,11 @@ export function MessageBubble({
   message: Pick<RequestMessage, 'body'>;
   isOutgoing: boolean;
 }) {
+  const sharedLocation = parseSharedLocationMessageBody(message.body);
+  if (sharedLocation) {
+    return <SharedLocationMessageBubble position={sharedLocation} isOutgoing={isOutgoing} />;
+  }
+
   return (
     <div className={cn('max-w-[85%]', isOutgoing ? 'self-end' : 'self-start')}>
       <div
