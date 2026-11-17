@@ -40,6 +40,7 @@ import {
   type ForegroundPermission,
   type Position,
 } from '@/lib/geolocation';
+import { conversationHref } from '@/lib/conversation-navigation';
 import { useRouter, useSearchParams } from '@/lib/navigation';
 import { useRouteParam } from '@/lib/route-param';
 import { showAppToast } from '@/lib/toast';
@@ -390,7 +391,10 @@ export function RespondPage() {
             onRequesterPress={() => setRequesterProfileOpen(true)}
             onRequesterDiscussPress={
               existingResponse && preHandshakeConversation.data
-                ? () => router.push(`/conversation/${preHandshakeConversation.data}`)
+                ? () =>
+                    router.push(
+                      conversationHref(preHandshakeConversation.data!, `/request/${id}`),
+                    )
                 : undefined
             }
             requesterDiscussLoading={preHandshakeConversation.isPending}

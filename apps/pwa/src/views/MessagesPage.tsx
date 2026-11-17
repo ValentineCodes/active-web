@@ -1,6 +1,7 @@
 import Link from '@/components/AppLink';
 
 import { FlowScreen } from '@/components/layout/FlowScreen';
+import { conversationHref } from '@/lib/conversation-navigation';
 import { Avatar } from '@/components/ui/Avatar';
 import { EmptyState, InlineError, LoadingState } from '@/components/ui/StateView';
 import { useConversationInbox } from '@/features/requests/conversation-inbox-api';
@@ -25,7 +26,7 @@ function InboxRow({
 }) {
   return (
     <Link
-      href={`/conversation/${conversationId}`}
+      href={conversationHref(conversationId, '/messages')}
       className="shadow-card flex items-center gap-3 rounded-2xl border border-hairline bg-elevated p-4 active:opacity-90"
     >
       <Avatar path={avatarPath} name={name} size="md" />

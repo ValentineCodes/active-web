@@ -1,19 +1,21 @@
 import Link from '@/components/AppLink';
 
+import { RequestResponseCountChip } from '@/components/activity/RequestResponseCountChip';
 import { Badge } from '@/components/ui/Badge';
+import type { MyRequestActivityDetail } from '@/features/requests/activity-list';
 import { cn } from '@/lib/cn';
 
 type BadgeTone = 'neutral' | 'brand' | 'active' | 'danger' | 'warning' | 'info';
 
 export function ActivityMyRequestCard({
   title,
-  responseLine,
+  detail,
   amount,
   badge,
   to,
 }: {
   title: string;
-  responseLine: string;
+  detail: MyRequestActivityDetail;
   amount: string | null;
   badge: { label: string; tone: BadgeTone };
   to: string;
@@ -30,8 +32,12 @@ export function ActivityMyRequestCard({
         <Badge label={badge.label} tone={badge.tone} dot={false} />
       </div>
       <div className="flex flex-row items-end justify-between gap-3">
-        <p className="flex-1 text-sm text-muted">{responseLine}</p>
-        {amount ? <p className="text-base font-bold text-active">{amount}</p> : null}
+        {detail.kind === 'responses' ? (
+          <RequestResponseCountChip count={detail.count} />
+        ) : (
+          <p className="flex-1 text-sm text-muted">{detail.text}</p>
+        )}
+        {amount ? <p className="shrink-0 text-base font-bold text-active">{amount}</p> : null}
       </div>
     </Link>
   );

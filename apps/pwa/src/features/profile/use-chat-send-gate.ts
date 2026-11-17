@@ -39,6 +39,16 @@ export function useChatSendGate() {
     router.push('/profile/edit');
   }, [router]);
 
+  const resumePendingSend = useCallback(async (): Promise<boolean> => {
+    const { data: updatedProfile } = await profile.refetch();
+    if (!hasProfilePhotoReady(updatedProfile)) return false;
+
+    const pending = pendingSendRef.current;
+    pendingSendRef.current = null;
+    if (pending) await pending();
+    return true;
+  }, [profile]);
+
   const openCameraSettings = useCallback(() => {
     requestProfileEditLivePhoto();
     router.push('/profile/edit');
@@ -47,11 +57,12 @@ export function useChatSendGate() {
   return {
     profile,
     photoReady,
-    capturePhoto: { isPending: false, mutateAsync: async () => false },
+    capturePhoto: { isPending: false, isError: false, error: null as Error | null },
     permissionBlocked: false,
     captureButtonLabel: 'Take profile photo',
     gateChatSend,
     runCapture,
+    resumePendingSend,
     openCameraSettings,
     isChatSendBlockedByProfilePhoto,
   };

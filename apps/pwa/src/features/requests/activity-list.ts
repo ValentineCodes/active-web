@@ -41,6 +41,41 @@ export function myRequestResponseCountLine(pendingResponseCount: number): string
   return `${pendingResponseCount} responses`;
 }
 
+export type MyRequestActivityDetail =
+  | { kind: 'responses'; count: number }
+  | { kind: 'meta'; text: string };
+
+export function myRequestActivityDetail(request: {
+  status: RequestStatus;
+  expires_at: string | null;
+  pending_response_count: number;
+  created_at: string;
+  updated_at: string | null;
+  completed_at: string | null;
+  cancelled_at: string | null;
+}): MyRequestActivityDetail {
+  const stage = resolveRequestLifecycleStage({
+    status: request.status,
+    pendingResponseCount: request.pending_response_count,
+    expiresAt: request.expires_at,
+  });
+
+  if (stage === 'posted' || stage === 'responses') {
+    return { kind: 'responses', count: request.pending_response_count };
+  }
+
+  const iso =
+    (stage === 'completed'
+      ? request.completed_at
+      : stage === 'cancelled'
+        ? request.cancelled_at
+        : stage === 'expired' || stage === 'awaiting_review'
+          ? request.expires_at
+          : request.updated_at) ?? request.created_at;
+
+  return { kind: 'meta', text: formatAgo(iso) };
+}
+
 export function myRequestActivityDetailLine(request: {
   status: RequestStatus;
   expires_at: string | null;

@@ -1,5 +1,6 @@
 'use client';
 
+import { conversationHref } from '@/lib/conversation-navigation';
 import { useRouter } from '@/lib/navigation';
 import { useState } from 'react';
 
@@ -68,7 +69,12 @@ export function EngagementPage() {
         </Card>
 
         {conversation.data?.conversationId ? (
-          <Button label="Open chat" onClick={() => router.push(`/conversation/${conversation.data!.conversationId}`)} />
+          <Button
+            label="Open chat"
+            onClick={() =>
+              router.push(conversationHref(conversation.data!.conversationId, `/engagement/${id}`))
+            }
+          />
         ) : null}
 
         {row.viewer_is_requester && row.request_status === 'completion_pending' ? (

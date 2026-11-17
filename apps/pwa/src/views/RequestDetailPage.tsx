@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { conversationHref } from '@/lib/conversation-navigation';
 import { useRouter } from '@/lib/navigation';
 import { addHours, format } from 'date-fns';
 
@@ -8,6 +9,7 @@ import { ResponseCard } from '@/components/ResponseCard';
 import { ReportIssueModal } from '@/components/support/ReportIssueModal';
 import { ExtendResponseDeadlineSheet } from '@/components/request-flow/ExtendResponseDeadlineSheet';
 import { RequestAttachmentSection } from '@/components/request-flow/RequestAttachmentSection';
+import { RequestResponseCountChip } from '@/components/activity/RequestResponseCountChip';
 import { RequestCallout } from '@/components/request-flow/RequestCallout';
 import { RequestCompletionCard } from '@/components/request-flow/RequestCompletionCard';
 import { RequestFlowHeader } from '@/components/request-flow/RequestFlowHeader';
@@ -137,7 +139,7 @@ export function RequestDetailPage() {
     (responseId: string) => {
       void openPreHandshakeChat.mutateAsync(responseId).then((conversationId) => {
         dismissProfile();
-        router.push(`/conversation/${conversationId}`);
+        router.push(conversationHref(conversationId, `/request/${id}?mine=1`));
       });
     },
     [dismissProfile, openPreHandshakeChat, router],
@@ -529,9 +531,7 @@ export function RequestDetailPage() {
           <div className="flex flex-col gap-6">
             {isOpen || isAwaitingReview ? (
               <div className="flex flex-col gap-4">
-                <p className="text-lg font-bold text-ink">
-                  {pending.length === 1 ? '1 Response' : `${pending.length} Responses`}
-                </p>
+                <RequestResponseCountChip count={pending.length} size="md" />
 
                 {responses.isPending && !responses.data ? (
                   <LoadingState label="Loading responses" />

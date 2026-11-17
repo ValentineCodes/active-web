@@ -123,6 +123,17 @@ select is(
   'opening chat does not lock wallet funds'
 );
 
+select is(
+  (
+    select count(*)
+    from public.notification_inbox ni
+    where ni.user_id = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb'::uuid
+      and ni.response_id = :'pre_response_a_id'::uuid
+  ),
+  0::bigint,
+  'opening pre-handshake chat does not notify the responder'
+);
+
 select pg_temp.act_as('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb') as _ \gset
 select throws_ok(
   format($$select public.send_request_message(%L, %L)$$, :'pre_conversation_a_id', 'Happy to help'),

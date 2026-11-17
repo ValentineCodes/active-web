@@ -21,7 +21,7 @@ import {
 import {
   activityAmountLabel,
   myRequestActivityBadge,
-  myRequestActivityDetailLine,
+  myRequestActivityDetail,
   myResponseActivityBadge,
   myResponseActivityMetaLine,
   myResponseActivityOfferLine,
@@ -138,7 +138,7 @@ function RequestRows({
         <ActivityMyRequestCard
           key={request.request_id}
           title={request.title ?? 'Request'}
-          responseLine={myRequestActivityDetailLine({
+          detail={myRequestActivityDetail({
             status: request.status,
             expires_at: request.expires_at,
             pending_response_count: request.pending_response_count,

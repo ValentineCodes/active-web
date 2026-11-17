@@ -1,8 +1,11 @@
 'use client';
 
-import { useRouter } from '@/lib/navigation';
+import { parseConversationReturnTo } from '@/lib/conversation-navigation';
+import { useRouter, useSearchParams } from '@/lib/navigation';
 import { useEffect, useState } from 'react';
 
+import { LiveProfilePhotoCapture } from '@/components/profile/LiveProfilePhotoCapture';
+import { ProfilePhotoCaptureContent } from '@/components/profile/ProfilePhotoCaptureContent';
 import { ConversationComposer } from '@/components/conversation/ConversationComposer';
 import { ConversationDateSeparator } from '@/components/conversation/ConversationDateSeparator';
 import { ConversationHeader } from '@/components/conversation/ConversationHeader';
@@ -30,16 +33,34 @@ import { showAppToast } from '@/lib/toast';
 
 export function ConversationPage() {
   const router = useRouter();
+  const search = useSearchParams();
   const id = useRouteParam('id');
+  const returnTo = parseConversationReturnTo(search.get('returnTo'));
+
+  const goBack = () => {
+    if (returnTo) router.push(returnTo);
+    else router.back();
+  };
   const userId = useUserId();
   const conversation = useResolvedRequestConversation(id);
   const conversationId = conversation.data?.conversationId;
   const requestId = conversation.data?.requestId ?? '';
   const messages = useRequestMessages(conversationId);
   const sendText = useSendRequestMessage(conversationId ?? '', requestId);
-  const { gateChatSend, photoReady, runCapture, isChatSendBlockedByProfilePhoto } = useChatSendGate();
+  const {
+    profile,
+    gateChatSend,
+    photoReady,
+    captureButtonLabel,
+    capturePhoto,
+    resumePendingSend,
+    isChatSendBlockedByProfilePhoto,
+  } = useChatSendGate();
   const [focused, setFocused] = useState(true);
   const [attachOpen, setAttachOpen] = useState(false);
+  const [captureOpen, setCaptureOpen] = useState(false);
+
+  const openCapture = () => setCaptureOpen(true);
 
   useLiveConversationMessages(
     conversationId,
@@ -63,7 +84,7 @@ export function ConversationPage() {
         await sendText.mutateAsync({ body, pendingId: createPendingMessageId() });
       });
     } catch (error) {
-      if (isChatSendBlockedByProfilePhoto(error)) runCapture();
+      if (isChatSendBlockedByProfilePhoto(error)) openCapture();
       else showAppToast(error instanceof Error ? error.message : 'Could not send.', { type: 'warning' });
     }
   };
@@ -87,7 +108,7 @@ export function ConversationPage() {
         void messages.refetch();
       });
     } catch (error) {
-      if (isChatSendBlockedByProfilePhoto(error)) runCapture();
+      if (isChatSendBlockedByProfilePhoto(error)) openCapture();
     }
   };
 
@@ -108,7 +129,7 @@ export function ConversationPage() {
         void messages.refetch();
       });
     } catch (error) {
-      if (isChatSendBlockedByProfilePhoto(error)) runCapture();
+      if (isChatSendBlockedByProfilePhoto(error)) openCapture();
     }
   };
 
@@ -137,17 +158,8 @@ export function ConversationPage() {
         counterpartyName={conversation.data.counterpartyDisplayName}
         counterpartyAvatarPath={conversation.data.counterpartyAvatarPath}
         requestTitle={conversation.data.requestTitle}
-        onBack={() => router.push('/messages')}
+        onBack={goBack}
       />
-
-      {!photoReady ? (
-        <div className="mx-4 mt-2 rounded-xl bg-surface px-4 py-3 text-sm text-muted">
-          Live profile photo required to send messages.{' '}
-          <button type="button" className="font-semibold text-brand" onClick={runCapture}>
-            Take photo
-          </button>
-        </div>
-      ) : null}
 
       <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-4 py-3">
         <div className="flex flex-col gap-2">
@@ -166,13 +178,33 @@ export function ConversationPage() {
         </div>
       </div>
 
-      <ConversationComposer
-        onSend={onSend}
-        sending={sendText.isPending}
-        disabled={!messagingEnabled}
-        disabledHint="Messaging is read-only for this conversation."
-        onAttach={() => setAttachOpen(true)}
-      />
+      <div className="shrink-0 bg-canvas pb-[max(0px,env(safe-area-inset-bottom))]">
+        {messagingEnabled && !photoReady ? (
+          <div className="flex flex-col gap-3 border-t border-hairline px-4 pb-2 pt-4">
+            <ProfilePhotoCaptureContent
+              variant="chat"
+              compact
+              avatarPath={profile.data?.avatar_path}
+              displayName={profile.data?.display_name}
+              error={capturePhoto.error}
+            />
+            <Button
+              label={captureButtonLabel}
+              size="lg"
+              variant="secondary"
+              loading={capturePhoto.isPending}
+              onClick={openCapture}
+            />
+          </div>
+        ) : null}
+        <ConversationComposer
+          onSend={onSend}
+          sending={sendText.isPending}
+          disabled={!messagingEnabled}
+          disabledHint="Messaging is read-only for this conversation."
+          onAttach={() => setAttachOpen(true)}
+        />
+      </div>
 
       <BottomSheet open={attachOpen} title="Attach" onClose={() => setAttachOpen(false)}>
         <div className="flex flex-col gap-2 py-2">
@@ -180,6 +212,17 @@ export function ConversationPage() {
           <Button label="File" variant="secondary" onClick={() => void attachFile()} />
         </div>
       </BottomSheet>
+
+      {captureOpen && userId ? (
+        <LiveProfilePhotoCapture
+          userId={userId}
+          onClose={() => setCaptureOpen(false)}
+          onSaved={() => {
+            setCaptureOpen(false);
+            void resumePendingSend();
+          }}
+        />
+      ) : null}
     </Screen>
   );
 }
