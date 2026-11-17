@@ -34,7 +34,7 @@ pnpm pwa:typecheck && pnpm pwa:lint && pnpm pwa:test && pnpm pwa:build
 | `/messages` | `MessagesPage` | messages list | Aligned | Inbox rows (not in tab bar) |
 | `/search` | `SearchPage` | search | Aligned | `FlowScreen`, recents |
 | `/profile` | `ProfilePage` | `app/profile/index` | Mostly | Theme segment; catalogue rail / tag interests thinner than native |
-| `/profile/edit` | `ProfileEditPage` | edit profile | Mostly | `FlowScreen`; camera sheet chrome differs (web file input) |
+| `/profile/edit` | `ProfileEditPage` | edit profile | Mostly | `FlowScreen`, `ProfileTagInterestPicker`; camera sheet chrome differs (web file input) |
 | `/profile/bank-accounts` | `BankAccountsPage` | bank list | **Updated** | `FlowScreen`, `Card`, ghost actions |
 | `/profile/bank-accounts/add` | `BankAccountAddPage` | add bank | **Updated** | `FlowScreen`, native select styling |
 | `/wallet` | `WalletPage` | wallet | Mostly | Balance card, activity preview; locked-funds explainer not bottom sheet |
