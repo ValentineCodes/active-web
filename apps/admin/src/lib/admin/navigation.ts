@@ -44,6 +44,13 @@ export const MAIN_NAV: NavItem[] = [
     implemented: true,
   },
   {
+    href: '/projects',
+    label: 'Projects',
+    permission: 'requests',
+    icon: ClipboardList,
+    implemented: true,
+  },
+  {
     href: '/reports',
     label: 'Reports',
     permission: 'reports',

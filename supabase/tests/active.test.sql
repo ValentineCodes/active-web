@@ -418,11 +418,12 @@ select throws_ok(
 select pg_temp.act_as('55555555-5555-5555-5555-555555555555') as _ \gset
 select throws_ok(
   format(
-    $$select respond_to_request(%L, null, null, %s, %s)$$,
+    $$select respond_to_request(%L, null, null, %s, %s, now() + interval '7 days')$$,
     :'request_id',
     7.5000,
-    3.3800
-  ),
+    3.3800,
+    now() + interval '7 days'
+),
   '55000',
   'this request is no longer available to you',
   'responding is distance-checked from the position sent'
@@ -440,7 +441,7 @@ where id = '55555555-5555-5555-5555-555555555555'::uuid;
 select pg_temp.act_as('55555555-5555-5555-5555-555555555555') as _ \gset
 select throws_ok(
   format(
-    $$select respond_to_request(%L, null, null, 6.5000, 3.3800)$$,
+    $$select respond_to_request(%L, null, null, 6.5000, 3.3800, now() + interval '7 days')$$,
     :'request_id'
   ),
   '55000',
@@ -460,7 +461,8 @@ select respond_to_request(
   'I fix these. Can be there soon.',
   7000,
   6.5000,
-  3.3800
+  3.3800,
+  now() + interval '7 days'
 ) as response_id \gset
 
 select pg_temp.act_as('66666666-6666-6666-6666-666666666666') as _ \gset
@@ -473,13 +475,14 @@ select is(
 select pg_temp.act_as('22222222-2222-2222-2222-222222222222') as _ \gset
 select lives_ok(
   format(
-    $$select respond_to_request(%L, %L, %L, %L, %L)$$,
+    $$select respond_to_request(%L, %L, %L, %L, %L, now() + interval '7 days')$$,
     :'request_id',
     'Updated note.',
     7500,
     6.5000,
-    3.3800
-  ),
+    3.3800,
+    now() + interval '7 days'
+),
   'responding twice updates the same pending response idempotently'
 );
 
@@ -514,7 +517,8 @@ select respond_to_request(
   'I can take this one too.',
   6500,
   6.5400,
-  3.3800
+  3.3800,
+  now() + interval '7 days'
 ) as alternate_response_id \gset
 
 select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
@@ -530,7 +534,7 @@ select create_request(
 
 select pg_temp.act_as('22222222-2222-2222-2222-222222222222') as _ \gset
 select lives_ok(
-  format('select respond_to_request(%L, null, null, 6.5000, 3.3800)', :'second_request_id'),
+  format('select respond_to_request(%L, null, null, 6.5000, 3.3800, now() + interval ''7 days'')', :'second_request_id'),
   'a helper can respond to another request before being selected'
 );
 
@@ -1320,7 +1324,8 @@ select respond_to_request(
   null,
   null,
   6.5000,
-  3.3800
+  3.3800,
+  now() + interval '7 days'
 ) as future_response_id \gset
 
 select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
@@ -1342,7 +1347,7 @@ select is(
 
 select pg_temp.act_as('22222222-2222-2222-2222-222222222222') as _ \gset
 select lives_ok(
-  format('select respond_to_request(%L, null, null, 6.5000, 3.3800)', :'second_request_id'),
+  format('select respond_to_request(%L, null, null, 6.5000, 3.3800, now() + interval ''7 days'')', :'second_request_id'),
   'a helper can still respond to other requests while attending a job'
 );
 
@@ -1624,7 +1629,8 @@ select respond_to_request(
   null,
   null,
   6.5000,
-  3.3800
+  3.3800,
+  now() + interval '7 days'
 ) as past_window_response_id \gset
 
 select pg_temp.act_as_owner() as _ \gset
@@ -1668,7 +1674,8 @@ select respond_to_request(
   null,
   null,
   6.5000,
-  3.3800
+  3.3800,
+  now() + interval '7 days'
 ) as _ \gset
 
 select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
@@ -1714,7 +1721,7 @@ select lives_ok(
 select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
 select throws_ok(
   format(
-    $$select respond_to_request(%L, null, null, 6.5000, 3.3800)$$,
+    $$select respond_to_request(%L, null, null, 6.5000, 3.3800, now() + interval '7 days')$$,
     :'second_request_id'
   ),
   '55000',
@@ -2231,7 +2238,7 @@ select create_request(
 select pg_temp.act_as('22222222-2222-2222-2222-222222222222') as _ \gset
 select lives_ok(
   format(
-    'select respond_to_request(%L, %L, null, 6.5400, 3.3800)',
+    'select respond_to_request(%L, %L, null, 6.5400, 3.3800, now() + interval ''7 days'')',
     :'second_request_id',
     'Can still respond on the same day while committed elsewhere.'
   ),

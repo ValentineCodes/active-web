@@ -12,7 +12,7 @@ import {
 import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { addHours, set, startOfTomorrow } from 'date-fns';
+import { addHours, set } from 'date-fns';
 
 import {
   RequestLocationModal,
@@ -90,6 +90,13 @@ import {
 import { syncPushToken } from '@/lib/notifications';
 import { showAppToast } from '@/lib/toast';
 import { poppinsInputTypography, type PoppinsInputSize } from '@/theme/fonts';
+import {
+  defaultFutureExpiryDate,
+  expirySummaryLabel,
+  resolveRequestExpiresAtIso,
+  validateRequestExpiryChoice,
+  type RequestExpiryMode,
+} from '@/features/requests/request-expiry';
 import { useColors } from '@/theme';
 
 function createTextAreaTypography(textSize: 'base' | 'lg' | 'xl') {
@@ -98,8 +105,6 @@ function createTextAreaTypography(textSize: 'base' | 'lg' | 'xl') {
 }
 
 const STEP_COUNT = 6;
-
-type WhenMode = 'now' | 'later';
 
 type ReuseSeed = {
   sourceRequestId: string;
@@ -111,17 +116,14 @@ type ReuseSeed = {
   locationLabel: string;
 };
 
-function defaultLaterAt() {
-  return set(startOfTomorrow(), { hours: 9, minutes: 0, seconds: 0, milliseconds: 0 });
-}
-
 function newRequestFormState(reuse?: ReuseSeed) {
+  const futureAt = defaultFutureExpiryDate();
   if (!reuse) {
     return {
       title: '',
       description: '',
-      whenMode: 'now' as WhenMode,
-      laterAt: defaultLaterAt(),
+      expiryMode: 'today' as RequestExpiryMode,
+      futureExpiryAt: futureAt,
       amount: '',
       position: null as Position | null,
       areaLabel: '',
@@ -131,21 +133,12 @@ function newRequestFormState(reuse?: ReuseSeed) {
   return {
     title: reuse.title,
     description: reuse.description ?? '',
-    whenMode: 'now' as WhenMode,
-    laterAt: defaultLaterAt(),
+    expiryMode: 'today' as RequestExpiryMode,
+    futureExpiryAt: futureAt,
     amount: String(reuse.offeredAmount),
     position: { latitude: reuse.latitude, longitude: reuse.longitude },
     areaLabel: reuse.locationLabel,
   };
-}
-
-function isFutureSchedule(at: Date) {
-  return at.getTime() > Date.now();
-}
-
-function whenSummary(mode: WhenMode, laterAt: Date): string {
-  if (mode === 'now') return 'Today';
-  return formatWhenHome(laterAt.toISOString());
 }
 
 function WizardProgress({ step, stepCount }: { step: number; stepCount: number }) {
@@ -365,8 +358,8 @@ export function NewRequestForm({
   const [step, setStep] = useState(0);
   const [title, setTitle] = useState(seeded.title);
   const [description, setDescription] = useState(seeded.description);
-  const [whenMode, setWhenMode] = useState<WhenMode>(seeded.whenMode);
-  const [laterAt, setLaterAt] = useState(seeded.laterAt);
+  const [expiryMode, setExpiryMode] = useState<RequestExpiryMode>(seeded.expiryMode);
+  const [futureExpiryAt, setFutureExpiryAt] = useState(seeded.futureExpiryAt);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [amount, setAmount] = useState(seeded.amount);
@@ -377,7 +370,7 @@ export function NewRequestForm({
   const [milestoneValidationMessage, setMilestoneValidationMessage] = useState<string | null>(null);
   const [position, setPosition] = useState<Position | null>(seeded.position);
   const [areaLabel, setAreaLabel] = useState(seeded.areaLabel);
-  const [laterTimeError, setLaterTimeError] = useState(false);
+  const [expiryTimeError, setExpiryTimeError] = useState<string | null>(null);
   const [locationModalLoading, setLocationModalLoading] = useState(false);
   const [locationModalError, setLocationModalError] = useState<string | null>(null);
   const [saveLocationForFuture, setSaveLocationForFuture] = useState(true);
@@ -431,11 +424,11 @@ export function NewRequestForm({
     const row = editRequest.data;
     setTitle(row.title);
     setDescription(row.description ?? '');
-    if (row.scheduled_for) {
-      setWhenMode('later');
-      setLaterAt(new Date(row.scheduled_for));
+    if (row.expires_at) {
+      setExpiryMode('future');
+      setFutureExpiryAt(new Date(row.expires_at));
     } else {
-      setWhenMode('now');
+      setExpiryMode('today');
     }
     if (row.offered_amount != null) {
       setAmount(String(row.offered_amount));
@@ -484,7 +477,7 @@ export function NewRequestForm({
     descriptionValid,
   (REQUEST_REQUIRES_FUNDING ? isFundedOffer(parsedAmount) && !amountError : amountError === null) &&
       milestoneStepValid,
-    whenMode === 'now' || isFutureSchedule(laterAt),
+    isEdit || validateRequestExpiryChoice(expiryMode, futureExpiryAt) === null,
     true,
     true,
   ];
@@ -559,21 +552,22 @@ export function NewRequestForm({
         return;
       }
       if (step === 3) {
-        setLaterTimeError(true);
-        showAppToast('Choose a date and time in the future.', 'warning');
+        const expiryError = validateRequestExpiryChoice(expiryMode, futureExpiryAt);
+        setExpiryTimeError(expiryError);
+        showAppToast(expiryError ?? 'Choose when this request should stop accepting responses.', 'warning');
         return;
       }
       return;
     }
 
-    setLaterTimeError(false);
+    setExpiryTimeError(null);
     setStep((current) => Math.min(current + 1, stepCount - 1));
   };
 
   const onLaterDateChange = (event: DateTimePickerEvent, date?: Date) => {
     if (Platform.OS === 'android') setShowDatePicker(false);
     if (event.type === 'dismissed' || !date) return;
-    setLaterAt((prev) =>
+    setFutureExpiryAt((prev) =>
       set(prev, { year: date.getFullYear(), month: date.getMonth(), date: date.getDate() }),
     );
   };
@@ -581,7 +575,7 @@ export function NewRequestForm({
   const onLaterTimeChange = (event: DateTimePickerEvent, date?: Date) => {
     if (Platform.OS === 'android') setShowTimePicker(false);
     if (event.type === 'dismissed' || !date) return;
-    setLaterAt((prev) =>
+    setFutureExpiryAt((prev) =>
       set(prev, {
         hours: date.getHours(),
         minutes: date.getMinutes(),
@@ -591,19 +585,29 @@ export function NewRequestForm({
     );
   };
 
-  const submit = (postPosition: Position, locationLabel: string, attachmentPath: string | null) => {
+  const submit = async (
+    postPosition: Position,
+    locationLabel: string,
+    attachmentPath: string | null,
+  ) => {
     const attachmentForRpc: string | null | undefined =
       attachmentPath ?? (isEdit ? undefined : null);
-    const scheduledFor: Date | null =
-      whenMode === 'now' ? null : isFutureSchedule(laterAt) ? laterAt : null;
+    const scheduledFor: Date | null = isEdit
+      ? editRequest.data?.scheduled_for
+        ? new Date(editRequest.data.scheduled_for)
+        : null
+      : null;
+    const expiryValidation = isEdit
+      ? null
+      : validateRequestExpiryChoice(expiryMode, futureExpiryAt);
 
     if (
       trimmedTitle.length < CREATE_TITLE_LIMITS.min ||
       !descriptionValid ||
       (REQUEST_REQUIRES_FUNDING && !isFundedOffer(parsedAmount)) ||
-      (whenMode === 'later' && scheduledFor === null)
+      expiryValidation !== null
     ) {
-      if (whenMode === 'later' && scheduledFor === null) setLaterTimeError(true);
+      if (expiryValidation) setExpiryTimeError(expiryValidation);
       else showAppToast('Check the details on earlier steps and try again.', 'warning');
       return;
     }
@@ -622,6 +626,22 @@ export function NewRequestForm({
 
     if (milestonePayload === null) return;
 
+    let expiresAtIso: string | null = null;
+    if (!isEdit) {
+      try {
+        expiresAtIso = await resolveRequestExpiresAtIso({
+          mode: expiryMode,
+          futureAt: futureExpiryAt,
+        });
+      } catch (error) {
+        showAppToast(
+          error instanceof Error ? error.message : 'Could not set the response deadline.',
+          'warning',
+        );
+        return;
+      }
+    }
+
     const payload = {
       title: trimmedTitle,
       description: trimmedDescription,
@@ -634,6 +654,7 @@ export function NewRequestForm({
       ...(isEdit
         ? {}
         : {
+            expiresAt: new Date(expiresAtIso!),
             paymentStructure,
             milestones: paymentStructure === 'milestone' ? milestonePayload : undefined,
           }),
@@ -659,9 +680,23 @@ export function NewRequestForm({
       return;
     }
 
+    if (!payload.expiresAt) {
+      showAppToast('Choose when this request should stop accepting responses.', 'warning');
+      return;
+    }
+
     create.mutate(
       {
-        ...payload,
+        title: payload.title,
+        description: payload.description,
+        position: payload.position,
+        locationLabel: payload.locationLabel,
+        expiresAt: payload.expiresAt,
+        offeredAmount: payload.offeredAmount,
+        attachmentPath: payload.attachmentPath,
+        tags: payload.tags,
+        paymentStructure: payload.paymentStructure,
+        milestones: payload.milestones,
         sourceRequestId: reusingPrior ? reuseSeed?.sourceRequestId : undefined,
       },
       {
@@ -695,7 +730,7 @@ export function NewRequestForm({
   const postWithLocation = async (postPosition: Position, locationLabel: string) => {
     try {
       const attachmentPath = await uploadAttachmentIfNeeded();
-      submit(postPosition, locationLabel, attachmentPath);
+      await submit(postPosition, locationLabel, attachmentPath);
     } catch (error) {
       showAppToast(
         error instanceof Error ? error.message : 'Could not upload the photo. Try again.',
@@ -711,8 +746,7 @@ export function NewRequestForm({
       return;
     }
 
-    const scheduledFor: Date | null =
-      whenMode === 'now' ? null : isFutureSchedule(laterAt) ? laterAt : null;
+    const expiryValidation = validateRequestExpiryChoice(expiryMode, futureExpiryAt);
 
     if (!formCoreValid || !position) {
       if (!stepValid[1]) {
@@ -723,9 +757,9 @@ export function NewRequestForm({
       return;
     }
 
-    if (whenMode === 'later' && scheduledFor === null) {
-      setLaterTimeError(true);
-      showAppToast('Choose a date and time in the future.', 'warning');
+    if (expiryValidation) {
+      setExpiryTimeError(expiryValidation);
+      showAppToast(expiryValidation, 'warning');
       return;
     }
 
@@ -734,7 +768,7 @@ export function NewRequestForm({
 
     try {
       const attachmentPath = await uploadAttachmentIfNeeded();
-      submit(position, locationLabel, attachmentPath);
+      await submit(position, locationLabel, attachmentPath);
     } catch (error) {
       showAppToast(
         error instanceof Error ? error.message : 'Could not upload the photo. Try again.',
@@ -749,8 +783,7 @@ export function NewRequestForm({
       return;
     }
 
-    const scheduledFor: Date | null =
-      whenMode === 'now' ? null : isFutureSchedule(laterAt) ? laterAt : null;
+    const expiryValidation = validateRequestExpiryChoice(expiryMode, futureExpiryAt);
 
     if (!formCoreValid) {
       if (!stepValid[0]) {
@@ -765,15 +798,15 @@ export function NewRequestForm({
         showAppToast(amountError ?? 'Enter a valid offer amount to continue.', 'warning');
         return;
       }
-      if (whenMode === 'later' && scheduledFor === null) {
-        setLaterTimeError(true);
-        showAppToast('Choose a date and time in the future.', 'warning');
+      if (expiryValidation) {
+        setExpiryTimeError(expiryValidation);
+        showAppToast(expiryValidation, 'warning');
       }
       return;
     }
 
-    if (whenMode === 'later' && scheduledFor === null) {
-      setLaterTimeError(true);
+    if (expiryValidation) {
+      setExpiryTimeError(expiryValidation);
       return;
     }
 
@@ -890,7 +923,7 @@ export function NewRequestForm({
   const closeWizard = () => router.back();
   const goBack = () => setStep((current) => Math.max(current - 1, 0));
 
-  const reviewWhen = whenSummary(whenMode, laterAt);
+  const reviewWhen = expirySummaryLabel(expiryMode, futureExpiryAt);
   const reviewLocation = areaLabel.trim() || 'My location';
   const reviewAmount = isFundedOffer(parsedAmount)
     ? formatMoney(parsedAmount, MARKET.currency)
@@ -1086,42 +1119,56 @@ export function NewRequestForm({
 
             {step === 3 ? (
               <View className="gap-3">
-                <Text className="text-3xl font-bold leading-9 text-ink">When do you need it?</Text>
+                <Text className="text-3xl font-bold leading-9 text-ink">When does it expire?</Text>
                 <Text className="text-base text-muted">
-                  People nearby will see your request straight away.
+                  After this time, people can no longer send new responses. It does not schedule the
+                  work itself.
                 </Text>
+                {isEdit ? (
+                  <View className="gap-2 rounded-2xl bg-surface p-4">
+                    <Text className="text-base font-semibold text-ink">
+                      {editRequest.data?.expires_at
+                        ? formatWhenHome(editRequest.data.expires_at)
+                        : 'No response deadline set'}
+                    </Text>
+                    <Text className="text-sm text-muted">
+                      Response deadline cannot be changed while editing.
+                    </Text>
+                  </View>
+                ) : (
+                  <>
                 <View className="flex-row gap-3">
                   <WhenPill
-                    label="Now"
-                    selected={whenMode === 'now'}
+                    label="Today"
+                    selected={expiryMode === 'today'}
                     onPress={() => {
-                      setWhenMode('now');
-                      setLaterTimeError(false);
+                      setExpiryMode('today');
+                      setExpiryTimeError(null);
                     }}
                   />
                   <WhenPill
-                    label="Later"
-                    selected={whenMode === 'later'}
+                    label="Future date"
+                    selected={expiryMode === 'future'}
                     onPress={() => {
-                      setWhenMode('later');
-                      setLaterTimeError(false);
+                      setExpiryMode('future');
+                      setExpiryTimeError(null);
                     }}
                   />
                 </View>
-                {whenMode === 'later' ? (
+                {expiryMode === 'future' ? (
                   <View className="gap-3 rounded-2xl bg-surface p-4">
                     <Text className="text-base font-semibold text-ink">{reviewWhen}</Text>
-                    {laterTimeError ? (
-                      <Text className="text-sm text-warning">Choose a time in the future.</Text>
+                    {expiryTimeError ? (
+                      <Text className="text-sm text-warning">{expiryTimeError}</Text>
                     ) : null}
                     {Platform.OS === 'ios' ? (
                       <DateTimePicker
-                        value={laterAt}
+                        value={futureExpiryAt}
                         mode="datetime"
                         minimumDate={new Date()}
                         maximumDate={addHours(new Date(), 24 * 30)}
                         onChange={(_, date) => {
-                          if (date) setLaterAt(date);
+                          if (date) setFutureExpiryAt(date);
                         }}
                       />
                     ) : (
@@ -1140,7 +1187,7 @@ export function NewRequestForm({
                     )}
                     {showDatePicker ? (
                       <DateTimePicker
-                        value={laterAt}
+                        value={futureExpiryAt}
                         mode="date"
                         minimumDate={new Date()}
                         maximumDate={addHours(new Date(), 24 * 30)}
@@ -1148,10 +1195,20 @@ export function NewRequestForm({
                       />
                     ) : null}
                     {showTimePicker ? (
-                      <DateTimePicker value={laterAt} mode="time" onChange={onLaterTimeChange} />
+                      <DateTimePicker
+                        value={futureExpiryAt}
+                        mode="time"
+                        onChange={onLaterTimeChange}
+                      />
                     ) : null}
                   </View>
-                ) : null}
+                ) : (
+                  <Text className="text-base text-muted">
+                    Responses close today at 11:59 PM in your market timezone.
+                  </Text>
+                )}
+                  </>
+                )}
               </View>
             ) : null}
 

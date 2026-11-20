@@ -1,5 +1,4 @@
 import {
-  assertCataloguePhotoAsset,
   contentTypeForAsset,
   extensionForMime,
   readUriBytes,
@@ -69,6 +68,22 @@ export async function pickRequestPhotos(slotsLeft: number): Promise<RequestPhoto
   });
 }
 
+const REQUEST_PHOTO_MIME = new Set([
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/heic',
+  'image/heif',
+]);
+
+function assertRequestPhotoAsset(asset: { mimeType?: string | null }) {
+  const mime =
+    (asset.mimeType ?? 'image/jpeg').split(';')[0]?.trim().toLowerCase() ?? 'image/jpeg';
+  if (!REQUEST_PHOTO_MIME.has(mime)) {
+    throw new Error('Use a JPEG, PNG, WebP, or HEIC photo.');
+  }
+}
+
 export async function uploadRequestPhotos(
   userId: string,
   assets: RequestPhotoAsset[],
@@ -79,7 +94,7 @@ export async function uploadRequestPhotos(
   for (let index = 0; index < assets.length; index += 1) {
     const asset = assets[index];
     if (!asset) continue;
-    assertCataloguePhotoAsset(asset);
+    assertRequestPhotoAsset(asset);
     const contentType = contentTypeForAsset({ uri: asset.uri, mimeType: asset.mimeType }, 'photo');
     const extension = extensionForMime(contentType);
     const path = `${userId}/drafts/${draftKey}/${index}.${extension}`;

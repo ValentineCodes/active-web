@@ -26,6 +26,8 @@ const response = (id: string, status: 'pending' | 'accepted' | 'withdrawn' | 'de
     created_at: new Date().toISOString(),
     expires_at: null,
     responder_available: true,
+    proposed_delivery_at: new Date(Date.now() + 86_400_000).toISOString(),
+    proposed_delivery_timezone: 'Africa/Lagos',
   }) as const;
 
 test('requester can accept while posted or awaiting review', () => {

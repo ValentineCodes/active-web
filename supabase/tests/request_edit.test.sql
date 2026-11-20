@@ -136,7 +136,8 @@ select respond_to_request(
   'Pending response blocks editing.',
   null,
   6.5400,
-  3.3800
+  3.3800,
+  now() + interval '7 days'
 ) as pending_response_response_id \gset
 
 select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
@@ -204,7 +205,8 @@ select respond_to_request(
   'Please decline me.',
   null,
   6.5400,
-  3.3800
+  3.3800,
+  now() + interval '7 days'
 ) as decline_me_response_id \gset
 
 select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
@@ -251,7 +253,8 @@ select respond_to_request(
   'Will be accepted then cancelled.',
   null,
   6.5400,
-  3.3800
+  3.3800,
+  now() + interval '7 days'
 ) as accepted_cancel_response_id \gset
 
 select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
@@ -308,7 +311,8 @@ select respond_to_request(
   'Will be deleted by admin.',
   null,
   6.5400,
-  3.3800
+  3.3800,
+  now() + interval '7 days'
 ) as deleted_row_response_id \gset
 
 select pg_temp.act_as_owner() as _ \gset
@@ -345,7 +349,7 @@ select create_request(
 select pg_temp.act_as('55555555-5555-5555-5555-555555555555') as _ \gset
 select throws_ok(
   format(
-    'select respond_to_request(%L, null, null, 7.5000, 3.3800)',
+    'select respond_to_request(%L, null, null, 7.5000, 3.3800, now() + interval ''7 days'')',
     :'failed_respond_id'
   ),
   '55000',
@@ -791,7 +795,7 @@ select lives_ok(
 select pg_temp.act_as('22222222-2222-2222-2222-222222222222') as _ \gset
 select lives_ok(
   format(
-    'select respond_to_request(%L, %L, null, 6.5400, 3.3800)',
+    'select respond_to_request(%L, %L, null, 6.5400, 3.3800, now() + interval ''7 days'')',
     :'order_edit_first_id',
     'Respond after edit.'
   ),
@@ -812,7 +816,7 @@ select create_request(
 select pg_temp.act_as('22222222-2222-2222-2222-222222222222') as _ \gset
 select lives_ok(
   format(
-    'select respond_to_request(%L, %L, null, 6.5400, 3.3800)',
+    'select respond_to_request(%L, %L, null, 6.5400, 3.3800, now() + interval ''7 days'')',
     :'order_respond_first_id',
     'Respond before edit.'
   ),
@@ -867,7 +871,7 @@ select lives_ok(
 select pg_temp.act_as('22222222-2222-2222-2222-222222222222') as _ \gset
 select lives_ok(
   format(
-    'select respond_to_request(%L, %L, null, 6.5400, 3.3800)',
+    'select respond_to_request(%L, %L, null, 6.5400, 3.3800, now() + interval ''7 days'')',
     :'open_request_id',
     'Regression respond.'
   ),

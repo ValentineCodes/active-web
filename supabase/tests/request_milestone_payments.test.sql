@@ -95,7 +95,8 @@ select respond_to_request(
   'I can help.',
   null,
   6.5000,
-  3.3800
+  3.3800,
+  now() + interval '7 days'
 ) as single_response_id \gset
 
 select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
@@ -158,7 +159,8 @@ select respond_to_request(
   'Happy to help.',
   null,
   6.5000,
-  3.3800
+  3.3800,
+  now() + interval '7 days'
 ) as ms_response_id \gset
 
 select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
@@ -183,14 +185,40 @@ select is(
   'engagement milestones snapshot at accept'
 );
 
+select is(
+  (
+    select status::text from public.engagement_milestones
+    where request_id = :'ms_request_id'::uuid and position = 1
+  ),
+  'pending',
+  'first milestone pending until worker starts'
+);
+
+select throws_ok(
+  format(
+    $$select submit_engagement_milestone(
+      (select id from public.engagement_milestones where request_id = %L::uuid and position = 1)
+    )$$,
+    :'ms_request_id'
+  ),
+  '55000',
+  'the worker must start before submitting milestones',
+  'cannot submit milestone 1 before start'
+);
+
 select pg_temp.act_as('22222222-2222-2222-2222-222222222222') as _ \gset
+select lives_ok(
+  format('select start_request(%L::uuid)', :'ms_request_id'),
+  'worker starts milestone engagement'
+);
+
 select is(
   (
     select status::text from public.engagement_milestones
     where request_id = :'ms_request_id'::uuid and position = 1
   ),
   'in_progress',
-  'first milestone active after accept (no separate start step)'
+  'first milestone active after start'
 );
 
 select throws_ok(
@@ -362,7 +390,8 @@ select respond_to_request(
   null,
   null,
   6.5000,
-  3.3800
+  3.3800,
+  now() + interval '7 days'
 ) as guard_resp_id \gset
 
 select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset
@@ -404,7 +433,8 @@ select respond_to_request(
   null,
   null,
   6.5000,
-  3.3800
+  3.3800,
+  now() + interval '7 days'
 ) as broke_ms_resp \gset
 
 select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset

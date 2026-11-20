@@ -131,7 +131,8 @@ select respond_to_request(
   null,
   null,
   6.5000,
-  3.3800
+  3.3800,
+  now() + interval '7 days'
 ) as broke_response_id \gset
 
 select pg_temp.act_as_owner() as _ \gset
@@ -205,7 +206,8 @@ select respond_to_request(
   'I can fix it.',
   null,
   6.5000,
-  3.3800
+  3.3800,
+  now() + interval '7 days'
 ) as funded_response_id \gset
 
 select pg_temp.act_as('88888888-8888-8888-8888-888888888888') as _ \gset
@@ -279,7 +281,8 @@ select respond_to_request(
   'Need more for parts.',
   6000,
   6.5000,
-  3.3800
+  3.3800,
+  now() + interval '7 days'
 ) as counter_response_id \gset
 
 select pg_temp.act_as('88888888-8888-8888-8888-888888888888') as _ \gset

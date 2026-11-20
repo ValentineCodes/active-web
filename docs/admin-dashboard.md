@@ -82,6 +82,21 @@ Finance admins (`finance_admin`, `super_admin`) use RPCs backed by `wallet_trans
 | `admin_get_finance_summary`               | `transactions`                         | Commission / volume metrics (same definitions as overview) |
 | `admin_financial_exceptions`              | `transactions` or `operational_issues` | Read-only reconciliation checks                            |
 
+## Projects (funding & assignments)
+
+| RPC | Permission | Purpose |
+| --- | --- | --- |
+| `admin_list_projects` / `admin_get_project` | `requests` | Read-only oversight: pool totals, assignments, disputes. Contributor refunds await **UD-19**. |
+| `admin_list_project_disputes` | `reports` | Assignment dispute queue. |
+
+Super Admin trust actions on users:
+
+| RPC | Purpose |
+| --- | --- |
+| `admin_override_premium_trial` | Extend or set trial end (audited). |
+| `admin_clear_username` | Profile moderation — remove public handle. |
+| `admin_apply_reputation_delta` | Crown adjustment (super admin only; audited). |
+
 ## Operational issues & audit
 
 | RPC                                                 | Permission                             | Purpose                                              |
@@ -100,6 +115,8 @@ Finance admins (`finance_admin`, `super_admin`) use RPCs backed by `wallet_trans
 - Marking withdrawals successful from the dashboard (`wallet_withdraw` is disabled for users; payout state must follow Paystack/backend settlement).
 - Offline / cash payments (not modeled).
 - Paystack processing fees and net platform revenue (see `unavailable_metrics` on overview/summary).
+
+Scheduled maintenance: see `docs/operations/production-scheduling.md` (`auto_complete_due_requests`, `evaluate_due_project_funding` via `operational-scheduler` Edge Function).
 
 **Not supported yet**
 

@@ -1,6 +1,5 @@
-import { useCallback } from 'react';
 import { View } from 'react-native';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router } from 'expo-router';
 
 import { HomeActiveRequestBanner } from '@/components/HomeActiveRequestBanner';
 import { HomeFeed } from '@/components/home/HomeFeed';
@@ -16,8 +15,6 @@ import { useMyWallet } from '@/features/wallet/api';
 import { showQuerySkeleton } from '@/lib/query/show-skeleton';
 
 export default function HomeScreen() {
-  const { q } = useLocalSearchParams<{ q?: string }>();
-  const activeSearchQuery = q?.trim() ?? '';
 
   const profile = useProfile();
   useQueryErrorToast(profile, { enabled: profile.isError && !profile.data });
@@ -28,13 +25,6 @@ export default function HomeScreen() {
 
   const activeRequest = pickHomeActiveRequest(requests.data, responses.data);
   const profileSkeleton = showQuerySkeleton(profile);
-
-  const openSearch = useCallback(() => {
-    router.push({
-      pathname: '/search',
-      params: activeSearchQuery ? { q: activeSearchQuery } : undefined,
-    });
-  }, [activeSearchQuery]);
 
   return (
     <Screen className="bg-canvas">
@@ -56,7 +46,7 @@ export default function HomeScreen() {
         ) : null}
       </View>
 
-      <HomeFeed searchQuery={activeSearchQuery} onOpenSearch={openSearch} />
+      <HomeFeed searchQuery="" />
     </Screen>
   );
 }

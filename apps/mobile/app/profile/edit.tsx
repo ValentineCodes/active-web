@@ -22,6 +22,11 @@ import {
   useUpdateNotificationTagInterests,
 } from '@/features/notifications/tag-interests';
 import { useCaptureProfilePhoto, useProfile, useSaveProfile } from '@/features/profile/api';
+import { useSetUsername } from '@/features/profile/public-profile-api';
+import {
+  sanitizeUsernameDraft,
+  validateUsernameFormat,
+} from '@/features/profile/username';
 import type { RequestTag } from '@/features/requests/tags';
 import { cn } from '@/lib/cn';
 import { showAppToast } from '@/lib/toast';
@@ -62,23 +67,28 @@ function EditField({
 function EditProfileForm({
   avatarPath,
   displayName,
+  initialUsername,
   initialBio,
   initialTagInterests,
 }: {
   avatarPath: string | null;
   displayName: string;
+  initialUsername: string | null;
   initialBio: string | null;
   initialTagInterests: RequestTag[];
 }) {
   const colors = useColors();
   const save = useSaveProfile();
+  const setUsername = useSetUsername();
   const updateTagInterests = useUpdateNotificationTagInterests();
   const capturePhoto = useCaptureProfilePhoto();
 
   const [name, setName] = useState(displayName);
+  const [handle, setHandle] = useState(initialUsername ?? '');
   const [bio, setBio] = useState(initialBio ?? '');
   const [selectedTags, setSelectedTags] = useState(initialTagInterests);
   const [saveError, setSaveError] = useState<unknown>(null);
+  const [usernameError, setUsernameError] = useState<string | null>(null);
 
   const scrollRef = useRef<ComponentRef<typeof ScrollView>>(null);
   const scrollYRef = useRef(0);
@@ -143,20 +153,40 @@ function EditProfileForm({
   }, []);
 
   const trimmedName = name.trim();
-  const saving = save.isPending || updateTagInterests.isPending;
-  const canSave = trimmedName.length >= 2 && !saving;
+  const saving = save.isPending || updateTagInterests.isPending || setUsername.isPending;
+  const trimmedHandle = handle.trim().toLowerCase();
+  const handleChanged =
+    trimmedHandle.length > 0 && trimmedHandle !== (initialUsername ?? '').toLowerCase();
+  const handleFormatError = handleChanged ? validateUsernameFormat(trimmedHandle) : null;
+  const canSave = trimmedName.length >= 2 && !saving && !handleFormatError;
 
   const handleSave = () => {
     if (!canSave) return;
+    if (handleChanged) {
+      const formatError = validateUsernameFormat(trimmedHandle);
+      if (formatError) {
+        setUsernameError(formatError);
+        return;
+      }
+    }
     setSaveError(null);
+    setUsernameError(null);
     void (async () => {
       try {
         await save.mutateAsync({ display_name: trimmedName, bio: bio.trim() || null });
+        if (handleChanged) {
+          await setUsername.mutateAsync(trimmedHandle);
+        }
         await updateTagInterests.mutateAsync(selectedTags);
         showAppToast('Profile updated');
         router.back();
       } catch (error) {
-        setSaveError(error);
+        const message = error instanceof Error ? error.message : 'Could not save profile.';
+        if (handleChanged && message.toLowerCase().includes('username')) {
+          setUsernameError(message);
+        } else {
+          setSaveError(error);
+        }
       }
     })();
   };
@@ -252,6 +282,30 @@ function EditProfileForm({
               maxLength={60}
             />
             <EditField
+              label="Username"
+              value={handle}
+              onChangeText={(text) => {
+                setUsernameError(null);
+                setHandle(sanitizeUsernameDraft(text));
+              }}
+              autoCapitalize="none"
+              autoCorrect={false}
+              autoComplete="username"
+              maxLength={30}
+              placeholder="your_handle"
+            />
+            {usernameError || handleFormatError ? (
+              <Text className="-mt-2 px-1 text-sm text-warning">
+                {usernameError ?? handleFormatError}
+              </Text>
+            ) : initialUsername ? (
+              <Text className="-mt-2 px-1 text-sm text-muted">Public profile: @{initialUsername}</Text>
+            ) : (
+              <Text className="-mt-2 px-1 text-sm text-muted">
+                Lowercase letters, numbers, and underscores only.
+              </Text>
+            )}
+            <EditField
               label="About you"
               value={bio}
               onChangeText={setBio}
@@ -327,6 +381,7 @@ export default function EditProfileScreen() {
         key={formKey}
         avatarPath={data.avatar_path}
         displayName={data.display_name ?? ''}
+        initialUsername={data.username ?? null}
         initialBio={data.bio}
         initialTagInterests={initialTags}
       />

@@ -10,6 +10,7 @@ import { queryKeys } from '@/lib/query/keys';
 import { supabase } from '@/lib/supabase/client';
 
 import { toUserMessage } from '@/lib/supabase/errors';
+import { finalizeDevSignedUrl } from '@/lib/supabase/resolve-url';
 
 import {
   assertCataloguePhotoAsset,
@@ -72,7 +73,7 @@ export function useCatalogueMediaUrl(path: string | null | undefined) {
         .createSignedUrl(path as string, SIGNED_URL_TTL_SECONDS);
 
       if (error) throw error;
-      return data.signedUrl;
+      return finalizeDevSignedUrl(data.signedUrl);
     },
   });
 }

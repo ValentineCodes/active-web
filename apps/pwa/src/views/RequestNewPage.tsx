@@ -25,7 +25,6 @@ import {
 import { requestPosition, suggestAreaLabel, type Position } from '@/lib/geolocation';
 import { showAppToast } from '@/lib/toast';
 import { cn } from '@/lib/cn';
-import { useOptionalCreateComposer } from '@/components/create/CreateComposerProvider';
 import { useUserId } from '@/features/auth/use-user-id';
 
 function toDatetimeLocalValue(iso: string | null | undefined): string {
@@ -42,49 +41,19 @@ function isLocalAttachmentUri(uri: string) {
 
 export function RequestNewPage() {
   const params = useSearchParams();
-  return <RequestNewContent presentation="full" editId={params.get('edit')} />;
-}
-
-/** Drawer create flow — must not call `useSearchParams` (would suspend the tab page). */
-export function RequestNewContent({
-  presentation,
-  editId = null,
-}: {
-  presentation: 'full' | 'drawer';
-  editId?: string | null;
-}) {
-  if (presentation === 'drawer' && !editId) {
-    return <RequestNewDrawerFlow />;
-  }
-  return <RequestNewFullForm presentation={presentation} editId={editId} />;
-}
-
-function RequestNewDrawerFlow() {
-  const composer = useOptionalCreateComposer();
-  if (!composer) {
-    throw new Error('RequestNewDrawerFlow must render inside CreateComposerProvider');
-  }
-  return <RequestCreateWizard onClose={composer.close} onSuccess={composer.leaveAfterSuccess} />;
-}
-
-function RequestNewFullForm({
-  presentation,
-  editId = null,
-}: {
-  presentation: 'full' | 'drawer';
-  editId?: string | null;
-}) {
   const router = useRouter();
-  const composer = useOptionalCreateComposer();
-  const closeComposer = () => {
-    if (presentation === 'drawer' && composer) composer.close();
-    else router.back();
-  };
-  const leaveAfterSuccess = (href: string) => {
-    if (presentation === 'drawer' && composer) composer.leaveAfterSuccess(href);
-    else router.push(href);
-  };
-  const isEdit = Boolean(editId);
+  const editId = params.get('edit');
+  if (editId) {
+    return <RequestEditForm editId={editId} />;
+  }
+  return (
+    <RequestCreateWizard onClose={() => router.back()} onSuccess={(href) => router.push(href)} />
+  );
+}
+
+function RequestEditForm({ editId }: { editId: string }) {
+  const router = useRouter();
+  const isEdit = true;
 
   const userId = useUserId();
   const create = useCreateRequest();
@@ -221,22 +190,9 @@ function RequestNewFullForm({
           ...(attachmentForRpc !== undefined ? { attachmentPath: attachmentForRpc } : {}),
           tags: selectedTags,
         });
-        leaveAfterSuccess(`/request/${editId}`);
+        router.push(`/request/${editId}`);
         return;
       }
-
-      const requestId = await create.mutateAsync({
-        title: trimmedTitle,
-        description: description.trim(),
-        position,
-        locationLabel: label,
-        scheduledFor,
-        offeredAmount: offered,
-        attachmentPath: attachmentForRpc ?? null,
-        tags: selectedTags,
-      });
-      showAppToast('Request posted.');
-      leaveAfterSuccess(`/request/${requestId}`);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not save the request.');
     }
@@ -247,8 +203,7 @@ function RequestNewFullForm({
   return (
     <FlowScreen
       title={editId ? 'Edit request' : 'New request'}
-      onBack={presentation === 'drawer' ? closeComposer : undefined}
-      className={presentation === 'drawer' ? 'min-h-0 h-full max-h-full' : undefined}
+      onBack={() => router.back()}
       bodyClassName="flex flex-col gap-4 pb-10"
     >
       {error ? <InlineError message={error} /> : null}

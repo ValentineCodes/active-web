@@ -6,7 +6,8 @@ import { ProfileReviewRow } from '@/components/profile/ProfileReviewRow';
 import { Header } from '@/components/ui/Header';
 import { Screen } from '@/components/ui/Screen';
 import { StarRating } from '@/components/ui/Stars';
-import { EmptyState, InlineError, LoadingState } from '@/components/ui/StateView';
+import { ReviewListSkeleton } from '@/components/ui/content-skeletons';
+import { EmptyState, InlineError } from '@/components/ui/StateView';
 import { useQueryErrorToast } from '@/lib/query/use-query-error-toast';
 import { usePullToRefresh } from '@/lib/query/use-pull-to-refresh';
 import { showQuerySkeleton } from '@/lib/query/show-skeleton';
@@ -38,7 +39,7 @@ export default function ProfileReviewsScreen() {
     return (
       <Screen>
         <Header title="Reviews" onBack={() => router.back()} />
-        <LoadingState />
+        <ReviewListSkeleton />
       </Screen>
     );
   }

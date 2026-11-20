@@ -6,7 +6,6 @@ import { HomeTabBar } from '@/components/ui/HomeTabBar';
 import { useTrackTabForCreateReturn } from '@/features/navigation/use-track-tab-for-create-return';
 import { useNotificationUnreadCount } from '@/features/notifications/inbox';
 import { useNotificationBridge } from '@/lib/notifications';
-import { useMyRequests } from '@/features/requests/requester-api';
 import { useColors } from '@/theme';
 
 function TabIcon({
@@ -25,20 +24,9 @@ function TabIcon({
 export default function TabsLayout() {
   useTrackTabForCreateReturn();
   const colors = useColors();
-  const { data: requests } = useMyRequests();
-  const unreadNotifications = useNotificationUnreadCount();
-  const unreadCount = unreadNotifications.data ?? 0;
+  const unread = useNotificationUnreadCount();
 
   useNotificationBridge();
-
-  const waitingResponses =
-    requests?.reduce(
-      (total, request) =>
-        request.status === 'posted' || request.status === 'searching'
-          ? total + request.pending_response_count
-          : total,
-      0,
-    ) ?? 0;
 
   return (
     <Tabs
@@ -59,11 +47,17 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="search"
+        options={{
+          title: 'Search',
+          tabBarIcon: (props) => <TabIcon {...props} name="search-outline" />,
+        }}
+      />
+      <Tabs.Screen
         name="activity"
         options={{
           title: 'Activity',
-          tabBarBadge: waitingResponses > 0 ? waitingResponses : undefined,
-          tabBarIcon: (props) => <TabIcon {...props} name="list-outline" />,
+          href: null,
         }}
       />
       <Tabs.Screen
@@ -77,8 +71,22 @@ export default function TabsLayout() {
         name="notifications"
         options={{
           title: 'Notifications',
-          tabBarBadge: unreadCount > 0 ? unreadCount : undefined,
           tabBarIcon: (props) => <TabIcon {...props} name="notifications-outline" />,
+          tabBarBadge: unread.data && unread.data > 0 ? unread.data : undefined,
+        }}
+      />
+      <Tabs.Screen
+        name="wallet"
+        options={{
+          title: 'Wallet',
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: 'Profile',
+          href: null,
         }}
       />
     </Tabs>

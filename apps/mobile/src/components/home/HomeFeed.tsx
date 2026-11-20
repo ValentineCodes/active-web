@@ -10,16 +10,18 @@ import {
   type NativeSyntheticEvent,
 } from 'react-native';
 import type { BottomSheetModal } from '@gorhom/bottom-sheet';
-import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 
 import { PersonProfileBottomSheet } from '@/components/PersonProfileBottomSheet';
+import { HomeFeedProjectPage } from '@/components/home/HomeFeedProjectPage';
 import {
   HomeFeedRequestPage,
   HomeFeedRequestPageSkeleton,
   proximityLabelForRequest,
 } from '@/components/home/HomeFeedRequestPage';
+import type { HomeBrowseFeedRow } from '@/features/requests/use-home-browse-feed';
+import { ListFooterLoading } from '@/components/ui/ListStates';
 import { EmptyState, InlineError } from '@/components/ui/StateView';
 import {
   seedBrowseRequestFromFeed,
@@ -31,10 +33,9 @@ import { usePullToRefresh } from '@/lib/query/use-pull-to-refresh';
 
 type HomeFeedProps = {
   searchQuery: string;
-  onOpenSearch: () => void;
 };
 
-export function HomeFeed({ searchQuery, onOpenSearch }: HomeFeedProps) {
+export function HomeFeed({ searchQuery }: HomeFeedProps) {
   const queryClient = useQueryClient();
   const feed = useHomeBrowseFeed(searchQuery);
   const tabBarInset = useHomeFeedContentInset();
@@ -74,27 +75,38 @@ export function HomeFeed({ searchQuery, onOpenSearch }: HomeFeedProps) {
   }, []);
 
   const renderItem = useCallback(
-    ({ item }: { item: PublicRequest }) => {
+    ({ item }: { item: HomeBrowseFeedRow }) => {
       if (pageHeight < 1) return null;
 
-      const isOwnRequest = feed.ownOpenRequestIds.has(item.request_id);
+      if (item.kind === 'project') {
+        return (
+          <HomeFeedProjectPage
+            project={item.project}
+            pageHeight={pageHeight}
+            tabBarInset={tabBarInset}
+          />
+        );
+      }
+
+      const request = item.request;
+      const isOwnRequest = feed.ownOpenRequestIds.has(request.request_id);
       const waiting = feed.myResponses?.some(
         (response) =>
-          response.request_id === item.request_id &&
+          response.request_id === request.request_id &&
           response.response_status === 'pending' &&
           (response.request_status === 'posted' || response.request_status === 'searching'),
       );
 
       return (
         <HomeFeedRequestPage
-          request={item}
+          request={request}
           pageHeight={pageHeight}
           tabBarInset={tabBarInset}
-          proximityLabel={proximityLabelForRequest(item, isOwnRequest)}
+          proximityLabel={proximityLabelForRequest(request, isOwnRequest)}
           isOwnRequest={isOwnRequest}
           waiting={Boolean(waiting)}
-          onOpen={() => openRequest(item, feed.position)}
-          onRequesterPress={() => openRequesterProfile(item)}
+          onOpen={() => openRequest(request, feed.position)}
+          onRequesterPress={() => openRequesterProfile(request)}
         />
       );
     },
@@ -113,8 +125,12 @@ export function HomeFeed({ searchQuery, onOpenSearch }: HomeFeedProps) {
     feed.fetchNextPage();
   }, [feed]);
 
+  const feedRowKey = useCallback((item: HomeBrowseFeedRow) => {
+    return item.kind === 'request' ? item.request.request_id : item.project.project_id;
+  }, []);
+
   const getItemLayout = useCallback(
-    (_data: ArrayLike<PublicRequest> | null | undefined, index: number) => ({
+    (_data: ArrayLike<HomeBrowseFeedRow> | null | undefined, index: number) => ({
       length: pageHeight,
       offset: pageHeight * index,
       index,
@@ -134,13 +150,12 @@ export function HomeFeed({ searchQuery, onOpenSearch }: HomeFeedProps) {
   );
 
   const listReady = pageHeight > 0;
-  const showFeedSearch = !feed.searchNeedsLocation;
 
   return (
     <View className="min-h-0 flex-1 bg-canvas" onLayout={onFeedLayout}>
       {feed.isError ? (
         <View className="px-5 pt-4">
-          <InlineError error={feed.error} />
+          <InlineError error={feed.error} onRetry={() => void feed.refetch()} />
         </View>
       ) : null}
 
@@ -189,7 +204,7 @@ export function HomeFeed({ searchQuery, onOpenSearch }: HomeFeedProps) {
           style={{ flex: 1 }}
           className="bg-canvas"
           data={feed.rows}
-          keyExtractor={(item) => item.request_id}
+          keyExtractor={feedRowKey}
           renderItem={renderItem}
           pagingEnabled
           decelerationRate="fast"
@@ -206,19 +221,14 @@ export function HomeFeed({ searchQuery, onOpenSearch }: HomeFeedProps) {
           removeClippedSubviews
           scrollIndicatorInsets={{ bottom: tabBarInset }}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+          ListFooterComponent={
+            feed.isFetchingNextPage ? (
+              <ListFooterLoading />
+            ) : feed.rows.length > 0 && !feed.hasNextPage ? (
+              <View className="py-6" />
+            ) : undefined
+          }
         />
-      ) : null}
-
-      {showFeedSearch ? (
-        <Pressable
-          onPress={onOpenSearch}
-          accessibilityRole="button"
-          accessibilityLabel="Search requests"
-          hitSlop={8}
-          className="absolute right-4 top-4 z-10 h-10 w-10 items-center justify-center rounded-full bg-black/45 active:opacity-90"
-        >
-          <Ionicons name="search-outline" size={20} color="#ffffff" />
-        </Pressable>
       ) : null}
 
       {profileRequest ? (

@@ -1,11 +1,19 @@
-type TabReturnHref = '/(tabs)/' | '/(tabs)/activity' | '/(tabs)/notifications';
+type TabReturnHref =
+  | '/(tabs)'
+  | '/(tabs)/search'
+  | '/(tabs)/activity'
+  | '/(tabs)/notifications';
 
-let lastTab: TabReturnHref = '/(tabs)/';
+let lastTab: TabReturnHref = '/(tabs)';
 let pendingReturnAfterComposer = false;
 
 export function noteActiveTabSegment(segments: readonly string[]) {
   if (segments[0] !== '(tabs)' || !segments[1] || segments[1] === 'create') return;
 
+  if (segments[1] === 'search') {
+    lastTab = '/(tabs)/search';
+    return;
+  }
   if (segments[1] === 'activity') {
     lastTab = '/(tabs)/activity';
     return;
@@ -15,7 +23,7 @@ export function noteActiveTabSegment(segments: readonly string[]) {
     return;
   }
   if (segments[1] === 'index') {
-    lastTab = '/(tabs)/';
+    lastTab = '/(tabs)';
   }
 }
 

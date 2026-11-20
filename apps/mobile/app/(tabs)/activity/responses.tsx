@@ -1,5 +1,5 @@
-import { ActivityMyResponsesTab } from '@/components/activity/ActivityMyResponsesTab';
+import { Redirect } from 'expo-router';
 
-export default function ActivityResponsesScreen() {
-  return <ActivityMyResponsesTab />;
+export default function ActivityResponsesRedirect() {
+  return <Redirect href="/profile?tab=responses" />;
 }

@@ -86,7 +86,8 @@ select respond_to_request(
   'I can help',
   5000,
   6.5000,
-  3.3800
+  3.3800,
+  now() + interval '7 days'
 ) as proof_response_id \gset
 
 select pg_temp.act_as('d1111111-1111-1111-1111-111111111111') as _ \gset

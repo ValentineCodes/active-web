@@ -70,10 +70,12 @@ export async function middleware(request: NextRequest) {
           ? 'users'
           : pathname.startsWith('/users')
             ? 'users'
-            : pathname.startsWith('/requests')
+            : pathname.startsWith('/projects')
               ? 'requests'
-              : pathname.startsWith('/reports')
-                ? 'reports'
+              : pathname.startsWith('/requests')
+                ? 'requests'
+                : pathname.startsWith('/reports')
+                  ? 'reports'
                 : pathname.startsWith('/transactions')
                   ? 'transactions'
                   : pathname.startsWith('/wallets')

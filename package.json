@@ -30,7 +30,7 @@
     "db:serve": "supabase functions serve --env-file .env",
     "db:reset": "supabase db reset",
     "db:migrate": "supabase migration up --local",
-    "db:types": "supabase gen types typescript --local --schema public > apps/mobile/src/lib/supabase/database.types.ts",
+    "db:types": "supabase gen types typescript --local --schema public > apps/mobile/src/lib/supabase/database.types.ts && cp apps/mobile/src/lib/supabase/database.types.ts apps/pwa/src/lib/supabase/database.types.ts",
     "db:seed-admin": "supabase db query --local -f supabase/seed.sql",
     "db:test": "supabase test db",
     "functions:test": "PATH=\"${PWD}/.deno/bin:${PATH}\" deno test supabase/functions/_shared/deposit/settle_test.ts supabase/functions/_shared/paystack/nuban_test.ts supabase/functions/_shared/paystack/resolution-response_test.ts supabase/functions/_shared/paystack/resolve-rate-limit_test.ts supabase/functions/_shared/nin/validate_test.ts supabase/functions/_shared/nin/crypto_test.ts",

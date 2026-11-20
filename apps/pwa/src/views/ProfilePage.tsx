@@ -1,239 +1,223 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from '@/lib/navigation';
-import { useMutation } from '@tanstack/react-query';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 
-import { FlowScreen } from '@/components/layout/FlowScreen';
-import { AvatarWithViewer } from '@/components/profile/AvatarWithViewer';
+import Link from '@/components/AppLink';
 import { ProfileCatalogueRail } from '@/components/profile/ProfileCatalogueRail';
-import { ProfileStat, SettingsGroup, SettingsRow } from '@/components/profile/SettingsRow';
-import { IonIcon } from '@/components/ui/IonIcon';
-import { ionIcons } from '@/components/ui/ion-icons';
-import { StarRating } from '@/components/ui/Stars';
-import { EmptyState, InlineError, LoadingState } from '@/components/ui/StateView';
-import { MARKET } from '@/config/index';
+import { ProfileTagInterestsLine } from '@/components/profile/ProfileTagInterestsLine';
+import { CrownSummary } from '@/components/profile/CrownSummary';
+import { ProfileHubActivityList } from '@/components/profile/ProfileHubActivityList';
+import { ProfileStickyTabs, type ProfileHubTab } from '@/components/profile/ProfileStickyTabs';
+import { IdentityVerifiedBadge } from '@/components/profile/IdentityVerifiedBadge';
+import { AvatarWithViewer } from '@/components/profile/AvatarWithViewer';
+import { Header } from '@/components/ui/Header';
+import { IconButton } from '@/components/ui/IconButton';
+import { Screen } from '@/components/ui/Screen';
+import { EmptyState, LoadingState } from '@/components/ui/StateView';
 import { hasProviderCommitments, useAttendance } from '@/features/attendance/api';
-import { signOut } from '@/features/auth/api';
 import { useMyIdentityStatus } from '@/features/identity/api';
+import { useNotificationTagInterests } from '@/features/notifications/tag-interests';
 import { useMyProfile } from '@/features/profile/api';
+import { useMyReputation } from '@/features/profile/reputation-api';
 import { useMyResponses } from '@/features/requests/responses-api';
 import { useMyRequests } from '@/features/requests/requester-api';
-import { useMyWallet } from '@/features/wallet/api';
-import { formatMoney, formatPhoneDisplay } from '@/lib/format';
+import { formatPhoneDisplay } from '@/lib/format';
 import { showAppToast } from '@/lib/toast';
 import { showQuerySkeleton } from '@/lib/query/show-skeleton';
-import { ReportIssueModal } from '@/components/support/ReportIssueModal';
-import { ThemePreferenceSegment } from '@/components/settings/ThemePreferenceSegment';
-import { APP_REPORT_ISSUES } from '@/features/support/report-issue-options';
-import { useColors, useTheme } from '@/theme/ThemeProvider';
+import { useRouter } from '@/lib/navigation';
+import { IonIcon } from '@/components/ui/IonIcon';
+import { ionIcons } from '@/components/ui/ion-icons';
+import { useColors } from '@/theme/ThemeProvider';
+
+function profileTabFromParam(value: string | null): ProfileHubTab {
+  if (value === 'responses' || value === 'projects' || value === 'requests') return value;
+  return 'requests';
+}
+
+function ProfileStat({ value, label }: { value: number; label: string }) {
+  return (
+    <div className="flex flex-1 flex-col items-center gap-0.5">
+      <p className="text-xl font-bold text-ink">{value}</p>
+      <p className="text-xs font-medium text-muted">{label}</p>
+    </div>
+  );
+}
 
 export function ProfilePage() {
   const router = useRouter();
-  const { preference, setPreference } = useTheme();
   const colors = useColors();
+  const [searchParams, setSearchParams] = useSearchParams();
+
   const profile = useMyProfile();
   const identityStatus = useMyIdentityStatus();
   const attendance = useAttendance();
   const myRequests = useMyRequests();
   const myResponses = useMyResponses();
-  const wallet = useMyWallet();
-  const [reportIssueOpen, setReportIssueOpen] = useState(false);
-  const leave = useMutation({
-    mutationFn: signOut,
-    onSuccess: () => {
-      window.location.href = '/welcome';
-    },
-  });
+  const reputation = useMyReputation();
+  const tagInterests = useNotificationTagInterests();
 
-  const goBack = () => router.push('/home');
+  const tabParam = searchParams.get('tab');
+  const [activeTab, setActiveTab] = useState<ProfileHubTab>(() => profileTabFromParam(tabParam));
+
+  useEffect(() => {
+    setActiveTab(profileTabFromParam(tabParam));
+  }, [tabParam]);
+
+  const onSelectTab = useCallback(
+    (tab: ProfileHubTab) => {
+      setActiveTab(tab);
+      setSearchParams({ tab }, { replace: true });
+    },
+    [setSearchParams],
+  );
+
+  const stats = useMemo(() => {
+    const data = profile.data;
+    if (!data) return null;
+    const completed = (data.jobs_completed ?? 0) + (data.requests_completed ?? 0);
+    const activeRequests =
+      myRequests.data?.filter((request) =>
+        ['posted', 'searching', 'accepted', 'in_progress', 'completion_pending'].includes(
+          request.status,
+        ),
+      ).length ?? 0;
+    const responseCount = myResponses.data?.length ?? 0;
+    return { data, completed, activeRequests, responseCount };
+  }, [myRequests.data, myResponses.data, profile.data]);
+
+  const headerActions = (
+    <div className="flex flex-row items-center gap-0.5">
+      <IconButton
+        icon="create-outline"
+        variant="surface"
+        accessibilityLabel="Edit profile"
+        onClick={() => router.push('/profile/edit')}
+      />
+      <IconButton
+        icon="settings-outline"
+        variant="surface"
+        accessibilityLabel="Settings"
+        onClick={() => router.push('/settings')}
+      />
+    </div>
+  );
 
   if (showQuerySkeleton(profile)) {
     return (
-      <FlowScreen title="Profile" onBack={goBack}>
+      <Screen className="bg-canvas">
+        <Header title="Profile" onBack={() => router.back()} right={headerActions} />
         <LoadingState />
-      </FlowScreen>
+      </Screen>
     );
   }
 
-  const data = profile.data;
-  if (!data) {
+  if (!stats) {
     return (
-      <FlowScreen title="Profile" onBack={goBack}>
-        <EmptyState icon="person-outline" title="Profile unavailable" message="Refresh when you are back online." />
-      </FlowScreen>
+      <Screen className="bg-canvas">
+        <Header title="Profile" onBack={() => router.back()} right={headerActions} />
+        <EmptyState
+          icon="person-outline"
+          title="Profile unavailable"
+          message="Refresh when you are back online."
+        />
+      </Screen>
     );
   }
 
+  const { data, completed, activeRequests, responseCount } = stats;
   const hasCommitments = hasProviderCommitments(attendance.data);
-  const completed = (data.jobs_completed ?? 0) + (data.requests_completed ?? 0);
-  const activeRequests =
-    myRequests.data?.filter((request) =>
-      ['posted', 'searching', 'accepted', 'in_progress', 'completion_pending'].includes(request.status),
-    ).length ?? 0;
-  const responseCount = myResponses.data?.length ?? 0;
-  const ratingCount = data.rating_count ?? 0;
-  const ratingAverage = ratingCount > 0 && data.rating_average !== null ? data.rating_average : null;
+  const crownTier = reputation.data?.crown_tier ?? 'none';
+  const crownPoints = reputation.data?.points_main ?? 0;
+  const crownShield = reputation.data?.shield_remaining ?? 0;
 
-  return (
-    <FlowScreen title="Profile" onBack={goBack}>
-      <div className="flex flex-col gap-6">
-      <div className="flex flex-col items-center gap-2 text-center">
+  const profileListHeader = (
+    <div className="flex flex-col gap-4 pb-2">
+      <div className="flex flex-col items-center gap-3 pt-1">
         <AvatarWithViewer
           path={data.avatar_path}
           name={data.display_name}
           size="lg"
           showActiveDot={hasCommitments}
         />
-        <div className="flex max-w-full flex-row items-center justify-center gap-1.5">
-          <p className="min-w-0 truncate text-xl font-bold text-ink">{data.display_name}</p>
-          {identityStatus.data?.identityVerified ? (
-            <span className="shrink-0 rounded-full bg-brand-soft px-2 py-0.5 text-xs font-semibold text-brand">
-              Verified
-            </span>
+
+        <div className="flex w-full flex-col items-center gap-1.5">
+          <div className="flex flex-row flex-wrap items-center justify-center gap-1.5">
+            <p className="max-w-full text-center text-2xl font-bold text-ink">{data.display_name}</p>
+            {identityStatus.data?.identityVerified ? <IdentityVerifiedBadge size={20} /> : null}
+          </div>
+
+          {data.username ? (
+            <Link
+              href={`/u/${data.username}`}
+              className="text-base font-medium text-active active:opacity-80"
+              aria-label={`Public profile at ${data.username}`}
+            >
+              @{data.username}
+            </Link>
+          ) : (
+            <button
+              type="button"
+              onClick={() => router.push('/profile/edit')}
+              className="text-base font-medium text-active active:opacity-80"
+            >
+              Claim a username
+            </button>
+          )}
+
+          {data.bio ? (
+            <p className="max-w-sm text-center text-base leading-6 text-muted">{data.bio}</p>
+          ) : null}
+
+          {data.phone ? (
+            <button
+              type="button"
+              onClick={() => {
+                void navigator.clipboard.writeText(data.phone!);
+                showAppToast('Phone number copied');
+              }}
+              className="inline-flex items-center gap-2 rounded-full bg-surface px-4 py-2 active:opacity-80"
+            >
+              <IonIcon icon={ionIcons['copy-outline']} size={14} color={colors.active} />
+              <span className="text-sm font-medium text-muted">{formatPhoneDisplay(data.phone)}</span>
+            </button>
           ) : null}
         </div>
-        <RatingRow
-          ratingAverage={ratingAverage}
-          ratingCount={ratingCount}
-          completed={completed}
-          onPress={() => router.push('/profile/reviews')}
+
+        <CrownSummary
+          tier={crownTier}
+          points={crownPoints}
+          shield={crownShield}
+          nextTier={reputation.data?.next_tier ?? null}
+          pointsToNext={reputation.data?.points_to_next_tier ?? null}
+          loading={reputation.isPending}
         />
-        {data.bio ? <p className="max-w-sm text-sm leading-5 text-muted">{data.bio}</p> : null}
-        {data.phone ? (
-          <button
-            type="button"
-            onClick={() => {
-              void navigator.clipboard.writeText(data.phone!);
-              showAppToast('Phone number copied');
-            }}
-            className="mt-2 inline-flex items-center gap-2 rounded-full bg-surface px-4 py-2 active:opacity-80"
-          >
-            <IonIcon icon={ionIcons['copy-outline']} size={14} color={colors.active} />
-            <span className="text-sm font-medium text-muted">{formatPhoneDisplay(data.phone)}</span>
-          </button>
-        ) : null}
+
+        <div
+          aria-label="Your activity"
+          className="flex w-full flex-row rounded-3xl border border-hairline bg-elevated px-2 py-4"
+        >
+          <ProfileStat value={activeRequests} label="Requests" />
+          <div className="w-px self-stretch bg-hairline" aria-hidden />
+          <ProfileStat value={responseCount} label="Responses" />
+          <div className="w-px self-stretch bg-hairline" aria-hidden />
+          <ProfileStat value={completed} label="Completed" />
+        </div>
       </div>
 
-      <div
-        aria-label="Your activity"
-        className="flex w-full flex-row overflow-hidden rounded-2xl border border-hairline bg-elevated"
-      >
-        <ProfileStat value={activeRequests} label="Requests" />
-        <div className="w-px shrink-0 bg-hairline" aria-hidden />
-        <ProfileStat value={completed} label="Completed" />
-        <div className="w-px shrink-0 bg-hairline" aria-hidden />
-        <ProfileStat value={responseCount} label="Responses" />
-      </div>
-
+      <ProfileTagInterestsLine tags={tagInterests.data ?? []} />
       <ProfileCatalogueRail />
 
-      <button
-        type="button"
-        onClick={() => router.push('/wallet')}
-        className="shadow-card flex flex-row items-center gap-3 rounded-2xl border border-hairline bg-elevated px-4 py-4 active:opacity-90"
-      >
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-active-soft text-base font-bold text-active">
-          {MARKET.currencySymbol}
-        </span>
-        <span className="min-w-0 flex-1 text-left text-base font-semibold text-ink">Wallet</span>
-        <span className="flex shrink-0 items-center gap-0.5">
-          {wallet.data ? (
-            <span className="text-xs font-semibold text-ink">
-              {formatMoney(wallet.data.available, wallet.data.currency)}
-            </span>
-          ) : (
-            <span className="text-xs text-muted">—</span>
-          )}
-          <IonIcon icon={ionIcons['chevron-forward']} size={20} color={colors.subtle} />
-        </span>
-      </button>
-
-      <SettingsGroup title="Account">
-        <SettingsRow label="Edit profile" to="/profile/edit" />
-        <SettingsRow label="Reviews" to="/profile/reviews" showDivider />
-        <SettingsRow label="Saved places" to="/profile/locations" showDivider />
-        <SettingsRow label="Bank accounts" to="/profile/bank-accounts" showDivider />
-      </SettingsGroup>
-
-      <SettingsGroup title="Preferences">
-        <SettingsRow label="Notifications" to="/notification-settings" />
-        <div className="mx-4 h-px bg-hairline" />
-        <div className="flex flex-col gap-2 px-4 py-4">
-          <p className="text-sm text-muted">Appearance</p>
-          <ThemePreferenceSegment value={preference} onChange={setPreference} />
-        </div>
-        <SettingsRow label="Privacy" onClick={() => {}} showDivider />
-      </SettingsGroup>
-
-      <SettingsGroup title="Support">
-        <SettingsRow label="Help & support" onClick={() => {}} />
-        <SettingsRow label="Report a problem" onClick={() => setReportIssueOpen(true)} showDivider />
-        <SettingsRow label="About Active" onClick={() => {}} showDivider />
-        <SettingsRow label="Install app" to="/install" showDivider />
-      </SettingsGroup>
-
-      <div className="flex flex-col gap-3 pt-2">
-        {leave.isError ? <InlineError error={leave.error} /> : null}
-        <button
-          type="button"
-          disabled={leave.isPending}
-          onClick={() => leave.mutate()}
-          className="py-3 text-center text-base font-semibold text-danger active:opacity-80 disabled:opacity-50"
-        >
-          {leave.isPending ? 'Signing out…' : 'Sign out'}
-        </button>
-      </div>
-
-      <ReportIssueModal
-        open={reportIssueOpen}
-        issues={APP_REPORT_ISSUES}
-        onClose={() => setReportIssueOpen(false)}
-        onSubmit={() => showAppToast('Thanks — we received your report')}
-      />
-      </div>
-    </FlowScreen>
+      <ProfileStickyTabs active={activeTab} onChange={onSelectTab} />
+    </div>
   );
-}
-
-function RatingRow({
-  ratingAverage,
-  ratingCount,
-  completed,
-  onPress,
-}: {
-  ratingAverage: number | null;
-  ratingCount: number;
-  completed: number;
-  onPress: () => void;
-}) {
-  const showRating = ratingAverage !== null;
-  const showCompleted = completed > 0;
-
-  if (!showRating && !showCompleted) {
-    return (
-      <button
-        type="button"
-        onClick={onPress}
-        className="flex flex-row items-center gap-1 text-sm font-medium text-brand active:opacity-80"
-      >
-        <span>Reviews</span>
-        <IonIcon icon={ionIcons['chevron-forward']} size={16} color="#2D6A4F" />
-      </button>
-    );
-  }
 
   return (
-    <button
-      type="button"
-      onClick={onPress}
-      className="flex flex-row flex-wrap items-center justify-center gap-x-1.5 active:opacity-80"
-      aria-label="View reviews"
-    >
-      {showRating ? <StarRating average={ratingAverage} count={ratingCount} size="md" /> : null}
-      {showRating && showCompleted ? <span className="text-sm text-muted">·</span> : null}
-      {showCompleted ? <span className="text-sm font-medium text-muted">{completed} completed</span> : null}
-      <IonIcon icon={ionIcons['chevron-forward']} size={16} color="#8A948C" />
-    </button>
+    <Screen className="bg-canvas">
+      <Header title="Profile" onBack={() => router.back()} right={headerActions} />
+      <div className="min-h-0 flex-1">
+        <ProfileHubActivityList activeTab={activeTab} listHeader={profileListHeader} />
+      </div>
+    </Screen>
   );
 }

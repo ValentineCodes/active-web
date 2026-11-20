@@ -29,6 +29,10 @@
     "test:chat-send-eligibility": "node --experimental-strip-types src/features/requests/chat-send-eligibility.test.ts",
     "test:completion-proof": "node --experimental-strip-types src/features/requests/completion-proof.test.ts",
     "test:milestones": "node --experimental-strip-types src/features/requests/milestones.test.ts",
+    "test:engagement-lifecycle": "node --experimental-strip-types src/features/requests/engagement-lifecycle.test.ts",
+    "test:request-expiry": "node --experimental-strip-types src/features/requests/request-expiry.test.ts",
+    "test:username": "node --experimental-strip-types src/features/profile/username.test.ts",
+    "test:discovery": "node --experimental-strip-types src/features/search/discovery-types.test.ts",
     "validate": "pnpm typecheck && pnpm lint"
   },
   "dependencies": {

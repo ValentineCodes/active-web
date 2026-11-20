@@ -5,6 +5,7 @@ import {
   arrowBackOutline,
   chevronBackOutline,
   closeOutline,
+  closeCircleOutline,
   compassOutline,
   filterOutline,
   home,
@@ -15,6 +16,7 @@ import {
   notifications,
   notificationsOutline,
   radioOutline,
+  search,
   searchOutline,
   settingsOutline,
   addCircleOutline,
@@ -49,6 +51,8 @@ import {
   receiptOutline,
   shieldCheckmarkOutline,
   walletOutline,
+  pencilOutline,
+  peopleOutline,
 } from 'ionicons/icons';
 
 /** Maps mobile Ionicons glyph names to ionicons v8 data-URI SVG strings. */
@@ -62,6 +66,7 @@ export const ionIcons = {
   'chevron-back': chevronBackOutline,
   'chevron-forward': chevronForwardOutline,
   close: closeOutline,
+  'close-circle-outline': closeCircleOutline,
   'compass-outline': compassOutline,
   'filter-outline': filterOutline,
   home,
@@ -72,6 +77,7 @@ export const ionIcons = {
   notifications,
   'notifications-outline': notificationsOutline,
   'radio-outline': radioOutline,
+  search,
   'search-outline': searchOutline,
   'settings-outline': settingsOutline,
   'checkmark-circle-outline': checkmarkCircleOutline,
@@ -103,6 +109,8 @@ export const ionIcons = {
   'receipt-outline': receiptOutline,
   'shield-checkmark': shieldCheckmarkOutline,
   'wallet-outline': walletOutline,
+  'create-outline': pencilOutline,
+  'people-outline': peopleOutline,
 } as const;
 
 export type IonIconName = keyof typeof ionIcons;

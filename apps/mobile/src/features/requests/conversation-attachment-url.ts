@@ -4,6 +4,7 @@ import { CONVERSATION_MEDIA_BUCKET } from '@/features/requests/conversation-medi
 import { SIGNED_URL_TTL_SECONDS } from '@/features/profile/storage';
 import { queryKeys } from '@/lib/query/keys';
 import { supabase } from '@/lib/supabase/client';
+import { finalizeDevSignedUrl } from '@/lib/supabase/resolve-url';
 
 export function useConversationAttachmentUrl(path: string | null | undefined) {
   return useQuery({
@@ -19,7 +20,7 @@ export function useConversationAttachmentUrl(path: string | null | undefined) {
         .createSignedUrl(path as string, SIGNED_URL_TTL_SECONDS);
 
       if (error) throw error;
-      return data.signedUrl;
+      return finalizeDevSignedUrl(data.signedUrl);
     },
   });
 }

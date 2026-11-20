@@ -8,7 +8,6 @@ import {
   RequireSignedInLayout,
 } from '@/features/auth/route-guards';
 import { withSearchParamsPage } from '@/lib/client-page';
-import { ActivityPage } from '@/views/ActivityPage';
 import { ConversationPage } from '@/views/ConversationPage';
 import { EngagementPage } from '@/views/EngagementPage';
 import { HomePage } from '@/views/HomePage';
@@ -23,7 +22,13 @@ import { RatePage } from '@/views/RatePage';
 import { RequestNewPage } from '@/views/RequestNewPage';
 import { RequestRoutePage } from '@/views/RequestRoutePage';
 import { RespondRedirectPage } from '@/views/RespondRedirectPage';
+import { PublicProfilePage } from '@/views/PublicProfilePage';
 import { SearchPage } from '@/views/SearchPage';
+import { ProjectDetailPage } from '@/views/ProjectDetailPage';
+import { ProjectNewPage } from '@/views/ProjectNewPage';
+import { SettingsPage } from '@/views/SettingsPage';
+import { PrivacySettingsPage } from '@/views/settings/PrivacySettingsPage';
+import { PremiumSettingsPage } from '@/views/settings/PremiumSettingsPage';
 import { SignInPage } from '@/views/SignInPage';
 import { WelcomePage } from '@/views/WelcomePage';
 import { BankAccountAddPage } from '@/views/profile/BankAccountAddPage';
@@ -92,6 +97,7 @@ function NotFoundRedirect() {
 
 const HomePageRoute = withSearchParamsPage(HomePage);
 const SearchPageRoute = withSearchParamsPage(SearchPage);
+const PublicProfilePageRoute = withSearchParamsPage(PublicProfilePage);
 const RequestNewPageRoute = withSearchParamsPage(RequestNewPage);
 const RespondRedirectPageRoute = withSearchParamsPage(RespondRedirectPage);
 const BankAccountAddPageRoute = withSearchParamsPage(BankAccountAddPage);
@@ -121,11 +127,12 @@ export function AppRoutes() {
         <Route element={<SignedInShell />}>
           <Route element={<TabsShell />}>
             <Route path="/home" element={<HomePageRoute />} />
-            <Route path="/activity" element={<ActivityPage />} />
+            <Route path="/search" element={<SearchPageRoute />} />
+            <Route path="/activity" element={<Navigate to="/profile?tab=requests" replace />} />
             <Route path="/notifications" element={<NotificationsPage />} />
           </Route>
-
-          <Route path="/search" element={<SearchPageRoute />} />
+          <Route path="/project/:id" element={<ProjectDetailPage />} />
+          <Route path="/u/:username" element={<PublicProfilePageRoute />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/profile/edit" element={<ProfileEditPage />} />
           <Route path="/profile/reviews" element={<ReviewsPage />} />
@@ -133,9 +140,13 @@ export function AppRoutes() {
           <Route path="/profile/bank-accounts" element={<BankAccountsPage />} />
           <Route path="/profile/bank-accounts/add" element={<BankAccountAddPageRoute />} />
           <Route path="/notification-settings" element={<NotificationSettingsPage />} />
+          <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/settings/privacy" element={<PrivacySettingsPage />} />
+          <Route path="/settings/premium" element={<PremiumSettingsPage />} />
           <Route path="/messages" element={<MessagesPage />} />
           <Route path="/messages/:id" element={<ConversationPage />} />
           <Route path="/request/new" element={<RequestNewPageRoute />} />
+          <Route path="/project/new" element={<ProjectNewPage />} />
           <Route path="/request/:id" element={<RequestRoutePage />} />
           <Route path="/respond/:id" element={<RespondRedirectPageRoute />} />
           <Route path="/engagement/:id" element={<EngagementPage />} />

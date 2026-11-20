@@ -51,6 +51,8 @@ import { supabase } from '@/lib/supabase/client';
 type PendingSubmit = {
   message: string | null;
   quotedAmount: number | null;
+  proposedDeliveryAt: Date;
+  proposedDeliveryTimezone: string;
   milestoneProposal?: MilestoneRpcItem[] | null;
 };
 
@@ -197,6 +199,8 @@ export default function RespondScreen() {
         message: payload.message,
         quotedAmount: payload.quotedAmount,
         position: postPosition,
+        proposedDeliveryAt: payload.proposedDeliveryAt,
+        proposedDeliveryTimezone: payload.proposedDeliveryTimezone,
       },
       {
         onSuccess: () => {

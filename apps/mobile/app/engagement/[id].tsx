@@ -31,6 +31,7 @@ import { RequestMetaRow } from '@/components/request-flow/RequestMetaRow';
 import { RequestOfferWhenCard } from '@/components/request-flow/RequestOfferWhenCard';
 import { RequestPersonCard } from '@/components/request-flow/RequestPersonCard';
 import { RequestTagsLine } from '@/components/request-flow/RequestTagsLine';
+import { EngagementLifecycleCard } from '@/components/request-flow/EngagementLifecycleCard';
 import { RequestTitleSection } from '@/components/request-flow/RequestTitleSection';
 import { Button } from '@/components/ui/Button';
 import { Screen } from '@/components/ui/Screen';
@@ -42,12 +43,20 @@ import {
   useEngagementMilestones,
   useRequestPaymentStructure,
 } from '@/features/requests/milestone-api';
+import {
+  canDismissFailureToStart,
+  canDismissMissedDeliveryUi,
+  dismissalConfirmationCopy,
+  helperShowStartButton,
+} from '@/features/requests/engagement-lifecycle';
 import { requestEngagementStatusBadge } from '@/features/requests/status';
-import { useMarkServiceComplete, useMyResponses } from '@/features/requests/responses-api';
+import { useMarkServiceComplete, useMyResponses, useStartRequest } from '@/features/requests/responses-api';
 import {
   myRequestQueryOptions,
   useCompleteRequest,
   useContestServiceProblem,
+  useDismissWorkerFailureToStart,
+  useDismissWorkerMissedDelivery,
   useEngagement,
   useLiveRequest,
 } from '@/features/requests/requester-api';
@@ -110,8 +119,11 @@ export default function EngagementScreen() {
   );
   const myResponses = useMyResponses();
   const markServiceComplete = useMarkServiceComplete(id);
+  const startRequest = useStartRequest(id);
   const completeRequest = useCompleteRequest(id);
   const contestProblem = useContestServiceProblem(id);
+  const dismissFailureToStart = useDismissWorkerFailureToStart(id);
+  const dismissMissedDelivery = useDismissWorkerMissedDelivery(id);
   const myRequest = useQuery({
     ...myRequestQueryOptions(id),
     enabled: Boolean(engagement.data?.viewer_is_requester) && id.length > 0,
@@ -125,6 +137,7 @@ export default function EngagementScreen() {
   const insets = useSafeAreaInsets();
   const viewerIsRequesterRef = useRef(false);
   const completionActionLockRef = useRef(false);
+  const startActionLockRef = useRef(false);
   const proofSendSessionRef = useRef<CompletionProofSendSession | null>(null);
   const queryClient = useQueryClient();
   const engagementSnapshot = engagement.data;
@@ -132,7 +145,8 @@ export default function EngagementScreen() {
   const helperCanMarkComplete =
     engagementSnapshot != null &&
     !engagementSnapshot.viewer_is_requester &&
-    ['accepted', 'in_progress'].includes(engagementSnapshot.request_status) &&
+    engagementSnapshot.request_status === 'in_progress' &&
+    Boolean(engagementSnapshot.started_at) &&
     !isMilestoneEngagement;
   const requestConversation = useRequestConversation(id, Boolean(engagementSnapshot));
 
@@ -398,11 +412,89 @@ export default function EngagementScreen() {
 
   const openReportIssue = () => setReportIssueOpen(true);
 
+  const confirmStartRequest = () => {
+    if (startActionLockRef.current || startRequest.isPending) return;
+    Alert.alert(
+      'Start helping?',
+      'The delivery countdown and binding deadline are set on the server when you start. Make sure you can commit.',
+      [
+        { text: 'Not yet', style: 'cancel' },
+        {
+          text: 'Start',
+          onPress: () => {
+            if (startActionLockRef.current || startRequest.isPending) return;
+            startActionLockRef.current = true;
+            startRequest.mutate(undefined, {
+              onSuccess: () => {
+                showAppToast('Work started', 'success');
+              },
+              onSettled: () => {
+                startActionLockRef.current = false;
+              },
+            });
+          },
+        },
+      ],
+    );
+  };
+
+  const confirmDismiss = (kind: 'failure_to_start' | 'missed_delivery') => {
+    const copy = dismissalConfirmationCopy(kind);
+    const dismiss =
+      kind === 'failure_to_start' ? dismissFailureToStart : dismissMissedDelivery;
+    if (dismiss.isPending) return;
+
+    Alert.alert(copy.title, `${copy.message}\n\n${copy.financialNote}`, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'End engagement',
+        style: 'destructive',
+        onPress: () => {
+          dismiss.mutate(undefined, {
+            onSuccess: () => {
+              showAppToast('Engagement ended', 'info');
+            },
+          });
+        },
+      },
+    ]);
+  };
+
+  const showHelperStart =
+    data != null &&
+    helperShowStartButton({
+      viewerIsRequester: data.viewer_is_requester,
+      requestStatus: data.request_status,
+      startedAt: data.started_at,
+      startByAt: data.start_by_at ?? null,
+    });
+
+  const showDismissFailure =
+    data != null &&
+    canDismissFailureToStart({
+      viewerIsRequester: data.viewer_is_requester,
+      requestStatus: data.request_status,
+      startedAt: data.started_at,
+      startByAt: data.start_by_at ?? null,
+    });
+
+  const showDismissMissed =
+    data != null &&
+    canDismissMissedDeliveryUi({
+      viewerIsRequester: data.viewer_is_requester,
+      requestStatus: data.request_status,
+      startedAt: data.started_at,
+      deliveryDeadlineAt: data.delivery_deadline_at ?? null,
+      paymentStatus: data.payment_status,
+    });
+
   const showReportFooter =
     !inActiveFlow &&
     ((canReportActiveProblem && data.viewer_is_requester) || canReportHelperProblem);
   const showRateFooter = data.request_status === 'completed' && !data.viewer_has_rated;
-  const hasFloatingFooter = inActiveFlow || showReportFooter || showRateFooter;
+  const hasDismissFooter = showDismissFailure || showDismissMissed;
+  const hasFloatingFooter =
+    inActiveFlow || showReportFooter || showRateFooter || showHelperStart || hasDismissFooter;
   const openCounterpartyProfile = () => profileSheetRef.current?.present();
 
   return (
@@ -473,6 +565,19 @@ export default function EngagementScreen() {
             <RequestExactLocationCard address={data.location_label} onDirections={openMaps} />
           </View>
 
+          <EngagementLifecycleCard
+            viewerIsRequester={data.viewer_is_requester}
+            requestStatus={data.request_status}
+            paymentStatus={data.payment_status}
+            acceptedAt={data.accepted_at}
+            startByAt={data.start_by_at ?? null}
+            startedAt={data.started_at}
+            proposedDeliveryAt={data.proposed_delivery_at ?? null}
+            proposedDeliveryTimezone={data.proposed_delivery_timezone ?? null}
+            adjustedDeliveryAt={data.adjusted_delivery_at ?? null}
+            deliveryDeadlineAt={data.delivery_deadline_at ?? null}
+          />
+
           {showPaymentSecured ? (
             <RequestCallout tone="info" title="Payment secured">
               <Text className="text-sm text-muted">
@@ -495,7 +600,10 @@ export default function EngagementScreen() {
             />
           ) : null}
 
-          {helperActive && !isMilestoneEngagement ? (
+          {helperActive &&
+          !isMilestoneEngagement &&
+          data.request_status === 'in_progress' &&
+          data.started_at ? (
             <RequestCallout
               tone="info"
               title={`You're committed to this request on ${formatCommitmentDayLabel(data.scheduled_for)}.`}
@@ -577,10 +685,18 @@ export default function EngagementScreen() {
           ) : null}
 
           {data.request_status === 'no_show' ? (
-            <RequestCallout tone="danger" title="No-show recorded">
+            <RequestCallout tone="danger" title="Engagement ended — did not start">
               <Text className="text-sm text-muted">
-                This request closed after a no-show report. Payment followed the outcome recorded on
-                the server.
+                The helper did not press Start in time. Refunds follow the outcome recorded on the
+                server (full locked amount returned to you; no service fee).
+              </Text>
+            </RequestCallout>
+          ) : null}
+
+          {data.request_status === 'cancelled' ? (
+            <RequestCallout tone="danger" title="Engagement ended">
+              <Text className="text-sm text-muted">
+                This engagement was cancelled. Payment adjustments follow the server ledger.
               </Text>
             </RequestCallout>
           ) : null}
@@ -604,6 +720,51 @@ export default function EngagementScreen() {
             style={{ paddingBottom: Math.max(insets.bottom, 16) }}
             onLayout={(event) => setFooterHeight(event.nativeEvent.layout.height)}
           >
+            {showHelperStart ? (
+              <>
+                {startRequest.isError ? <InlineError error={startRequest.error} /> : null}
+                <Button
+                  label="Start"
+                  variant="active"
+                  size="lg"
+                  loading={startRequest.isPending}
+                  disabled={startRequest.isPending}
+                  onPress={confirmStartRequest}
+                />
+              </>
+            ) : null}
+
+            {hasDismissFooter ? (
+              <>
+                {dismissFailureToStart.isError ? (
+                  <InlineError error={dismissFailureToStart.error} />
+                ) : null}
+                {dismissMissedDelivery.isError ? (
+                  <InlineError error={dismissMissedDelivery.error} />
+                ) : null}
+                {showDismissFailure ? (
+                  <Button
+                    label="End — failed to start"
+                    variant="danger"
+                    size="lg"
+                    loading={dismissFailureToStart.isPending}
+                    disabled={dismissFailureToStart.isPending || dismissMissedDelivery.isPending}
+                    onPress={() => confirmDismiss('failure_to_start')}
+                  />
+                ) : null}
+                {showDismissMissed ? (
+                  <Button
+                    label="End — missed delivery"
+                    variant="danger"
+                    size="lg"
+                    loading={dismissMissedDelivery.isPending}
+                    disabled={dismissMissedDelivery.isPending || dismissFailureToStart.isPending}
+                    onPress={() => confirmDismiss('missed_delivery')}
+                  />
+                ) : null}
+              </>
+            ) : null}
+
             {inActiveFlow ? (
               <>
                 {markServiceComplete.isError ? (

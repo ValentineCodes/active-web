@@ -1,5 +1,6 @@
-import { ActivityMyRequestsTab } from '@/components/activity/ActivityMyRequestsTab';
+import { Redirect } from 'expo-router';
 
-export default function ActivityRequestsScreen() {
-  return <ActivityMyRequestsTab />;
+/** Activity lives in the Profile hub — preserve deep links. */
+export default function ActivityRequestsRedirect() {
+  return <Redirect href="/profile?tab=requests" />;
 }

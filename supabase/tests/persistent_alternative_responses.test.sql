@@ -88,7 +88,8 @@ select respond_to_request(
   'Offer A message',
   null,
   6.0000,
-  3.3800
+  3.3800,
+  now() + interval '7 days'
 ) as alt_response_a \gset
 
 select pg_temp.act_as('11111111-1111-1111-1111-111111111112') as _ \gset
@@ -97,7 +98,8 @@ select respond_to_request(
   'Offer B message',
   null,
   6.2500,
-  3.3800
+  3.3800,
+  now() + interval '7 days'
 ) as alt_response_b \gset
 
 select pg_temp.act_as('22222222-2222-2222-2222-222222222222') as _ \gset
@@ -106,7 +108,8 @@ select respond_to_request(
   'Offer C message',
   null,
   6.5000,
-  3.3800
+  3.3800,
+  now() + interval '7 days'
 ) as alt_response_c \gset
 
 select pg_temp.act_as('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa') as _ \gset
@@ -191,7 +194,8 @@ select respond_to_request(
   'Ready',
   null,
   6.5000,
-  3.3800
+  3.3800,
+  now() + interval '7 days'
 ) as alt_unfunded_response_id \gset
 
 select pg_temp.act_as_owner() as _ \gset

@@ -56,6 +56,7 @@ function RootNavigator() {
         <Stack.Screen name="profile/locations" />
         <Stack.Screen name="profile/bank-accounts/index" />
         <Stack.Screen name="profile/bank-accounts/add" />
+        <Stack.Screen name="u/[username]" />
         <Stack.Screen name="wallet" />
         <Stack.Screen
           name="search"
@@ -65,6 +66,9 @@ function RootNavigator() {
           }}
         />
         <Stack.Screen name="request/new" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="project/new" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="project/[id]" />
+        <Stack.Screen name="project/assignment/[id]" />
         <Stack.Screen name="request/edit/[id]" options={{ presentation: 'modal' }} />
         <Stack.Screen name="request/[id]" />
         <Stack.Screen name="respond/[id]" options={{ presentation: 'modal' }} />
@@ -72,6 +76,10 @@ function RootNavigator() {
         <Stack.Screen name="conversation/[id]" />
         <Stack.Screen name="rate/[id]" options={{ presentation: 'modal' }} />
         <Stack.Screen name="notification-settings" />
+        <Stack.Screen name="settings/index" />
+        <Stack.Screen name="settings/privacy" />
+        <Stack.Screen name="settings/premium" />
+        <Stack.Screen name="settings/reputation" />
       </Stack.Protected>
     </Stack>
   );

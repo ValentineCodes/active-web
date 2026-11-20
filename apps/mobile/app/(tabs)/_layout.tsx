@@ -2,11 +2,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { Redirect } from 'expo-router';
 import { NativeTabs } from 'expo-router/native-tabs';
 
-import { useNotificationUnreadCount } from '@/features/notifications/inbox';
 import { useProfile } from '@/features/profile/api';
 import { useTrackTabForCreateReturn } from '@/features/navigation/use-track-tab-for-create-return';
 import { useNotificationBridge } from '@/lib/notifications';
-import { useMyRequests } from '@/features/requests/requester-api';
 import { useColors } from '@/theme';
 
 const VectorIcon = NativeTabs.Trigger.VectorIcon;
@@ -24,23 +22,8 @@ export default function TabsLayout() {
 function TabsNavigator() {
   useTrackTabForCreateReturn();
   const colors = useColors();
-  const { data: requests } = useMyRequests();
-  const unreadNotifications = useNotificationUnreadCount();
-  const unreadCount = unreadNotifications.data ?? 0;
 
   useNotificationBridge();
-
-  const waitingResponses =
-    requests?.reduce(
-      (total, request) =>
-        request.status === 'posted' || request.status === 'searching'
-          ? total + request.pending_response_count
-          : total,
-      0,
-    ) ?? 0;
-
-  const activityBadge = waitingResponses > 0 ? String(waitingResponses) : null;
-  const notificationBadge = unreadCount > 0 ? String(unreadCount) : null;
 
   return (
     <NativeTabs tintColor={colors.active} labelVisibilityMode="unlabeled">
@@ -54,17 +37,17 @@ function TabsNavigator() {
           }}
         />
       </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="activity" accessibilityLabel="Activity">
+      <NativeTabs.Trigger name="search" accessibilityLabel="Search">
         <NativeTabs.Trigger.Label hidden />
         <NativeTabs.Trigger.Icon
-          sf={{ default: 'list.bullet', selected: 'list.bullet' }}
-          src={<VectorIcon family={Ionicons} name="list-outline" />}
+          sf={{ default: 'magnifyingglass', selected: 'magnifyingglass' }}
+          src={{
+            default: <VectorIcon family={Ionicons} name="search-outline" />,
+            selected: <VectorIcon family={Ionicons} name="search" />,
+          }}
         />
-        {activityBadge ? (
-          <NativeTabs.Trigger.Badge>{activityBadge}</NativeTabs.Trigger.Badge>
-        ) : null}
       </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="create" accessibilityLabel="Create request">
+      <NativeTabs.Trigger name="create" accessibilityLabel="Create">
         <NativeTabs.Trigger.Label hidden />
         <NativeTabs.Trigger.Icon
           sf={{ default: 'plus', selected: 'plus' }}
@@ -80,9 +63,6 @@ function TabsNavigator() {
             selected: <VectorIcon family={Ionicons} name="notifications" />,
           }}
         />
-        {notificationBadge ? (
-          <NativeTabs.Trigger.Badge>{notificationBadge}</NativeTabs.Trigger.Badge>
-        ) : null}
       </NativeTabs.Trigger>
     </NativeTabs>
   );

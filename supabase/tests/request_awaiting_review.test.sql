@@ -86,7 +86,8 @@ select respond_to_request(
   'I can help today.',
   null,
   6.5000,
-  3.3800
+  3.3800,
+  now() + interval '7 days'
 ) as review_response_id \gset
 
 select pg_temp.act_as_owner() as _ \gset
@@ -196,7 +197,8 @@ select respond_to_request(
   null,
   null,
   6.5000,
-  3.3800
+  3.3800,
+  now() + interval '7 days'
 ) as engaged_response_id \gset
 
 select pg_temp.act_as('11111111-1111-1111-1111-111111111111') as _ \gset

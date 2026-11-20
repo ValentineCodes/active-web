@@ -9,7 +9,6 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { Drawer } from 'vaul';
 
 import {
   armCreateComposerReturn,
@@ -17,7 +16,7 @@ import {
   consumeCreateComposerReturn,
 } from '@/features/navigation/create-tab-return';
 import { useTrackTabForCreateReturn } from '@/features/navigation/use-track-tab-for-create-return';
-import { RequestNewContent } from '@/views/RequestNewPage';
+import { CreateChoiceSheet, type CreateChoice } from '@/components/create/CreateChoiceSheet';
 
 type CreateComposerContextValue = {
   isOpen: boolean;
@@ -42,11 +41,11 @@ export function useOptionalCreateComposer() {
 
 export function CreateComposerProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
-  const [open, setOpen] = useState(false);
+  const [choiceOpen, setChoiceOpen] = useState(false);
   useTrackTabForCreateReturn();
 
   const close = useCallback(() => {
-    setOpen(false);
+    setChoiceOpen(false);
     const returnTo = consumeCreateComposerReturn();
     if (returnTo) router.push(returnTo);
   }, [router]);
@@ -54,7 +53,7 @@ export function CreateComposerProvider({ children }: { children: ReactNode }) {
   const leaveAfterSuccess = useCallback(
     (href: string) => {
       clearCreateComposerReturn();
-      setOpen(false);
+      setChoiceOpen(false);
       router.push(href);
     },
     [router],
@@ -62,13 +61,13 @@ export function CreateComposerProvider({ children }: { children: ReactNode }) {
 
   const openCreateComposer = useCallback(() => {
     armCreateComposerReturn();
-    setOpen(true);
+    setChoiceOpen(true);
   }, []);
 
-  const onOpenChange = useCallback(
+  const onChoiceOpenChange = useCallback(
     (next: boolean) => {
       if (next) {
-        setOpen(true);
+        setChoiceOpen(true);
         return;
       }
       close();
@@ -76,32 +75,30 @@ export function CreateComposerProvider({ children }: { children: ReactNode }) {
     [close],
   );
 
+  const onChoose = useCallback(
+    (choice: CreateChoice) => {
+      setChoiceOpen(false);
+      const href = choice === 'request' ? '/request/new' : '/project/new';
+      // Let the choice sheet release focus before the pushed screen tries to autofocus inputs.
+      window.setTimeout(() => router.push(href), 280);
+    },
+    [router],
+  );
+
   const value = useMemo(
     () => ({
-      isOpen: open,
+      isOpen: choiceOpen,
       openCreateComposer,
       close,
       leaveAfterSuccess,
     }),
-    [open, openCreateComposer, close, leaveAfterSuccess],
+    [choiceOpen, openCreateComposer, close, leaveAfterSuccess],
   );
 
   return (
     <CreateComposerContext.Provider value={value}>
       {children}
-      <Drawer.Root open={open} onOpenChange={onOpenChange} shouldScaleBackground={false}>
-        <Drawer.Portal>
-          <Drawer.Overlay className="fixed inset-0 z-40 bg-black/40" />
-          <Drawer.Content
-            aria-describedby={undefined}
-            className="fixed inset-x-0 bottom-0 z-50 flex h-[96dvh] max-h-[96dvh] flex-col rounded-t-2xl bg-canvas outline-none"
-          >
-            <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-              {open ? <RequestNewContent presentation="drawer" /> : null}
-            </div>
-          </Drawer.Content>
-        </Drawer.Portal>
-      </Drawer.Root>
+      <CreateChoiceSheet open={choiceOpen} onOpenChange={onChoiceOpenChange} onChoose={onChoose} />
     </CreateComposerContext.Provider>
   );
 }

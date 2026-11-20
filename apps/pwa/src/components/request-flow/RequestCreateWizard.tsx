@@ -1,7 +1,7 @@
 'use client';
 
 import { addHours, format, set, startOfTomorrow } from 'date-fns';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 import { KeyboardStickyFooter } from '@/components/layout/KeyboardStickyFooter';
 import { RequestLocationModal } from '@/components/RequestLocationModal';
@@ -9,7 +9,9 @@ import { MilestonePlanEditor } from '@/components/request-flow/MilestonePlanEdit
 import { PaymentStructureSelector } from '@/components/request-flow/PaymentStructureSelector';
 import { RequestReviewBeforePostCard } from '@/components/request-flow/RequestReviewBeforePostCard';
 import { RequestTagPickerAfterNavigation } from '@/components/request-flow/RequestTagPicker';
+import { ActiveBarButton } from '@/components/ui/ActiveBarButton';
 import { IconButton } from '@/components/ui/IconButton';
+import { Screen } from '@/components/ui/Screen';
 import { IonIcon } from '@/components/ui/IonIcon';
 import { ionIcons, type IonIconName } from '@/components/ui/ion-icons';
 import { MoneyAmountInput } from '@/components/ui/MoneyAmountInput';
@@ -35,6 +37,7 @@ import {
   type MilestoneDraftItem,
   type PaymentStructure,
 } from '@/features/requests/milestones';
+import { resolveRequestExpiresAtIso } from '@/features/requests/request-expiry';
 import { useCreateRequest } from '@/features/requests/requester-api';
 import { MAX_REQUEST_TAGS, type RequestTag } from '@/features/requests/tags';
 import { useMyWallet } from '@/features/wallet/api';
@@ -48,6 +51,7 @@ import {
 } from '@/lib/geolocation';
 import { cn } from '@/lib/cn';
 import { formatMoney, formatWhenHome } from '@/lib/format';
+import { toUserMessage } from '@/lib/supabase/errors';
 import { showAppToast } from '@/lib/toast';
 import { useUserId } from '@/features/auth/use-user-id';
 import { useColors } from '@/theme/ThemeProvider';
@@ -212,35 +216,6 @@ function WizardHeader({
   );
 }
 
-function WizardPrimaryButton({
-  label,
-  disabled,
-  inactive,
-  loading,
-  onClick,
-}: {
-  label: string;
-  disabled?: boolean;
-  inactive?: boolean;
-  loading?: boolean;
-  onClick: () => void;
-}) {
-  const muted = disabled || loading || inactive;
-  return (
-    <button
-      type="button"
-      disabled={disabled || loading}
-      onClick={onClick}
-      className={cn(
-        'flex min-h-12 w-full items-center justify-center rounded-2xl px-6 py-4 text-lg font-bold active:opacity-90',
-        muted ? 'bg-surface text-subtle' : 'bg-active text-on-brand',
-      )}
-    >
-      {loading ? <span className="text-subtle">…</span> : label}
-    </button>
-  );
-}
-
 function StepTextArea({
   value,
   onChange,
@@ -249,6 +224,7 @@ function StepTextArea({
   minHeight,
   textClassName,
   inputRef,
+  autoFocus,
 }: {
   value: string;
   onChange: (v: string) => void;
@@ -257,10 +233,12 @@ function StepTextArea({
   minHeight: number;
   textClassName: string;
   inputRef?: React.RefObject<HTMLTextAreaElement | null>;
+  autoFocus?: boolean;
 }) {
   return (
     <textarea
       ref={inputRef}
+      autoFocus={autoFocus}
       value={value}
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
@@ -369,6 +347,7 @@ export function RequestCreateWizard({
   const [selectedTags, setSelectedTags] = useState<RequestTag[]>([]);
   const [attachmentUri, setAttachmentUri] = useState<string | null>(null);
   const [attachmentMimeType, setAttachmentMimeType] = useState<string | null>(null);
+  const [attachmentFile, setAttachmentFile] = useState<File | null>(null);
   const [attachmentUploading, setAttachmentUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [locationModalOpen, setLocationModalOpen] = useState(false);
@@ -426,14 +405,42 @@ export function RequestCreateWizard({
     }
   };
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (step !== 0 && step !== 2) return;
-    const delayMs = step === 0 ? 150 : 50;
-    const id = window.setTimeout(() => {
-      if (step === 0) titleInputRef.current?.focus();
-      else if (step === 2) amountInputRef.current?.focus();
-    }, delayMs);
-    return () => window.clearTimeout(id);
+
+    const ref = step === 0 ? titleInputRef : amountInputRef;
+    const startDelayMs = step === 0 ? 450 : 80;
+    let cancelled = false;
+    let timeoutId = 0;
+    let rafId = 0;
+    let attempts = 0;
+
+    const focusTarget = () => {
+      if (cancelled) return;
+      const el = ref.current;
+      if (el) {
+        try {
+          el.focus({ preventScroll: true });
+        } catch {
+          el.focus();
+        }
+        return;
+      }
+      attempts += 1;
+      if (attempts < 24) {
+        rafId = requestAnimationFrame(focusTarget);
+      }
+    };
+
+    timeoutId = window.setTimeout(() => {
+      focusTarget();
+    }, startDelayMs);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timeoutId);
+      cancelAnimationFrame(rafId);
+    };
   }, [step]);
 
   const goBack = () => setStep((s) => Math.max(0, s - 1));
@@ -486,6 +493,13 @@ export function RequestCreateWizard({
     setSelectedTags(tags.slice(0, MAX_REQUEST_TAGS));
   };
 
+  const clearAttachment = () => {
+    if (attachmentUri && isLocalAttachmentUri(attachmentUri)) URL.revokeObjectURL(attachmentUri);
+    setAttachmentUri(null);
+    setAttachmentMimeType(null);
+    setAttachmentFile(null);
+  };
+
   const choosePhoto = async (source: 'camera' | 'library') => {
     try {
       const asset = source === 'camera' ? await takeRequestPhoto() : await chooseRequestPhotoFromLibrary();
@@ -493,6 +507,7 @@ export function RequestCreateWizard({
       if (attachmentUri && isLocalAttachmentUri(attachmentUri)) URL.revokeObjectURL(attachmentUri);
       setAttachmentUri(asset.uri);
       setAttachmentMimeType(asset.mimeType ?? null);
+      setAttachmentFile(asset.file ?? null);
     } catch (e) {
       showAppToast(e instanceof Error ? e.message : 'Could not add a photo.', 'warning');
     }
@@ -506,16 +521,18 @@ export function RequestCreateWizard({
       return await uploadRequestPhoto(userId, {
         uri: attachmentUri,
         mimeType: attachmentMimeType,
+        file: attachmentFile ?? undefined,
       });
     } finally {
       setAttachmentUploading(false);
     }
   };
 
-  const postWithLocation = async (postPosition: Position, locationLabel: string) => {
+  const postWithLocation = async (postPosition: Position, locationLabel: string): Promise<boolean> => {
     setError(null);
-    const scheduledFor: Date | null =
-      whenMode === 'now' ? null : isFutureSchedule(laterAt) ? laterAt : null;
+
+    const expiryMode = whenMode === 'now' ? ('today' as const) : ('future' as const);
+    const expiryFutureAt = whenMode === 'now' ? new Date() : laterAt;
 
     const milestonePayload =
       paymentStructure === 'milestone' && parsedAmount !== null
@@ -523,41 +540,58 @@ export function RequestCreateWizard({
             const validation = validateMilestoneDraftItems(milestoneDrafts, parsedAmount);
             if (!validation.ok) {
               showAppToast(validation.message, 'warning');
+              setLocationModalError(validation.message);
               return null;
             }
             return validation.items;
           })()
         : undefined;
 
-    if (milestonePayload === null) return;
+    if (milestonePayload === null) return false;
 
     try {
+      const expiresAtIso = await resolveRequestExpiresAtIso({
+        mode: expiryMode,
+        futureAt: expiryFutureAt,
+      });
       const attachmentPath = await uploadAttachmentIfNeeded();
       const requestId = await create.mutateAsync({
         title: trimmedTitle,
         description: trimmedDescription,
         position: postPosition,
         locationLabel,
-        scheduledFor,
+        expiresAt: new Date(expiresAtIso),
+        scheduledFor: null,
         offeredAmount: parsedAmount!,
         attachmentPath,
-        tags: selectedTags.map((tag) => ({ slug: tag.slug })),
+        tags: selectedTags,
         paymentStructure,
         milestones: paymentStructure === 'milestone' ? milestonePayload : undefined,
       });
       showAppToast('Request posted.');
       onSuccess(`/request/${requestId}`);
+      return true;
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Could not save the request.');
+      const message = toUserMessage(e);
+      setError(message);
+      setLocationModalError(message);
+      return false;
     }
   };
 
-  const finishPostWithPlace = async (postPosition: Position, locationLabel: string) => {
+  const finishPostWithPlace = async (postPosition: Position, locationLabel: string): Promise<boolean> => {
     setPosition(postPosition);
     setAreaLabel(locationLabel);
-    setLocationModalLoading(false);
-    setLocationModalOpen(false);
-    await postWithLocation(postPosition, locationLabel);
+    try {
+      const posted = await postWithLocation(postPosition, locationLabel);
+      if (posted) {
+        setLocationModalOpen(false);
+        setLocationModalError(null);
+      }
+      return posted;
+    } finally {
+      setLocationModalLoading(false);
+    }
   };
 
   const selectSavedPlaceForPost = (place: SavedLocation) => {
@@ -605,9 +639,8 @@ export function RequestCreateWizard({
           return;
         }
 
-        await finishPostWithPlace(result.position, locationLabel);
-
-        if (saveLocationForFuture) {
+        const posted = await finishPostWithPlace(result.position, locationLabel);
+        if (posted && saveLocationForFuture) {
           try {
             await upsertSavedLocation.mutateAsync({
               locationLabel,
@@ -682,22 +715,23 @@ export function RequestCreateWizard({
   const saveDisabled = !formCoreValid || posting;
 
   const wizardFooter = (
-    <div className="flex flex-col gap-3 px-5 pb-1 pt-1">
+    <div className="px-6 pb-8">
       {isLastStep ? (
-        <WizardPrimaryButton
+        <ActiveBarButton
           label="Post request"
           loading={posting}
           disabled={saveDisabled}
           onClick={handlePostPress}
         />
       ) : (
-        <WizardPrimaryButton label="Next" inactive={!stepValid[step]} onClick={goNext} />
+        <ActiveBarButton label="Next" disabled={!stepValid[step]} onClick={goNext} />
       )}
     </div>
   );
 
   return (
     <>
+      <Screen className="h-full min-h-[100dvh]">
       <KeyboardStickyFooter className="min-h-0 flex-1" footer={wizardFooter}>
         <WizardHeader
           step={step}
@@ -714,6 +748,7 @@ export function RequestCreateWizard({
             <p className="text-base text-muted">Keep it short and concise.</p>
             <StepTextArea
               inputRef={titleInputRef}
+              autoFocus
               value={title}
               onChange={(value) => {
                 setTitle(value);
@@ -759,6 +794,7 @@ export function RequestCreateWizard({
             <div className="rounded-2xl bg-surface px-5 py-6">
               <MoneyAmountInput
                 inputRef={amountInputRef}
+                autoFocus
                 accessibilityLabel="Offer amount"
                 value={amount}
                 onChangeText={(text) => {
@@ -878,6 +914,8 @@ export function RequestCreateWizard({
               locationLabel={reviewLocation}
               tagSlugs={selectedTags.map((tag) => tag.name)}
               previewUri={attachmentUri}
+              onRemovePhoto={clearAttachment}
+              removePhotoDisabled={posting}
             />
 
             {REQUEST_REQUIRES_FUNDING && funding ? (
@@ -891,6 +929,7 @@ export function RequestCreateWizard({
         ) : null}
         </div>
       </KeyboardStickyFooter>
+      </Screen>
 
       <RequestLocationModal
         open={locationModalOpen}

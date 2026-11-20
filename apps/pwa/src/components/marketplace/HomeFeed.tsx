@@ -1,8 +1,8 @@
 'use client';
 
-import { useRouter } from '@/lib/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+import { HomeFeedProjectPage } from '@/components/home/HomeFeedProjectPage';
 import { HomeFeedRequestPage, HomeFeedRequestPageSkeleton } from '@/components/home/HomeFeedRequestPage';
 import {
   PersonProfileSheet,
@@ -13,7 +13,8 @@ import { proximityLabelForRequest } from '@/features/requests/proximity-label';
 import { IonIcon } from '@/components/ui/IonIcon';
 import { EmptyState, InlineError } from '@/components/ui/StateView';
 import { ionIcons } from '@/components/ui/ion-icons';
-import { useHomeBrowseFeed } from '@/features/requests/use-home-browse-feed';
+import { useHomeBrowseFeed, type HomeBrowseFeedRow } from '@/features/requests/use-home-browse-feed';
+import type { PublicRequest } from '@/features/requests/browse-api';
 import { useHomeFeedTabBarInset } from '@/components/ui/tab-bar-insets';
 import { useColors } from '@/theme/ThemeProvider';
 
@@ -22,7 +23,6 @@ type Props = {
 };
 
 export function HomeFeed({ searchQuery }: Props) {
-  const router = useRouter();
   const feed = useHomeBrowseFeed(searchQuery, true);
   const tabBarInset = useHomeFeedTabBarInset();
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -30,7 +30,7 @@ export function HomeFeed({ searchQuery }: Props) {
   const [profilePreview, setProfilePreview] = useState<PersonProfilePreview | null>(null);
   const [profileOpen, setProfileOpen] = useState(false);
 
-  const openRequesterProfile = useCallback((request: (typeof feed.rows)[number]) => {
+  const openRequesterProfile = useCallback((request: PublicRequest) => {
     setProfilePreview(personProfileFromPublicRequest(request));
     setProfileOpen(true);
   }, []);
@@ -57,8 +57,6 @@ export function HomeFeed({ searchQuery }: Props) {
   );
 
   const listReady = pageHeight > 0;
-  const hasPosts = feed.rows.length > 0;
-  const showFeedSearch = !feed.searchNeedsLocation && !feed.loading && hasPosts;
 
   return (
     <div ref={containerRef} className="relative flex min-h-0 flex-1 flex-col bg-canvas">
@@ -89,30 +87,16 @@ export function HomeFeed({ searchQuery }: Props) {
           className="h-full snap-y snap-mandatory overflow-y-auto overscroll-y-contain bg-canvas [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           onScroll={onScroll}
         >
-          {feed.rows.map((item) => {
-            const isOwnRequest = feed.ownOpenRequestIds.has(item.request_id);
-            const waiting = Boolean(
-              feed.myResponses?.some(
-                (response) =>
-                  response.request_id === item.request_id &&
-                  response.response_status === 'pending' &&
-                  (response.request_status === 'posted' || response.request_status === 'searching'),
-              ),
-            );
-            return (
-              <HomeFeedRequestPage
-                key={item.request_id}
-                request={item}
-                pageHeight={pageHeight}
-                proximityLabel={proximityLabelForRequest(item, isOwnRequest)}
-                isOwnRequest={isOwnRequest}
-                waiting={waiting}
-                browsePosition={feed.position}
-                onRequesterPress={() => openRequesterProfile(item)}
-                tabBarInset={tabBarInset}
-              />
-            );
-          })}
+          {feed.rows.map((item) => (
+            <HomeFeedRowPage
+              key={rowKey(item)}
+              item={item}
+              feed={feed}
+              pageHeight={pageHeight}
+              tabBarInset={tabBarInset}
+              onRequesterPress={openRequesterProfile}
+            />
+          ))}
         </div>
       ) : null}
 
@@ -121,20 +105,55 @@ export function HomeFeed({ searchQuery }: Props) {
         profile={profilePreview}
         onClose={() => setProfileOpen(false)}
       />
-
-      {showFeedSearch ? (
-        <button
-          type="button"
-          aria-label="Search requests"
-          onClick={() =>
-            router.push(searchQuery ? `/search?q=${encodeURIComponent(searchQuery)}` : '/search')
-          }
-          className="absolute right-4 top-3 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-black/45 active:opacity-90"
-        >
-          <IonIcon icon={ionIcons['search-outline']} size={14} color="#ffffff" />
-        </button>
-      ) : null}
     </div>
+  );
+}
+
+function rowKey(item: HomeBrowseFeedRow): string {
+  return item.kind === 'request' ? item.request.request_id : item.project.project_id;
+}
+
+function HomeFeedRowPage({
+  item,
+  feed,
+  pageHeight,
+  tabBarInset,
+  onRequesterPress,
+}: {
+  item: HomeBrowseFeedRow;
+  feed: ReturnType<typeof useHomeBrowseFeed>;
+  pageHeight: number;
+  tabBarInset: number;
+  onRequesterPress: (request: PublicRequest) => void;
+}) {
+  if (item.kind === 'project') {
+    return (
+      <HomeFeedProjectPage project={item.project} pageHeight={pageHeight} tabBarInset={tabBarInset} />
+    );
+  }
+
+  const request = item.request;
+  const isOwnRequest = feed.ownOpenRequestIds.has(request.request_id);
+  const waiting = Boolean(
+    feed.myResponses?.some(
+      (response) =>
+        response.request_id === request.request_id &&
+        response.response_status === 'pending' &&
+        (response.request_status === 'posted' || response.request_status === 'searching'),
+    ),
+  );
+
+  return (
+    <HomeFeedRequestPage
+      request={request}
+      pageHeight={pageHeight}
+      proximityLabel={proximityLabelForRequest(request, isOwnRequest)}
+      isOwnRequest={isOwnRequest}
+      waiting={waiting}
+      browsePosition={feed.position}
+      onRequesterPress={() => onRequesterPress(request)}
+      tabBarInset={tabBarInset}
+    />
   );
 }
 
@@ -150,7 +169,7 @@ function FeedEmptyBody({ className }: { className?: string }) {
         </div>
         <p className="text-base font-semibold text-ink">Nothing open right now</p>
         <p className="text-sm leading-5 text-muted">
-          New requests show up here when people need help. Check back soon.
+          Open requests and live projects show up here. Check back soon.
         </p>
       </div>
     </div>

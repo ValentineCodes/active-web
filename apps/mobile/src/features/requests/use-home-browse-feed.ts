@@ -4,6 +4,10 @@ import { useFocusEffect } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 
 import {
+  useBrowseOpenProjectsInfinite,
+  type PublicProject,
+} from '@/features/projects/project-browse-api';
+import {
   useBrowseNearbyRequestsInfinite,
   useBrowseOpenRequestsInfinite,
   useSearchRequestsInfinite,
@@ -38,6 +42,8 @@ export function useHomeBrowseFeed(searchQuery: string) {
   const open = useBrowseOpenRequestsInfinite({ enabled: openBrowseEnabled });
   const nearby = useBrowseNearbyRequestsInfinite(position);
   const search = useSearchRequestsInfinite(activeSearch, position);
+  const projectsBrowseEnabled = activeSearch.length === 0;
+  const openProjects = useBrowseOpenProjectsInfinite({ enabled: projectsBrowseEnabled });
   const myRequests = useMyRequests();
   const myResponses = useMyResponses();
 
@@ -122,11 +128,30 @@ export function useHomeBrowseFeed(searchQuery: string) {
   const activeQuery =
     activeSearch.length > 0 ? search : position ? nearby : openBrowseEnabled ? open : null;
 
-  const rows = useMemo(() => {
+  const projectRows = useMemo(() => {
+    if (!projectsBrowseEnabled) return [];
+    return (openProjects.data?.pages ?? []).flat();
+  }, [openProjects.data?.pages, projectsBrowseEnabled]);
+
+  const rows = useMemo((): HomeBrowseFeedRow[] => {
     if (!activeQuery) return [];
-    const pages = activeQuery.data?.pages ?? [];
-    return pages.flat();
-  }, [activeQuery]);
+    const requests = activeQuery.data?.pages.flat() ?? [];
+    const merged: { at: number; row: HomeBrowseFeedRow }[] = [];
+    for (const request of requests) {
+      merged.push({
+        at: request.posted_at ? new Date(request.posted_at).getTime() : 0,
+        row: { kind: 'request', request },
+      });
+    }
+    for (const project of projectRows) {
+      merged.push({
+        at: project.posted_at ? new Date(project.posted_at).getTime() : 0,
+        row: { kind: 'project', project },
+      });
+    }
+    merged.sort((a, b) => b.at - a.at);
+    return merged.map((entry) => entry.row);
+  }, [activeQuery, projectRows]);
 
   const searchNeedsLocation =
     activeSearch.length > 0 && position === null && !locating && !sortingNearest;
@@ -137,8 +162,10 @@ export function useHomeBrowseFeed(searchQuery: string) {
     (activeSearch.length > 0
       ? showQuerySkeleton(search)
       : position
-        ? showQuerySkeleton(nearby)
-        : openBrowseEnabled && showQuerySkeleton(open));
+        ? showQuerySkeleton(nearby) || (projectsBrowseEnabled && showQuerySkeleton(openProjects))
+        : openBrowseEnabled &&
+          (showQuerySkeleton(open) ||
+            (projectsBrowseEnabled && showQuerySkeleton(openProjects))));
 
   const showSortNearest =
     position === null &&
@@ -150,6 +177,7 @@ export function useHomeBrowseFeed(searchQuery: string) {
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: queryKeys.browseNearbyAll }),
       queryClient.invalidateQueries({ queryKey: queryKeys.browseOpenAll }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.browseOpenProjectsAll }),
       queryClient.invalidateQueries({ queryKey: queryKeys.requestSearchAll }),
       myRequests.refetch(),
       myResponses.refetch(),
@@ -180,4 +208,6 @@ export function useHomeBrowseFeed(searchQuery: string) {
   };
 }
 
-export type HomeBrowseFeedRow = PublicRequest;
+export type HomeBrowseFeedRow =
+  | { kind: 'request'; request: PublicRequest }
+  | { kind: 'project'; project: PublicProject };

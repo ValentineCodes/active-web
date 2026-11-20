@@ -23,7 +23,10 @@ type RequestResponse = Nullable<
   | 'message'
   | 'quoted_amount'
   | 'expires_at'
->;
+> & {
+  proposed_delivery_at?: string | null;
+  proposed_delivery_timezone?: string | null;
+};
 
 type Engagement = Nullable<
   RpcRow<Functions['get_engagement']['Returns']>,
@@ -50,7 +53,13 @@ type Engagement = Nullable<
   | 'service_problem_respond_by'
   | 'service_problem_reported_by_me'
   | 'service_problem_description'
->;
+> & {
+  start_by_at?: string | null;
+  proposed_delivery_at?: string | null;
+  proposed_delivery_timezone?: string | null;
+  adjusted_delivery_at?: string | null;
+  delivery_deadline_at?: string | null;
+};
 
 const REQUEST_COLUMNS =
   'request_id, title, description, scheduled_for, offered_amount, agreed_provider_amount, currency, payment_status, location_label, latitude, longitude, status, selected_user_id, source_request_id, attachment_path, tag_slugs, pending_response_count, first_response_at, is_editable, is_rated, my_rating_stars, my_rating_comment, created_at, updated_at, expires_at, accepted_at, started_at, completed_at, cancelled_at';
@@ -266,7 +275,8 @@ export function useCreateRequest() {
       description: string;
       position: Position;
       locationLabel: string;
-      scheduledFor: Date | null;
+      expiresAt: Date;
+      scheduledFor?: Date | null;
       offeredAmount: number;
       sourceRequestId?: string;
       attachmentPath?: string | null;
@@ -294,6 +304,7 @@ export function useCreateRequest() {
         p_longitude: input.position.longitude,
         p_location_label: input.locationLabel,
         p_scheduled_for: input.scheduledFor?.toISOString(),
+        p_expires_at: input.expiresAt.toISOString() as never,
         p_offered_amount: input.offeredAmount,
         p_source_request_id: input.sourceRequestId,
         p_attachment_path: input.attachmentPath || undefined,
@@ -598,6 +609,46 @@ export function useEngagement(requestId: string, enabled = true) {
       const { data, error } = await supabase.rpc('get_engagement', { p_request_id: requestId });
       if (error) throw error;
       return data[0] ?? null;
+    },
+  });
+}
+
+export function useDismissWorkerFailureToStart(requestId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.rpc('dismiss_worker_failure_to_start', {
+        p_request_id: requestId,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.engagement(requestId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.myRequest(requestId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.myRequests });
+      queryClient.invalidateQueries({ queryKey: queryKeys.myResponses });
+      void invalidateWalletQueries(queryClient);
+    },
+  });
+}
+
+export function useDismissWorkerMissedDelivery(requestId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.rpc('dismiss_worker_missed_delivery', {
+        p_request_id: requestId,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.engagement(requestId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.myRequest(requestId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.myRequests });
+      queryClient.invalidateQueries({ queryKey: queryKeys.myResponses });
+      void invalidateWalletQueries(queryClient);
     },
   });
 }

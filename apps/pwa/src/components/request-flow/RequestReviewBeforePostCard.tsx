@@ -1,3 +1,6 @@
+'use client';
+
+import { WizardPhotoPreview } from '@/components/create-flow/wizard-chrome';
 import { RequestTagsLine } from '@/components/request-flow/RequestTagsLine';
 
 export function RequestReviewBeforePostCard({
@@ -8,6 +11,8 @@ export function RequestReviewBeforePostCard({
   locationLabel,
   tagSlugs,
   previewUri,
+  onRemovePhoto,
+  removePhotoDisabled,
   reviewHeading = 'Review before posting',
 }: {
   title: string;
@@ -17,16 +22,19 @@ export function RequestReviewBeforePostCard({
   locationLabel: string;
   tagSlugs: string[];
   previewUri?: string | null;
+  onRemovePhoto?: () => void;
+  removePhotoDisabled?: boolean;
   reviewHeading?: string;
 }) {
   return (
     <div className="flex flex-col gap-3 rounded-2xl border border-hairline bg-elevated p-4">
       <p className="text-xs font-semibold uppercase tracking-wide text-subtle">{reviewHeading}</p>
       {previewUri ? (
-        <img
-          src={previewUri}
+        <WizardPhotoPreview
+          uri={previewUri}
           alt="Selected request photo"
-          className="aspect-4/3 w-full rounded-xl bg-surface object-cover"
+          onRemove={onRemovePhoto}
+          removeDisabled={removePhotoDisabled}
         />
       ) : null}
       <p className="truncate text-xl font-bold text-ink">{title}</p>

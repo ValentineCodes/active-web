@@ -1,10 +1,11 @@
 import { Pressable, Text, View } from 'react-native';
-import { router } from 'expo-router';
+import { type Href, router } from 'expo-router';
 
 import { Avatar } from '@/components/ui/Avatar';
 import { SkeletonBlock } from '@/components/ui/Skeleton';
 import { hasProviderCommitments, type MyAttendance } from '@/features/attendance/api';
 import { formatGreetingFirstName, formatGreetingPeriod, formatMoney } from '@/lib/format';
+
 type HomeFeedHeaderProps = {
   loading: boolean;
   displayName: string | null;
@@ -43,7 +44,7 @@ export function HomeFeedHeader({
     <View className="flex-row items-center justify-between gap-3 px-5 pb-2 pt-1">
       <View className="min-w-0 flex-1 flex-row items-center gap-3">
         <Pressable
-          onPress={() => router.push('/profile')}
+          onPress={() => router.push('/profile' as Href)}
           accessibilityRole="button"
           accessibilityLabel="Open your profile"
           className="active:opacity-90"
@@ -63,19 +64,21 @@ export function HomeFeedHeader({
         </View>
       </View>
 
-      {walletAvailable != null && walletCurrency ? (
-        <Pressable
-          onPress={() => router.push('/wallet')}
-          accessibilityRole="button"
-          accessibilityLabel={`Wallet balance ${formatMoney(walletAvailable, walletCurrency)}`}
-          hitSlop={8}
-          className="shrink-0 active:opacity-90"
-        >
-          <Text className="text-lg font-bold text-active">
-            {formatMoney(walletAvailable, walletCurrency)}
-          </Text>
-        </Pressable>
-      ) : null}
+      <View className="flex-row items-center gap-2">
+        {walletAvailable != null && walletCurrency ? (
+          <Pressable
+            onPress={() => router.push('/wallet' as Href)}
+            accessibilityRole="button"
+            accessibilityLabel={`Wallet balance ${formatMoney(walletAvailable, walletCurrency)}`}
+            hitSlop={8}
+            className="shrink-0 active:opacity-90"
+          >
+            <Text className="text-lg font-bold text-active">
+              {formatMoney(walletAvailable, walletCurrency)}
+            </Text>
+          </Pressable>
+        ) : null}
+      </View>
     </View>
   );
 }

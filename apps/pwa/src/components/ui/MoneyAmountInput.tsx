@@ -16,6 +16,7 @@ export function MoneyAmountInput({
   onChangeText,
   accessibilityLabel,
   inputRef,
+  autoFocus,
   maxLength = 9,
   trailing,
   className,
@@ -24,6 +25,7 @@ export function MoneyAmountInput({
   onChangeText: (text: string) => void;
   accessibilityLabel: string;
   inputRef?: Ref<HTMLInputElement>;
+  autoFocus?: boolean;
   maxLength?: number;
   trailing?: ReactNode;
   className?: string;
@@ -42,6 +44,7 @@ export function MoneyAmountInput({
           inputMode="numeric"
           pattern="[0-9]*"
           aria-label={accessibilityLabel}
+          autoFocus={autoFocus}
           value={value}
           maxLength={maxLength}
           onChange={(event) => onChangeText(event.target.value.replace(/\D/g, ''))}

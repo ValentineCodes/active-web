@@ -1,6 +1,7 @@
 export type ProfileRow = {
   id: string;
   display_name: string | null;
+  username: string | null;
   avatar_path: string | null;
   avatar_captured_in_app: boolean;
   phone: string | null;

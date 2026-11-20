@@ -5,6 +5,7 @@ import { MilestonePlanCard } from '@/components/request-flow/MilestonePlanCard';
 import { RequestPersonCard } from '@/components/request-flow/RequestPersonCard';
 import { Badge } from '@/components/ui/Badge';
 import type { MilestoneProposalItem } from '@/features/requests/milestones';
+import { formatDeliveryInstantLabel } from '@/features/requests/engagement-lifecycle';
 import { formatAgo, formatMoney } from '@/lib/format';
 import { useTheme } from '@/theme';
 
@@ -30,6 +31,8 @@ export function ResponseCard({
   statusTone,
   proposedMilestones,
   proposedMilestoneTotalMajor,
+  proposedDeliveryAt,
+  proposedDeliveryTimezone,
 }: {
   displayName: string | null;
   avatarPath: string | null;
@@ -49,9 +52,15 @@ export function ResponseCard({
   statusTone?: 'neutral' | 'brand' | 'active' | 'danger' | 'warning' | 'info';
   proposedMilestones?: MilestoneProposalItem[];
   proposedMilestoneTotalMajor?: number;
+  proposedDeliveryAt?: string | null;
+  proposedDeliveryTimezone?: string | null;
 }) {
   const { shadow } = useTheme();
   const offerLabel = quotedAmount !== null ? formatMoney(quotedAmount, currency) : null;
+  const proposedDeliveryLabel = formatDeliveryInstantLabel(
+    proposedDeliveryAt,
+    proposedDeliveryTimezone,
+  );
 
   return (
     <View style={shadow.card} className="gap-4 rounded-2xl border border-hairline bg-elevated p-4">
@@ -88,6 +97,17 @@ export function ResponseCard({
               heading="Their proposed plan"
               variant="proposed"
             />
+          ) : null}
+          {proposedDeliveryLabel ? (
+            <View className="gap-1 pt-1">
+              <Text className="text-xs font-bold uppercase tracking-widest text-subtle">
+                Proposed delivery
+              </Text>
+              <Text className="text-sm leading-5 text-ink">{proposedDeliveryLabel}</Text>
+              <Text className="text-xs text-muted">
+                Countdown begins when they press Start after you accept, not at this proposed time.
+              </Text>
+            </View>
           ) : null}
         </View>
       ) : null}

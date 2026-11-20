@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 
 import { StatusBadge } from '@/components/admin/status-badge';
 import { UserAdminActions } from '@/components/users/user-actions';
+import { UserTrustPanel } from '@/components/users/user-trust-panel';
 import { UserIdentitySection } from '@/components/users/user-identity-section';
 import { requireAdminSessionForPath } from '@/lib/admin/session';
 import { fetchAdminUser } from '@/lib/admin/users';
@@ -100,6 +101,14 @@ export default async function UserDetailPage({ params }: Props) {
 
         <UserAdminActions userId={id} isRestricted={isRestricted} />
       </div>
+
+      <UserTrustPanel
+        userId={id}
+        role={session.permissions.role}
+        username={(profile.username as string) ?? null}
+        premiumTrialEndsAt={(profile.premium_trial_ends_at as string) ?? null}
+        reputation={(data.reputation as Record<string, unknown> | null) ?? null}
+      />
 
       <UserIdentitySection
         userId={id}

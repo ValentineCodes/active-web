@@ -17,6 +17,11 @@ import {
 } from '@/features/notifications/tag-interests';
 import { consumeProfileEditLivePhotoIntent } from '@/features/profile/profile-edit-intent';
 import { useMyProfile, useSaveProfile } from '@/features/profile/api';
+import { useSetUsername } from '@/features/profile/public-profile-api';
+import {
+  sanitizeUsernameDraft,
+  validateUsernameFormat,
+} from '@/features/profile/username';
 import type { RequestTag } from '@/features/requests/tags';
 import { useRouter } from '@/lib/navigation';
 import { showAppToast } from '@/lib/toast';
@@ -27,9 +32,12 @@ export function ProfileEditPage() {
   const profile = useMyProfile();
   const tagInterests = useNotificationTagInterests();
   const save = useSaveProfile();
+  const setUsername = useSetUsername();
   const updateTagInterests = useUpdateNotificationTagInterests();
   const [name, setName] = useState('');
+  const [handle, setHandle] = useState('');
   const [bio, setBio] = useState('');
+  const [usernameError, setUsernameError] = useState<string | null>(null);
   const [selectedTags, setSelectedTags] = useState<RequestTag[]>([]);
   const [saveError, setSaveError] = useState<unknown>(null);
   const [captureOpen, setCaptureOpen] = useState(false);
@@ -37,6 +45,7 @@ export function ProfileEditPage() {
   useEffect(() => {
     if (!profile.data) return;
     setName(profile.data.display_name ?? '');
+    setHandle(profile.data.username ?? '');
     setBio(profile.data.bio ?? '');
   }, [profile.data]);
 
@@ -51,19 +60,39 @@ export function ProfileEditPage() {
 
   const trimmedName = name.trim();
   const isNameValid = trimmedName.length >= 2 && trimmedName.length <= 60;
-  const saving = save.isPending || updateTagInterests.isPending;
+  const trimmedHandle = handle.trim().toLowerCase();
+  const initialUsername = profile.data?.username?.toLowerCase() ?? '';
+  const handleChanged = trimmedHandle.length > 0 && trimmedHandle !== initialUsername;
+  const handleFormatError = handleChanged ? validateUsernameFormat(trimmedHandle) : null;
+  const saving = save.isPending || updateTagInterests.isPending || setUsername.isPending;
 
   const handleSave = () => {
-    if (!isNameValid || saving) return;
+    if (!isNameValid || saving || handleFormatError) return;
+    if (handleChanged) {
+      const formatError = validateUsernameFormat(trimmedHandle);
+      if (formatError) {
+        setUsernameError(formatError);
+        return;
+      }
+    }
     setSaveError(null);
+    setUsernameError(null);
     void (async () => {
       try {
         await save.mutateAsync({ display_name: trimmedName, bio: bio.trim() || null });
+        if (handleChanged) {
+          await setUsername.mutateAsync(trimmedHandle);
+        }
         await updateTagInterests.mutateAsync(selectedTags);
         showAppToast('Profile updated');
         router.back();
       } catch (error) {
-        setSaveError(error);
+        const message = error instanceof Error ? error.message : 'Could not save profile.';
+        if (handleChanged && message.toLowerCase().includes('username')) {
+          setUsernameError(message);
+        } else {
+          setSaveError(error);
+        }
       }
     })();
   };
@@ -92,6 +121,25 @@ export function ProfileEditPage() {
             autoCapitalize="words"
             maxLength={60}
           />
+          <ProfileEditField
+            label="Username"
+            value={handle}
+            onChange={(event) => {
+              setUsernameError(null);
+              setHandle(sanitizeUsernameDraft(event.target.value));
+            }}
+            autoComplete="username"
+            autoCapitalize="none"
+            maxLength={30}
+            placeholder="your_handle"
+          />
+          {usernameError || handleFormatError ? (
+            <p className="-mt-2 px-1 text-sm text-warning">{usernameError ?? handleFormatError}</p>
+          ) : (
+            <p className="-mt-2 px-1 text-sm text-muted">
+              Lowercase letters, numbers, and underscores only.
+            </p>
+          )}
           <ProfileEditField
             label="About you"
             multiline

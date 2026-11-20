@@ -86,7 +86,8 @@ select respond_to_request(
   null,
   null,
   6.5000,
-  3.3800
+  3.3800,
+  now() + interval '7 days'
 ) as settle_response_id \gset
 
 select pg_temp.act_as('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa') as _ \gset
@@ -253,7 +254,8 @@ select respond_to_request(
   null,
   null,
   6.5000,
-  3.3800
+  3.3800,
+  now() + interval '7 days'
 ) as cancel_after_accept_response_id \gset
 
 select pg_temp.act_as('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa') as _ \gset

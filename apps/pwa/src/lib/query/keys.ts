@@ -1,5 +1,6 @@
 export const queryKeys = {
   profile: (userId: string) => ['profile', userId] as const,
+  publicProfile: (username: string) => ['public-profile', username] as const,
   myReceivedRatings: (userId: string) => ['my-received-ratings', userId] as const,
   identityStatus: (userId: string) => ['identity-status', userId] as const,
   attendance: ['attendance'] as const,
@@ -16,11 +17,23 @@ export const queryKeys = {
     ['browse-nearby', latitude, longitude] as const,
   browseOpenAll: ['browse-open'] as const,
   browseOpen: ['browse-open'] as const,
+  browseOpenProjectsAll: ['browse-open-projects'] as const,
+  browseOpenProjects: ['browse-open-projects'] as const,
   savedLocations: ['saved-locations'] as const,
   requestSearchAll: ['request-search'] as const,
   requestSearch: (query: string, latitude: number | null, longitude: number | null) =>
     ['request-search', query, latitude, longitude] as const,
   requestSearchSuggestions: (prefix: string) => ['request-search-suggestions', prefix] as const,
+  searchDiscover: (
+    category: string,
+    query: string,
+    latitude: number | null,
+    longitude: number | null,
+  ) => ['search-discover', category, query, latitude, longitude] as const,
+  project: (projectId: string) => ['project', projectId] as const,
+  myCreatedProjects: ['my-created-projects'] as const,
+  projectAssignments: (projectId: string) => ['project-assignments', projectId] as const,
+  projectContributions: (projectId: string) => ['project-contributions', projectId] as const,
   browseRequest: (requestId: string, latitude: number | null, longitude: number | null) =>
     ['browse-request', requestId, latitude, longitude] as const,
   browseRequestPreview: (requestId: string) => ['browse-request-preview', requestId] as const,
@@ -48,4 +61,6 @@ export const queryKeys = {
   bankAccounts: ['bank-accounts'] as const,
   paystackBanks: ['paystack-banks'] as const,
   withdrawalPolicy: ['withdrawal-policy'] as const,
+  myEntitlements: ['my-entitlements'] as const,
+  myReputation: ['my-reputation'] as const,
 };

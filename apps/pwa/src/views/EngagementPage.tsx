@@ -38,7 +38,8 @@ import {
   invalidateConversationInboxQueries,
   useRequestConversation,
 } from '@/features/requests/conversation-api';
-import { useMarkServiceComplete, useMyResponses } from '@/features/requests/responses-api';
+import { helperShowStartButton } from '@/features/requests/engagement-lifecycle';
+import { useMarkServiceComplete, useMyResponses, useStartRequest } from '@/features/requests/responses-api';
 import {
   myRequestQueryOptions,
   useCompleteRequest,
@@ -116,6 +117,7 @@ export function EngagementPage() {
   );
   const myResponses = useMyResponses();
   const markServiceComplete = useMarkServiceComplete(id);
+  const startRequest = useStartRequest(id);
   const completeRequest = useCompleteRequest(id);
   const contestProblem = useContestServiceProblem(id);
 
@@ -363,6 +365,12 @@ export function EngagementPage() {
   const helperActive =
     !data.viewer_is_requester &&
     ['accepted', 'in_progress', 'completion_pending'].includes(data.request_status);
+  const showHelperStart = helperShowStartButton({
+    viewerIsRequester: data.viewer_is_requester,
+    requestStatus: data.request_status,
+    startedAt: data.started_at,
+    startByAt: data.start_by_at ?? null,
+  });
   const requesterActive =
     data.viewer_is_requester &&
     ['accepted', 'in_progress', 'completion_pending'].includes(data.request_status);
@@ -591,8 +599,31 @@ export function EngagementPage() {
           >
             {inActiveFlow ? (
               <>
+                {startRequest.isError ? <InlineError error={startRequest.error} /> : null}
                 {markServiceComplete.isError ? <InlineError error={markServiceComplete.error} /> : null}
                 {completeRequest.isError ? <InlineError error={completeRequest.error} /> : null}
+                {showHelperStart ? (
+                  <Button
+                    label="Start"
+                    variant="active"
+                    size="lg"
+                    corner="2xl"
+                    loading={startRequest.isPending}
+                    disabled={startRequest.isPending}
+                    onClick={() => {
+                      if (
+                        !window.confirm(
+                          'Start helping? The delivery countdown is set on the server when you start.',
+                        )
+                      ) {
+                        return;
+                      }
+                      startRequest.mutate(undefined, {
+                        onSuccess: () => showAppToast('Work started', 'success'),
+                      });
+                    }}
+                  />
+                ) : null}
                 {helperActive &&
                 !isMilestoneEngagement &&
                 ['accepted', 'in_progress'].includes(data.request_status) ? (

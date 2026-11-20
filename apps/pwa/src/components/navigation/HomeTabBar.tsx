@@ -76,7 +76,7 @@ function TabIcon({
 function resolveActiveTabIndex(pathname: string, createActive: boolean): number {
   if (createActive) return 2;
   if (pathname === '/home') return 0;
-  if (pathname === '/activity' || pathname.startsWith('/activity/')) return 1;
+  if (pathname === '/search' || pathname.startsWith('/search/')) return 1;
   if (pathname === '/notifications' || pathname.startsWith('/notifications/')) return 3;
   return 0;
 }
@@ -107,7 +107,11 @@ export function HomeTabBar() {
     ) ?? 0;
 
   const createActive =
-    isOpen || pathname === '/request/new' || pathname.startsWith('/request/new/');
+    isOpen ||
+    pathname === '/request/new' ||
+    pathname.startsWith('/request/new/') ||
+    pathname === '/project/new' ||
+    pathname.startsWith('/project/new/');
 
   const activeIndex = useMemo(
     () => resolveActiveTabIndex(pathname, createActive),
@@ -154,7 +158,7 @@ export function HomeTabBar() {
   }, [measureSelectionPill, activeIndex]);
 
   const homeActive = isTabActive(pathname, '/home', true);
-  const activityActive = isTabActive(pathname, '/activity');
+  const searchActive = isTabActive(pathname, '/search');
   const notificationsActive = isTabActive(pathname, '/notifications');
 
   return (
@@ -186,13 +190,12 @@ export function HomeTabBar() {
             inactiveColor={inactiveColor}
           />
           <TabIcon
-            href="/activity"
-            label="Activity"
-            isActive={activityActive}
+            href="/search"
+            label="Search"
+            isActive={searchActive}
             slotRef={assignTabSlotRef(slotRefs, 1)}
-            iconOutline={ionIcons['list-outline']}
-            iconSelected={ionIcons.list}
-            badge={waitingResponses > 0 ? waitingResponses : undefined}
+            iconOutline={ionIcons['search-outline']}
+            iconSelected={ionIcons.search}
             activeColor={activeColor}
             inactiveColor={inactiveColor}
           />

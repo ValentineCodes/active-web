@@ -80,6 +80,17 @@ export function toUserMessage(error: unknown): string {
     }
   }
 
+  // PostgREST, Storage, and Auth errors are plain objects with a `message` (not `instanceof Error`).
+  if (error && typeof error === 'object' && 'message' in error) {
+    const message = (error as { message: unknown }).message;
+    if (typeof message === 'string') {
+      const trimmed = message.trim();
+      if (trimmed.length > 0 && trimmed.length < 320) {
+        return trimmed;
+      }
+    }
+  }
+
   if (error instanceof Error) {
     const lower = error.message.toLowerCase();
     if (lower.includes('edge function returned a non-2xx')) {

@@ -1,7 +1,5 @@
 'use client';
 
-import { useSearchParams } from '@/lib/navigation';
-
 import { HomeActiveRequestBanner } from '@/components/home/HomeActiveRequestBanner';
 import { HomeFeedHeader } from '@/components/home/HomeFeedHeader';
 import { HomeFeed } from '@/components/marketplace/HomeFeed';
@@ -16,8 +14,6 @@ import { useMyWallet } from '@/features/wallet/api';
 import { showQuerySkeleton } from '@/lib/query/show-skeleton';
 
 export function HomePage() {
-  const params = useSearchParams();
-  const searchQuery = params.get('q')?.trim() ?? '';
   const profile = useMyProfile();
   const attendance = useAttendance();
   const requests = useMyRequests();
@@ -38,7 +34,7 @@ export function HomePage() {
 
   return (
     <Screen className="h-full min-h-0 overflow-hidden bg-canvas">
-      <PlusMaybeActiveBanner activeRequest={activeRequest} profileSkeleton={profileSkeleton} profile={profile} attendance={attendance} wallet={wallet} searchQuery={searchQuery} />
+      <PlusMaybeActiveBanner activeRequest={activeRequest} profileSkeleton={profileSkeleton} profile={profile} attendance={attendance} wallet={wallet} />
     </Screen>
   );
 }
@@ -49,14 +45,12 @@ function PlusMaybeActiveBanner({
   profile,
   attendance,
   wallet,
-  searchQuery,
 }: {
   activeRequest: ReturnType<typeof pickHomeActiveRequest>;
   profileSkeleton: boolean;
   profile: ReturnType<typeof useMyProfile>;
   attendance: ReturnType<typeof useAttendance>;
   wallet: ReturnType<typeof useMyWallet>;
-  searchQuery: string;
 }) {
   return (
     <div className={`flex min-h-0 flex-1 flex-col ${activeRequest ? 'gap-2' : ''}`}>
@@ -71,7 +65,7 @@ function PlusMaybeActiveBanner({
       {activeRequest ? (
         <HomeActiveRequestBanner title={activeRequest.title} to={`/engagement/${activeRequest.id}`} />
       ) : null}
-      <HomeFeed searchQuery={searchQuery} />
+      <HomeFeed searchQuery="" />
     </div>
   );
 }

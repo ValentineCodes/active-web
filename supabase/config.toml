@@ -403,6 +403,10 @@ PAYSTACK_PUBLIC_KEY = "env(PAYSTACK_PUBLIC_KEY)"
 PAYSTACK_BASE_URL = "env(PAYSTACK_BASE_URL)"
 NIN_ENCRYPTION_KEY = "env(NIN_ENCRYPTION_KEY)"
 NIN_FINGERPRINT_KEY = "env(NIN_FINGERPRINT_KEY)"
+OPERATIONAL_CRON_SECRET = "env(OPERATIONAL_CRON_SECRET)"
+
+[functions.operational-scheduler]
+verify_jwt = false
 
 [functions.paystack-initialize]
 verify_jwt = true

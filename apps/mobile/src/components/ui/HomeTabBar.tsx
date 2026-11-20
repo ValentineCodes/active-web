@@ -12,12 +12,9 @@ type TabConfig = {
   icon: keyof typeof Ionicons.glyphMap;
 };
 
-const LEFT_TABS: TabConfig[] = [
+const MAIN_TABS: TabConfig[] = [
   { routeName: 'index', label: 'Home', icon: 'home-outline' },
-  { routeName: 'activity', label: 'Activity', icon: 'list-outline' },
-];
-
-const RIGHT_TABS: TabConfig[] = [
+  { routeName: 'search', label: 'Search', icon: 'search-outline' },
   { routeName: 'notifications', label: 'Notifications', icon: 'notifications-outline' },
 ];
 
@@ -32,8 +29,8 @@ function CreateTabButton() {
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel="Create request"
-      onPress={() => router.push('/request/new')}
+      accessibilityLabel="Create"
+      onPress={() => router.push('/(tabs)/create')}
       style={[
         shadow.raised,
         {
@@ -107,6 +104,9 @@ export function HomeTabBar({ state, descriptors }: HomeTabBarProps) {
   const insets = useSafeAreaInsets();
   const paddingBottom = Math.max(insets.bottom, 8);
 
+  const leftTabs = MAIN_TABS.slice(0, 2);
+  const rightTabs = MAIN_TABS.slice(2);
+
   return (
     <View
       style={[
@@ -120,13 +120,13 @@ export function HomeTabBar({ state, descriptors }: HomeTabBarProps) {
       ]}
     >
       <View className="flex-row items-center px-2 pt-2">
-        {LEFT_TABS.map((tab) => (
+        {leftTabs.map((tab) => (
           <TabBarItem key={tab.routeName} tab={tab} state={state} descriptors={descriptors} />
         ))}
         <View className="min-h-11 flex-1 items-center justify-center py-1">
           <CreateTabButton />
         </View>
-        {RIGHT_TABS.map((tab) => (
+        {rightTabs.map((tab) => (
           <TabBarItem key={tab.routeName} tab={tab} state={state} descriptors={descriptors} />
         ))}
       </View>

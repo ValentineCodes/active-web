@@ -268,11 +268,12 @@ export function useCreateRequest() {
       description: string;
       position: Position;
       locationLabel: string;
-      scheduledFor: Date | null;
+      expiresAt: Date;
+      scheduledFor?: Date | null;
       offeredAmount: number;
       sourceRequestId?: string;
       attachmentPath?: string | null;
-      tags?: Pick<RequestTag, 'slug'>[];
+      tags?: RequestTag[];
       paymentStructure?: Database['public']['Enums']['payment_structure'];
       milestones?: Array<{ title: string; description: string; amount: number }>;
     }) => {
@@ -283,7 +284,9 @@ export function useCreateRequest() {
         throw new Error('Description is too long.');
       }
 
-      const tagIds = await resolveRequestTagIdsForRpc(input.tags ?? []);
+      const tagIds = await resolveRequestTagIdsForRpc(
+        (input.tags ?? []).map((tag) => ({ slug: tag.slug })),
+      );
 
       const paymentStructure = input.paymentStructure ?? 'single';
       const milestones =
@@ -296,6 +299,7 @@ export function useCreateRequest() {
         p_longitude: input.position.longitude,
         p_location_label: input.locationLabel,
         p_scheduled_for: input.scheduledFor?.toISOString(),
+        p_expires_at: input.expiresAt.toISOString(),
         p_offered_amount: input.offeredAmount,
         p_source_request_id: input.sourceRequestId,
         p_attachment_path: input.attachmentPath || undefined,
@@ -336,14 +340,17 @@ export function useUpdateRequest(requestId: string) {
       scheduledFor: Date | null;
       offeredAmount: number;
       attachmentPath?: string | null;
-      tags?: Pick<RequestTag, 'slug'>[];
+      tags?: RequestTag[];
     }) => {
       const trimmedDescription = input.description.trim();
       if (trimmedDescription.length > DESCRIPTION_LIMITS.max) {
         throw new Error('Description is too long.');
       }
 
-      const tagIds = (await resolveRequestTagIdsForRpc(input.tags ?? [])) ?? [];
+      const tagIds =
+        (await resolveRequestTagIdsForRpc(
+          (input.tags ?? []).map((tag) => ({ slug: tag.slug })),
+        )) ?? [];
 
       const { error } = await supabase.rpc('update_request', {
         p_request_id: requestId,

@@ -67,15 +67,34 @@ export function SuccessBanner({ message }: { message: string }) {
 }
 
 /** Inline form/action error, shown next to the control that produced it. */
-export function InlineError({ error }: { error: unknown }) {
+export function InlineError({
+  error,
+  onRetry,
+  retryLabel = 'Try again',
+}: {
+  error: unknown;
+  onRetry?: () => void;
+  retryLabel?: string;
+}) {
   const colors = useColors();
   return (
-    <View
-      className="flex-row items-start gap-2 rounded-xl bg-danger-soft p-3"
-      accessibilityRole="alert"
-    >
-      <Ionicons name="alert-circle" size={18} color={colors.danger} />
-      <Text className="flex-1 text-sm text-danger">{toUserMessage(error)}</Text>
+    <View className="gap-2">
+      <View
+        className="flex-row items-start gap-2 rounded-xl bg-danger-soft p-3"
+        accessibilityRole="alert"
+      >
+        <Ionicons name="alert-circle" size={18} color={colors.danger} />
+        <Text className="flex-1 text-sm text-danger">{toUserMessage(error)}</Text>
+      </View>
+      {onRetry ? (
+        <Text
+          onPress={onRetry}
+          accessibilityRole="button"
+          className="text-sm font-semibold text-brand"
+        >
+          {retryLabel}
+        </Text>
+      ) : null}
     </View>
   );
 }

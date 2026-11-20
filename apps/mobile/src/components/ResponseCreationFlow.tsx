@@ -12,6 +12,14 @@ import { hasProfilePhotoReady, useCaptureProfilePhoto, useProfile } from '@/feat
 import { CheckboxRow } from '@/components/ui/CheckboxRow';
 import { MilestonePlanEditor } from '@/components/request-flow/MilestonePlanEditor';
 import {
+  ProposedDeliveryPicker,
+  defaultProposedDeliveryDate,
+} from '@/components/request-flow/ProposedDeliveryPicker';
+import {
+  DEFAULT_PROPOSED_DELIVERY_TIMEZONE,
+  validateProposedDeliveryAt,
+} from '@/features/requests/engagement-lifecycle';
+import {
   counterOfferForRpc,
   parseResponseOfferAmount,
   type RespondableRequest,
@@ -48,6 +56,8 @@ type ResponseCreationFlowProps = {
   onSubmit: (input: {
     message: string | null;
     quotedAmount: number | null;
+    proposedDeliveryAt: Date;
+    proposedDeliveryTimezone: string;
     milestoneProposal?: MilestoneRpcItem[] | null;
   }) => void;
   milestoneMode?: boolean;
@@ -243,10 +253,12 @@ export function ResponseCreationFlow({
       : defaultMilestoneDraftItems(),
   );
   const [milestoneValidationMessage, setMilestoneValidationMessage] = useState<string | null>(null);
+  const [proposedDeliveryAt, setProposedDeliveryAt] = useState(() => defaultProposedDeliveryDate());
 
-  const stepCount = needsPhotoStep ? 3 : 2;
+  const stepCount = needsPhotoStep ? 4 : 3;
   const offerStep = needsPhotoStep ? 1 : 0;
   const messageStep = needsPhotoStep ? 2 : 1;
+  const deliveryStep = needsPhotoStep ? 3 : 2;
   const photoReady = hasProfilePhotoReady(profile.data);
 
   const requesterOffer = request.offered_amount;
@@ -302,9 +314,17 @@ export function ResponseCreationFlow({
       milestoneProposal = validation.items;
     }
 
+    const deliveryValidation = validateProposedDeliveryAt(proposedDeliveryAt);
+    if (deliveryValidation) {
+      showAppToast(deliveryValidation, 'warning');
+      return;
+    }
+
     onSubmit({
       message: message.trim() || null,
       quotedAmount: quoted,
+      proposedDeliveryAt,
+      proposedDeliveryTimezone: DEFAULT_PROPOSED_DELIVERY_TIMEZONE,
       milestoneProposal: milestoneMode ? (milestoneProposal ?? null) : undefined,
     });
   };
@@ -316,6 +336,8 @@ export function ResponseCreationFlow({
 
   const offerStepNumber = needsPhotoStep ? 2 : 1;
   const messageStepNumber = needsPhotoStep ? 3 : 2;
+  const deliveryStepNumber = needsPhotoStep ? 4 : 3;
+  const deliveryValidation = validateProposedDeliveryAt(proposedDeliveryAt);
 
   const syncOfferFromMilestoneDrafts = (drafts: MilestoneDraftItem[]) => {
     setMilestoneDrafts(drafts);
@@ -381,8 +403,20 @@ export function ResponseCreationFlow({
             <View className="flex-row items-stretch gap-3">
               <WizardSecondaryButton label="Back" onPress={() => onStepChange(offerStep)} />
               <WizardPrimaryButton
-                label={isUpdate ? 'Edit response' : 'Send Response'}
+                label="Next"
                 disabled={!offerStepReady}
+                onPress={() => onStepChange(deliveryStep)}
+                className="flex-1"
+              />
+            </View>
+          ) : null}
+
+          {step === deliveryStep ? (
+            <View className="flex-row items-stretch gap-3">
+              <WizardSecondaryButton label="Back" onPress={() => onStepChange(messageStep)} />
+              <WizardPrimaryButton
+                label={isUpdate ? 'Edit response' : 'Send Response'}
+                disabled={!offerStepReady || deliveryValidation !== null}
                 loading={submitting}
                 onPress={send}
                 className="flex-1"
@@ -401,7 +435,7 @@ export function ResponseCreationFlow({
       >
         {needsPhotoStep && step === 0 ? (
           <View className="gap-5">
-            <StepLabel>Step 1 of 3 · Photo</StepLabel>
+            <StepLabel>{`Step 1 of ${stepCount} · Photo`}</StepLabel>
             <ProfilePhotoCaptureContent
               variant="respond"
               avatarPath={profile.data?.avatar_path}
@@ -476,6 +510,17 @@ export function ResponseCreationFlow({
               Keep it brief. The requester reads this before choosing.
             </Text>
 
+          </View>
+        ) : null}
+
+        {step === deliveryStep ? (
+          <View className="gap-3">
+            <StepLabel>{`Step ${deliveryStepNumber} of ${stepCount} · Delivery`}</StepLabel>
+            <ProposedDeliveryPicker
+              value={proposedDeliveryAt}
+              onChange={setProposedDeliveryAt}
+              error={deliveryValidation}
+            />
             {submitError ? <InlineError error={submitError} /> : null}
           </View>
         ) : null}

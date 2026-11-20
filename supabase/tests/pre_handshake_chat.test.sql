@@ -87,7 +87,8 @@ select respond_to_request(
   'I can help with that.',
   null,
   6.5000,
-  3.3800
+  3.3800,
+  now() + interval '7 days'
 ) as pre_response_a_id \gset
 
 select pg_temp.act_as('cccccccc-cccc-cccc-cccc-cccccccccccc') as _ \gset
@@ -96,7 +97,8 @@ select respond_to_request(
   'Available too.',
   null,
   6.5000,
-  3.3800
+  3.3800,
+  now() + interval '7 days'
 ) as pre_response_b_id \gset
 
 select pg_temp.act_as('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb') as _ \gset

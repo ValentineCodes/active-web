@@ -1,11 +1,14 @@
-type TabPath = '/home' | '/activity' | '/notifications';
+type TabPath = '/home' | '/search' | '/notifications';
 
 let lastTab: TabPath = '/home';
 let pendingReturnAfterComposer = false;
 
 export function noteActiveTabPath(pathname: string) {
   if (pathname === '/activity' || pathname.startsWith('/activity/')) {
-    lastTab = '/activity';
+    return;
+  }
+  if (pathname === '/search' || pathname.startsWith('/search/')) {
+    lastTab = '/search';
     return;
   }
   if (pathname === '/notifications' || pathname.startsWith('/notifications/')) {

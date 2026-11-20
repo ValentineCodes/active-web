@@ -36,7 +36,8 @@ import { RequestTitleSection } from '@/components/request-flow/RequestTitleSecti
 import { ResponseCard } from '@/components/ResponseCard';
 import { Button } from '@/components/ui/Button';
 import { Screen } from '@/components/ui/Screen';
-import { EmptyState, InlineError, LoadingState } from '@/components/ui/StateView';
+import { ActivityCardListSkeleton, RequestDetailSkeleton } from '@/components/ui/content-skeletons';
+import { EmptyState, InlineError } from '@/components/ui/StateView';
 import { useQueryErrorToast } from '@/lib/query/use-query-error-toast';
 import {
   useAcceptResponse,
@@ -378,7 +379,7 @@ export default function RequestDetailScreen() {
     return (
       <Screen>
         <RequestFlowHeader title="Your request" onBack={() => router.back()} />
-        <LoadingState />
+        <RequestDetailSkeleton />
       </Screen>
     );
   }
@@ -389,14 +390,11 @@ export default function RequestDetailScreen() {
       <Screen>
         <RequestFlowHeader title="Your request" onBack={() => router.back()} />
         {request.isError ? (
-          <EmptyState
-            icon="document-text-outline"
-            title="Request unavailable"
-            message="Pull to refresh from the activity tab or go back and try again."
-            action={{ label: 'Go back', onPress: () => router.back() }}
-          />
+          <View className="px-5 pt-4">
+            <InlineError error={request.error} onRetry={() => void request.refetch()} />
+          </View>
         ) : (
-          <LoadingState />
+          <RequestDetailSkeleton />
         )}
       </Screen>
     );
@@ -560,6 +558,8 @@ export default function RequestDetailScreen() {
         statusTone={options.statusTone}
         proposedMilestones={proposedMilestonePlan?.items}
         proposedMilestoneTotalMajor={proposedMilestonePlan?.totalMajor}
+        proposedDeliveryAt={response.proposed_delivery_at}
+        proposedDeliveryTimezone={response.proposed_delivery_timezone}
         onDiscussPress={
           options.allowSelection ? () => discussResponse(response.response_id) : undefined
         }
@@ -752,7 +752,7 @@ export default function RequestDetailScreen() {
                 </Text>
 
                 {responses.isPending && !responses.data ? (
-                  <LoadingState label="Loading responses" />
+                  <ActivityCardListSkeleton count={2} />
                 ) : null}
 
                 {responses.isSuccess &&

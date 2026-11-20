@@ -340,6 +340,8 @@ export function useRespondToRequest() {
       message: string | null;
       quotedAmount: number | null;
       position: Position | null;
+      proposedDeliveryAt: Date;
+      proposedDeliveryTimezone?: string;
     }) => {
       if (!input.position) throw new Error('Location is required to respond.');
 
@@ -349,6 +351,8 @@ export function useRespondToRequest() {
         p_quoted_amount: input.quotedAmount ?? undefined,
         p_latitude: input.position.latitude,
         p_longitude: input.position.longitude,
+        p_proposed_delivery_at: input.proposedDeliveryAt.toISOString(),
+        p_proposed_delivery_timezone: input.proposedDeliveryTimezone,
       });
 
       if (error) throw error;
@@ -407,7 +411,9 @@ export function useStartRequest(requestId: string) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.engagement(requestId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.myRequest(requestId) });
       queryClient.invalidateQueries({ queryKey: queryKeys.myResponses });
+      queryClient.invalidateQueries({ queryKey: queryKeys.engagementMilestones(requestId) });
     },
   });
 }

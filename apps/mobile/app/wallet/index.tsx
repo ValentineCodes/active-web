@@ -11,7 +11,9 @@ import { WalletActivityRow as WalletActivityRowComponent } from '@/components/wa
 import { Button } from '@/components/ui/Button';
 import { Header } from '@/components/ui/Header';
 import { Screen } from '@/components/ui/Screen';
-import { EmptyState, InlineError, LoadingState } from '@/components/ui/StateView';
+import { WalletHomeSkeleton } from '@/components/ui/content-skeletons';
+import { SkeletonBlock } from '@/components/ui/Skeleton';
+import { EmptyState, InlineError } from '@/components/ui/StateView';
 import { useQueryErrorToast } from '@/lib/query/use-query-error-toast';
 import { WALLET } from '@/config';
 import { useWalletLockedCommitments } from '@/features/wallet/locked-commitments';
@@ -60,7 +62,7 @@ export default function WalletHomeScreen() {
     return (
       <Screen>
         <Header title="Wallet" onBack={() => router.back()} />
-        <LoadingState />
+        <WalletHomeSkeleton />
       </Screen>
     );
   }
@@ -196,10 +198,15 @@ export default function WalletHomeScreen() {
             ) : null}
           </View>
 
-          {activity.isError ? <InlineError error={activity.error} /> : null}
+          {activity.isError ? (
+            <InlineError error={activity.error} onRetry={() => void activity.refetch()} />
+          ) : null}
 
           {activity.isPending ? (
-            <LoadingState />
+            <View className="gap-2">
+              <SkeletonBlock className="h-14 w-full rounded-xl" />
+              <SkeletonBlock className="h-14 w-full rounded-xl" />
+            </View>
           ) : preview.length === 0 ? (
             <EmptyState
               layout="list"

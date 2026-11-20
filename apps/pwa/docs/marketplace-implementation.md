@@ -9,11 +9,11 @@ Scope: marketplace flows in `apps/pwa` only, using existing Supabase contracts. 
 | 1 | Profile & account settings | **Partial** | `/profile`, `/profile/edit`, live camera avatar. No notification-tag interests UI, saved locations, or NIN flow. |
 | 2 | Request create / edit | **Partial** | `/request/new` single-page form (title, description, offer, tags, location, optional photo). Edit via `?edit=` not fully hydrated from server. No multi-step wizard or funding/wallet gate UI. |
 | 3 | Browse & discovery | **Complete** | Home infinite feed (`browse_open_requests`, `browse_nearby_requests`, `record_discovery_coordinates`). |
-| 4 | Search & tags | **Partial** | `/search` + home `q=` param (`search_requests`). Tag picker on create; no dedicated home tag filter chips. |
+| 4 | Search & tags | **Partial** | `/search` uses `search_discover` (Top/Requests/People/Projects). Home decoupled from `q=`. Tag picker on create; no dedicated home tag filter chips. |
 | 5 | Request details & approximate location | **Partial** | Respond flow shows coarse `location_label` / proximity; owner view on `/request/:id`. |
 | 6 | Responses & counteroffers | **Complete** | `respond_to_request`, optional quote/message; withdraw. |
 | 7 | Requester accept / decline | **Partial** | `accept_response`, `decline_response`, pre-handshake chat. No extend-deadline UI; accept may fail without wallet top-up UI. |
-| 8 | Assignment / engagement | **Partial** | `/engagement/:id` via `get_engagement` (exact location + phone post-accept). |
+| 8 | Assignment / engagement | **Partial** | `/engagement/:id` via `get_engagement`; helper **Start** (`start_request`) wired. Exact location + phone post-accept. |
 | 9 | Conversations | **Partial** | Inbox, `/conversation/:id`, realtime hooks, text send. Attachments upload; limited inline preview. |
 | 10 | Media attachments | **Partial** | Request photos, chat image/video/file (browser pickers). No attachment gallery viewer. |
 | 11 | Notification inbox | **Complete** | Prior phase (`/notifications`). |
