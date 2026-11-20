@@ -3,6 +3,7 @@
 import { useMemo, useRef, useState } from 'react';
 
 import { MilestonePlanEditor } from '@/components/request-flow/MilestonePlanEditor';
+import { ProposedDeliveryPicker } from '@/components/request-flow/ProposedDeliveryPicker';
 import { LiveProfilePhotoCapture } from '@/components/profile/LiveProfilePhotoCapture';
 import { ProfilePhotoCaptureContent } from '@/components/profile/ProfilePhotoCaptureContent';
 import { KeyboardStickyFooter } from '@/components/layout/KeyboardStickyFooter';
@@ -15,6 +16,11 @@ import { ionIcons } from '@/components/ui/ion-icons';
 import { useUserId } from '@/features/auth/use-user-id';
 import { uploadLiveProfilePhoto } from '@/features/profile/capture-live-profile-photo';
 import { hasProfilePhotoReady, useMyProfile } from '@/features/profile/api';
+import {
+  type DeliveryDurationUnit,
+  initialProposedDeliveryDuration,
+  validateProposedDeliveryDuration,
+} from '@/features/requests/delivery-duration';
 import {
   counterOfferForRpc,
   parseResponseOfferAmount,
@@ -42,6 +48,8 @@ type ResponseCreationFlowProps = {
   request: RespondableRequest;
   initialYourOffer: string;
   initialMessage: string;
+  initialProposedDeliveryDurationValue?: number | null;
+  initialProposedDeliveryDurationUnit?: DeliveryDurationUnit | null;
   needsPhotoStep: boolean;
   isUpdate: boolean;
   submitting: boolean;
@@ -49,6 +57,8 @@ type ResponseCreationFlowProps = {
   onSubmit: (input: {
     message: string | null;
     quotedAmount: number | null;
+    proposedDeliveryDurationValue: number;
+    proposedDeliveryDurationUnit: DeliveryDurationUnit;
     milestoneProposal?: MilestoneRpcItem[] | null;
   }) => void;
   milestoneMode?: boolean;
@@ -213,6 +223,8 @@ export function ResponseCreationFlow({
   request,
   initialYourOffer,
   initialMessage,
+  initialProposedDeliveryDurationValue,
+  initialProposedDeliveryDurationUnit,
   needsPhotoStep,
   isUpdate,
   submitting,
@@ -240,10 +252,17 @@ export function ResponseCreationFlow({
       : defaultMilestoneDraftItems(),
   );
   const [milestoneValidationMessage, setMilestoneValidationMessage] = useState<string | null>(null);
+  const [proposedDelivery, setProposedDelivery] = useState(() =>
+    initialProposedDeliveryDuration({
+      value: initialProposedDeliveryDurationValue,
+      unit: initialProposedDeliveryDurationUnit,
+    }),
+  );
 
-  const stepCount = needsPhotoStep ? 3 : 2;
+  const stepCount = needsPhotoStep ? 4 : 3;
   const offerStep = needsPhotoStep ? 1 : 0;
   const messageStep = needsPhotoStep ? 2 : 1;
+  const deliveryStep = needsPhotoStep ? 3 : 2;
   const photoReady = hasProfilePhotoReady(profile.data);
 
   const requesterOffer = request.offered_amount;
@@ -286,7 +305,19 @@ export function ResponseCreationFlow({
     }
     const offerRaw = parsedYourOffer !== null && parsedYourOffer > 0 ? yourOffer : initialYourOffer;
     const quoted = counterOfferForRpc(requesterOffer, offerRaw);
-    if (quoted === 'invalid') return;
+    if (quoted === 'invalid') {
+      showAppToast('Enter a valid offer amount.', 'warning');
+      return;
+    }
+
+    const deliveryValidation = validateProposedDeliveryDuration(
+      proposedDelivery.value,
+      proposedDelivery.unit,
+    );
+    if (deliveryValidation) {
+      showAppToast(deliveryValidation, 'warning');
+      return;
+    }
 
     let milestoneProposal: MilestoneRpcItem[] | null | undefined;
     if (milestoneMode && proposeMilestones) {
@@ -302,6 +333,8 @@ export function ResponseCreationFlow({
     onSubmit({
       message: message.trim() || null,
       quotedAmount: quoted,
+      proposedDeliveryDurationValue: proposedDelivery.value,
+      proposedDeliveryDurationUnit: proposedDelivery.unit,
       milestoneProposal: milestoneMode ? (milestoneProposal ?? null) : undefined,
     });
   };
@@ -313,6 +346,11 @@ export function ResponseCreationFlow({
 
   const offerStepNumber = needsPhotoStep ? 2 : 1;
   const messageStepNumber = needsPhotoStep ? 3 : 2;
+  const deliveryStepNumber = needsPhotoStep ? 4 : 3;
+  const deliveryValidation = validateProposedDeliveryDuration(
+    proposedDelivery.value,
+    proposedDelivery.unit,
+  );
 
   const syncOfferFromMilestoneDrafts = (drafts: MilestoneDraftItem[]) => {
     setMilestoneDrafts(drafts);
@@ -367,8 +405,20 @@ export function ResponseCreationFlow({
               <div className="flex flex-row items-stretch gap-3">
                 <WizardSecondaryButton label="Back" onPress={() => onStepChange(offerStep)} />
                 <WizardPrimaryButton
-                  label={isUpdate ? 'Edit response' : 'Send Response'}
+                  label="Next"
                   disabled={!offerStepReady}
+                  onPress={() => onStepChange(deliveryStep)}
+                  className="flex-1"
+                />
+              </div>
+            ) : null}
+
+            {step === deliveryStep ? (
+              <div className="flex flex-row items-stretch gap-3">
+                <WizardSecondaryButton label="Back" onPress={() => onStepChange(messageStep)} />
+                <WizardPrimaryButton
+                  label={isUpdate ? 'Edit response' : 'Send Response'}
+                  disabled={!offerStepReady || deliveryValidation !== null}
                   loading={submitting}
                   onPress={send}
                   className="flex-1"
@@ -455,6 +505,18 @@ export function ResponseCreationFlow({
                 className="min-h-44 resize-none rounded-2xl bg-surface px-4 py-4 text-base text-ink outline-none placeholder:text-subtle"
               />
 
+            </div>
+          ) : null}
+
+          {step === deliveryStep ? (
+            <div className="flex flex-col gap-3">
+              <StepLabel>{`Step ${deliveryStepNumber} of ${stepCount} · Delivery`}</StepLabel>
+              <ProposedDeliveryPicker
+                value={proposedDelivery.value}
+                unit={proposedDelivery.unit}
+                onChange={setProposedDelivery}
+                error={deliveryValidation}
+              />
               {submitError ? <InlineError error={submitError} /> : null}
             </div>
           ) : null}
@@ -468,10 +530,16 @@ export function ResponseCreationFlow({
             onClose={() => setCaptureOpen(false)}
             onCaptured={(bytes) => {
               void (async () => {
-                await uploadLiveProfilePhoto(userId, bytes);
-                setCaptureOpen(false);
-                await profile.refetch();
-                showAppToast('Profile updated');
+                try {
+                  await uploadLiveProfilePhoto(userId, bytes);
+                  setCaptureOpen(false);
+                  await profile.refetch();
+                  showAppToast('Profile updated');
+                } catch (err) {
+                  setCaptureError(
+                    err instanceof Error ? err : new Error('Could not save the photo.'),
+                  );
+                }
               })();
             }}
           />

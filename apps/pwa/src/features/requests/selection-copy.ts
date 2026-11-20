@@ -11,6 +11,6 @@ export function chooseResponderDialog(displayName: string | null, milestonePayme
     title: `Choose ${name}?`,
     message,
     cancel: 'Not yet',
-    confirm: `Choose ${name}`,
+    confirm: 'Choose',
   };
 }

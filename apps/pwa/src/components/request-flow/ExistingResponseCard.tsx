@@ -5,6 +5,11 @@ import { Button } from '@/components/ui/Button';
 import { IonIcon } from '@/components/ui/IonIcon';
 import { ionIcons } from '@/components/ui/ion-icons';
 import type { MilestoneProposalItem } from '@/features/requests/milestones';
+import {
+  type DeliveryDurationUnit,
+  proposedDeliveryLabelFromRow,
+} from '@/features/requests/delivery-duration';
+import { formatDeliveryInstantLabel } from '@/features/requests/engagement-lifecycle';
 import { formatMoney } from '@/lib/format';
 import { useColors } from '@/theme/ThemeProvider';
 
@@ -18,6 +23,10 @@ type Props = {
   cancelLoading?: boolean;
   proposedMilestones?: MilestoneProposalItem[];
   proposedMilestoneTotalMajor?: number;
+  proposedDeliveryDurationValue?: number | null;
+  proposedDeliveryDurationUnit?: DeliveryDurationUnit | null;
+  proposedDeliveryAt?: string | null;
+  proposedDeliveryTimezone?: string | null;
 };
 
 /** Pending response the helper already sent — offer preview and edit / withdraw actions. */
@@ -31,6 +40,10 @@ export function ExistingResponseCard({
   cancelLoading,
   proposedMilestones,
   proposedMilestoneTotalMajor,
+  proposedDeliveryDurationValue,
+  proposedDeliveryDurationUnit,
+  proposedDeliveryAt,
+  proposedDeliveryTimezone,
 }: Props) {
   const colors = useColors();
   const offerLabel =
@@ -38,6 +51,13 @@ export function ExistingResponseCard({
   const requestLabel =
     requesterOffer !== null ? formatMoney(requesterOffer, currency) : '—';
   const trimmedMessage = message?.trim() ?? '';
+  const proposedDeliveryLabel = proposedDeliveryLabelFromRow({
+    proposed_delivery_duration_value: proposedDeliveryDurationValue ?? null,
+    proposed_delivery_duration_unit: proposedDeliveryDurationUnit ?? null,
+    proposed_delivery_at: proposedDeliveryAt ?? null,
+    proposed_delivery_timezone: proposedDeliveryTimezone ?? null,
+    formatCalendar: formatDeliveryInstantLabel,
+  });
 
   return (
     <section className="shadow-card overflow-hidden rounded-3xl border border-hairline bg-elevated">
@@ -88,6 +108,16 @@ export function ExistingResponseCard({
             heading="Your proposed milestones"
             variant="proposed"
           />
+        ) : null}
+
+        {proposedDeliveryLabel ? (
+          <div className="rounded-2xl border border-hairline bg-surface px-4 py-3">
+            <p className="text-xs font-medium text-subtle">Proposed delivery</p>
+            <p className="mt-1 text-sm leading-6 text-ink">{proposedDeliveryLabel}</p>
+            <p className="mt-2 text-xs text-muted">
+              Countdown begins when you press Start after they accept, not at this proposed time.
+            </p>
+          </div>
         ) : null}
 
         <div className="flex flex-row gap-3 pt-1">

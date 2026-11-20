@@ -12,6 +12,7 @@ import {
 import { useUserId } from '@/features/auth/use-user-id';
 import type { Position } from '@/lib/geolocation';
 import { queryKeys } from '@/lib/query/keys';
+import type { DeliveryDurationUnit } from '@/features/requests/delivery-duration';
 import { supabase } from '@/lib/supabase/client';
 import type { ReportServiceProblemInput } from '@/features/requests/requester-api';
 import type { Database } from '@/lib/supabase/database.types';
@@ -138,6 +139,10 @@ export type ExistingResponse = {
   responseId: string;
   message: string | null;
   quotedAmount: number | null;
+  proposedDeliveryDurationValue: number | null;
+  proposedDeliveryDurationUnit: DeliveryDurationUnit | null;
+  proposedDeliveryAt: string | null;
+  proposedDeliveryTimezone: string | null;
 };
 
 function isOpenRequestStatus(status: string | null | undefined): boolean {
@@ -175,6 +180,10 @@ export function useRequestForResponse(requestId: string, position: Position | nu
         responseId: pendingRow.response_id,
         message: pendingRow.message,
         quotedAmount: pendingRow.quoted_amount,
+        proposedDeliveryDurationValue: pendingRow.proposed_delivery_duration_value ?? null,
+        proposedDeliveryDurationUnit: pendingRow.proposed_delivery_duration_unit ?? null,
+        proposedDeliveryAt: pendingRow.proposed_delivery_at ?? null,
+        proposedDeliveryTimezone: pendingRow.proposed_delivery_timezone ?? null,
       }
     : null;
 
@@ -345,12 +354,20 @@ export function useRespondToRequest() {
       message: string | null;
       quotedAmount: number | null;
       position: Position | null;
+      proposedDeliveryDurationValue: number;
+      proposedDeliveryDurationUnit: DeliveryDurationUnit;
     }) => {
+      const deliveryArgs = {
+        p_proposed_delivery_duration_value: input.proposedDeliveryDurationValue,
+        p_proposed_delivery_duration_unit: input.proposedDeliveryDurationUnit,
+      };
+
       if (!input.position) {
         const { error } = await supabase.rpc('respond_to_request', {
           p_request_id: input.requestId,
           p_message: input.message ?? undefined,
           p_quoted_amount: input.quotedAmount ?? undefined,
+          ...deliveryArgs,
         });
         if (error) throw error;
         return;
@@ -362,6 +379,7 @@ export function useRespondToRequest() {
         p_quoted_amount: input.quotedAmount ?? undefined,
         p_latitude: input.position.latitude,
         p_longitude: input.position.longitude,
+        ...deliveryArgs,
       });
 
       if (error) throw error;

@@ -24,7 +24,6 @@ export function partitionRequestResponsesForRequester<T extends RequestResponseL
 ) {
   const accepted = responses.find((row) => row.status === 'accepted') ?? null;
   const pendingAlternatives = responses.filter((row) => row.status === 'pending');
-  const withdrawn = responses.filter((row) => row.status === 'withdrawn');
   const declined = responses.filter((row) => row.status === 'declined');
   const canAccept = requesterCanAcceptResponses(requestStatus, options);
   const hasActiveEngagement = requestStatus === 'accepted' || requestStatus === 'in_progress';
@@ -32,7 +31,6 @@ export function partitionRequestResponsesForRequester<T extends RequestResponseL
   return {
     accepted,
     pendingAlternatives,
-    withdrawn,
     declined,
     canAccept,
     hasActiveEngagement,

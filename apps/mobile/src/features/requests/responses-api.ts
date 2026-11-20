@@ -16,6 +16,7 @@ import type { Database } from '@/lib/supabase/database.types';
 import type { Nullable, RpcRow } from '@/lib/supabase/types';
 import { normalizeRequestStatus } from '@/features/domain/transitions';
 import { normalizeRequestTagSlugs } from '@/features/requests/tags';
+import type { DeliveryDurationUnit } from '@/features/requests/delivery-duration';
 
 type Functions = Database['public']['Functions'];
 
@@ -136,6 +137,10 @@ export type ExistingResponse = {
   responseId: string;
   message: string | null;
   quotedAmount: number | null;
+  proposedDeliveryDurationValue: number | null;
+  proposedDeliveryDurationUnit: DeliveryDurationUnit | null;
+  proposedDeliveryAt: string | null;
+  proposedDeliveryTimezone: string | null;
 };
 
 function isOpenRequestStatus(status: string | null | undefined): boolean {
@@ -173,6 +178,10 @@ export function useRequestForResponse(requestId: string, position: Position | nu
         responseId: pendingRow.response_id,
         message: pendingRow.message,
         quotedAmount: pendingRow.quoted_amount,
+        proposedDeliveryDurationValue: pendingRow.proposed_delivery_duration_value ?? null,
+        proposedDeliveryDurationUnit: pendingRow.proposed_delivery_duration_unit ?? null,
+        proposedDeliveryAt: pendingRow.proposed_delivery_at ?? null,
+        proposedDeliveryTimezone: pendingRow.proposed_delivery_timezone ?? null,
       }
     : null;
 
@@ -340,8 +349,8 @@ export function useRespondToRequest() {
       message: string | null;
       quotedAmount: number | null;
       position: Position | null;
-      proposedDeliveryAt: Date;
-      proposedDeliveryTimezone?: string;
+      proposedDeliveryDurationValue: number;
+      proposedDeliveryDurationUnit: DeliveryDurationUnit;
     }) => {
       if (!input.position) throw new Error('Location is required to respond.');
 
@@ -351,8 +360,8 @@ export function useRespondToRequest() {
         p_quoted_amount: input.quotedAmount ?? undefined,
         p_latitude: input.position.latitude,
         p_longitude: input.position.longitude,
-        p_proposed_delivery_at: input.proposedDeliveryAt.toISOString(),
-        p_proposed_delivery_timezone: input.proposedDeliveryTimezone,
+        p_proposed_delivery_duration_value: input.proposedDeliveryDurationValue,
+        p_proposed_delivery_duration_unit: input.proposedDeliveryDurationUnit,
       });
 
       if (error) throw error;

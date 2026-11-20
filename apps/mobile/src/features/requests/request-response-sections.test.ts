@@ -49,7 +49,7 @@ test('requester can accept while posted or awaiting review', () => {
 });
 
 test('partition hides accept actions during active engagement', () => {
-  const rows = [response('a', 'accepted'), response('b', 'pending'), response('c', 'withdrawn')];
+  const rows = [response('a', 'accepted'), response('b', 'pending')];
   const parts = partitionRequestResponsesForRequester(rows, 'accepted', {
     isAwaitingReview: false,
     isExpiredRequest: false,

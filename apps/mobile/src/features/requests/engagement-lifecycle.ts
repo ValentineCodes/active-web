@@ -130,14 +130,14 @@ export function helperShowStartButton(input: {
 
 export function proposedDeliveryExplainerForHelper(hasStarted: boolean): string {
   if (hasStarted) {
-    return 'Your binding delivery deadline is set by the server after you press Start. It may differ from what you proposed at respond time.';
+    return 'Your binding calendar deadline is set on the server when you press Start: start time plus the duration you proposed.';
   }
-  return 'This is your proposed delivery time. The countdown does not start when you respond or when you are chosen — it starts only after you press Start. The final deadline is adjusted on the server when you start.';
+  return 'This is how much time you asked for after Start. The countdown does not begin when you respond or when you are chosen — only after you press Start.';
 }
 
 export function proposedDeliveryExplainerForRequester(hasStarted: boolean): string {
   if (hasStarted) {
-    return 'The binding delivery deadline below is authoritative from the server.';
+    return 'The binding delivery deadline below is the server timestamp when they started, plus their proposed duration.';
   }
-  return 'They proposed this delivery time when responding. It may shift forward if they start later — the server calculates the final deadline when they press Start.';
+  return 'They proposed this delivery duration when responding. The calendar deadline appears only after they press Start.';
 }

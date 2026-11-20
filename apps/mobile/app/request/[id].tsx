@@ -558,6 +558,8 @@ export default function RequestDetailScreen() {
         statusTone={options.statusTone}
         proposedMilestones={proposedMilestonePlan?.items}
         proposedMilestoneTotalMajor={proposedMilestonePlan?.totalMajor}
+        proposedDeliveryDurationValue={response.proposed_delivery_duration_value}
+        proposedDeliveryDurationUnit={response.proposed_delivery_duration_unit}
         proposedDeliveryAt={response.proposed_delivery_at}
         proposedDeliveryTimezone={response.proposed_delivery_timezone}
         onDiscussPress={
@@ -576,7 +578,6 @@ export default function RequestDetailScreen() {
     isOpen ||
     isAwaitingReview ||
     responseSections.hasActiveEngagement ||
-    responseSections.withdrawn.length > 0 ||
     responseSections.declined.length > 0;
 
   if (redirectsToEngagement) {
@@ -793,20 +794,6 @@ export default function RequestDetailScreen() {
                     statusTone: 'info',
                   }),
                 )}
-              </View>
-            ) : null}
-
-            {responseSections.withdrawn.length > 0 ? (
-              <View className="gap-4">
-                <Text className="text-lg font-bold text-ink">Withdrawn offers</Text>
-                {responseSections.withdrawn.map((response) => {
-                  const badge = responseStatusBadge('withdrawn');
-                  return renderResponseCard(response, {
-                    allowSelection: false,
-                    statusLabel: badge.label,
-                    statusTone: badge.tone,
-                  });
-                })}
               </View>
             ) : null}
 

@@ -11,14 +11,12 @@ import { InlineError } from '@/components/ui/StateView';
 import { hasProfilePhotoReady, useCaptureProfilePhoto, useProfile } from '@/features/profile/api';
 import { CheckboxRow } from '@/components/ui/CheckboxRow';
 import { MilestonePlanEditor } from '@/components/request-flow/MilestonePlanEditor';
+import { ProposedDeliveryPicker } from '@/components/request-flow/ProposedDeliveryPicker';
 import {
-  ProposedDeliveryPicker,
-  defaultProposedDeliveryDate,
-} from '@/components/request-flow/ProposedDeliveryPicker';
-import {
-  DEFAULT_PROPOSED_DELIVERY_TIMEZONE,
-  validateProposedDeliveryAt,
-} from '@/features/requests/engagement-lifecycle';
+  type DeliveryDurationUnit,
+  initialProposedDeliveryDuration,
+  validateProposedDeliveryDuration,
+} from '@/features/requests/delivery-duration';
 import {
   counterOfferForRpc,
   parseResponseOfferAmount,
@@ -49,6 +47,8 @@ type ResponseCreationFlowProps = {
   request: RespondableRequest;
   initialYourOffer: string;
   initialMessage: string;
+  initialProposedDeliveryDurationValue?: number | null;
+  initialProposedDeliveryDurationUnit?: DeliveryDurationUnit | null;
   needsPhotoStep: boolean;
   isUpdate: boolean;
   submitting: boolean;
@@ -56,8 +56,8 @@ type ResponseCreationFlowProps = {
   onSubmit: (input: {
     message: string | null;
     quotedAmount: number | null;
-    proposedDeliveryAt: Date;
-    proposedDeliveryTimezone: string;
+    proposedDeliveryDurationValue: number;
+    proposedDeliveryDurationUnit: DeliveryDurationUnit;
     milestoneProposal?: MilestoneRpcItem[] | null;
   }) => void;
   milestoneMode?: boolean;
@@ -227,6 +227,8 @@ export function ResponseCreationFlow({
   request,
   initialYourOffer,
   initialMessage,
+  initialProposedDeliveryDurationValue,
+  initialProposedDeliveryDurationUnit,
   needsPhotoStep,
   isUpdate,
   submitting,
@@ -253,7 +255,12 @@ export function ResponseCreationFlow({
       : defaultMilestoneDraftItems(),
   );
   const [milestoneValidationMessage, setMilestoneValidationMessage] = useState<string | null>(null);
-  const [proposedDeliveryAt, setProposedDeliveryAt] = useState(() => defaultProposedDeliveryDate());
+  const [proposedDelivery, setProposedDelivery] = useState(() =>
+    initialProposedDeliveryDuration({
+      value: initialProposedDeliveryDurationValue,
+      unit: initialProposedDeliveryDurationUnit,
+    }),
+  );
 
   const stepCount = needsPhotoStep ? 4 : 3;
   const offerStep = needsPhotoStep ? 1 : 0;
@@ -314,7 +321,10 @@ export function ResponseCreationFlow({
       milestoneProposal = validation.items;
     }
 
-    const deliveryValidation = validateProposedDeliveryAt(proposedDeliveryAt);
+    const deliveryValidation = validateProposedDeliveryDuration(
+      proposedDelivery.value,
+      proposedDelivery.unit,
+    );
     if (deliveryValidation) {
       showAppToast(deliveryValidation, 'warning');
       return;
@@ -323,8 +333,8 @@ export function ResponseCreationFlow({
     onSubmit({
       message: message.trim() || null,
       quotedAmount: quoted,
-      proposedDeliveryAt,
-      proposedDeliveryTimezone: DEFAULT_PROPOSED_DELIVERY_TIMEZONE,
+      proposedDeliveryDurationValue: proposedDelivery.value,
+      proposedDeliveryDurationUnit: proposedDelivery.unit,
       milestoneProposal: milestoneMode ? (milestoneProposal ?? null) : undefined,
     });
   };
@@ -337,7 +347,10 @@ export function ResponseCreationFlow({
   const offerStepNumber = needsPhotoStep ? 2 : 1;
   const messageStepNumber = needsPhotoStep ? 3 : 2;
   const deliveryStepNumber = needsPhotoStep ? 4 : 3;
-  const deliveryValidation = validateProposedDeliveryAt(proposedDeliveryAt);
+  const deliveryValidation = validateProposedDeliveryDuration(
+    proposedDelivery.value,
+    proposedDelivery.unit,
+  );
 
   const syncOfferFromMilestoneDrafts = (drafts: MilestoneDraftItem[]) => {
     setMilestoneDrafts(drafts);
@@ -517,8 +530,9 @@ export function ResponseCreationFlow({
           <View className="gap-3">
             <StepLabel>{`Step ${deliveryStepNumber} of ${stepCount} · Delivery`}</StepLabel>
             <ProposedDeliveryPicker
-              value={proposedDeliveryAt}
-              onChange={setProposedDeliveryAt}
+              value={proposedDelivery.value}
+              unit={proposedDelivery.unit}
+              onChange={setProposedDelivery}
               error={deliveryValidation}
             />
             {submitError ? <InlineError error={submitError} /> : null}

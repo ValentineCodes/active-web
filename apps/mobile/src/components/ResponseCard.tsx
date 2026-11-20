@@ -5,6 +5,10 @@ import { MilestonePlanCard } from '@/components/request-flow/MilestonePlanCard';
 import { RequestPersonCard } from '@/components/request-flow/RequestPersonCard';
 import { Badge } from '@/components/ui/Badge';
 import type { MilestoneProposalItem } from '@/features/requests/milestones';
+import {
+  type DeliveryDurationUnit,
+  proposedDeliveryLabelFromRow,
+} from '@/features/requests/delivery-duration';
 import { formatDeliveryInstantLabel } from '@/features/requests/engagement-lifecycle';
 import { formatAgo, formatMoney } from '@/lib/format';
 import { useTheme } from '@/theme';
@@ -31,6 +35,8 @@ export function ResponseCard({
   statusTone,
   proposedMilestones,
   proposedMilestoneTotalMajor,
+  proposedDeliveryDurationValue,
+  proposedDeliveryDurationUnit,
   proposedDeliveryAt,
   proposedDeliveryTimezone,
 }: {
@@ -52,15 +58,20 @@ export function ResponseCard({
   statusTone?: 'neutral' | 'brand' | 'active' | 'danger' | 'warning' | 'info';
   proposedMilestones?: MilestoneProposalItem[];
   proposedMilestoneTotalMajor?: number;
+  proposedDeliveryDurationValue?: number | null;
+  proposedDeliveryDurationUnit?: DeliveryDurationUnit | null;
   proposedDeliveryAt?: string | null;
   proposedDeliveryTimezone?: string | null;
 }) {
   const { shadow } = useTheme();
   const offerLabel = quotedAmount !== null ? formatMoney(quotedAmount, currency) : null;
-  const proposedDeliveryLabel = formatDeliveryInstantLabel(
-    proposedDeliveryAt,
-    proposedDeliveryTimezone,
-  );
+  const proposedDeliveryLabel = proposedDeliveryLabelFromRow({
+    proposed_delivery_duration_value: proposedDeliveryDurationValue ?? null,
+    proposed_delivery_duration_unit: proposedDeliveryDurationUnit ?? null,
+    proposed_delivery_at: proposedDeliveryAt ?? null,
+    proposed_delivery_timezone: proposedDeliveryTimezone ?? null,
+    formatCalendar: formatDeliveryInstantLabel,
+  });
 
   return (
     <View style={shadow.card} className="gap-4 rounded-2xl border border-hairline bg-elevated p-4">
@@ -79,7 +90,10 @@ export function ResponseCard({
         />
       </View>
 
-      {message || offerLabel || (proposedMilestones && proposedMilestones.length >= 2) ? (
+      {message ||
+      offerLabel ||
+      proposedDeliveryLabel ||
+      (proposedMilestones && proposedMilestones.length >= 2) ? (
         <View className="gap-2 rounded-2xl bg-surface p-3">
           <View className="flex-row items-center justify-between gap-2">
             <Text className="text-sm text-muted">{formatAgo(createdAt)}</Text>
@@ -105,7 +119,7 @@ export function ResponseCard({
               </Text>
               <Text className="text-sm leading-5 text-ink">{proposedDeliveryLabel}</Text>
               <Text className="text-xs text-muted">
-                Countdown begins when they press Start after you accept, not at this proposed time.
+                Countdown begins when they press Start after you accept.
               </Text>
             </View>
           ) : null}

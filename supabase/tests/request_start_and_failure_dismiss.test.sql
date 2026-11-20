@@ -93,7 +93,8 @@ select respond_to_request(
   null,
   6.5000,
   3.3800,
-  now() + interval '7 days'
+  7,
+  'days'::public.delivery_duration_unit
 ) as single_response_id \gset
 
 select pg_temp.act_as('a1111111-1111-1111-1111-111111111111') as _ \gset
@@ -204,7 +205,8 @@ select respond_to_request(
   null,
   6.5000,
   3.3800,
-  now() + interval '7 days'
+  7,
+  'days'::public.delivery_duration_unit
 ) as dismiss_response_id \gset
 
 select pg_temp.act_as('a1111111-1111-1111-1111-111111111111') as _ \gset
@@ -307,7 +309,8 @@ select respond_to_request(
   null,
   6.5000,
   3.3800,
-  now() + interval '7 days'
+  7,
+  'days'::public.delivery_duration_unit
 ) as ms_dismiss_resp \gset
 
 select pg_temp.act_as('a1111111-1111-1111-1111-111111111111') as _ \gset
@@ -364,7 +367,8 @@ select respond_to_request(
   null,
   6.5000,
   3.3800,
-  now() + interval '7 days'
+  7,
+  'days'::public.delivery_duration_unit
 ) as race_response_id \gset
 
 select pg_temp.act_as('a1111111-1111-1111-1111-111111111111') as _ \gset

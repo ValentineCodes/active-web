@@ -59,6 +59,8 @@ import { useColors } from '@/theme/ThemeProvider';
 type PendingSubmit = {
   message: string | null;
   quotedAmount: number | null;
+  proposedDeliveryDurationValue: number;
+  proposedDeliveryDurationUnit: import('@/features/requests/delivery-duration').DeliveryDurationUnit;
   milestoneProposal?: MilestoneRpcItem[] | null;
 };
 
@@ -225,8 +227,13 @@ export function RespondPage() {
         message: payload.message,
         quotedAmount: payload.quotedAmount,
         position: postPosition,
+        proposedDeliveryDurationValue: payload.proposedDeliveryDurationValue,
+        proposedDeliveryDurationUnit: payload.proposedDeliveryDurationUnit,
       },
       {
+        onError: (error) => {
+          showAppToast(error.message, 'danger');
+        },
         onSuccess: () => {
           void (async () => {
             if (payload.milestoneProposal && payload.milestoneProposal.length >= 2) {
@@ -336,7 +343,7 @@ export function RespondPage() {
 
     withdrawResponse.mutate(existingResponse.responseId, {
       onSuccess: () => {
-        showAppToast('Response withdrawn');
+        showAppToast('Response cancelled');
         router.back();
       },
     });
@@ -411,6 +418,8 @@ export function RespondPage() {
             request={request}
             initialYourOffer={initialOfferInput}
             initialMessage={initialMessage}
+            initialProposedDeliveryDurationValue={existingResponse?.proposedDeliveryDurationValue}
+            initialProposedDeliveryDurationUnit={existingResponse?.proposedDeliveryDurationUnit}
             needsPhotoStep={needsPhotoStep}
             isUpdate={Boolean(existingResponse)}
             submitting={respond.isPending}
@@ -487,6 +496,10 @@ export function RespondPage() {
                 myProposedMilestones.length >= 2 ? myProposedMilestones : undefined
               }
               proposedMilestoneTotalMajor={responseProposedMilestoneTotalMajor}
+              proposedDeliveryDurationValue={existingResponse.proposedDeliveryDurationValue}
+              proposedDeliveryDurationUnit={existingResponse.proposedDeliveryDurationUnit}
+              proposedDeliveryAt={existingResponse.proposedDeliveryAt}
+              proposedDeliveryTimezone={existingResponse.proposedDeliveryTimezone}
               onEdit={tryBeginFlow}
               onCancel={confirmWithdraw}
               cancelLoading={withdrawResponse.isPending}

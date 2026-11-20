@@ -572,6 +572,8 @@ export default function EngagementScreen() {
             acceptedAt={data.accepted_at}
             startByAt={data.start_by_at ?? null}
             startedAt={data.started_at}
+            proposedDeliveryDurationValue={data.proposed_delivery_duration_value ?? null}
+            proposedDeliveryDurationUnit={data.proposed_delivery_duration_unit ?? null}
             proposedDeliveryAt={data.proposed_delivery_at ?? null}
             proposedDeliveryTimezone={data.proposed_delivery_timezone ?? null}
             adjustedDeliveryAt={data.adjusted_delivery_at ?? null}

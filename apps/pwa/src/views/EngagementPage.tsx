@@ -28,6 +28,7 @@ import { BottomSheet } from '@/components/ui/BottomSheet';
 import { Button } from '@/components/ui/Button';
 import { Screen } from '@/components/ui/Screen';
 import { EmptyState, InlineError, LoadingState } from '@/components/ui/StateView';
+import { EngagementLifecycleCard } from '@/components/request-flow/EngagementLifecycleCard';
 import { EngagementMilestoneProgress } from '@/components/request-flow/EngagementMilestoneProgress';
 import { resolveAgreedAmount } from '@/features/requests/payment-display';
 import {
@@ -467,6 +468,21 @@ export function EngagementPage() {
               />
               <RequestExactLocationCard address={data.location_label} onDirections={openMaps} />
             </div>
+
+            <EngagementLifecycleCard
+              viewerIsRequester={data.viewer_is_requester}
+              requestStatus={data.request_status}
+              paymentStatus={data.payment_status}
+              acceptedAt={data.accepted_at}
+              startByAt={data.start_by_at ?? null}
+              startedAt={data.started_at}
+              proposedDeliveryDurationValue={data.proposed_delivery_duration_value ?? null}
+              proposedDeliveryDurationUnit={data.proposed_delivery_duration_unit ?? null}
+              proposedDeliveryAt={data.proposed_delivery_at ?? null}
+              proposedDeliveryTimezone={data.proposed_delivery_timezone ?? null}
+              adjustedDeliveryAt={data.adjusted_delivery_at ?? null}
+              deliveryDeadlineAt={data.delivery_deadline_at ?? null}
+            />
 
             {showPaymentSecured ? (
               <RequestCallout tone="info" title="Payment secured">

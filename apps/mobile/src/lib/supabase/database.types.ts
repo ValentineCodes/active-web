@@ -2377,6 +2377,11 @@ export type Database = {
           id: string
           message: string | null
           proposed_delivery_at: string | null
+          proposed_delivery_duration_seconds: number | null
+          proposed_delivery_duration_unit:
+            | Database["public"]["Enums"]["delivery_duration_unit"]
+            | null
+          proposed_delivery_duration_value: number | null
           proposed_delivery_timezone: string | null
           quoted_amount: number | null
           request_id: string
@@ -2392,6 +2397,11 @@ export type Database = {
           id?: string
           message?: string | null
           proposed_delivery_at?: string | null
+          proposed_delivery_duration_seconds?: number | null
+          proposed_delivery_duration_unit?:
+            | Database["public"]["Enums"]["delivery_duration_unit"]
+            | null
+          proposed_delivery_duration_value?: number | null
           proposed_delivery_timezone?: string | null
           quoted_amount?: number | null
           request_id: string
@@ -2407,6 +2417,11 @@ export type Database = {
           id?: string
           message?: string | null
           proposed_delivery_at?: string | null
+          proposed_delivery_duration_seconds?: number | null
+          proposed_delivery_duration_unit?:
+            | Database["public"]["Enums"]["delivery_duration_unit"]
+            | null
+          proposed_delivery_duration_value?: number | null
           proposed_delivery_timezone?: string | null
           quoted_amount?: number | null
           request_id?: string
@@ -2573,6 +2588,11 @@ export type Database = {
           payment_status: Database["public"]["Enums"]["payment_status"]
           payment_structure: Database["public"]["Enums"]["payment_structure"]
           proposed_delivery_at: string | null
+          proposed_delivery_duration_seconds: number | null
+          proposed_delivery_duration_unit:
+            | Database["public"]["Enums"]["delivery_duration_unit"]
+            | null
+          proposed_delivery_duration_value: number | null
           proposed_delivery_timezone: string | null
           requester_id: string
           scheduled_for: string | null
@@ -2609,6 +2629,11 @@ export type Database = {
           payment_status?: Database["public"]["Enums"]["payment_status"]
           payment_structure?: Database["public"]["Enums"]["payment_structure"]
           proposed_delivery_at?: string | null
+          proposed_delivery_duration_seconds?: number | null
+          proposed_delivery_duration_unit?:
+            | Database["public"]["Enums"]["delivery_duration_unit"]
+            | null
+          proposed_delivery_duration_value?: number | null
           proposed_delivery_timezone?: string | null
           requester_id: string
           scheduled_for?: string | null
@@ -2645,6 +2670,11 @@ export type Database = {
           payment_status?: Database["public"]["Enums"]["payment_status"]
           payment_structure?: Database["public"]["Enums"]["payment_structure"]
           proposed_delivery_at?: string | null
+          proposed_delivery_duration_seconds?: number | null
+          proposed_delivery_duration_unit?:
+            | Database["public"]["Enums"]["delivery_duration_unit"]
+            | null
+          proposed_delivery_duration_value?: number | null
           proposed_delivery_timezone?: string | null
           requester_id?: string
           scheduled_for?: string | null
@@ -4204,6 +4234,13 @@ export type Database = {
         Args: { p_timezone: string }
         Returns: undefined
       }
+      assert_valid_proposed_delivery_duration: {
+        Args: {
+          p_unit: Database["public"]["Enums"]["delivery_duration_unit"]
+          p_value: number
+        }
+        Returns: number
+      }
       assert_withdrawal_identity_allowed: {
         Args: { p_user_id: string }
         Returns: undefined
@@ -4617,6 +4654,13 @@ export type Database = {
         }
         Returns: undefined
       }
+      delivery_duration_to_seconds: {
+        Args: {
+          p_unit: Database["public"]["Enums"]["delivery_duration_unit"]
+          p_value: number
+        }
+        Returns: number
+      }
       discovery_radius_m: { Args: never; Returns: number }
       dismiss_worker_failure_to_start: {
         Args: { p_request_id: string }
@@ -4732,6 +4776,9 @@ export type Database = {
           offered_amount: number
           payment_status: Database["public"]["Enums"]["payment_status"]
           proposed_delivery_at: string
+          proposed_delivery_duration_seconds: number
+          proposed_delivery_duration_unit: Database["public"]["Enums"]["delivery_duration_unit"]
+          proposed_delivery_duration_value: number
           proposed_delivery_timezone: string
           quoted_amount: number
           rating_comment: string
@@ -5224,6 +5271,9 @@ export type Database = {
           message: string
           phone_verified: boolean
           proposed_delivery_at: string
+          proposed_delivery_duration_seconds: number
+          proposed_delivery_duration_unit: Database["public"]["Enums"]["delivery_duration_unit"]
+          proposed_delivery_duration_value: number
           proposed_delivery_timezone: string
           quoted_amount: number
           rating_average: number
@@ -5315,6 +5365,11 @@ export type Database = {
           message: string
           offered_amount: number
           posted_at: string
+          proposed_delivery_at: string
+          proposed_delivery_duration_seconds: number
+          proposed_delivery_duration_unit: Database["public"]["Enums"]["delivery_duration_unit"]
+          proposed_delivery_duration_value: number
+          proposed_delivery_timezone: string
           quoted_amount: number
           request_id: string
           request_status: Database["public"]["Enums"]["request_status"]
@@ -5586,6 +5641,7 @@ export type Database = {
         Returns: Database["public"]["Enums"]["request_status"]
       }
       request_engagement_max_delivery_interval: { Args: never; Returns: string }
+      request_engagement_max_delivery_seconds: { Args: never; Returns: number }
       request_engagement_milestone_revision: {
         Args: { p_milestone_id: string }
         Returns: undefined
@@ -5715,29 +5771,18 @@ export type Database = {
         Args: { p_problem_id: string }
         Returns: boolean
       }
-      respond_to_request:
-        | {
-            Args: {
-              p_latitude?: number
-              p_longitude?: number
-              p_message?: string
-              p_quoted_amount?: number
-              p_request_id: string
-            }
-            Returns: string
-          }
-        | {
-            Args: {
-              p_latitude?: number
-              p_longitude?: number
-              p_message?: string
-              p_proposed_delivery_at?: string
-              p_proposed_delivery_timezone?: string
-              p_quoted_amount?: number
-              p_request_id: string
-            }
-            Returns: string
-          }
+      respond_to_request: {
+        Args: {
+          p_latitude?: number
+          p_longitude?: number
+          p_message?: string
+          p_proposed_delivery_duration_unit?: Database["public"]["Enums"]["delivery_duration_unit"]
+          p_proposed_delivery_duration_value?: number
+          p_quoted_amount?: number
+          p_request_id: string
+        }
+        Returns: string
+      }
       sanitize_chat_attachment_filename: {
         Args: { p_file_name: string }
         Returns: string
@@ -6181,6 +6226,7 @@ export type Database = {
       conversation_attachment_type: "image" | "video" | "file"
       conversation_message_type: "text" | "system" | "attachment"
       delivery_deadline_extension_status: "pending" | "agreed" | "superseded"
+      delivery_duration_unit: "minutes" | "hours" | "days" | "weeks"
       deposit_transaction_status:
         | "pending"
         | "processing"
@@ -6468,6 +6514,7 @@ export const Constants = {
       conversation_attachment_type: ["image", "video", "file"],
       conversation_message_type: ["text", "system", "attachment"],
       delivery_deadline_extension_status: ["pending", "agreed", "superseded"],
+      delivery_duration_unit: ["minutes", "hours", "days", "weeks"],
       deposit_transaction_status: [
         "pending",
         "processing",

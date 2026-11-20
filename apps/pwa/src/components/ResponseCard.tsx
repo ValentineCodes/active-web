@@ -5,6 +5,11 @@ import { MilestonePlanCard } from '@/components/request-flow/MilestonePlanCard';
 import { RequestPersonCard } from '@/components/request-flow/RequestPersonCard';
 import { Badge } from '@/components/ui/Badge';
 import type { MilestoneProposalItem } from '@/features/requests/milestones';
+import {
+  type DeliveryDurationUnit,
+  proposedDeliveryLabelFromRow,
+} from '@/features/requests/delivery-duration';
+import { formatDeliveryInstantLabel } from '@/features/requests/engagement-lifecycle';
 import { formatAgo, formatMoney } from '@/lib/format';
 
 type BadgeTone = 'neutral' | 'brand' | 'active' | 'danger' | 'warning' | 'info';
@@ -27,6 +32,10 @@ export function ResponseCard({
   statusTone,
   proposedMilestones,
   proposedMilestoneTotalMajor,
+  proposedDeliveryDurationValue,
+  proposedDeliveryDurationUnit,
+  proposedDeliveryAt,
+  proposedDeliveryTimezone,
 }: {
   displayName: string | null;
   avatarPath: string | null;
@@ -45,8 +54,19 @@ export function ResponseCard({
   statusTone?: BadgeTone;
   proposedMilestones?: MilestoneProposalItem[];
   proposedMilestoneTotalMajor?: number;
+  proposedDeliveryDurationValue?: number | null;
+  proposedDeliveryDurationUnit?: DeliveryDurationUnit | null;
+  proposedDeliveryAt?: string | null;
+  proposedDeliveryTimezone?: string | null;
 }) {
   const offerLabel = quotedAmount !== null ? formatMoney(quotedAmount, currency) : null;
+  const proposedDeliveryLabel = proposedDeliveryLabelFromRow({
+    proposed_delivery_duration_value: proposedDeliveryDurationValue ?? null,
+    proposed_delivery_duration_unit: proposedDeliveryDurationUnit ?? null,
+    proposed_delivery_at: proposedDeliveryAt ?? null,
+    proposed_delivery_timezone: proposedDeliveryTimezone ?? null,
+    formatCalendar: formatDeliveryInstantLabel,
+  });
 
   return (
     <article className="shadow-card flex flex-col gap-4 rounded-2xl border border-hairline bg-elevated p-4">
@@ -64,7 +84,10 @@ export function ResponseCard({
         />
       </div>
 
-      {message || offerLabel || (proposedMilestones && proposedMilestones.length >= 2) ? (
+      {message ||
+      offerLabel ||
+      proposedDeliveryLabel ||
+      (proposedMilestones && proposedMilestones.length >= 2) ? (
         <div className="flex flex-col gap-2 rounded-2xl bg-surface p-3">
           <div className="flex flex-row items-center justify-between gap-2">
             <p className="text-sm text-muted">{formatAgo(createdAt)}</p>
@@ -80,6 +103,17 @@ export function ResponseCard({
               heading="Their proposed plan"
               variant="proposed"
             />
+          ) : null}
+          {proposedDeliveryLabel ? (
+            <div className="flex flex-col gap-1 pt-1">
+              <p className="text-xs font-bold uppercase tracking-widest text-subtle">
+                Proposed delivery
+              </p>
+              <p className="text-sm leading-5 text-ink">{proposedDeliveryLabel}</p>
+              <p className="text-xs text-muted">
+                Countdown begins when they press Start after you accept.
+              </p>
+            </div>
           ) : null}
         </div>
       ) : null}
