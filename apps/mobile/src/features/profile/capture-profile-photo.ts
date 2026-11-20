@@ -5,9 +5,16 @@ import { supabase } from '@/lib/supabase/client';
 import { AVATAR_BUCKET, readUriBytes, uploadPrivateObject } from './storage';
 
 export type ProfilePhotoCaptureOutcome =
-  { kind: 'saved' } | { kind: 'cancelled' } | { kind: 'permission_denied'; canAskAgain: boolean };
+  | { kind: 'saved' }
+  | { kind: 'cancelled' }
+  | { kind: 'permission_denied'; canAskAgain: boolean };
 
-let captureInFlight: Promise<ProfilePhotoCaptureOutcome> | null = null;
+export type ProfilePhotoPickOutcome =
+  | { kind: 'picked'; uri: string; bytes: Uint8Array }
+  | { kind: 'cancelled' }
+  | { kind: 'permission_denied'; canAskAgain: boolean };
+
+let pickInFlight: Promise<ProfilePhotoPickOutcome> | null = null;
 
 export async function getProfilePhotoCameraPermission(): Promise<{
   granted: boolean;
@@ -21,18 +28,14 @@ export async function getProfilePhotoCameraPermission(): Promise<{
 }
 
 /**
- * Single in-flight capture for the app — avoids duplicate camera prompts when several
- * surfaces check eligibility at once.
+ * Camera pick only — defers storage upload until the caller saves the profile.
  */
-export async function captureProfilePhotoInApp(
-  userId: string,
-  onProgress?: (fraction: number) => void,
-): Promise<ProfilePhotoCaptureOutcome> {
-  if (captureInFlight) {
-    return captureInFlight;
+export async function pickProfilePhotoFromCamera(): Promise<ProfilePhotoPickOutcome> {
+  if (pickInFlight) {
+    return pickInFlight;
   }
 
-  captureInFlight = (async () => {
+  pickInFlight = (async () => {
     const permission = await ImagePicker.requestCameraPermissionsAsync();
     if (!permission.granted) {
       return { kind: 'permission_denied', canAskAgain: permission.canAskAgain };
@@ -56,18 +59,44 @@ export async function captureProfilePhotoInApp(
     }
 
     const bytes = await readUriBytes(asset.uri);
-    const path = `${userId}/avatar.jpg`;
-    await uploadPrivateObject(AVATAR_BUCKET, path, bytes, 'image/jpeg', onProgress);
-
-    const { error } = await supabase.rpc('confirm_avatar_capture', { p_storage_path: path });
-    if (error) throw error;
-
-    return { kind: 'saved' };
+    return { kind: 'picked', uri: asset.uri, bytes };
   })();
 
   try {
-    return await captureInFlight;
+    return await pickInFlight;
   } finally {
-    captureInFlight = null;
+    pickInFlight = null;
   }
+}
+
+export async function uploadProfilePhotoBytes(
+  userId: string,
+  bytes: Uint8Array,
+  onProgress?: (fraction: number) => void,
+): Promise<void> {
+  const path = `${userId}/avatar.jpg`;
+  await uploadPrivateObject(AVATAR_BUCKET, path, bytes, 'image/jpeg', onProgress);
+
+  const { error } = await supabase.rpc('confirm_avatar_capture', { p_storage_path: path });
+  if (error) throw error;
+}
+
+/**
+ * Single in-flight capture for the app — avoids duplicate camera prompts when several
+ * surfaces check eligibility at once.
+ */
+export async function captureProfilePhotoInApp(
+  userId: string,
+  onProgress?: (fraction: number) => void,
+): Promise<ProfilePhotoCaptureOutcome> {
+  const picked = await pickProfilePhotoFromCamera();
+  if (picked.kind === 'cancelled') {
+    return { kind: 'cancelled' };
+  }
+  if (picked.kind === 'permission_denied') {
+    return { kind: 'permission_denied', canAskAgain: picked.canAskAgain };
+  }
+
+  await uploadProfilePhotoBytes(userId, picked.bytes, onProgress);
+  return { kind: 'saved' };
 }

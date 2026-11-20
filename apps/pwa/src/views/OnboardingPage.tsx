@@ -11,6 +11,7 @@ import { Screen } from '@/components/ui/Screen';
 import { InlineError } from '@/components/ui/StateView';
 import { TextAreaField, TextField } from '@/components/ui/TextField';
 import { useUserId } from '@/features/auth/use-user-id';
+import { uploadLiveProfilePhoto } from '@/features/profile/capture-live-profile-photo';
 import { useMyProfile, useSaveProfile } from '@/features/profile/api';
 
 export function OnboardingPage() {
@@ -103,11 +104,13 @@ export function OnboardingPage() {
 
       {captureOpen ? (
         <LiveProfilePhotoCapture
-          userId={userId}
           onClose={() => setCaptureOpen(false)}
-          onSaved={() => {
-            setCaptureOpen(false);
-            void profile.refetch();
+          onCaptured={(bytes) => {
+            void (async () => {
+              await uploadLiveProfilePhoto(userId, bytes);
+              setCaptureOpen(false);
+              await profile.refetch();
+            })();
           }}
         />
       ) : null}

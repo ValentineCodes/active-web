@@ -8,6 +8,7 @@ import {
 } from 'react';
 import { Keyboard, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { router } from 'expo-router';
+import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 
 import { ProfileTagInterestPicker } from '@/components/profile/ProfileTagInterestPicker';
@@ -21,7 +22,13 @@ import {
   useNotificationTagInterests,
   useUpdateNotificationTagInterests,
 } from '@/features/notifications/tag-interests';
-import { useCaptureProfilePhoto, useProfile, useSaveProfile } from '@/features/profile/api';
+import {
+  pickProfilePhotoFromCamera,
+  uploadProfilePhotoBytes,
+} from '@/features/profile/capture-profile-photo';
+import { useProfile, useSaveProfile } from '@/features/profile/api';
+import { useQueryClient } from '@tanstack/react-query';
+import { queryKeys } from '@/lib/query/keys';
 import { useSetUsername } from '@/features/profile/public-profile-api';
 import {
   sanitizeUsernameDraft,
@@ -65,12 +72,14 @@ function EditField({
 }
 
 function EditProfileForm({
+  userId,
   avatarPath,
   displayName,
   initialUsername,
   initialBio,
   initialTagInterests,
 }: {
+  userId: string;
   avatarPath: string | null;
   displayName: string;
   initialUsername: string | null;
@@ -78,10 +87,10 @@ function EditProfileForm({
   initialTagInterests: RequestTag[];
 }) {
   const colors = useColors();
+  const queryClient = useQueryClient();
   const save = useSaveProfile();
   const setUsername = useSetUsername();
   const updateTagInterests = useUpdateNotificationTagInterests();
-  const capturePhoto = useCaptureProfilePhoto();
 
   const [name, setName] = useState(displayName);
   const [handle, setHandle] = useState(initialUsername ?? '');
@@ -89,6 +98,9 @@ function EditProfileForm({
   const [selectedTags, setSelectedTags] = useState(initialTagInterests);
   const [saveError, setSaveError] = useState<unknown>(null);
   const [usernameError, setUsernameError] = useState<string | null>(null);
+  const [photoError, setPhotoError] = useState<string | null>(null);
+  const [pickingPhoto, setPickingPhoto] = useState(false);
+  const [pendingPhoto, setPendingPhoto] = useState<{ uri: string; bytes: Uint8Array } | null>(null);
 
   const scrollRef = useRef<ComponentRef<typeof ScrollView>>(null);
   const scrollYRef = useRef(0);
@@ -158,7 +170,32 @@ function EditProfileForm({
   const handleChanged =
     trimmedHandle.length > 0 && trimmedHandle !== (initialUsername ?? '').toLowerCase();
   const handleFormatError = handleChanged ? validateUsernameFormat(trimmedHandle) : null;
-  const canSave = trimmedName.length >= 2 && !saving && !handleFormatError;
+  const canSave = trimmedName.length >= 2 && !saving && !handleFormatError && !pickingPhoto;
+
+  const handlePickPhoto = () => {
+    if (pickingPhoto || saving) return;
+    setPhotoError(null);
+    setPickingPhoto(true);
+    void (async () => {
+      try {
+        const outcome = await pickProfilePhotoFromCamera();
+        if (outcome.kind === 'cancelled') return;
+        if (outcome.kind === 'permission_denied') {
+          if (!outcome.canAskAgain) {
+            setPhotoError('Camera access is blocked. Open settings to allow your camera.');
+          } else {
+            setPhotoError('Camera access is needed for your profile photo.');
+          }
+          return;
+        }
+        setPendingPhoto({ uri: outcome.uri, bytes: outcome.bytes });
+      } catch (error) {
+        setPhotoError(error instanceof Error ? error.message : 'Could not open the camera.');
+      } finally {
+        setPickingPhoto(false);
+      }
+    })();
+  };
 
   const handleSave = () => {
     if (!canSave) return;
@@ -173,6 +210,11 @@ function EditProfileForm({
     setUsernameError(null);
     void (async () => {
       try {
+        if (pendingPhoto) {
+          await uploadProfilePhotoBytes(userId, pendingPhoto.bytes);
+          void queryClient.invalidateQueries({ queryKey: queryKeys.profile(userId) });
+          void queryClient.invalidateQueries({ queryKey: queryKeys.avatarUrl(`${userId}/avatar.jpg`) });
+        }
         await save.mutateAsync({ display_name: trimmedName, bio: bio.trim() || null });
         if (handleChanged) {
           await setUsername.mutateAsync(trimmedHandle);
@@ -227,14 +269,18 @@ function EditProfileForm({
         >
           <View className="items-center gap-3">
             <View className="relative">
-              {avatarPath ? (
+              {pendingPhoto ? (
+                <Image
+                  source={{ uri: pendingPhoto.uri }}
+                  contentFit="cover"
+                  style={{ width: 96, height: 96, borderRadius: 48 }}
+                />
+              ) : avatarPath ? (
                 <AvatarWithViewer path={avatarPath} name={trimmedName || displayName} size="lg" />
               ) : (
                 <Pressable
-                  onPress={() =>
-                    capturePhoto.mutate({}, { onSuccess: () => showAppToast('Profile updated') })
-                  }
-                  disabled={capturePhoto.isPending}
+                  onPress={handlePickPhoto}
+                  disabled={pickingPhoto}
                   accessibilityRole="button"
                   accessibilityLabel="Add a profile photo"
                   className="active:opacity-90"
@@ -243,10 +289,8 @@ function EditProfileForm({
                 </Pressable>
               )}
               <Pressable
-                onPress={() =>
-                  capturePhoto.mutate({}, { onSuccess: () => showAppToast('Profile updated') })
-                }
-                disabled={capturePhoto.isPending}
+                onPress={handlePickPhoto}
+                disabled={pickingPhoto}
                 accessibilityRole="button"
                 accessibilityLabel="Change profile photo"
                 className="absolute -bottom-0.5 -right-0.5 active:opacity-90"
@@ -257,19 +301,26 @@ function EditProfileForm({
               </Pressable>
             </View>
             <Pressable
-              onPress={() =>
-                capturePhoto.mutate({}, { onSuccess: () => showAppToast('Profile updated') })
-              }
-              disabled={capturePhoto.isPending}
+              onPress={handlePickPhoto}
+              disabled={pickingPhoto}
               accessibilityRole="button"
               accessibilityLabel="Change profile photo"
               hitSlop={8}
               className="active:opacity-80"
             >
               <Text className="text-base font-medium text-active">
-                {capturePhoto.isPending ? 'Uploading…' : 'Change profile photo'}
+                {pickingPhoto
+                  ? 'Opening camera…'
+                  : pendingPhoto
+                    ? 'Retake profile photo'
+                    : 'Change profile photo'}
               </Text>
             </Pressable>
+            {pendingPhoto ? (
+              <Text className="max-w-xs text-center text-xs text-muted">
+                Photo uploads when you tap Save.
+              </Text>
+            ) : null}
           </View>
 
           <View className="gap-5">
@@ -334,7 +385,7 @@ function EditProfileForm({
             </View>
           </View>
 
-          {capturePhoto.isError ? <InlineError error={capturePhoto.error} /> : null}
+          {photoError ? <InlineError message={photoError} /> : null}
           {saveError ? <InlineError error={saveError} /> : null}
         </ScrollView>
       </View>
@@ -379,6 +430,7 @@ export default function EditProfileScreen() {
     <Screen edges={['top', 'bottom']}>
       <EditProfileForm
         key={formKey}
+        userId={data.id}
         avatarPath={data.avatar_path}
         displayName={data.display_name ?? ''}
         initialUsername={data.username ?? null}

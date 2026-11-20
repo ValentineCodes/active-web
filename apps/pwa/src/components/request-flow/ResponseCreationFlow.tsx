@@ -13,6 +13,7 @@ import { MoneyAmountInput } from '@/components/ui/MoneyAmountInput';
 import { InlineError } from '@/components/ui/StateView';
 import { ionIcons } from '@/components/ui/ion-icons';
 import { useUserId } from '@/features/auth/use-user-id';
+import { uploadLiveProfilePhoto } from '@/features/profile/capture-live-profile-photo';
 import { hasProfilePhotoReady, useMyProfile } from '@/features/profile/api';
 import {
   counterOfferForRpc,
@@ -464,12 +465,14 @@ export function ResponseCreationFlow({
       {captureOpen && userId ? (
         <div className="fixed inset-0 z-[210] flex flex-col bg-canvas">
           <LiveProfilePhotoCapture
-            userId={userId}
             onClose={() => setCaptureOpen(false)}
-            onSaved={() => {
-              setCaptureOpen(false);
-              void profile.refetch();
-              showAppToast('Profile updated');
+            onCaptured={(bytes) => {
+              void (async () => {
+                await uploadLiveProfilePhoto(userId, bytes);
+                setCaptureOpen(false);
+                await profile.refetch();
+                showAppToast('Profile updated');
+              })();
             }}
           />
         </div>

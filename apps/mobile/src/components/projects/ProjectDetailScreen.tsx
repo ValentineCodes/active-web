@@ -419,13 +419,19 @@ function ProjectDetailTabRow({
       contribution_id: string;
       contributor_display_name: string | null;
       amount_kobo: number;
+      contributed_at: string | null;
       viewer_is_self: boolean;
     };
     return (
       <View className="flex-row items-center justify-between gap-3 rounded-2xl border border-hairline bg-elevated px-4 py-3">
-        <Text className="min-w-0 flex-1 text-base font-semibold text-ink" numberOfLines={1}>
-          {row.viewer_is_self ? 'You' : row.contributor_display_name?.trim() || 'Contributor'}
-        </Text>
+        <View className="min-w-0 flex-1 gap-0.5">
+          <Text className="text-base font-semibold text-ink" numberOfLines={1}>
+            {row.viewer_is_self ? 'You' : row.contributor_display_name?.trim() || 'Contributor'}
+          </Text>
+          {row.contributed_at ? (
+            <Text className="text-xs text-muted">{formatWhenHome(row.contributed_at)}</Text>
+          ) : null}
+        </View>
         <Text className="shrink-0 text-base font-bold text-ink">
           {formatMoney(koboToMajor(row.amount_kobo), MARKET.currency)}
         </Text>

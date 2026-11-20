@@ -7,16 +7,14 @@ import { InlineError } from '@/components/ui/StateView';
 import {
   captureFrameFromVideo,
   openUserFacingCameraStream,
-  uploadLiveProfilePhoto,
 } from '@/features/profile/capture-live-profile-photo';
 
 type Props = {
-  userId: string;
   onClose: () => void;
-  onSaved: () => void;
+  onCaptured: (jpegBytes: Uint8Array) => void;
 };
 
-export function LiveProfilePhotoCapture({ userId, onClose, onSaved }: Props) {
+export function LiveProfilePhotoCapture({ onClose, onCaptured }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -59,8 +57,7 @@ export function LiveProfilePhotoCapture({ userId, onClose, onSaved }: Props) {
     try {
       const bytes = await captureFrameFromVideo(video);
       streamRef.current?.getTracks().forEach((track) => track.stop());
-      await uploadLiveProfilePhoto(userId, bytes);
-      onSaved();
+      onCaptured(bytes);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not save the photo.');
       setSaving(false);
@@ -91,7 +88,7 @@ export function LiveProfilePhotoCapture({ userId, onClose, onSaved }: Props) {
 
       <div className="flex flex-col gap-3 border-t border-hairline px-5 py-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
         {error ? <InlineError message={error} /> : null}
-        <Button label="Capture photo" onClick={() => void handleCapture()} loading={saving} disabled={!ready} />
+        <Button label="Use photo" onClick={() => void handleCapture()} loading={saving} disabled={!ready} />
         <Button label="Cancel" variant="secondary" onClick={onClose} disabled={saving} />
       </div>
     </div>

@@ -18,6 +18,7 @@ import { Screen } from '@/components/ui/Screen';
 import { InlineError, LoadingState } from '@/components/ui/StateView';
 import { useRouteParam } from '@/lib/route-param';
 import { useUserId } from '@/features/auth/use-user-id';
+import { uploadLiveProfilePhoto } from '@/features/profile/capture-live-profile-photo';
 import { useChatSendGate } from '@/features/profile/use-chat-send-gate';
 import { shouldShowChatDaySeparatorChronological } from '@/features/requests/chat-day-separators';
 import {
@@ -356,11 +357,13 @@ export function ConversationPage() {
 
       {captureOpen && userId ? (
         <LiveProfilePhotoCapture
-          userId={userId}
           onClose={() => setCaptureOpen(false)}
-          onSaved={() => {
-            setCaptureOpen(false);
-            void resumePendingSend();
+          onCaptured={(bytes) => {
+            void (async () => {
+              await uploadLiveProfilePhoto(userId, bytes);
+              setCaptureOpen(false);
+              await resumePendingSend();
+            })();
           }}
         />
       ) : null}

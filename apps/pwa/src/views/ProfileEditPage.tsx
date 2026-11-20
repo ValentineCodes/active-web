@@ -6,7 +6,6 @@ import { FlowScreen } from '@/components/layout/FlowScreen';
 import { AvatarWithViewer } from '@/components/profile/AvatarWithViewer';
 import { ProfileEditField } from '@/components/profile/ProfileEditField';
 import { ProfileTagInterestPicker } from '@/components/profile/ProfileTagInterestPicker';
-import { Button } from '@/components/ui/Button';
 import { InlineError } from '@/components/ui/StateView';
 import { LoadingScreen } from '@/components/LoadingScreen';
 import { LiveProfilePhotoCapture } from '@/components/profile/LiveProfilePhotoCapture';
@@ -16,6 +15,7 @@ import {
   useUpdateNotificationTagInterests,
 } from '@/features/notifications/tag-interests';
 import { consumeProfileEditLivePhotoIntent } from '@/features/profile/profile-edit-intent';
+import { uploadLiveProfilePhoto } from '@/features/profile/capture-live-profile-photo';
 import { useMyProfile, useSaveProfile } from '@/features/profile/api';
 import { useSetUsername } from '@/features/profile/public-profile-api';
 import {
@@ -23,6 +23,7 @@ import {
   validateUsernameFormat,
 } from '@/features/profile/username';
 import type { RequestTag } from '@/features/requests/tags';
+import { cn } from '@/lib/cn';
 import { useRouter } from '@/lib/navigation';
 import { showAppToast } from '@/lib/toast';
 
@@ -41,6 +42,8 @@ export function ProfileEditPage() {
   const [selectedTags, setSelectedTags] = useState<RequestTag[]>([]);
   const [saveError, setSaveError] = useState<unknown>(null);
   const [captureOpen, setCaptureOpen] = useState(false);
+  const [pendingPhotoBytes, setPendingPhotoBytes] = useState<Uint8Array | null>(null);
+  const [pendingPhotoPreviewUrl, setPendingPhotoPreviewUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (!profile.data) return;
@@ -58,6 +61,14 @@ export function ProfileEditPage() {
     if (consumeProfileEditLivePhotoIntent()) setCaptureOpen(true);
   }, []);
 
+  useEffect(() => {
+    return () => {
+      if (pendingPhotoPreviewUrl) {
+        URL.revokeObjectURL(pendingPhotoPreviewUrl);
+      }
+    };
+  }, [pendingPhotoPreviewUrl]);
+
   const trimmedName = name.trim();
   const isNameValid = trimmedName.length >= 2 && trimmedName.length <= 60;
   const trimmedHandle = handle.trim().toLowerCase();
@@ -65,9 +76,19 @@ export function ProfileEditPage() {
   const handleChanged = trimmedHandle.length > 0 && trimmedHandle !== initialUsername;
   const handleFormatError = handleChanged ? validateUsernameFormat(trimmedHandle) : null;
   const saving = save.isPending || updateTagInterests.isPending || setUsername.isPending;
+  const canSave = isNameValid && !saving && !handleFormatError;
+
+  const applyPendingPhoto = (bytes: Uint8Array) => {
+    if (pendingPhotoPreviewUrl) {
+      URL.revokeObjectURL(pendingPhotoPreviewUrl);
+    }
+    const blob = new Blob([Uint8Array.from(bytes)], { type: 'image/jpeg' });
+    setPendingPhotoBytes(bytes);
+    setPendingPhotoPreviewUrl(URL.createObjectURL(blob));
+  };
 
   const handleSave = () => {
-    if (!isNameValid || saving || handleFormatError) return;
+    if (!canSave) return;
     if (handleChanged) {
       const formatError = validateUsernameFormat(trimmedHandle);
       if (formatError) {
@@ -79,6 +100,10 @@ export function ProfileEditPage() {
     setUsernameError(null);
     void (async () => {
       try {
+        if (pendingPhotoBytes) {
+          await uploadLiveProfilePhoto(userId, pendingPhotoBytes);
+          await profile.refetch();
+        }
         await save.mutateAsync({ display_name: trimmedName, bio: bio.trim() || null });
         if (handleChanged) {
           await setUsername.mutateAsync(trimmedHandle);
@@ -101,15 +126,50 @@ export function ProfileEditPage() {
     return <LoadingScreen label="Loading profile…" />;
   }
 
+  const saveHeader = (
+    <button
+      type="button"
+      onClick={handleSave}
+      disabled={!canSave}
+      className={cn(
+        'text-base font-semibold active:opacity-80',
+        canSave ? 'text-active' : 'text-muted',
+      )}
+    >
+      Save
+    </button>
+  );
+
   return (
     <>
-      <FlowScreen title="Edit profile" backTo="/profile" bodyClassName="flex flex-col gap-6 pb-10">
+      <FlowScreen
+        title="Edit profile"
+        backTo="/profile"
+        right={saveHeader}
+        bodyClassName="flex flex-col gap-6 pb-10"
+      >
         <div className="flex flex-col items-center gap-3">
-          <AvatarWithViewer path={profile.data?.avatar_path} name={trimmedName || null} size="lg" />
+          {pendingPhotoPreviewUrl ? (
+            <img
+              src={pendingPhotoPreviewUrl}
+              alt=""
+              className="h-24 w-24 rounded-full object-cover"
+              width={96}
+              height={96}
+            />
+          ) : (
+            <AvatarWithViewer path={profile.data?.avatar_path} name={trimmedName || null} size="lg" />
+          )}
           <button type="button" className="text-base font-medium text-brand" onClick={() => setCaptureOpen(true)}>
-            Take profile photo
+            {pendingPhotoPreviewUrl ? 'Retake profile photo' : 'Take profile photo'}
           </button>
-          <p className="max-w-xs text-center text-xs text-muted">Live camera only — not identity verification.</p>
+          {pendingPhotoPreviewUrl ? (
+            <p className="max-w-xs text-center text-xs text-muted">
+              Photo uploads when you tap Save.
+            </p>
+          ) : (
+            <p className="max-w-xs text-center text-xs text-muted">Live camera only — not identity verification.</p>
+          )}
         </div>
 
         <div className="flex flex-col gap-5">
@@ -173,22 +233,14 @@ export function ProfileEditPage() {
             }
           />
         ) : null}
-
-        <Button
-          label="Save changes"
-          disabled={!isNameValid}
-          loading={saving}
-          onClick={handleSave}
-        />
       </FlowScreen>
 
       {captureOpen ? (
         <LiveProfilePhotoCapture
-          userId={userId}
           onClose={() => setCaptureOpen(false)}
-          onSaved={() => {
+          onCaptured={(bytes) => {
+            applyPendingPhoto(bytes);
             setCaptureOpen(false);
-            void profile.refetch();
           }}
         />
       ) : null}

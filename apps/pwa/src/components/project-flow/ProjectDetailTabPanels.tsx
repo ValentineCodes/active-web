@@ -16,6 +16,7 @@ type ContributionRow = {
   contribution_id: string;
   contributor_display_name: string | null;
   amount_kobo: number;
+  contributed_at: string | null;
   viewer_is_self: boolean;
 };
 
@@ -67,7 +68,12 @@ export function ProjectContributionsPanel({
           key={row.contribution_id}
           className="flex flex-row items-center justify-between gap-3 rounded-2xl border border-hairline bg-elevated px-4 py-3"
         >
-          <p className="min-w-0 truncate text-base font-semibold text-ink">{contributionLabel(row)}</p>
+          <div className="min-w-0 flex-1 gap-0.5">
+            <p className="truncate text-base font-semibold text-ink">{contributionLabel(row)}</p>
+            {row.contributed_at ? (
+              <p className="text-xs text-muted">{formatWhenHome(row.contributed_at)}</p>
+            ) : null}
+          </div>
           <p className="shrink-0 text-base font-bold text-ink">
             {formatMoney(koboToMajor(row.amount_kobo), MARKET.currency)}
           </p>
