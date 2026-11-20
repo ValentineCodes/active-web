@@ -1,7 +1,10 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import type { UseQueryResult } from '@tanstack/react-query';
+
+import { useRouter } from '@/lib/navigation';
+import { conversationHref } from '@/lib/conversation-navigation';
 
 import { ActivityStatusFilter } from '@/components/activity/ActivityStatusFilter';
 import { ResponseCard } from '@/components/ResponseCard';
@@ -19,14 +22,37 @@ import {
   type ProjectResponseFilter,
   type ProjectResponseListRow,
 } from '@/features/projects/project-response-list';
+import { useOpenProjectPreHandshakeConversation } from '@/features/projects/project-conversation-api';
+import { showAppToast } from '@/lib/toast';
 
 export function ProjectResponsesPanel({
   responses,
+  allowDiscuss,
+  projectId,
 }: {
   responses: UseQueryResult<ProjectResponseListRow[]>;
+  allowDiscuss?: boolean;
+  projectId: string;
 }) {
+  const router = useRouter();
+  const openProjectChat = useOpenProjectPreHandshakeConversation();
   const [filter, setFilter] = useState<ProjectResponseFilter>('awaiting_review');
   const [profilePreview, setProfilePreview] = useState<PersonProfilePreview | null>(null);
+  const showDiscuss = Boolean(allowDiscuss && filter === 'awaiting_review');
+
+  const discussAssignment = useCallback(
+    (assignmentId: string) => {
+      void openProjectChat
+        .mutateAsync(assignmentId)
+        .then((conversationId) => {
+          router.push(conversationHref(conversationId, `/project/${projectId}`));
+        })
+        .catch((error) => {
+          showAppToast(error instanceof Error ? error.message : 'Could not open chat', 'danger');
+        });
+    },
+    [openProjectChat, projectId, router],
+  );
 
   const visibleRows = useMemo(
     () => projectResponsesForFilter(responses.data ?? [], filter),
@@ -94,6 +120,14 @@ export function ProjectResponsesPanel({
                 proposedDeliveryDurationUnit={row.proposed_delivery_duration_unit}
                 proposedDeliveryAt={row.proposed_delivery_at}
                 proposedDeliveryTimezone={row.proposed_delivery_timezone}
+                onDiscussPress={
+                  showDiscuss ? () => discussAssignment(row.assignment_id) : undefined
+                }
+                discussLoading={
+                  showDiscuss &&
+                  openProjectChat.isPending &&
+                  openProjectChat.variables === row.assignment_id
+                }
               />
             </li>
           ))}

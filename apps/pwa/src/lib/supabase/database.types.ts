@@ -1698,6 +1698,65 @@ export type Database = {
           },
         ]
       }
+      project_conversations: {
+        Row: {
+          assignment_id: string
+          created_at: string
+          creator_id: string
+          id: string
+          project_id: string
+          updated_at: string
+          worker_id: string
+        }
+        Insert: {
+          assignment_id: string
+          created_at?: string
+          creator_id: string
+          id?: string
+          project_id: string
+          updated_at?: string
+          worker_id: string
+        }
+        Update: {
+          assignment_id?: string
+          created_at?: string
+          creator_id?: string
+          id?: string
+          project_id?: string
+          updated_at?: string
+          worker_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_conversations_assignment_id_fkey"
+            columns: ["assignment_id"]
+            isOneToOne: true
+            referencedRelation: "project_assignments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_conversations_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_conversations_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_conversations_worker_id_fkey"
+            columns: ["worker_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       project_funding_pools: {
         Row: {
           committed_compensation_kobo: number
@@ -1723,6 +1782,57 @@ export type Database = {
             columns: ["project_id"]
             isOneToOne: true
             referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_messages: {
+        Row: {
+          body: string
+          conversation_id: string
+          created_at: string
+          id: string
+          message_type: Database["public"]["Enums"]["conversation_message_type"]
+          metadata: Json | null
+          read_at: string | null
+          sender_id: string
+          updated_at: string
+        }
+        Insert: {
+          body: string
+          conversation_id: string
+          created_at?: string
+          id?: string
+          message_type?: Database["public"]["Enums"]["conversation_message_type"]
+          metadata?: Json | null
+          read_at?: string | null
+          sender_id: string
+          updated_at?: string
+        }
+        Update: {
+          body?: string
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          message_type?: Database["public"]["Enums"]["conversation_message_type"]
+          metadata?: Json | null
+          read_at?: string | null
+          sender_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "project_conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_messages_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -3064,13 +3174,6 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "user_conversation_focus_conversation_id_fkey"
-            columns: ["conversation_id"]
-            isOneToOne: false
-            referencedRelation: "request_conversations"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "user_conversation_focus_user_id_fkey"
             columns: ["user_id"]
@@ -4533,6 +4636,10 @@ export type Database = {
         Args: { p_requester_id: string; p_selected_user_id: string }
         Returns: boolean
       }
+      conversation_project_creator_initiated_chat: {
+        Args: { p_conversation_id: string }
+        Returns: boolean
+      }
       conversation_requester_initiated_chat: {
         Args: { p_conversation_id: string }
         Returns: boolean
@@ -4542,6 +4649,10 @@ export type Database = {
         Returns: boolean
       }
       conversation_sending_allowed_for_participant: {
+        Args: { p_conversation_id: string; p_user_id: string }
+        Returns: boolean
+      }
+      conversation_sending_allowed_for_participant_request: {
         Args: { p_conversation_id: string; p_user_id: string }
         Returns: boolean
       }
@@ -5026,6 +5137,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      get_worker_project_pre_handshake_conversation: {
+        Args: { p_project_id: string }
+        Returns: string
+      }
       increase_project_budget: {
         Args: { p_new_budget_total_major: number; p_project_id: string }
         Returns: undefined
@@ -5489,6 +5604,10 @@ export type Database = {
         Args: { p_project_id: string }
         Returns: undefined
       }
+      open_project_pre_handshake_conversation: {
+        Args: { p_assignment_id: string }
+        Returns: string
+      }
       open_request_statuses: {
         Args: never
         Returns: Database["public"]["Enums"]["request_status"][]
@@ -5541,6 +5660,14 @@ export type Database = {
           p_total_kobo: number
         }
         Returns: string
+      }
+      project_conversation_is_accessible: {
+        Args: { p_conversation_id: string; p_user_id: string }
+        Returns: boolean
+      }
+      project_conversation_sending_allowed_for_participant: {
+        Args: { p_conversation_id: string; p_user_id: string }
+        Returns: boolean
       }
       project_funding_deadline_at: {
         Args: {

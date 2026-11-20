@@ -34,6 +34,8 @@ export const queryKeys = {
   myCreatedProjects: ['my-created-projects'] as const,
   myProjectAssignments: ['my-project-assignments'] as const,
   myProjectResponse: (projectId: string) => ['my-project-response', projectId] as const,
+  workerProjectPreHandshakeConversation: (projectId: string) =>
+    ['worker-project-pre-handshake-conversation', projectId] as const,
   projectAssignments: (projectId: string) => ['project-assignments', projectId] as const,
   projectResponses: (projectId: string) => ['project-responses', projectId] as const,
   projectContributions: (projectId: string) => ['project-contributions', projectId] as const,

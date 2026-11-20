@@ -17,6 +17,7 @@ import { ProjectResponseTabPanel } from '@/components/project-flow/ProjectRespon
 import { ProjectResponsesPanel } from '@/components/project-flow/ProjectResponsesPanel';
 import { ResponseCreationFlow } from '@/components/ResponseCreationFlow';
 import { hasProfilePhotoReady } from '@/features/profile/api';
+import { useWorkerProjectPreHandshakeConversation } from '@/features/projects/project-conversation-api';
 import {
   projectResponseWizardInitialOffer,
   useProjectForRespond,
@@ -68,7 +69,7 @@ function fundingProgress(contributed: number, budget: number, minTarget: number)
 
 export function ProjectDetailScreen({ projectId }: { projectId: string }) {
   const [tab, setTab] = useState<ProjectDetailTab>('activity');
-  const workerDefaultTabSet = useRef(false);
+  const defaultTabSet = useRef(false);
   const listRef = useRef<FlatList | null>(null);
   const [inFlow, setInFlow] = useState(false);
   const [flowStep, setFlowStep] = useState(0);
@@ -96,6 +97,10 @@ export function ProjectDetailScreen({ projectId }: { projectId: string }) {
   const activity = useProjectActivity(projectId);
   const profile = useProfile();
   const detail = project.data;
+  const workerPreHandshakeChat = useWorkerProjectPreHandshakeConversation(
+    projectId,
+    Boolean(detail && !detail.viewer_is_creator && existingResponse),
+  );
   const showAssignmentsTabFromData = Boolean(
     detail && projectViewerMayViewAssignments(detail),
   );
@@ -103,12 +108,14 @@ export function ProjectDetailScreen({ projectId }: { projectId: string }) {
   const showResponseTab = Boolean(detail && !detail.viewer_is_creator);
 
   useEffect(() => {
-    if (!detail || workerDefaultTabSet.current) return;
+    if (!detail || defaultTabSet.current) return;
+    defaultTabSet.current = true;
     if (!detail.viewer_is_creator) {
-      workerDefaultTabSet.current = true;
       setTab('response');
+    } else if (showAssignmentsTabFromData) {
+      setTab('assignments');
     }
-  }, [detail]);
+  }, [detail, showAssignmentsTabFromData]);
 
   useEffect(() => {
     if (!showAssignmentsTabFromData && tab === 'assignments') {
@@ -338,6 +345,12 @@ export function ProjectDetailScreen({ projectId }: { projectId: string }) {
             completionPercent={creatorProfile.completionPercent}
             identityVerified={creatorProfile.identityVerified}
             onPress={() => creatorProfileSheetRef.current?.present()}
+            onDiscussPress={
+              existingResponse && workerPreHandshakeChat.data
+                ? () => router.push(`/conversation/${workerPreHandshakeChat.data}` as Href)
+                : undefined
+            }
+            discussLoading={workerPreHandshakeChat.isPending}
           />
         ) : null}
 
@@ -369,7 +382,10 @@ export function ProjectDetailScreen({ projectId }: { projectId: string }) {
         ) : null}
 
         {tab === 'assignments' && showAssignmentsTab ? (
-          <ProjectResponsesPanel responses={projectResponses} />
+          <ProjectResponsesPanel
+            responses={projectResponses}
+            allowDiscuss={Boolean(detail.viewer_is_creator)}
+          />
         ) : null}
       </View>
     ),
@@ -393,6 +409,8 @@ export function ProjectDetailScreen({ projectId }: { projectId: string }) {
       showAssignmentsTab,
       showResponseTab,
       existingResponse,
+      workerPreHandshakeChat.data,
+      workerPreHandshakeChat.isPending,
       respondAllowed,
       respond.error,
       withdraw.error,

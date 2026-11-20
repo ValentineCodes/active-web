@@ -35,12 +35,14 @@ import {
   projectCreatorProfileFields,
 } from '@/features/projects/project-creator-profile';
 import { projectViewerMayContribute } from '@/features/projects/project-contribute';
+import { useWorkerProjectPreHandshakeConversation } from '@/features/projects/project-conversation-api';
 import {
   projectResponseWizardInitialOffer,
   useProjectForRespond,
   useRespondToProject,
   useWithdrawProjectResponse,
 } from '@/features/projects/project-responses-api';
+import { conversationHref } from '@/lib/conversation-navigation';
 import { projectDetailBadge } from '@/features/projects/project-status';
 import {
   formatCoarseLocationLabel,
@@ -68,7 +70,7 @@ export function ProjectDetailPage() {
   const [creatorProfilePreview, setCreatorProfilePreview] = useState<PersonProfilePreview | null>(
     null,
   );
-  const workerDefaultTabSet = useRef(false);
+  const defaultTabSet = useRef(false);
 
   const profile = useMyProfile();
   const project = useProject(id);
@@ -93,6 +95,10 @@ export function ProjectDetailPage() {
   const activity = useProjectActivity(id);
 
   const detail = project.data;
+  const workerPreHandshakeChat = useWorkerProjectPreHandshakeConversation(
+    id,
+    Boolean(detail && !detail.viewer_is_creator && existingResponse),
+  );
   const headerTitle = detail?.viewer_is_creator ? 'Your project' : 'Project';
   const showAssignmentsTabFromData = Boolean(
     detail && projectViewerMayViewAssignments(detail),
@@ -100,12 +106,14 @@ export function ProjectDetailPage() {
   const showResponseTab = Boolean(detail && !detail.viewer_is_creator);
 
   useEffect(() => {
-    if (!detail || workerDefaultTabSet.current) return;
+    if (!detail || defaultTabSet.current) return;
+    defaultTabSet.current = true;
     if (!detail.viewer_is_creator) {
-      workerDefaultTabSet.current = true;
       setTab('response');
+    } else if (showAssignmentsTabFromData) {
+      setTab('assignments');
     }
-  }, [detail]);
+  }, [detail, showAssignmentsTabFromData]);
 
   useEffect(() => {
     if (!showAssignmentsTabFromData && tab === 'assignments') {
@@ -313,6 +321,15 @@ export function ProjectDetailPage() {
                 completionPercent={creatorProfile.completionPercent}
                 identityVerified={creatorProfile.identityVerified}
                 onPress={() => setCreatorProfilePreview(personProfileFromProjectDetail(detail))}
+                onDiscussPress={
+                  existingResponse && workerPreHandshakeChat.data
+                    ? () =>
+                        router.push(
+                          conversationHref(workerPreHandshakeChat.data!, `/project/${id}`),
+                        )
+                    : undefined
+                }
+                discussLoading={workerPreHandshakeChat.isPending}
               />
             ) : null}
 
@@ -338,7 +355,11 @@ export function ProjectDetailPage() {
                 />
               ) : null}
               {tab === 'assignments' && showAssignmentsTab ? (
-                <ProjectResponsesPanel responses={projectResponses} />
+                <ProjectResponsesPanel
+                  responses={projectResponses}
+                  allowDiscuss={Boolean(detail.viewer_is_creator)}
+                  projectId={id}
+                />
               ) : null}
               {tab === 'activity' ? <ProjectActivityPanel activity={activity} /> : null}
             </div>

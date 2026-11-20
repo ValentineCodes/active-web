@@ -599,6 +599,9 @@ export function useSendRequestMessage(conversationId: string, requestId: string)
         readAt: null,
       });
       void queryClient.invalidateQueries({ queryKey: queryKeys.requestConversation(requestId) });
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.workerProjectPreHandshakeConversation(requestId),
+      });
       invalidateConversationInboxQueries(queryClient);
     },
     onError: (error, { pendingId }) => {
@@ -738,6 +741,34 @@ function createLiveConversationChannel(
 ) {
   let sawSubscription = false;
 
+  const onMessageInsert = async (payload: { new: RealtimeMessageRow }) => {
+    const row = payload.new;
+    if (!row?.id || row.conversation_id !== conversationId) return;
+
+    const isOwnMessage = row.sender_id === options.viewerId;
+    if (!isOwnMessage) {
+      upsertMessageInCache(queryClient, conversationId, mapRealtimeMessage(row));
+    }
+
+    try {
+      const hydrated = await fetchRequestMessageForViewer(row.id);
+      if (!hydrated) {
+        if (!isOwnMessage) {
+          removeMessageFromCache(queryClient, conversationId, row.id);
+        }
+        return;
+      }
+      upsertMessageInCache(queryClient, conversationId, hydrated);
+    } catch {
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.requestMessages(conversationId),
+      });
+    }
+    void queryClient.invalidateQueries({ queryKey: queryKeys.requestConversation(requestId) });
+
+    maybeToastIncomingMessage(queryClient, conversationId, row.id, row.sender_id, options);
+  };
+
   return supabase
     .channel(`conversation-messages:${conversationId}`)
     .on(
@@ -748,33 +779,17 @@ function createLiveConversationChannel(
         table: 'request_messages',
         filter: `conversation_id=eq.${conversationId}`,
       },
-      async (payload) => {
-        const row = payload.new as RealtimeMessageRow;
-        if (!row?.id || row.conversation_id !== conversationId) return;
-
-        const isOwnMessage = row.sender_id === options.viewerId;
-        if (!isOwnMessage) {
-          upsertMessageInCache(queryClient, conversationId, mapRealtimeMessage(row));
-        }
-
-        try {
-          const hydrated = await fetchRequestMessageForViewer(row.id);
-          if (!hydrated) {
-            if (!isOwnMessage) {
-              removeMessageFromCache(queryClient, conversationId, row.id);
-            }
-            return;
-          }
-          upsertMessageInCache(queryClient, conversationId, hydrated);
-        } catch {
-          void queryClient.invalidateQueries({
-            queryKey: queryKeys.requestMessages(conversationId),
-          });
-        }
-        void queryClient.invalidateQueries({ queryKey: queryKeys.requestConversation(requestId) });
-
-        maybeToastIncomingMessage(queryClient, conversationId, row.id, row.sender_id, options);
+      onMessageInsert,
+    )
+    .on(
+      'postgres_changes',
+      {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'project_messages',
+        filter: `conversation_id=eq.${conversationId}`,
       },
+      onMessageInsert,
     )
     .on(
       'postgres_changes',
@@ -819,6 +834,21 @@ function createLiveConversationChannel(
         event: 'UPDATE',
         schema: 'public',
         table: 'request_messages',
+        filter: `conversation_id=eq.${conversationId}`,
+      },
+      (payload) => {
+        const row = payload.new as RealtimeMessageRow;
+        if (!row?.id || row.conversation_id !== conversationId) return;
+
+        patchMessageReadAtInCache(queryClient, conversationId, row.id, row.read_at);
+      },
+    )
+    .on(
+      'postgres_changes',
+      {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'project_messages',
         filter: `conversation_id=eq.${conversationId}`,
       },
       (payload) => {
