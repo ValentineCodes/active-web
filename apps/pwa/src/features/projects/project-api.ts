@@ -10,6 +10,9 @@ import type { Database } from '@/lib/supabase/database.types';
 
 type FundingVisibility = Database['public']['Enums']['project_funding_visibility'];
 
+export type MyProjectAssignmentRow =
+  Database['public']['Functions']['list_my_project_assignments']['Returns'][number];
+
 export function useMyEntitlements() {
   return useQuery({
     queryKey: queryKeys.myEntitlements,
@@ -116,6 +119,22 @@ export function useContributeToProject() {
   });
 }
 
+export function useMyProjectAssignments(options?: { enabled?: boolean }) {
+  const enabled = options?.enabled !== false;
+  return useQuery({
+    queryKey: queryKeys.myProjectAssignments,
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('list_my_project_assignments', {
+        p_limit: 50,
+        p_offset: 0,
+      });
+      if (error) throw error;
+      return (data ?? []) as MyProjectAssignmentRow[];
+    },
+    enabled,
+  });
+}
+
 export function useProjectAssignments(
   projectId: string | undefined,
   options?: { enabled?: boolean },
@@ -126,6 +145,27 @@ export function useProjectAssignments(
     queryKey: queryKeys.projectAssignments(id),
     queryFn: async () => {
       const { data, error } = await supabase.rpc('list_project_assignments', {
+        p_project_id: id,
+        p_limit: 50,
+        p_offset: 0,
+      });
+      if (error) throw error;
+      return data ?? [];
+    },
+    enabled: id.length > 0 && mayFetch,
+  });
+}
+
+export function useProjectResponses(
+  projectId: string | undefined,
+  options?: { enabled?: boolean },
+) {
+  const id = projectId?.trim() ?? '';
+  const mayFetch = options?.enabled !== false;
+  return useQuery({
+    queryKey: queryKeys.projectResponses(id),
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('list_project_responses', {
         p_project_id: id,
         p_limit: 50,
         p_offset: 0,

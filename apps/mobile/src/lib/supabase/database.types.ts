@@ -1411,6 +1411,11 @@ export type Database = {
           milestones_json: Json | null
           payment_structure: Database["public"]["Enums"]["payment_structure"]
           proposed_by: string
+          proposed_delivery_duration_seconds: number | null
+          proposed_delivery_duration_unit:
+            | Database["public"]["Enums"]["delivery_duration_unit"]
+            | null
+          proposed_delivery_duration_value: number | null
           status: Database["public"]["Enums"]["project_assignment_terms_status"]
           title: string
           version: number
@@ -1428,6 +1433,11 @@ export type Database = {
           milestones_json?: Json | null
           payment_structure: Database["public"]["Enums"]["payment_structure"]
           proposed_by: string
+          proposed_delivery_duration_seconds?: number | null
+          proposed_delivery_duration_unit?:
+            | Database["public"]["Enums"]["delivery_duration_unit"]
+            | null
+          proposed_delivery_duration_value?: number | null
           status?: Database["public"]["Enums"]["project_assignment_terms_status"]
           title: string
           version: number
@@ -1445,6 +1455,11 @@ export type Database = {
           milestones_json?: Json | null
           payment_structure?: Database["public"]["Enums"]["payment_structure"]
           proposed_by?: string
+          proposed_delivery_duration_seconds?: number | null
+          proposed_delivery_duration_unit?:
+            | Database["public"]["Enums"]["delivery_duration_unit"]
+            | null
+          proposed_delivery_duration_value?: number | null
           status?: Database["public"]["Enums"]["project_assignment_terms_status"]
           title?: string
           version?: number
@@ -4811,6 +4826,17 @@ export type Database = {
         }[]
       }
       get_my_identity_status: { Args: never; Returns: Json }
+      get_my_project_response: {
+        Args: { p_project_id: string }
+        Returns: {
+          assignment_id: string
+          compensation_major: number
+          message: string
+          proposed_delivery_duration_unit: Database["public"]["Enums"]["delivery_duration_unit"]
+          proposed_delivery_duration_value: number
+          status: Database["public"]["Enums"]["project_assignment_status"]
+        }[]
+      }
       get_my_reputation: {
         Args: never
         Returns: {
@@ -5232,6 +5258,29 @@ export type Database = {
           reserved_kobo: number
           viewer_is_creator: boolean
           viewer_is_self: boolean
+        }[]
+      }
+      list_project_responses: {
+        Args: { p_limit?: number; p_offset?: number; p_project_id: string }
+        Returns: {
+          assignment_id: string
+          avatar_path: string
+          bio: string
+          completion_percent: number
+          created_at: string
+          display_name: string
+          identity_verified: boolean
+          message: string
+          proposed_delivery_at: string
+          proposed_delivery_duration_unit: Database["public"]["Enums"]["delivery_duration_unit"]
+          proposed_delivery_duration_value: number
+          proposed_delivery_timezone: string
+          quoted_amount: number
+          rating_average: number
+          rating_count: number
+          responder_available: boolean
+          status: Database["public"]["Enums"]["project_assignment_status"]
+          worker_id: string
         }[]
       }
       list_request_messages: {
@@ -5771,6 +5820,16 @@ export type Database = {
         Args: { p_problem_id: string }
         Returns: boolean
       }
+      respond_to_project: {
+        Args: {
+          p_compensation_major?: number
+          p_message?: string
+          p_project_id: string
+          p_proposed_delivery_duration_unit?: Database["public"]["Enums"]["delivery_duration_unit"]
+          p_proposed_delivery_duration_value?: number
+        }
+        Returns: string
+      }
       respond_to_request: {
         Args: {
           p_latitude?: number
@@ -6202,6 +6261,10 @@ export type Database = {
           p_withdrawal_id: string
         }
         Returns: string
+      }
+      withdraw_project_response: {
+        Args: { p_project_id: string }
+        Returns: undefined
       }
       withdraw_response: { Args: { p_response_id: string }; Returns: undefined }
       withdrawal_identity_development_bypass_active: {

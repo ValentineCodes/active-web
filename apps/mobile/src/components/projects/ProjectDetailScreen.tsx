@@ -1,7 +1,7 @@
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Alert } from 'react-native';
 import { FlatList, Pressable, RefreshControl, Text, View } from 'react-native';
 import { router, type Href } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import type { BottomSheetModal } from '@gorhom/bottom-sheet';
 
 import {
@@ -13,13 +13,23 @@ import { PersonProfileBottomSheet } from '@/components/PersonProfileBottomSheet'
 import { InsufficientWalletSheet } from '@/components/request-flow/InsufficientWalletSheet';
 import { RequestPersonCard } from '@/components/request-flow/RequestPersonCard';
 import { ProjectDetailTabs, type ProjectDetailTab } from '@/components/project-flow/ProjectDetailTabs';
+import { ProjectResponseTabPanel } from '@/components/project-flow/ProjectResponseTabPanel';
+import { ProjectResponsesPanel } from '@/components/project-flow/ProjectResponsesPanel';
+import { ResponseCreationFlow } from '@/components/ResponseCreationFlow';
+import { hasProfilePhotoReady } from '@/features/profile/api';
+import {
+  projectResponseWizardInitialOffer,
+  useProjectForRespond,
+  useRespondToProject,
+  useWithdrawProjectResponse,
+} from '@/features/projects/project-responses-api';
+import { showAppToast } from '@/lib/toast';
 import { ProjectFundingCard } from '@/components/project-flow/ProjectFundingCard';
 import { RequestAttachmentSection } from '@/components/request-flow/RequestAttachmentSection';
 import { RequestFlowHeader } from '@/components/request-flow/RequestFlowHeader';
 import { RequestMetaRow } from '@/components/request-flow/RequestMetaRow';
 import { RequestTagsLine } from '@/components/request-flow/RequestTagsLine';
 import { RequestTitleSection } from '@/components/request-flow/RequestTitleSection';
-import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Screen } from '@/components/ui/Screen';
 import { EmptyState, InlineError } from '@/components/ui/StateView';
@@ -29,8 +39,7 @@ import { MARKET } from '@/config';
 import {
   useProject,
   useProjectActivity,
-  useProjectAssignments,
-  useProjectContributions,
+  useProjectResponses,
 } from '@/features/projects/project-api';
 import { projectCreatorProfileFields } from '@/features/projects/project-creator-profile';
 import { projectViewerMayViewAssignments } from '@/features/projects/project-assignments-visibility';
@@ -46,7 +55,6 @@ import {
 import { usePullToRefresh } from '@/lib/query/use-pull-to-refresh';
 import { useMyWallet } from '@/features/wallet/api';
 import { openWalletTopUp } from '@/features/wallet/top-up';
-import { useColors } from '@/theme';
 
 function koboToMajor(kobo: number) {
   return kobo / 100;
@@ -59,33 +67,68 @@ function fundingProgress(contributed: number, budget: number, minTarget: number)
 }
 
 export function ProjectDetailScreen({ projectId }: { projectId: string }) {
-  const [tab, setTab] = useState<ProjectDetailTab>('contributions');
+  const [tab, setTab] = useState<ProjectDetailTab>('activity');
+  const workerDefaultTabSet = useRef(false);
+  const listRef = useRef<FlatList | null>(null);
+  const [inFlow, setInFlow] = useState(false);
+  const [flowStep, setFlowStep] = useState(0);
+  const [flowKey, setFlowKey] = useState(0);
+  const [needsPhotoStep, setNeedsPhotoStep] = useState(false);
   const [insufficientWalletPrompt, setInsufficientWalletPrompt] =
     useState<ProjectContributeInsufficientWalletPrompt | null>(null);
   const contributeSheetRef = useRef<ProjectContributeSheetHandle>(null);
   const creatorProfileSheetRef = useRef<BottomSheetModal>(null);
 
   const project = useProject(projectId);
+  const {
+    request: respondable,
+    existingResponse,
+    respondAllowed,
+    isPending: respondMetaPending,
+  } = useProjectForRespond(projectId);
+  const respond = useRespondToProject();
+  const withdraw = useWithdrawProjectResponse();
   const wallet = useMyWallet();
   const mayViewAssignments = Boolean(
     project.data && projectViewerMayViewAssignments(project.data),
   );
-  const assignments = useProjectAssignments(projectId, { enabled: mayViewAssignments });
-  const contributions = useProjectContributions(projectId);
+  const projectResponses = useProjectResponses(projectId, { enabled: mayViewAssignments });
   const activity = useProjectActivity(projectId);
   const profile = useProfile();
   const detail = project.data;
+  const showAssignmentsTabFromData = Boolean(
+    detail && projectViewerMayViewAssignments(detail),
+  );
+
+  const showResponseTab = Boolean(detail && !detail.viewer_is_creator);
+
+  useEffect(() => {
+    if (!detail || workerDefaultTabSet.current) return;
+    if (!detail.viewer_is_creator) {
+      workerDefaultTabSet.current = true;
+      setTab('response');
+    }
+  }, [detail]);
+
+  useEffect(() => {
+    if (!showAssignmentsTabFromData && tab === 'assignments') {
+      setTab(showResponseTab ? 'response' : 'activity');
+    }
+    if (!showResponseTab && tab === 'response') {
+      setTab('activity');
+    }
+  }, [showAssignmentsTabFromData, showResponseTab, tab]);
+
   const creatorUsername =
     detail && profile.data?.id === detail.creator_id ? profile.data.username ?? null : null;
 
   const refetchAll = useCallback(async () => {
     await Promise.all([
       project.refetch(),
-      assignments.refetch(),
-      contributions.refetch(),
+      projectResponses.refetch(),
       activity.refetch(),
     ]);
-  }, [activity.refetch, assignments.refetch, contributions.refetch, project.refetch]);
+  }, [activity.refetch, project.refetch, projectResponses.refetch]);
 
   const { refreshing, onRefresh } = usePullToRefresh(refetchAll);
 
@@ -101,8 +144,76 @@ export function ProjectDetailScreen({ projectId }: { projectId: string }) {
   const canContribute = Boolean(detail && projectViewerMayContribute(detail));
 
   const headerTitle = detail?.viewer_is_creator ? 'Your project' : 'Project';
+  const budgetMajor = detail ? detail.budget_total_kobo / 100 : 0;
 
-  if (project.isPending) {
+  const initialOfferInput = useMemo(
+    () => projectResponseWizardInitialOffer(existingResponse?.quotedAmount, budgetMajor),
+    [existingResponse?.quotedAmount, budgetMajor],
+  );
+  const initialMessage = existingResponse?.message ?? '';
+
+  const beginFlow = useCallback(() => {
+    if (!respondable) return;
+    respond.reset();
+    setNeedsPhotoStep(!hasProfilePhotoReady(profile.data));
+    setFlowStep(0);
+    setFlowKey((k) => k + 1);
+    setInFlow(true);
+  }, [profile.data, respond, respondable]);
+
+  const exitFlow = () => {
+    setInFlow(false);
+    setFlowStep(0);
+  };
+
+  const submitResponse = (payload: {
+    message: string | null;
+    quotedAmount: number | null;
+    proposedDeliveryDurationValue: number;
+    proposedDeliveryDurationUnit: import('@/features/requests/delivery-duration').DeliveryDurationUnit;
+  }) => {
+    const compensation = payload.quotedAmount ?? (budgetMajor > 0 ? budgetMajor : null);
+    if (compensation === null || compensation <= 0) {
+      showAppToast('Enter a valid compensation amount.', 'warning');
+      return;
+    }
+    respond.mutate(
+      {
+        projectId,
+        message: payload.message,
+        compensationMajor: compensation,
+        proposedDeliveryDurationValue: payload.proposedDeliveryDurationValue,
+        proposedDeliveryDurationUnit: payload.proposedDeliveryDurationUnit,
+      },
+      {
+        onSuccess: () => {
+          exitFlow();
+          setTab('response');
+          showAppToast(existingResponse ? 'Response updated' : 'Response sent');
+        },
+      },
+    );
+  };
+
+  const confirmWithdraw = () => {
+    Alert.alert(
+      'Cancel response?',
+      'You can respond again later if the project is still open.',
+      [
+        { text: 'Keep', style: 'cancel' },
+        {
+          text: 'Cancel response',
+          style: 'destructive',
+          onPress: () =>
+            withdraw.mutate(projectId, {
+              onSuccess: () => showAppToast('Response cancelled'),
+            }),
+        },
+      ],
+    );
+  };
+
+  if (project.isPending || (showResponseTab && respondMetaPending)) {
     return (
       <Screen className="flex-1">
         <RequestFlowHeader title={headerTitle} onBack={() => router.back()} />
@@ -148,19 +259,35 @@ export function ProjectDetailScreen({ projectId }: { projectId: string }) {
     : 'Not set';
 
   const creatorProfile = projectCreatorProfileFields(detail);
-  const showAssignmentsTab = projectViewerMayViewAssignments(detail);
-  const showRespondFooter = !detail.viewer_is_creator;
-  const activeQuery =
-    tab === 'contributions'
-      ? contributions
-      : tab === 'assignments' && showAssignmentsTab
-        ? assignments
-        : tab === 'activity'
-          ? activity
-          : contributions;
+  const showAssignmentsTab = showAssignmentsTabFromData;
+
+  if (inFlow && respondable) {
+    return (
+      <Screen className="flex-1">
+        <ResponseCreationFlow
+          key={flowKey}
+          step={flowStep}
+          onStepChange={setFlowStep}
+          onExit={exitFlow}
+          request={respondable}
+          initialYourOffer={initialOfferInput}
+          initialMessage={initialMessage}
+          initialProposedDeliveryDurationValue={existingResponse?.proposedDeliveryDurationValue}
+          initialProposedDeliveryDurationUnit={existingResponse?.proposedDeliveryDurationUnit}
+          needsPhotoStep={needsPhotoStep}
+          isUpdate={Boolean(existingResponse)}
+          submitting={respond.isPending}
+          submitError={respond.error}
+          onSubmit={submitResponse}
+        />
+      </Screen>
+    );
+  }
+
+  const activeQuery = activity;
 
   const listData = useMemo(() => {
-    if (tab === 'assignments' && !showAssignmentsTab) return [];
+    if (tab === 'response' || tab === 'assignments') return [];
     if (activeQuery.isPending || activeQuery.isError) return [];
     return activeQuery.data ?? [];
   }, [
@@ -224,7 +351,26 @@ export function ProjectDetailScreen({ projectId }: { projectId: string }) {
           active={tab}
           onChange={setTab}
           showAssignments={showAssignmentsTab}
+          showResponse={showResponseTab}
         />
+
+        {tab === 'response' && showResponseTab ? (
+          <ProjectResponseTabPanel
+            budgetMajor={budgetMajor}
+            existingResponse={existingResponse}
+            respondAllowed={respondAllowed}
+            respondError={respond.error}
+            withdrawError={withdraw.error}
+            withdrawLoading={withdraw.isPending}
+            onBeginRespond={beginFlow}
+            onEditResponse={beginFlow}
+            onCancelResponse={confirmWithdraw}
+          />
+        ) : null}
+
+        {tab === 'assignments' && showAssignmentsTab ? (
+          <ProjectResponsesPanel responses={projectResponses} />
+        ) : null}
       </View>
     ),
     [
@@ -245,16 +391,24 @@ export function ProjectDetailScreen({ projectId }: { projectId: string }) {
       detail.viewer_is_contributor,
       locationLabel,
       showAssignmentsTab,
+      showResponseTab,
+      existingResponse,
+      respondAllowed,
+      respond.error,
+      withdraw.error,
+      withdraw.isPending,
+      beginFlow,
+      budgetMajor,
       metaTime,
       progress,
+      projectId,
+      projectResponses,
       tab,
     ],
   );
 
   const keyExtractor = useCallback(
     (item: (typeof listData)[number], index: number) => {
-      if (tab === 'contributions' && 'contribution_id' in item) return item.contribution_id;
-      if (tab === 'assignments' && 'assignment_id' in item) return item.assignment_id;
       return `activity-${index}`;
     },
     [tab],
@@ -266,6 +420,7 @@ export function ProjectDetailScreen({ projectId }: { projectId: string }) {
 
       <View className="min-h-0 flex-1">
         <FlatList
+          ref={listRef}
           key={tab}
           data={listData}
           keyExtractor={keyExtractor}
@@ -273,37 +428,27 @@ export function ProjectDetailScreen({ projectId }: { projectId: string }) {
           contentContainerStyle={{
             gap: 12,
             paddingHorizontal: 20,
-            paddingBottom: showRespondFooter ? 112 : 48,
+            paddingBottom: 48,
             flexGrow: listData.length === 0 ? 1 : undefined,
           }}
           keyboardShouldPersistTaps="handled"
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
           ListEmptyComponent={
-            <View className="min-h-[200px] justify-center">
-              <ProjectDetailTabEmpty
-                tab={tab}
-                query={activeQuery}
-                showAssignmentsTab={showAssignmentsTab}
-              />
-            </View>
+            tab === 'response' || tab === 'assignments' ? (
+              <View />
+            ) : (
+              <View className="min-h-[200px] justify-center">
+                <ProjectDetailTabEmpty
+                  tab={tab}
+                  query={activeQuery}
+                  showAssignmentsTab={showAssignmentsTab}
+                />
+              </View>
+            )
           }
           renderItem={({ item }) => <ProjectDetailTabRow tab={tab} item={item} />}
         />
       </View>
-
-      {showRespondFooter ? (
-        <View className="absolute bottom-0 left-0 right-0 items-center px-5 pb-2">
-          <View className="w-full max-w-md">
-            <Button
-              label="Respond to project"
-              variant="active"
-              size="lg"
-              corner="2xl"
-              onPress={() => setTab('assignments')}
-            />
-          </View>
-        </View>
-      ) : null}
 
       <PersonProfileBottomSheet
         sheetRef={creatorProfileSheetRef}
@@ -344,10 +489,7 @@ export function ProjectDetailScreen({ projectId }: { projectId: string }) {
   );
 }
 
-type TabQuery =
-  | ReturnType<typeof useProjectContributions>
-  | ReturnType<typeof useProjectAssignments>
-  | ReturnType<typeof useProjectActivity>;
+type TabQuery = ReturnType<typeof useProjectActivity>;
 
 function ProjectDetailTabEmpty({
   tab,
@@ -358,49 +500,18 @@ function ProjectDetailTabEmpty({
   query: TabQuery;
   showAssignmentsTab: boolean;
 }) {
-  if (tab === 'assignments' && !showAssignmentsTab) {
-    return (
-      <EmptyState
-        layout="list"
-        icon="briefcase-outline"
-        title="Respond to this project"
-        message="Assignment openings will appear here when you respond. Full assignment management is only visible to the creator and contributors."
-      />
-    );
-  }
-
   if (query.isPending) {
     return <SkeletonBlock className="h-20 w-full rounded-2xl" />;
   }
   if (query.isError) {
     return <InlineError error={query.error} onRetry={() => void query.refetch()} />;
   }
-  if (tab === 'contributions') {
-    return (
-      <EmptyState
-        layout="list"
-        icon="wallet-outline"
-        title="No contributions yet"
-        message="Pool contributions will show up here."
-      />
-    );
-  }
-  if (tab === 'assignments') {
-    return (
-      <EmptyState
-        layout="list"
-        icon="briefcase-outline"
-        title="No assignments"
-        message="Work packages and roles for this project appear here."
-      />
-    );
-  }
   return (
     <EmptyState
       layout="list"
       icon="time-outline"
       title="No activity yet"
-      message="Funding and project milestones will appear here."
+      message="Contributions, funding milestones, and other updates appear here."
     />
   );
 }
@@ -412,65 +523,6 @@ function ProjectDetailTabRow({
   tab: ProjectDetailTab;
   item: Record<string, unknown>;
 }) {
-  const colors = useColors();
-
-  if (tab === 'contributions' && 'contribution_id' in item) {
-    const row = item as {
-      contribution_id: string;
-      contributor_display_name: string | null;
-      amount_kobo: number;
-      contributed_at: string | null;
-      viewer_is_self: boolean;
-    };
-    return (
-      <View className="flex-row items-center justify-between gap-3 rounded-2xl border border-hairline bg-elevated px-4 py-3">
-        <View className="min-w-0 flex-1 gap-0.5">
-          <Text className="text-base font-semibold text-ink" numberOfLines={1}>
-            {row.viewer_is_self ? 'You' : row.contributor_display_name?.trim() || 'Contributor'}
-          </Text>
-          {row.contributed_at ? (
-            <Text className="text-xs text-muted">{formatWhenHome(row.contributed_at)}</Text>
-          ) : null}
-        </View>
-        <Text className="shrink-0 text-base font-bold text-ink">
-          {formatMoney(koboToMajor(row.amount_kobo), MARKET.currency)}
-        </Text>
-      </View>
-    );
-  }
-
-  if (tab === 'assignments' && 'assignment_id' in item) {
-    const row = item as {
-      assignment_id: string;
-      title: string;
-      status: string;
-      compensation_total_kobo: number;
-      reservation_secured: boolean;
-    };
-    return (
-      <Pressable
-        onPress={() => router.push(`/project/assignment/${row.assignment_id}` as Href)}
-        className="flex-row items-center gap-3 rounded-2xl border border-hairline bg-elevated px-4 py-3 active:opacity-90"
-      >
-        <View className="min-w-0 flex-1 gap-1">
-          <Text className="text-base font-semibold text-ink" numberOfLines={1}>
-            {row.title}
-          </Text>
-          <View className="flex-row flex-wrap items-center gap-2">
-            <Badge label={row.status.replaceAll('_', ' ')} tone="neutral" dot={false} />
-            <Text className="text-sm text-muted">
-              {formatMoney(koboToMajor(row.compensation_total_kobo), MARKET.currency)}
-            </Text>
-          </View>
-          <Text className="text-xs text-subtle">
-            {row.reservation_secured ? 'Compensation secured' : 'Awaiting reserve'}
-          </Text>
-        </View>
-        <Ionicons name="chevron-forward" size={18} color={colors.subtle} />
-      </Pressable>
-    );
-  }
-
   if (tab === 'activity' && 'summary' in item) {
     const row = item as { summary: string; event_at: string | null; event_type: string };
     return (

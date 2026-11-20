@@ -175,6 +175,27 @@ export function useProjectAssignments(
   });
 }
 
+export function useProjectResponses(
+  projectId: string | undefined,
+  options?: { enabled?: boolean },
+) {
+  const id = projectId?.trim() ?? '';
+  const mayFetch = options?.enabled !== false;
+  return useQuery({
+    queryKey: queryKeys.projectResponses(id),
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('list_project_responses', {
+        p_project_id: id,
+        p_limit: 50,
+        p_offset: 0,
+      });
+      if (error) throw error;
+      return data ?? [];
+    },
+    enabled: id.length > 0 && mayFetch,
+  });
+}
+
 export function useProjectContributions(projectId: string | undefined) {
   const id = projectId?.trim() ?? '';
   return useQuery({
