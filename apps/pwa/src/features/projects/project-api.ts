@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { DESCRIPTION_LIMITS, TITLE_LIMITS } from '@/config';
 import { localDateIso, localTimeIso, REQUEST_EXPIRY_TIMEZONE } from '@/features/requests/request-expiry-core';
 import { resolveRequestTagIdsForRpc, type RequestTag } from '@/features/requests/tags';
+import { createIdempotencyKey } from '@/lib/idempotency-key';
 import { queryKeys } from '@/lib/query/keys';
 import { supabase } from '@/lib/supabase/client';
 import type { Database } from '@/lib/supabase/database.types';
@@ -35,6 +36,9 @@ export function useCreateProject() {
       fundingVisibility: FundingVisibility;
       tags: RequestTag[];
       attachmentPath?: string | null;
+      latitude: number;
+      longitude: number;
+      locationLabel: string;
     }) => {
       const trimmedDescription = input.description.trim();
       if (trimmedDescription.length > DESCRIPTION_LIMITS.max) {
@@ -65,6 +69,9 @@ export function useCreateProject() {
         p_funding_visibility: input.fundingVisibility,
         p_tag_ids: tagIds,
         p_attachment_path: input.attachmentPath || undefined,
+        p_latitude: input.latitude,
+        p_longitude: input.longitude,
+        p_location_label: input.locationLabel.trim(),
       });
 
       if (error) throw error;
@@ -85,6 +92,82 @@ export function useCreateProject() {
       void queryClient.invalidateQueries({ queryKey: queryKeys.browseOpenProjectsAll });
       void queryClient.invalidateQueries({ queryKey: queryKeys.myEntitlements });
     },
+  });
+}
+
+export function useContributeToProject() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: { projectId: string; amountMajor: number }) => {
+      const { data, error } = await supabase.rpc('contribute_to_project', {
+        p_project_id: input.projectId,
+        p_amount_major: input.amountMajor,
+        p_idempotency_key: createIdempotencyKey('project-contrib'),
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (_id, input) => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.project(input.projectId) });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.projectContributions(input.projectId) });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.projectActivity(input.projectId) });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.browseOpenProjectsAll });
+    },
+  });
+}
+
+export function useProjectAssignments(
+  projectId: string | undefined,
+  options?: { enabled?: boolean },
+) {
+  const id = projectId?.trim() ?? '';
+  const mayFetch = options?.enabled !== false;
+  return useQuery({
+    queryKey: queryKeys.projectAssignments(id),
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('list_project_assignments', {
+        p_project_id: id,
+        p_limit: 50,
+        p_offset: 0,
+      });
+      if (error) throw error;
+      return data ?? [];
+    },
+    enabled: id.length > 0 && mayFetch,
+  });
+}
+
+export function useProjectContributions(projectId: string | undefined) {
+  const id = projectId?.trim() ?? '';
+  return useQuery({
+    queryKey: queryKeys.projectContributions(id),
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('list_project_contributions', {
+        p_project_id: id,
+        p_limit: 50,
+        p_offset: 0,
+      });
+      if (error) throw error;
+      return data ?? [];
+    },
+    enabled: id.length > 0,
+  });
+}
+
+export function useProjectActivity(projectId: string | undefined) {
+  const id = projectId?.trim() ?? '';
+  return useQuery({
+    queryKey: queryKeys.projectActivity(id),
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('list_project_activity', {
+        p_project_id: id,
+        p_limit: 50,
+        p_offset: 0,
+      });
+      if (error) throw error;
+      return data ?? [];
+    },
+    enabled: id.length > 0,
   });
 }
 

@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { DESCRIPTION_LIMITS, TITLE_LIMITS } from '@/config';
 import { resolveRequestTagIdsForRpc, type RequestTag } from '@/features/requests/tags';
+import { createIdempotencyKey } from '@/lib/idempotency-key';
 import { queryKeys } from '@/lib/query/keys';
 import { supabase } from '@/lib/supabase/client';
 import type { Database } from '@/lib/supabase/database.types';
@@ -49,6 +50,9 @@ export function useCreateProject() {
       fundingVisibility: FundingVisibility;
       tags: RequestTag[];
       attachmentPath?: string | null;
+      latitude: number;
+      longitude: number;
+      locationLabel: string;
     }) => {
       const trimmedDescription = input.description.trim();
       if (trimmedDescription.length > DESCRIPTION_LIMITS.max) {
@@ -79,6 +83,9 @@ export function useCreateProject() {
         p_funding_visibility: input.fundingVisibility,
         p_tag_ids: tagIds,
         p_attachment_path: input.attachmentPath || undefined,
+        p_latitude: input.latitude,
+        p_longitude: input.longitude,
+        p_location_label: input.locationLabel.trim(),
       });
 
       if (error) throw error;
@@ -147,8 +154,12 @@ export function useMyProjectAssignments() {
   });
 }
 
-export function useProjectAssignments(projectId: string | undefined) {
+export function useProjectAssignments(
+  projectId: string | undefined,
+  options?: { enabled?: boolean },
+) {
   const id = projectId?.trim() ?? '';
+  const mayFetch = options?.enabled !== false;
   return useQuery({
     queryKey: queryKeys.projectAssignments(id),
     queryFn: async () => {
@@ -160,7 +171,7 @@ export function useProjectAssignments(projectId: string | undefined) {
       if (error) throw error;
       return data ?? [];
     },
-    enabled: id.length > 0,
+    enabled: id.length > 0 && mayFetch,
   });
 }
 
@@ -266,7 +277,7 @@ export function useContributeToProject() {
       const { data, error } = await supabase.rpc('contribute_to_project', {
         p_project_id: input.projectId,
         p_amount_major: input.amountMajor,
-        p_idempotency_key: crypto.randomUUID(),
+        p_idempotency_key: createIdempotencyKey('project-contrib'),
       });
       if (error) throw error;
       return data;

@@ -56,7 +56,7 @@ select public.create_project(
   1000,
   (current_date + 14),
   null,
-  'Africa/Lagos'
+  'Africa/Lagos', 6.5244, 3.3792, 'Lagos, Nigeria'
 ) as project_id \gset
 
 select pg_temp.act_as_owner() as _ \gset
@@ -83,7 +83,7 @@ select throws_ok(
     1000,
     (current_date + 14),
     null,
-    'Africa/Lagos'
+    'Africa/Lagos', 6.5244, 3.3792, 'Lagos, Nigeria'
   )$$,
   '55000',
   null,

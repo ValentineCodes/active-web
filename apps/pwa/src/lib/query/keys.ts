@@ -34,6 +34,7 @@ export const queryKeys = {
   myCreatedProjects: ['my-created-projects'] as const,
   projectAssignments: (projectId: string) => ['project-assignments', projectId] as const,
   projectContributions: (projectId: string) => ['project-contributions', projectId] as const,
+  projectActivity: (projectId: string) => ['project-activity', projectId] as const,
   browseRequest: (requestId: string, latitude: number | null, longitude: number | null) =>
     ['browse-request', requestId, latitude, longitude] as const,
   browseRequestPreview: (requestId: string) => ['browse-request-preview', requestId] as const,

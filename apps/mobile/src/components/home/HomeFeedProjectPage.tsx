@@ -8,10 +8,9 @@ import { Avatar } from '@/components/ui/Avatar';
 import { SkeletonBlock } from '@/components/ui/Skeleton';
 import { MARKET } from '@/config';
 import type { PublicProject } from '@/features/projects/project-browse-api';
-import { homeFeedProjectBadge } from '@/features/projects/project-status';
 import { useRequestAttachmentUrl } from '@/features/requests/request-attachment-url';
 import { requestOutcomeDescription } from '@/features/requests/outcome';
-import { formatAgo, formatMoney } from '@/lib/format';
+import { formatAgo, formatCoarseLocationLabel, formatMoney } from '@/lib/format';
 import { useColors, useTheme } from '@/theme';
 
 type HomeFeedProjectPageProps = {
@@ -36,6 +35,11 @@ const LIGHT_GRID_URI =
   encodeURIComponent(
     `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18"><circle cx="1" cy="1" r="0.75" fill="rgba(17,24,18,0.35)"/></svg>`,
   );
+
+function locationLabelForProject(project: PublicProject): string {
+  if (project.viewer_is_creator) return 'Your project';
+  return formatCoarseLocationLabel(project.location_label ?? 'Nearby');
+}
 
 function glowColor(hex: string, alpha: number) {
   const a = Math.round(Math.max(0, Math.min(1, alpha)) * 255)
@@ -87,8 +91,8 @@ export function HomeFeedProjectPage({ project, pageHeight, tabBarInset }: HomeFe
   const description = requestOutcomeDescription(project.description);
   const postedLabel = project.posted_at ? formatAgo(project.posted_at) : null;
   const budgetMajor = project.budget_total_kobo / 100;
-  const fundingChip = project.funding_status.replaceAll('_', ' ');
-  const isOwnProject = project.viewer_is_creator;
+  const contributedMajor = project.contributed_total_kobo / 100;
+  const locationLabel = locationLabelForProject(project);
 
   const titleClass = lightCopy
     ? 'text-3xl font-bold leading-9 text-white'
@@ -105,10 +109,13 @@ export function HomeFeedProjectPage({ project, pageHeight, tabBarInset }: HomeFe
     ? 'text-sm font-semibold text-white'
     : 'text-sm font-semibold text-ink';
   const footerBorderClass = lightCopy ? 'border-t border-white/15' : 'border-t border-hairline';
-  const fundingIconColor = lightCopy ? '#ffffff' : colors.ink;
-  const fundingTextClass = lightCopy
+  const locationIconColor = lightCopy ? '#ffffff' : colors.ink;
+  const locationTextClass = lightCopy
     ? 'text-sm font-medium text-white'
     : 'text-sm font-medium text-ink';
+  const showContributeCta =
+    project.funding_status === 'open' || project.funding_status === 'target_met';
+  const footerActionLabel = showContributeCta ? 'Contribute' : 'View project';
 
   const openProject = () => {
     router.push(`/project/${project.project_id}`);
@@ -164,29 +171,6 @@ export function HomeFeedProjectPage({ project, pageHeight, tabBarInset }: HomeFe
                 opacity: darkAtmosphere ? 0.4 : 0.3,
               }}
             />
-            <View
-              pointerEvents="none"
-              className="absolute left-5 flex-row items-center gap-2"
-              style={{ top: '29%' }}
-            >
-              <View
-                className="h-1.5 w-1.5 rounded-full"
-                style={{ backgroundColor: darkAtmosphere ? DARK_GLOW_GREEN : LIGHT_GLOW_GREEN }}
-              />
-              <Text
-                className="font-bold uppercase"
-                style={{
-                  fontSize: 12,
-                  letterSpacing: 2,
-                  color: darkAtmosphere ? 'rgba(255,255,255,0.35)' : 'rgba(17,24,18,0.4)',
-                }}
-              >
-                {homeFeedProjectBadge({
-                  viewer_is_creator: isOwnProject,
-                  funding_status: project.funding_status,
-                })}
-              </Text>
-            </View>
           </>
         )}
 
@@ -243,7 +227,9 @@ export function HomeFeedProjectPage({ project, pageHeight, tabBarInset }: HomeFe
               </Text>
             </View>
             <View className={whenChipClass}>
-              <Text className={whenTextClass}>{fundingChip}</Text>
+              <Text className={whenTextClass}>
+                {formatMoney(contributedMajor, MARKET.currency)} raised
+              </Text>
             </View>
           </View>
 
@@ -261,13 +247,11 @@ export function HomeFeedProjectPage({ project, pageHeight, tabBarInset }: HomeFe
             className={`mt-1 flex-row items-center justify-between gap-3 pt-3 ${footerBorderClass}`}
           >
             <View className="flex-row items-center gap-1.5">
-              <Ionicons name="pie-chart-outline" size={16} color={fundingIconColor} />
-              <Text className={fundingTextClass}>
-                {formatMoney(project.contributed_total_kobo / 100, MARKET.currency)} raised
-              </Text>
+              <Ionicons name="location-outline" size={16} color={locationIconColor} />
+              <Text className={locationTextClass}>{locationLabel}</Text>
             </View>
             <View className="flex-row items-center gap-0.5">
-              <Text className="text-sm font-semibold text-active">View project</Text>
+              <Text className="text-sm font-semibold text-active">{footerActionLabel}</Text>
               <Ionicons name="chevron-forward" size={16} color={colors.active} />
             </View>
           </View>

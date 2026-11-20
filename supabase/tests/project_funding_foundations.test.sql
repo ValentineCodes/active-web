@@ -59,7 +59,7 @@ select throws_ok(
     1000,
     (current_date + 7),
     null,
-    'Africa/Lagos'
+    'Africa/Lagos', 6.5244, 3.3792, 'Lagos, Nigeria'
   )$$,
   '55000',
   null,
@@ -81,7 +81,7 @@ select throws_ok(
     1000,
     current_date,
     null,
-    'Africa/Lagos'
+    'Africa/Lagos', 6.5244, 3.3792, 'Lagos, Nigeria'
   )$$,
   '55000',
   null,
@@ -100,7 +100,7 @@ select throws_ok(
     1000,
     (current_date + 31),
     null,
-    'Africa/Lagos'
+    'Africa/Lagos', 6.5244, 3.3792, 'Lagos, Nigeria'
   )$$,
   '55000',
   null,
@@ -118,20 +118,15 @@ select public.create_project(
   1000,
   (current_date + 7),
   null,
-  'Africa/Lagos'
+  'Africa/Lagos', 6.5244, 3.3792, 'Lagos, Nigeria'
 ) as project_id \gset
 
 select is(
   (
     select funding_status::text from public.get_project(:'project_id'::uuid)
   ),
-  'not_open',
-  'funding not open until publish'
-);
-
-select lives_ok(
-  format('select public.open_project_funding(%L::uuid)', :'project_id'),
-  'open funding'
+  'open',
+  'funding open when project is created'
 );
 
 select pg_temp.act_as('a2222222-2222-2222-2222-222222222222') as _ \gset
@@ -292,13 +287,8 @@ select public.create_project(
   1000,
   (current_date + 3),
   null,
-  'Africa/Lagos'
+  'Africa/Lagos', 6.5244, 3.3792, 'Lagos, Nigeria'
 ) as race_project_id \gset
-
-select lives_ok(
-  format('select public.open_project_funding(%L::uuid)', :'race_project_id'),
-  'open race project'
-);
 
 select pg_temp.act_as('a2222222-2222-2222-2222-222222222222') as _ \gset
 select lives_ok(
@@ -361,13 +351,8 @@ select public.create_project(
   1000,
   (current_date + 1),
   null,
-  'Africa/Lagos'
+  'Africa/Lagos', 6.5244, 3.3792, 'Lagos, Nigeria'
 ) as fail_project_id \gset
-
-select lives_ok(
-  format('select public.open_project_funding(%L::uuid)', :'fail_project_id'),
-  'open fail project'
-);
 
 select pg_temp.act_as('a2222222-2222-2222-2222-222222222222') as _ \gset
 select public.contribute_to_project(

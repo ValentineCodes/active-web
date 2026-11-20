@@ -51,6 +51,7 @@ import {
   receiptOutline,
   shieldCheckmarkOutline,
   walletOutline,
+  briefcaseOutline,
   pencilOutline,
   peopleOutline,
 } from 'ionicons/icons';
@@ -109,6 +110,7 @@ export const ionIcons = {
   'receipt-outline': receiptOutline,
   'shield-checkmark': shieldCheckmarkOutline,
   'wallet-outline': walletOutline,
+  'briefcase-outline': briefcaseOutline,
   'create-outline': pencilOutline,
   'people-outline': peopleOutline,
 } as const;

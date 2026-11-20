@@ -292,8 +292,11 @@ export function ProjectCreateWizard({
         fundingVisibility: visibility,
         tags,
         attachmentPath,
+        latitude: _postPosition.latitude,
+        longitude: _postPosition.longitude,
+        locationLabel,
       });
-      showAppToast('Project draft created', { type: 'success', title: 'Saved' });
+      showAppToast('Project published', { type: 'success', title: 'Live' });
       onSuccess(`/project/${projectId}`);
       return true;
     } catch (e) {

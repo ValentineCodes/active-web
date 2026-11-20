@@ -7,11 +7,10 @@ import { IonIcon } from '@/components/ui/IonIcon';
 import { SkeletonBlock } from '@/components/ui/Skeleton';
 import { ionIcons } from '@/components/ui/ion-icons';
 import type { PublicProject } from '@/features/projects/project-browse-api';
-import { homeFeedProjectBadge } from '@/features/projects/project-status';
 import { useRequestAttachmentUrl } from '@/features/requests/request-attachment-url';
 import { requestOutcomeDescription } from '@/features/requests/outcome';
 import { MARKET } from '@/config';
-import { formatAgo, formatMoney } from '@/lib/format';
+import { formatAgo, formatCoarseLocationLabel, formatMoney } from '@/lib/format';
 import { useTheme } from '@/theme/ThemeProvider';
 
 const PHOTO_BOTTOM_SCRIM =
@@ -36,6 +35,11 @@ type Props = {
   tabBarInset: number;
 };
 
+function locationLabelForProject(project: PublicProject): string {
+  if (project.viewer_is_creator) return 'Your project';
+  return formatCoarseLocationLabel(project.location_label ?? 'Nearby');
+}
+
 export function HomeFeedProjectPage({ project, pageHeight, tabBarInset }: Props) {
   const router = useRouter();
   const { resolved, colors } = useTheme();
@@ -52,7 +56,11 @@ export function HomeFeedProjectPage({ project, pageHeight, tabBarInset }: Props)
   const description = requestOutcomeDescription(project.description);
   const postedLabel = project.posted_at ? formatAgo(project.posted_at) : null;
   const budgetMajor = project.budget_total_kobo / 100;
-  const fundingChip = project.funding_status.replaceAll('_', ' ');
+  const contributedMajor = project.contributed_total_kobo / 100;
+  const locationLabel = locationLabelForProject(project);
+  const showContributeCta =
+    project.funding_status === 'open' || project.funding_status === 'target_met';
+  const footerActionLabel = showContributeCta ? 'Contribute' : 'View project';
 
   const titleClass = lightCopy
     ? 'text-3xl font-bold leading-9 text-white'
@@ -67,8 +75,8 @@ export function HomeFeedProjectPage({ project, pageHeight, tabBarInset }: Props)
   const whenChipClass = lightCopy ? 'rounded-full bg-white/15 px-3 py-1' : 'rounded-full bg-surface px-3 py-1';
   const whenTextClass = lightCopy ? 'text-sm font-semibold text-white' : 'text-sm font-semibold text-ink';
   const footerBorderClass = lightCopy ? 'border-t border-white/15' : 'border-t border-hairline';
-  const fundingIconColor = lightCopy ? '#ffffff' : colors.ink;
-  const fundingTextClass = lightCopy ? 'text-sm font-medium text-white' : 'text-sm font-medium text-ink';
+  const locationIconColor = lightCopy ? '#ffffff' : colors.ink;
+  const locationTextClass = lightCopy ? 'text-sm font-medium text-white' : 'text-sm font-medium text-ink';
 
   const openProject = () => {
     router.push(`/project/${project.project_id}`);
@@ -79,15 +87,16 @@ export function HomeFeedProjectPage({ project, pageHeight, tabBarInset }: Props)
       title={title}
       description={description}
       budgetMajor={budgetMajor}
-      contributedMajor={project.contributed_total_kobo / 100}
-      fundingChip={fundingChip}
+      contributedMajor={contributedMajor}
+      locationLabel={locationLabel}
       titleClass={titleClass}
       bodyClass={bodyClass}
       whenChipClass={whenChipClass}
       whenTextClass={whenTextClass}
       footerBorderClass={footerBorderClass}
-      fundingIconColor={fundingIconColor}
-      fundingTextClass={fundingTextClass}
+      locationIconColor={locationIconColor}
+      locationTextClass={locationTextClass}
+      footerActionLabel={footerActionLabel}
     />
   );
 
@@ -110,16 +119,6 @@ export function HomeFeedProjectPage({ project, pageHeight, tabBarInset }: Props)
             }}
             aria-hidden
           />
-          <div
-            className="pointer-events-none absolute left-5 z-[2] flex flex-row items-center gap-2"
-            style={{ top: '29%' }}
-          >
-            <OpenProjectLabel
-              dark={darkAtmosphere}
-              viewerIsCreator={project.viewer_is_creator}
-              fundingStatus={project.funding_status}
-            />
-          </div>
           <button
             type="button"
             aria-label={`View project: ${title}`}
@@ -200,27 +199,29 @@ function ProjectDetails({
   description,
   budgetMajor,
   contributedMajor,
-  fundingChip,
+  locationLabel,
   titleClass,
   bodyClass,
   whenChipClass,
   whenTextClass,
   footerBorderClass,
-  fundingIconColor,
-  fundingTextClass,
+  locationIconColor,
+  locationTextClass,
+  footerActionLabel,
 }: {
   title: string;
   description: string | null;
   budgetMajor: number;
   contributedMajor: number;
-  fundingChip: string;
+  locationLabel: string;
   titleClass: string;
   bodyClass: string;
   whenChipClass: string;
   whenTextClass: string;
   footerBorderClass: string;
-  fundingIconColor: string;
-  fundingTextClass: string;
+  locationIconColor: string;
+  locationTextClass: string;
+  footerActionLabel: string;
 }) {
   return (
     <>
@@ -229,7 +230,9 @@ function ProjectDetails({
           {formatMoney(budgetMajor, MARKET.currency)}
         </span>
         <span className={whenChipClass}>
-          <span className={whenTextClass}>{fundingChip}</span>
+          <span className={whenTextClass}>
+            {formatMoney(contributedMajor, MARKET.currency)} raised
+          </span>
         </span>
       </div>
 
@@ -238,13 +241,11 @@ function ProjectDetails({
 
       <div className={`mt-1 flex flex-row items-center justify-between gap-3 pt-3 ${footerBorderClass}`}>
         <span className="inline-flex items-center gap-1.5">
-          <IonIcon icon={ionIcons['wallet-outline']} size={16} color={fundingIconColor} />
-          <span className={fundingTextClass}>
-            {formatMoney(contributedMajor, MARKET.currency)} raised
-          </span>
+          <IonIcon icon={ionIcons['location-outline']} size={16} color={locationIconColor} />
+          <span className={locationTextClass}>{locationLabel}</span>
         </span>
         <span className="inline-flex items-center gap-0.5">
-          <span className="text-sm font-semibold text-active">View project</span>
+          <span className="text-sm font-semibold text-active">{footerActionLabel}</span>
           <IonIcon icon={ionIcons['chevron-forward']} size={16} color="#1FA35A" />
         </span>
       </div>
@@ -296,35 +297,6 @@ function TextProjectGlow({ dark }: { dark: boolean }) {
           background: `linear-gradient(160deg, ${glowColor(color, peak * 0.65)} 0%, ${glowColor(color, 0)} 55%)`,
         }}
       />
-    </>
-  );
-}
-
-function OpenProjectLabel({
-  dark,
-  viewerIsCreator,
-  fundingStatus,
-}: {
-  dark: boolean;
-  viewerIsCreator: boolean;
-  fundingStatus: PublicProject['funding_status'];
-}) {
-  return (
-    <>
-      <span
-        className="h-1.5 w-1.5 rounded-full"
-        style={{ backgroundColor: dark ? DARK_GLOW_GREEN : LIGHT_GLOW_GREEN }}
-      />
-      <span
-        className="font-bold uppercase"
-        style={{
-          fontSize: 12,
-          letterSpacing: 2,
-          color: dark ? 'rgba(255,255,255,0.35)' : 'rgba(17,24,18,0.4)',
-        }}
-      >
-        {homeFeedProjectBadge({ viewer_is_creator: viewerIsCreator, funding_status: fundingStatus })}
-      </span>
     </>
   );
 }

@@ -1812,6 +1812,8 @@ export type Database = {
           funding_unsuccessful_at: string | null
           funding_visibility: Database["public"]["Enums"]["project_funding_visibility"]
           id: string
+          location: unknown
+          location_label: string | null
           min_contribution_kobo: number
           min_funding_target_kobo: number
           min_target_reached_at: string | null
@@ -1835,6 +1837,8 @@ export type Database = {
           funding_unsuccessful_at?: string | null
           funding_visibility: Database["public"]["Enums"]["project_funding_visibility"]
           id?: string
+          location?: unknown
+          location_label?: string | null
           min_contribution_kobo: number
           min_funding_target_kobo: number
           min_target_reached_at?: string | null
@@ -1858,6 +1862,8 @@ export type Database = {
           funding_unsuccessful_at?: string | null
           funding_visibility?: Database["public"]["Enums"]["project_funding_visibility"]
           id?: string
+          location?: unknown
+          location_label?: string | null
           min_contribution_kobo?: number
           min_funding_target_kobo?: number
           min_target_reached_at?: string | null
@@ -4275,6 +4281,7 @@ export type Database = {
           creator_id: string
           description: string
           funding_status: Database["public"]["Enums"]["project_funding_status"]
+          location_label: string
           min_funding_target_kobo: number
           posted_at: string
           project_id: string
@@ -4517,6 +4524,9 @@ export type Database = {
           p_funding_deadline_local_time?: string
           p_funding_timezone?: string
           p_funding_visibility?: Database["public"]["Enums"]["project_funding_visibility"]
+          p_latitude?: number
+          p_location_label?: string
+          p_longitude?: number
           p_min_contribution_major?: number
           p_min_funding_target_major?: number
           p_tag_ids?: string[]
@@ -4787,7 +4797,14 @@ export type Database = {
           budget_total_kobo: number
           committed_compensation_kobo: number
           contributed_total_kobo: number
+          creator_avatar_path: string
+          creator_bio: string
+          creator_completion_percent: number
+          creator_display_name: string
           creator_id: string
+          creator_identity_verified: boolean
+          creator_rating_average: number
+          creator_rating_count: number
           description: string
           fully_funded_at: string
           funding_deadline_at: string
@@ -4796,6 +4813,7 @@ export type Database = {
           funding_timezone: string
           funding_unsuccessful_at: string
           funding_visibility: Database["public"]["Enums"]["project_funding_visibility"]
+          location_label: string
           min_contribution_kobo: number
           min_funding_target_kobo: number
           min_target_reached_at: string
@@ -4805,7 +4823,10 @@ export type Database = {
           status: Database["public"]["Enums"]["project_status"]
           tag_slugs: string[]
           title: string
+          viewer_is_contributor: boolean
           viewer_is_creator: boolean
+          viewer_may_contribute: boolean
+          viewer_may_view_assignments: boolean
         }[]
       }
       get_project_assignment: {

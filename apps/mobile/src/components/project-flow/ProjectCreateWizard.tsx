@@ -502,8 +502,11 @@ export function ProjectCreateWizard({
         fundingVisibility: visibility,
         tags,
         attachmentPath,
+        latitude: _postPosition.latitude,
+        longitude: _postPosition.longitude,
+        locationLabel,
       });
-      showAppToast('Project draft created', { type: 'success', title: 'Saved' });
+      showAppToast('Project published', { type: 'success', title: 'Live' });
       onSuccess(projectId);
       return true;
     } catch (e) {

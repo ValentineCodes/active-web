@@ -60,13 +60,8 @@ select public.create_project(
   1000,
   (current_date + 10),
   null,
-  'Africa/Lagos'
+  'Africa/Lagos', 6.5244, 3.3792, 'Lagos, Nigeria'
 ) as project_id \gset
-
-select lives_ok(
-  format('select public.open_project_funding(%L::uuid)', :'project_id'),
-  'open funding'
-);
 
 select pg_temp.act_as('c1111111-1111-1111-1111-111111111111') as _ \gset
 select throws_ok(
@@ -302,13 +297,8 @@ select public.create_project(
   1000,
   (current_date + 5),
   null,
-  'Africa/Lagos'
+  'Africa/Lagos', 6.5244, 3.3792, 'Lagos, Nigeria'
 ) as ud20_project_id \gset
-
-select lives_ok(
-  format('select public.open_project_funding(%L::uuid)', :'ud20_project_id'),
-  'open ud20 project'
-);
 
 select lives_ok(
   format('select public.contribute_to_project(%L::uuid, 6000, %L)', :'ud20_project_id', 'ud20-partial'),

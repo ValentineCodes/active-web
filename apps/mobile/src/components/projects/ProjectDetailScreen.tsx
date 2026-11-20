@@ -1,14 +1,25 @@
-import { useCallback, useMemo, useState } from 'react';
-import { Pressable, RefreshControl, ScrollView, Text, TextInput, View } from 'react-native';
+import { useCallback, useMemo, useRef, useState } from 'react';
+import { FlatList, Pressable, RefreshControl, Text, View } from 'react-native';
 import { router, type Href } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import type { BottomSheetModal } from '@gorhom/bottom-sheet';
 
+import {
+  ProjectContributeSheet,
+  type ProjectContributeInsufficientWalletPrompt,
+  type ProjectContributeSheetHandle,
+} from '@/components/project-flow/ProjectContributeSheet';
+import { PersonProfileBottomSheet } from '@/components/PersonProfileBottomSheet';
+import { InsufficientWalletSheet } from '@/components/request-flow/InsufficientWalletSheet';
+import { RequestPersonCard } from '@/components/request-flow/RequestPersonCard';
+import { ProjectDetailTabs, type ProjectDetailTab } from '@/components/project-flow/ProjectDetailTabs';
 import { ProjectFundingCard } from '@/components/project-flow/ProjectFundingCard';
 import { RequestAttachmentSection } from '@/components/request-flow/RequestAttachmentSection';
-import { RequestCallout } from '@/components/request-flow/RequestCallout';
 import { RequestFlowHeader } from '@/components/request-flow/RequestFlowHeader';
 import { RequestMetaRow } from '@/components/request-flow/RequestMetaRow';
 import { RequestTagsLine } from '@/components/request-flow/RequestTagsLine';
 import { RequestTitleSection } from '@/components/request-flow/RequestTitleSection';
+import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Screen } from '@/components/ui/Screen';
 import { EmptyState, InlineError } from '@/components/ui/StateView';
@@ -16,18 +27,26 @@ import { RequestDetailSkeleton } from '@/components/ui/content-skeletons';
 import { SkeletonBlock } from '@/components/ui/Skeleton';
 import { MARKET } from '@/config';
 import {
-  useContributeToProject,
-  useOpenProjectFunding,
   useProject,
   useProjectActivity,
   useProjectAssignments,
   useProjectContributions,
 } from '@/features/projects/project-api';
+import { projectCreatorProfileFields } from '@/features/projects/project-creator-profile';
+import { projectViewerMayViewAssignments } from '@/features/projects/project-assignments-visibility';
+import { projectViewerMayContribute } from '@/features/projects/project-contribute';
 import { projectDetailBadge } from '@/features/projects/project-status';
 import { useProfile } from '@/features/profile/api';
-import { formatMoney, formatWhenHome, formatWhenRequestCard } from '@/lib/format';
+import {
+  formatAgo,
+  formatCoarseLocationLabel,
+  formatMoney,
+  formatWhenHome,
+} from '@/lib/format';
 import { usePullToRefresh } from '@/lib/query/use-pull-to-refresh';
-import { showAppToast } from '@/lib/toast';
+import { useMyWallet } from '@/features/wallet/api';
+import { openWalletTopUp } from '@/features/wallet/top-up';
+import { useColors } from '@/theme';
 
 function koboToMajor(kobo: number) {
   return kobo / 100;
@@ -40,21 +59,24 @@ function fundingProgress(contributed: number, budget: number, minTarget: number)
 }
 
 export function ProjectDetailScreen({ projectId }: { projectId: string }) {
-  const [contributeAmount, setContributeAmount] = useState('');
+  const [tab, setTab] = useState<ProjectDetailTab>('contributions');
+  const [insufficientWalletPrompt, setInsufficientWalletPrompt] =
+    useState<ProjectContributeInsufficientWalletPrompt | null>(null);
+  const contributeSheetRef = useRef<ProjectContributeSheetHandle>(null);
+  const creatorProfileSheetRef = useRef<BottomSheetModal>(null);
 
   const project = useProject(projectId);
-  const assignments = useProjectAssignments(projectId);
+  const wallet = useMyWallet();
+  const mayViewAssignments = Boolean(
+    project.data && projectViewerMayViewAssignments(project.data),
+  );
+  const assignments = useProjectAssignments(projectId, { enabled: mayViewAssignments });
   const contributions = useProjectContributions(projectId);
   const activity = useProjectActivity(projectId);
   const profile = useProfile();
-  const openFunding = useOpenProjectFunding();
-  const contribute = useContributeToProject();
-
   const detail = project.data;
   const creatorUsername =
-    detail && profile.data?.id === detail.creator_id
-      ? profile.data.username ?? null
-      : null;
+    detail && profile.data?.id === detail.creator_id ? profile.data.username ?? null : null;
 
   const refetchAll = useCallback(async () => {
     await Promise.all([
@@ -76,44 +98,13 @@ export function ProjectDetailScreen({ projectId }: { projectId: string }) {
     );
   }, [detail]);
 
-  const canContribute =
-    Boolean(detail && !detail.viewer_is_creator && detail.funding_status === 'open');
-
-  const handlePublish = useCallback(() => {
-    openFunding.mutate(projectId, {
-      onSuccess: () => showAppToast('Funding is open', { type: 'success' }),
-      onError: (error) =>
-        showAppToast(error instanceof Error ? error.message : 'Could not open funding', 'warning'),
-    });
-  }, [openFunding, projectId]);
-
-  const handleContribute = useCallback(() => {
-    const major = Number(contributeAmount.replace(/[^\d.]/g, ''));
-    if (!major || Number.isNaN(major)) {
-      showAppToast('Enter a contribution amount', 'warning');
-      return;
-    }
-    contribute.mutate(
-      { projectId, amountMajor: major },
-      {
-        onSuccess: () => {
-          setContributeAmount('');
-          showAppToast('Contribution recorded', { type: 'success' });
-        },
-        onError: (error) =>
-          showAppToast(
-            error instanceof Error ? error.message : 'Could not contribute',
-            'warning',
-          ),
-      },
-    );
-  }, [contribute, contributeAmount, projectId]);
+  const canContribute = Boolean(detail && projectViewerMayContribute(detail));
 
   const headerTitle = detail?.viewer_is_creator ? 'Your project' : 'Project';
 
   if (project.isPending) {
     return (
-      <Screen>
+      <Screen className="flex-1">
         <RequestFlowHeader title={headerTitle} onBack={() => router.back()} />
         <RequestDetailSkeleton />
       </Screen>
@@ -122,9 +113,9 @@ export function ProjectDetailScreen({ projectId }: { projectId: string }) {
 
   if (project.isError) {
     return (
-      <Screen>
+      <Screen className="flex-1">
         <RequestFlowHeader title="Project" onBack={() => router.back()} />
-        <View className="px-5">
+        <View className="px-5 pt-4">
           <InlineError error={project.error} onRetry={() => void project.refetch()} />
         </View>
       </Screen>
@@ -133,7 +124,7 @@ export function ProjectDetailScreen({ projectId }: { projectId: string }) {
 
   if (!detail) {
     return (
-      <Screen>
+      <Screen className="flex-1">
         <RequestFlowHeader title="Project" onBack={() => router.back()} />
         <EmptyState
           layout="list"
@@ -149,20 +140,40 @@ export function ProjectDetailScreen({ projectId }: { projectId: string }) {
     status: detail.status,
     funding_status: detail.funding_status,
   });
-  const metaTime = detail.funding_opened_at
-    ? formatWhenHome(detail.funding_opened_at)
-    : detail.funding_deadline_at
-      ? formatWhenHome(detail.funding_deadline_at)
-      : 'Recently';
+  const metaTime = formatAgo(
+    detail.funding_opened_at ?? detail.funding_deadline_at ?? new Date().toISOString(),
+  );
+  const locationLabel = detail.location_label
+    ? formatCoarseLocationLabel(detail.location_label)
+    : 'Not set';
 
-  return (
-    <Screen>
-      <RequestFlowHeader title={headerTitle} onBack={() => router.back()} />
+  const creatorProfile = projectCreatorProfileFields(detail);
+  const showAssignmentsTab = projectViewerMayViewAssignments(detail);
+  const showRespondFooter = !detail.viewer_is_creator;
+  const activeQuery =
+    tab === 'contributions'
+      ? contributions
+      : tab === 'assignments' && showAssignmentsTab
+        ? assignments
+        : tab === 'activity'
+          ? activity
+          : contributions;
 
-      <ScrollView
-        contentContainerClassName="gap-6 p-5 pb-12"
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-      >
+  const listData = useMemo(() => {
+    if (tab === 'assignments' && !showAssignmentsTab) return [];
+    if (activeQuery.isPending || activeQuery.isError) return [];
+    return activeQuery.data ?? [];
+  }, [
+    activeQuery.data,
+    activeQuery.isError,
+    activeQuery.isPending,
+    showAssignmentsTab,
+    tab,
+  ]);
+
+  const listHeader = useMemo(
+    () => (
+      <View className="gap-5 pb-2">
         <RequestMetaRow badgeLabel={badge.label} badgeTone={badge.tone} trailing={metaTime} />
 
         <RequestTitleSection title={detail.title} description={detail.description} />
@@ -173,64 +184,34 @@ export function ProjectDetailScreen({ projectId }: { projectId: string }) {
           <ProjectFundingCard
             budgetLabel={formatMoney(koboToMajor(detail.budget_total_kobo), MARKET.currency)}
             contributedLabel={formatMoney(koboToMajor(detail.contributed_total_kobo), MARKET.currency)}
-            deadlineLabel={
-              detail.funding_deadline_at
-                ? formatWhenRequestCard(detail.funding_deadline_at)
-                : 'No deadline'
-            }
-            deadlineDetail={
+            progressPct={progress.pctBudget}
+            minTargetLabel={formatMoney(koboToMajor(detail.min_funding_target_kobo), MARKET.currency)}
+            minTargetMet={progress.metMin}
+            whenLabel={
               detail.funding_deadline_at
                 ? formatWhenHome(detail.funding_deadline_at)
                 : 'Not set'
             }
-            fundingStatusLabel={detail.funding_status.replaceAll('_', ' ')}
-            progressPct={progress.pctBudget}
-            minTargetLabel={formatMoney(koboToMajor(detail.min_funding_target_kobo), MARKET.currency)}
-            minTargetMet={progress.metMin}
+            locationLabel={locationLabel}
+            fundingStatusLabel={detail.funding_status}
+            onOpenContribute={
+              canContribute ? () => contributeSheetRef.current?.present() : undefined
+            }
           />
         ) : null}
 
         <RequestTagsLine slugs={detail.tag_slugs} />
 
-        {detail.status === 'draft' ? (
-          <RequestCallout tone="info" title="Draft project">
-            <Text className="text-sm text-muted">
-              Publish to open the funding pool. Collaborators can contribute after you publish.
-            </Text>
-          </RequestCallout>
-        ) : null}
-
-        {detail.viewer_is_creator && detail.status === 'draft' ? (
-          <Button
-            label={openFunding.isPending ? 'Publishing…' : 'Publish & open funding'}
-            size="lg"
-            onPress={handlePublish}
-            loading={openFunding.isPending}
+        {!detail.viewer_is_creator && detail.creator_display_name ? (
+          <RequestPersonCard
+            avatarPath={detail.creator_avatar_path}
+            name={detail.creator_display_name}
+            ratingAverage={creatorProfile.ratingAverage}
+            ratingCount={creatorProfile.ratingCount}
+            completionPercent={creatorProfile.completionPercent}
+            identityVerified={creatorProfile.identityVerified}
+            onPress={() => creatorProfileSheetRef.current?.present()}
           />
-        ) : null}
-
-        {canContribute ? (
-          <View className="gap-3 rounded-2xl border border-hairline bg-elevated p-4">
-            <Text className="text-lg font-bold text-ink">Contribute to the pool</Text>
-            <Text className="text-sm text-muted">
-              Minimum {formatMoney(koboToMajor(detail.min_contribution_kobo), MARKET.currency)}
-            </Text>
-            <TextInput
-              value={contributeAmount}
-              onChangeText={setContributeAmount}
-              keyboardType="numeric"
-              placeholder="Amount"
-              placeholderTextColor="#888"
-              className="rounded-xl bg-surface px-4 py-3 text-base text-ink"
-            />
-            <Button
-              label={contribute.isPending ? 'Contributing…' : 'Contribute'}
-              variant="active"
-              size="lg"
-              onPress={handleContribute}
-              loading={contribute.isPending}
-            />
-          </View>
         ) : null}
 
         {creatorUsername ? (
@@ -239,96 +220,265 @@ export function ProjectDetailScreen({ projectId }: { projectId: string }) {
           </Pressable>
         ) : null}
 
-        <View className="gap-3">
-          <Text className="text-lg font-bold text-ink">Contributions</Text>
-          {contributions.isPending ? (
-            <SkeletonBlock className="h-16 w-full rounded-2xl" />
-          ) : contributions.isError ? (
-            <InlineError error={contributions.error} onRetry={() => void contributions.refetch()} />
-          ) : (contributions.data?.length ?? 0) === 0 ? (
-            <EmptyState
-              layout="list"
-              icon="wallet-outline"
-              title="No contributions yet"
-              message="Contributions you can see will appear here."
-            />
-          ) : (
-            contributions.data?.map((row) => (
-              <View key={row.contribution_id} className="rounded-2xl bg-surface p-4">
-                <Text className="text-base font-bold text-ink">
-                  {formatMoney(koboToMajor(row.amount_kobo), MARKET.currency)}
-                </Text>
-                <Text className="text-sm text-muted">
-                  {row.viewer_is_self
-                    ? 'Your contribution'
-                    : (row.contributor_display_name ?? 'Contributor')}
-                </Text>
-                {row.viewer_is_creator || row.viewer_is_self ? (
-                  <Text className="text-xs text-subtle">
-                    Reserved {formatMoney(koboToMajor(row.reserved_kobo), MARKET.currency)}
-                  </Text>
-                ) : null}
-              </View>
-            ))
-          )}
-        </View>
+        <ProjectDetailTabs
+          active={tab}
+          onChange={setTab}
+          showAssignments={showAssignmentsTab}
+        />
+      </View>
+    ),
+    [
+      badge.label,
+      badge.tone,
+      canContribute,
+      creatorProfile,
+      creatorUsername,
+      detail.attachment_path,
+      detail.creator_avatar_path,
+      detail.creator_display_name,
+      detail.description,
+      detail.funding_deadline_at,
+      detail.funding_status,
+      detail.tag_slugs,
+      detail.title,
+      detail.viewer_is_creator,
+      detail.viewer_is_contributor,
+      locationLabel,
+      showAssignmentsTab,
+      metaTime,
+      progress,
+      tab,
+    ],
+  );
 
-        <View className="gap-3">
-          <Text className="text-lg font-bold text-ink">Assignments</Text>
-          {assignments.isPending ? (
-            <SkeletonBlock className="h-16 w-full rounded-2xl" />
-          ) : assignments.isError ? (
-            <InlineError error={assignments.error} onRetry={() => void assignments.refetch()} />
-          ) : (assignments.data?.length ?? 0) === 0 ? (
-            <EmptyState
-              layout="list"
-              icon="briefcase-outline"
-              title="No assignments"
-              message="Assignments for this project appear here."
-            />
-          ) : (
-            assignments.data?.map((row) => (
-              <Pressable
-                key={row.assignment_id}
-                onPress={() => router.push(`/project/assignment/${row.assignment_id}` as Href)}
-                className="rounded-2xl bg-surface p-4 active:opacity-90"
-              >
-                <Text className="text-base font-semibold text-ink">{row.title}</Text>
-                <Text className="text-sm capitalize text-muted">{row.status.replaceAll('_', ' ')}</Text>
-                <Text className="text-sm text-muted">
-                  {formatMoney(koboToMajor(row.compensation_total_kobo), MARKET.currency)}
-                  {row.reservation_secured ? ' · secured' : ' · awaiting reserve'}
-                </Text>
-              </Pressable>
-            ))
-          )}
-        </View>
+  const keyExtractor = useCallback(
+    (item: (typeof listData)[number], index: number) => {
+      if (tab === 'contributions' && 'contribution_id' in item) return item.contribution_id;
+      if (tab === 'assignments' && 'assignment_id' in item) return item.assignment_id;
+      return `activity-${index}`;
+    },
+    [tab],
+  );
 
-        <View className="gap-3">
-          <Text className="text-lg font-bold text-ink">Activity</Text>
-          {activity.isPending ? (
-            <SkeletonBlock className="h-12 w-full rounded-2xl" />
-          ) : activity.isError ? (
-            <InlineError error={activity.error} onRetry={() => void activity.refetch()} />
-          ) : (activity.data?.length ?? 0) === 0 ? (
-            <EmptyState
-              layout="list"
-              icon="time-outline"
-              title="No activity yet"
-              message="Meaningful project events appear here."
+  return (
+    <Screen className="relative flex-1" edges={['top', 'bottom']}>
+      <RequestFlowHeader title={headerTitle} onBack={() => router.back()} />
+
+      <View className="min-h-0 flex-1">
+        <FlatList
+          key={tab}
+          data={listData}
+          keyExtractor={keyExtractor}
+          ListHeaderComponent={listHeader}
+          contentContainerStyle={{
+            gap: 12,
+            paddingHorizontal: 20,
+            paddingBottom: showRespondFooter ? 112 : 48,
+            flexGrow: listData.length === 0 ? 1 : undefined,
+          }}
+          keyboardShouldPersistTaps="handled"
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+          ListEmptyComponent={
+            <View className="min-h-[200px] justify-center">
+              <ProjectDetailTabEmpty
+                tab={tab}
+                query={activeQuery}
+                showAssignmentsTab={showAssignmentsTab}
+              />
+            </View>
+          }
+          renderItem={({ item }) => <ProjectDetailTabRow tab={tab} item={item} />}
+        />
+      </View>
+
+      {showRespondFooter ? (
+        <View className="absolute bottom-0 left-0 right-0 items-center px-5 pb-2">
+          <View className="w-full max-w-md">
+            <Button
+              label="Respond to project"
+              variant="active"
+              size="lg"
+              corner="2xl"
+              onPress={() => setTab('assignments')}
             />
-          ) : (
-            activity.data?.map((row, index) => (
-              <View key={`${row.event_type}-${index}`} className="rounded-2xl bg-surface p-4">
-                <Text className="text-base font-medium text-ink">{row.summary}</Text>
-                {row.event_at ? (
-                  <Text className="text-xs text-muted">{formatWhenHome(row.event_at)}</Text>
-                ) : null}
-              </View>
-            ))
-          )}
+          </View>
         </View>
-      </ScrollView>
+      ) : null}
+
+      <PersonProfileBottomSheet
+        sheetRef={creatorProfileSheetRef}
+        userId={detail.creator_id}
+        displayName={detail.creator_display_name}
+        avatarPath={detail.creator_avatar_path}
+        bio={detail.creator_bio}
+        ratingAverage={creatorProfile.ratingAverage}
+        ratingCount={creatorProfile.ratingCount}
+        completionPercent={creatorProfile.completionPercent}
+        identityVerified={creatorProfile.identityVerified}
+      />
+
+      <ProjectContributeSheet
+        ref={contributeSheetRef}
+        projectId={projectId}
+        minContributionMajor={koboToMajor(detail.min_contribution_kobo)}
+        projectTitle={detail.title}
+        onInsufficientWallet={setInsufficientWalletPrompt}
+      />
+
+      <InsufficientWalletSheet
+        open={insufficientWalletPrompt !== null}
+        message={insufficientWalletPrompt?.message ?? ''}
+        onClose={() => setInsufficientWalletPrompt(null)}
+        onAddMoney={() => {
+          const prompt = insufficientWalletPrompt;
+          if (!prompt) return;
+          setInsufficientWalletPrompt(null);
+          openWalletTopUp({
+            returnTo: `/project/${projectId}`,
+            requiredLockMajor: prompt.requiredLockMajor,
+            availableMajor: wallet.data?.available ?? 0,
+          });
+        }}
+      />
     </Screen>
   );
+}
+
+type TabQuery =
+  | ReturnType<typeof useProjectContributions>
+  | ReturnType<typeof useProjectAssignments>
+  | ReturnType<typeof useProjectActivity>;
+
+function ProjectDetailTabEmpty({
+  tab,
+  query,
+  showAssignmentsTab,
+}: {
+  tab: ProjectDetailTab;
+  query: TabQuery;
+  showAssignmentsTab: boolean;
+}) {
+  if (tab === 'assignments' && !showAssignmentsTab) {
+    return (
+      <EmptyState
+        layout="list"
+        icon="briefcase-outline"
+        title="Respond to this project"
+        message="Assignment openings will appear here when you respond. Full assignment management is only visible to the creator and contributors."
+      />
+    );
+  }
+
+  if (query.isPending) {
+    return <SkeletonBlock className="h-20 w-full rounded-2xl" />;
+  }
+  if (query.isError) {
+    return <InlineError error={query.error} onRetry={() => void query.refetch()} />;
+  }
+  if (tab === 'contributions') {
+    return (
+      <EmptyState
+        layout="list"
+        icon="wallet-outline"
+        title="No contributions yet"
+        message="Pool contributions will show up here."
+      />
+    );
+  }
+  if (tab === 'assignments') {
+    return (
+      <EmptyState
+        layout="list"
+        icon="briefcase-outline"
+        title="No assignments"
+        message="Work packages and roles for this project appear here."
+      />
+    );
+  }
+  return (
+    <EmptyState
+      layout="list"
+      icon="time-outline"
+      title="No activity yet"
+      message="Funding and project milestones will appear here."
+    />
+  );
+}
+
+function ProjectDetailTabRow({
+  tab,
+  item,
+}: {
+  tab: ProjectDetailTab;
+  item: Record<string, unknown>;
+}) {
+  const colors = useColors();
+
+  if (tab === 'contributions' && 'contribution_id' in item) {
+    const row = item as {
+      contribution_id: string;
+      contributor_display_name: string | null;
+      amount_kobo: number;
+      viewer_is_self: boolean;
+    };
+    return (
+      <View className="flex-row items-center justify-between gap-3 rounded-2xl border border-hairline bg-elevated px-4 py-3">
+        <Text className="min-w-0 flex-1 text-base font-semibold text-ink" numberOfLines={1}>
+          {row.viewer_is_self ? 'You' : row.contributor_display_name?.trim() || 'Contributor'}
+        </Text>
+        <Text className="shrink-0 text-base font-bold text-ink">
+          {formatMoney(koboToMajor(row.amount_kobo), MARKET.currency)}
+        </Text>
+      </View>
+    );
+  }
+
+  if (tab === 'assignments' && 'assignment_id' in item) {
+    const row = item as {
+      assignment_id: string;
+      title: string;
+      status: string;
+      compensation_total_kobo: number;
+      reservation_secured: boolean;
+    };
+    return (
+      <Pressable
+        onPress={() => router.push(`/project/assignment/${row.assignment_id}` as Href)}
+        className="flex-row items-center gap-3 rounded-2xl border border-hairline bg-elevated px-4 py-3 active:opacity-90"
+      >
+        <View className="min-w-0 flex-1 gap-1">
+          <Text className="text-base font-semibold text-ink" numberOfLines={1}>
+            {row.title}
+          </Text>
+          <View className="flex-row flex-wrap items-center gap-2">
+            <Badge label={row.status.replaceAll('_', ' ')} tone="neutral" dot={false} />
+            <Text className="text-sm text-muted">
+              {formatMoney(koboToMajor(row.compensation_total_kobo), MARKET.currency)}
+            </Text>
+          </View>
+          <Text className="text-xs text-subtle">
+            {row.reservation_secured ? 'Compensation secured' : 'Awaiting reserve'}
+          </Text>
+        </View>
+        <Ionicons name="chevron-forward" size={18} color={colors.subtle} />
+      </Pressable>
+    );
+  }
+
+  if (tab === 'activity' && 'summary' in item) {
+    const row = item as { summary: string; event_at: string | null; event_type: string };
+    return (
+      <View className="flex-row gap-3 rounded-2xl border border-hairline bg-elevated px-4 py-3">
+        <View className="mt-0.5 h-2 w-2 rounded-full bg-brand" />
+        <View className="min-w-0 flex-1 gap-0.5">
+          <Text className="text-base font-medium text-ink">{row.summary}</Text>
+          {row.event_at ? (
+            <Text className="text-xs text-muted">{formatWhenHome(row.event_at)}</Text>
+          ) : null}
+        </View>
+      </View>
+    );
+  }
+
+  return null;
 }

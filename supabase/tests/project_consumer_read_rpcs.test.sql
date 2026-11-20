@@ -50,7 +50,7 @@ select public.create_project(
   1000,
   (current_date + 10),
   null,
-  'Africa/Lagos'
+  'Africa/Lagos', 6.5244, 3.3792, 'Lagos, Nigeria'
 ) as project_id \gset
 
 select is(

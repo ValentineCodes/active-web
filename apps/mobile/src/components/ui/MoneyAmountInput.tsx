@@ -1,5 +1,5 @@
-import { type ComponentRef, type ReactNode, type Ref } from 'react';
-import { Platform, Text, TextInput, View } from 'react-native';
+import { type ComponentRef, type ComponentType, type ReactNode, type Ref } from 'react';
+import { Platform, Text, TextInput, type TextInputProps, View } from 'react-native';
 
 import { MARKET } from '@/config';
 import { cn } from '@/lib/cn';
@@ -33,6 +33,7 @@ export function MoneyAmountInput({
   maxLength = 9,
   trailing,
   className,
+  InputComponent,
 }: {
   value: string;
   onChangeText: (text: string) => void;
@@ -41,7 +42,9 @@ export function MoneyAmountInput({
   maxLength?: number;
   trailing?: ReactNode;
   className?: string;
+  InputComponent?: ComponentType<TextInputProps>;
 }) {
+  const Field = InputComponent ?? TextInput;
   const colors = useColors();
   const showPlaceholder = value.length === 0;
 
@@ -80,7 +83,7 @@ export function MoneyAmountInput({
 
       <View className="min-w-0 flex-1 flex-row items-center">
         <View className="relative min-w-0 flex-1" style={{ height: MONEY_AMOUNT_ROW_HEIGHT }}>
-          <TextInput
+          <Field
             ref={inputRef}
             accessibilityLabel={accessibilityLabel}
             value={value}

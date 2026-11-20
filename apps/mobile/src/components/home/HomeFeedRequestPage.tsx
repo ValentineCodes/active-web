@@ -294,7 +294,9 @@ export function HomeFeedRequestPage({
                 <Text className="text-sm font-semibold text-active">Pending</Text>
               ) : (
                 <>
-                  <Text className="text-sm font-semibold text-active">View request</Text>
+                  <Text className="text-sm font-semibold text-active">
+                    {isOwnRequest ? 'View request' : 'Respond'}
+                  </Text>
                   <Ionicons name="chevron-forward" size={16} color={colors.active} />
                 </>
               )}

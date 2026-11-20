@@ -60,6 +60,10 @@ export function PersonProfileSheet({
 }) {
   const title = profile?.displayName?.trim() || 'Profile';
   const hasRatings = (profile?.ratingCount ?? 0) > 0 && profile?.ratingAverage != null;
+  const completionPercent =
+    profile?.completionPercent != null && Number.isFinite(profile.completionPercent)
+      ? Math.trunc(profile.completionPercent)
+      : null;
 
   return (
     <VaulSheet open={open && profile != null} onClose={onClose}>
@@ -88,9 +92,7 @@ export function PersonProfileSheet({
                 ) : null}
               </div>
             </div>
-            {profile.completionPercent != null ? (
-              <ProfileCompletionBadge percent={profile.completionPercent} />
-            ) : null}
+            {completionPercent != null ? <ProfileCompletionBadge percent={completionPercent} /> : null}
           </div>
           {profile.bio ? <p className="text-base leading-6 text-muted">{profile.bio}</p> : null}
           <ProfileCataloguePreview userId={profile.userId} />

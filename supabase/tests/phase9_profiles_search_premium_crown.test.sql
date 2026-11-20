@@ -97,7 +97,7 @@ select throws_ok($$select public.create_project(
   1000,
   (current_date + 7),
   null,
-  'Africa/Lagos'
+  'Africa/Lagos', 6.5244, 3.3792, 'Lagos, Nigeria'
 )$$, '55000', null, 'project create requires premium');
 
 select lives_ok($$select public.start_premium_trial()$$, 'start trial');

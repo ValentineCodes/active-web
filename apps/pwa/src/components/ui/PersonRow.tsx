@@ -2,6 +2,7 @@
 
 import type { ReactNode } from 'react';
 
+import { IdentityVerifiedBadge } from '@/components/profile/IdentityVerifiedBadge';
 import { Avatar } from '@/components/ui/Avatar';
 import { StarRating } from '@/components/ui/Stars';
 import { cn } from '@/lib/cn';
@@ -13,6 +14,7 @@ export function PersonRow({
   ratingCount,
   meta,
   inlineStat,
+  identityVerified = false,
   size = 'md',
   trailing,
   onPress,
@@ -23,6 +25,7 @@ export function PersonRow({
   ratingCount?: number | null;
   meta?: string;
   inlineStat?: string;
+  identityVerified?: boolean;
   size?: 'sm' | 'md';
   trailing?: ReactNode;
   onPress?: () => void;
@@ -40,9 +43,14 @@ export function PersonRow({
         contentBelowName ? 'items-start' : 'items-center',
       )}
     >
-      <Avatar path={avatarPath} name={name} size={size} />
+      <span className="shrink-0">
+        <Avatar path={avatarPath} name={name} size={size} />
+      </span>
       <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-        <p className="max-w-full truncate text-base font-semibold text-ink">{name ?? 'Helper'}</p>
+        <div className="flex max-w-full flex-row items-center gap-1">
+          <p className="min-w-0 truncate text-base font-semibold text-ink">{name ?? 'Helper'}</p>
+          {identityVerified ? <IdentityVerifiedBadge /> : null}
+        </div>
         {showRating || showInlineStat ? (
           <div className="flex flex-row flex-wrap items-center gap-1.5">
             {showRating ? <StarRating average={ratingAverage ?? null} count={ratingCount ?? 0} /> : null}
@@ -65,7 +73,7 @@ export function PersonRow({
   return (
     <button
       type="button"
-      className="w-full text-left"
+      className="block w-full min-w-0 border-0 bg-transparent p-0 text-left"
       onClick={onPress}
       aria-label={name ? `View ${name}'s profile` : 'View profile'}
     >

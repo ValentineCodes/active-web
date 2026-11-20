@@ -300,7 +300,9 @@ function RequestDetails({
           <span className="text-xs font-semibold text-active">Pending</span>
         ) : (
           <>
-            <span className="text-sm font-semibold text-active">View request</span>
+            <span className="text-sm font-semibold text-active">
+              {isOwnRequest ? 'View request' : 'Respond'}
+            </span>
             <IonIcon icon={ionIcons['chevron-forward']} size={16} color="#1FA35A" />
           </>
         )}

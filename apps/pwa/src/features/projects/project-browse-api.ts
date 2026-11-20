@@ -16,6 +16,7 @@ export type PublicProject = Nullable<
   | 'attachment_path'
   | 'creator_display_name'
   | 'creator_avatar_path'
+  | 'location_label'
   | 'posted_at'
 >;
 

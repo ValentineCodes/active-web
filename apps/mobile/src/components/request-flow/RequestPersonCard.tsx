@@ -43,7 +43,7 @@ export function RequestPersonCard({
         identityVerified={identityVerified}
         onPress={onPress}
         trailing={
-          <View className="flex-row items-center gap-1">
+          <View className="shrink-0 flex-row items-center gap-1 self-center">
             {onDiscussPress ? (
               <PreHandshakeDiscussButton
                 compact

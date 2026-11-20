@@ -59,13 +59,8 @@ select public.create_project(
   1000,
   (current_date + 10),
   null,
-  'Africa/Lagos'
+  'Africa/Lagos', 6.5244, 3.3792, 'Lagos, Nigeria'
 ) as project_id \gset
-
-select lives_ok(
-  format('select public.open_project_funding(%L::uuid)', :'project_id'),
-  'open'
-);
 
 select pg_temp.act_as_owner() as _ \gset
 select lives_ok(

@@ -51,7 +51,8 @@ export function VaulSheet({
           <div className="mx-auto mt-2 h-1 w-10 shrink-0 rounded-full bg-hairline" aria-hidden />
           <div
             className={cn(
-              'min-h-0 flex-1 overflow-y-auto px-5 py-4 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
+              'overflow-y-auto px-5 py-4 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
+              'max-h-[calc(min(90dvh,640px)-2.5rem)]',
               contentClassName,
             )}
           >

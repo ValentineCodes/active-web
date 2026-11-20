@@ -13,9 +13,6 @@ export function projectDetailBadge(input: {
   status: ProjectStatus;
   funding_status: ProjectFundingStatus;
 }): { label: string; tone: BadgeTone } {
-  if (input.status === 'draft') {
-    return { label: 'Draft', tone: 'neutral' };
-  }
   if (input.funding_status === 'open') {
     return { label: 'Funding open', tone: 'active' };
   }
