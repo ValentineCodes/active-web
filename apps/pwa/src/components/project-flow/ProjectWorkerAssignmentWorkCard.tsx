@@ -12,7 +12,10 @@ import {
   useProjectAssignment,
   useProjectAssignmentMilestones,
 } from '@/features/projects/project-api';
-import { projectAssignmentStatusBadge } from '@/features/projects/project-assignment-presentation';
+import {
+  projectAssignmentStatusBadge,
+  workerAssignmentAwaitingSubmissionReview,
+} from '@/features/projects/project-assignment-presentation';
 import { formatMoney } from '@/lib/format';
 import { useRouter } from '@/lib/navigation';
 
@@ -54,7 +57,9 @@ export function ProjectWorkerAssignmentWorkCard({
     );
   }
 
-  const badge = projectAssignmentStatusBadge(row.status);
+  const badge = workerAssignmentAwaitingSubmissionReview(row, milestones.data)
+    ? { label: 'Awaiting review', tone: 'warning' as const }
+    : projectAssignmentStatusBadge(row.status);
   const title = row.title || listTitle || 'Your assignment';
 
   return (

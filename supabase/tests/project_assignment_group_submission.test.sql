@@ -114,14 +114,14 @@ select throws_ok(
     $$select public.begin_project_assignment_submission(
       %L::uuid,
       null,
-      'note',
+      null,
       '[]'::jsonb
     )$$,
     :'assignment_id'
   ),
   '22023',
   null,
-  'requires at least one attachment'
+  'requires a message or at least one file'
 );
 
 select pg_temp.act_as('f2222222-2222-2222-2222-222222222222') as _ \gset
@@ -142,11 +142,11 @@ select lives_ok(
         'conversation-media',
         %L,
         'f2222222-2222-2222-2222-222222222222'::uuid,
-        '{"mimetype":"application/pdf","size":"100"}'::jsonb
+        '{}'::jsonb
       )$$,
     :'storage_path'
   ),
-  'seed submission media object'
+  'seed submission media without storage metadata'
 );
 
 select pg_temp.act_as('f2222222-2222-2222-2222-222222222222') as _ \gset

@@ -18,6 +18,7 @@ import {
   type ProjectAssignmentSubmissionStagedMedia,
 } from '@/features/projects/send-project-assignment-submission';
 import { showAppToast } from '@/lib/toast';
+import { supabase } from '@/lib/supabase/client';
 
 export function ProjectAssignmentSubmitSheet({
   open,
@@ -47,8 +48,14 @@ export function ProjectAssignmentSubmitSheet({
       setBusy(false);
       setProgress(0);
       sessionRef.current = createProjectAssignmentSubmissionSendSession();
+      return;
     }
-  }, [open]);
+    sessionRef.current = createProjectAssignmentSubmissionSendSession();
+    void supabase.rpc('discard_project_assignment_submission_drafts', {
+      p_assignment_id: assignmentId,
+      p_milestone_id: milestoneId ?? undefined,
+    });
+  }, [open, assignmentId, milestoneId]);
 
   const addFiles = async (files: ConversationPickedAttachment[], kind: 'image' | 'file') => {
     const next: ProjectAssignmentSubmissionStagedMedia[] = [];
@@ -63,8 +70,8 @@ export function ProjectAssignmentSubmitSheet({
   };
 
   const confirmSend = async () => {
-    if (staged.length < 1) {
-      showAppToast('Add at least one file.', 'warning');
+    if (staged.length < 1 && !note.trim()) {
+      showAppToast('Add a message or at least one file.', 'warning');
       return;
     }
     setBusy(true);
@@ -79,14 +86,20 @@ export function ProjectAssignmentSubmitSheet({
         onUploadProgress: setProgress,
       });
       sessionRef.current = result.session;
-      showAppToast('Deliverables submitted to project chat', 'success');
+      showAppToast('Deliverables submitted to project chat', {
+        type: 'success',
+        title: 'Submitted',
+      });
       onSubmitted({
         submissionId: result.submissionId,
         conversationId: result.session.conversationId,
       });
       onClose();
     } catch (error) {
-      showAppToast(error instanceof Error ? error.message : 'Could not submit', 'danger');
+      showAppToast(error instanceof Error ? error.message : 'Could not submit', {
+        type: 'danger',
+        title: 'Could not submit',
+      });
     } finally {
       setBusy(false);
     }
@@ -136,7 +149,7 @@ export function ProjectAssignmentSubmitSheet({
         )}
 
         <TextAreaField
-          label="Message (optional)"
+          label="Message (optional with files)"
           value={note}
           onChange={(event) => setNote(event.target.value)}
           placeholder="Describe what you delivered"
@@ -144,16 +157,18 @@ export function ProjectAssignmentSubmitSheet({
 
         {busy ? (
           <p className="text-center text-sm text-muted">
-            Uploading… {Math.round(progress * 100)}%
+            {staged.length > 0
+              ? `Uploading… ${Math.round(progress * 100)}%`
+              : 'Submitting…'}
           </p>
         ) : null}
 
         <Button
-          label={busy ? 'Submitting…' : 'Review & submit'}
+          label={busy ? 'Submitting…' : 'Submit'}
           size="lg"
           corner="2xl"
           loading={busy}
-          disabled={staged.length < 1}
+          disabled={staged.length < 1 && !note.trim()}
           onClick={() => void confirmSend()}
         />
       </div>

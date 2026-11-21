@@ -278,6 +278,13 @@ export function mapConversationAttachmentError(error: unknown): string {
   if (error && typeof error === 'object' && 'message' in error) {
     const message = String((error as { message: unknown }).message);
     if (USER_ERROR_MESSAGES.has(message)) return message;
+    if (
+      message.includes('Add a message or at least one file') ||
+      message.includes('At least one file is required for a formal submission') ||
+      message.includes('a submission is already awaiting review')
+    ) {
+      return message;
+    }
     const mapped = mapKnownInfrastructureError(message);
     if (mapped) return mapped;
   }

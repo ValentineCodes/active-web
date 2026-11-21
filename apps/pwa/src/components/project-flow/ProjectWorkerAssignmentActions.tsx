@@ -13,6 +13,11 @@ import { toUserMessage } from '@/lib/supabase/errors';
 import { showAppToast } from '@/lib/toast';
 import { useRouter } from '@/lib/navigation';
 import { conversationHref } from '@/lib/conversation-navigation';
+import { RequestCallout } from '@/components/request-flow/RequestCallout';
+import {
+  resolveWorkerMaySubmit,
+  workerAssignmentAwaitingSubmissionReview,
+} from '@/features/projects/project-assignment-presentation';
 
 function submitTargetMilestoneId(milestones: ProjectAssignmentMilestoneRow[] | undefined) {
   if (!milestones?.length) return undefined;
@@ -46,15 +51,19 @@ export function ProjectWorkerAssignmentActions({
 
   const canCommence =
     row.status === 'accepted' && row.reservation_secured && !row.has_open_dispute;
+  const workerMaySubmit = resolveWorkerMaySubmit(row, milestones);
+  const awaitingReview = workerAssignmentAwaitingSubmissionReview(row, milestones);
   const canSubmit =
+    row.viewer_is_worker &&
+    workerMaySubmit &&
     row.status === 'commenced' &&
     !row.has_open_dispute &&
     (row.payment_structure === 'single' ||
       (row.payment_structure === 'milestone' && Boolean(milestoneId)));
 
-  const onSubmitted = (result: { conversationId: string | null }) => {
-    void queryClient.invalidateQueries({ queryKey: queryKeys.projectAssignment(row.assignment_id) });
-    void queryClient.invalidateQueries({
+  const onSubmitted = async (result: { conversationId: string | null }) => {
+    await queryClient.invalidateQueries({ queryKey: queryKeys.projectAssignment(row.assignment_id) });
+    await queryClient.invalidateQueries({
       queryKey: queryKeys.projectAssignmentMilestones(row.assignment_id),
     });
     void queryClient.invalidateQueries({ queryKey: queryKeys.myProjectAssignments });
@@ -92,12 +101,28 @@ export function ProjectWorkerAssignmentActions({
         </p>
       ) : null}
 
+      {awaitingReview ? (
+        <RequestCallout tone="warning" title="Awaiting review">
+          <p className="text-sm text-ink">
+            Your deliverables are in the project team chat. The creator will review them and release
+            payment when satisfied.
+          </p>
+          {row.payment_structure === 'milestone' && milestones?.length ? (
+            <p className="text-sm text-muted">
+              Current milestone:{' '}
+              {milestones.find((m) => m.status === 'submitted')?.title ??
+                'Submitted — pending approval'}
+            </p>
+          ) : null}
+        </RequestCallout>
+      ) : null}
+
       {canSubmit ? (
         <div className="flex flex-col gap-3 rounded-2xl border border-hairline bg-surface p-4">
           <p className="text-base font-semibold text-ink">Submit deliverables</p>
           <p className="text-sm text-muted">
-            Formal submissions are posted to the project team chat with files attached. Regular chat
-            messages do not count as submissions.
+            Formal submissions are posted to the project team chat. Add a message, files, or both;
+            ordinary chat messages do not count as submissions.
           </p>
           {row.payment_structure === 'milestone' && milestoneId ? (
             <p className="text-xs text-subtle">
@@ -128,11 +153,12 @@ export function ProjectWorkerAssignmentActions({
         assignmentTitle={row.title}
         onClose={() => setSubmitOpen(false)}
         onSubmitted={(result) => {
-          onSubmitted(result);
+          void onSubmitted(result).then(() => {
           if (result.conversationId) {
             const returnTo = `/project/${projectId ?? row.project_id}/assignment/${row.assignment_id}`;
             router.push(conversationHref(result.conversationId, returnTo));
           }
+          });
         }}
       />
     </div>

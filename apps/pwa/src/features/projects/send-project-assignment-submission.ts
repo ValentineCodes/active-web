@@ -71,6 +71,37 @@ export async function abortProjectAssignmentSubmissionSendSession(
   await abortConversationAttachmentMessage(session.messageId);
 }
 
+function mapProjectSubmissionRpcError(error: unknown): string {
+  if (error && typeof error === 'object' && 'code' in error && 'message' in error) {
+    const { code, message } = error as { code: unknown; message: unknown };
+    if (typeof code === 'string' && typeof message === 'string' && message.trim().length > 0) {
+      if (code === 'PGRST202') {
+        return 'Formal submit needs the latest database migrations. Apply supabase migrations, then retry.';
+      }
+      if (message.toLowerCase().includes('direct deletion is not allowed')) {
+        return 'Could not reset a previous draft. Apply the latest database migrations, then retry.';
+      }
+      if (
+        code === '22023' ||
+        code === '55000' ||
+        code === 'P0002' ||
+        code === '42501' ||
+        code.startsWith('23')
+      ) {
+        return message;
+      }
+    }
+  }
+  if (isServerChatProfilePhotoRequiredError(error)) {
+    return 'Add a profile photo in the app before you can submit work in chat.';
+  }
+  const msg = mapConversationAttachmentError(error);
+  if (msg.includes("upload this file")) {
+    return 'Could not submit deliverables. Try again.';
+  }
+  return msg;
+}
+
 function mapSubmissionError(error: unknown): Error {
   if (isServerChatProfilePhotoRequiredError(error)) {
     return new Error('Add a profile photo in the app before you can submit work in chat.');
@@ -84,7 +115,11 @@ async function reserveAssignmentSubmissionSlots(input: {
   milestoneId?: string | null;
   note?: string;
   plannedAttachments: PreparedConversationAttachment[];
-}): Promise<{ conversationId: string; slots: ProjectAssignmentSubmissionSendSession['slots'] }> {
+}): Promise<{
+  conversationId: string;
+  messageId: string;
+  slots: ProjectAssignmentSubmissionSendSession['slots'];
+}> {
   const { data, error } = await supabase.rpc('begin_project_assignment_submission', {
     p_assignment_id: input.assignmentId,
     p_milestone_id: input.milestoneId ?? undefined,
@@ -96,7 +131,7 @@ async function reserveAssignmentSubmissionSlots(input: {
       attachment_type: prepared.attachmentType,
     })),
   });
-  if (error) throw new Error(mapConversationAttachmentError(error));
+  if (error) throw new Error(mapProjectSubmissionRpcError(error));
   if (!data?.length) throw new Error('Could not start submission.');
 
   const first = data[0] as BeginSlot;
@@ -106,11 +141,14 @@ async function reserveAssignmentSubmissionSlots(input: {
 
   return {
     conversationId,
-    slots: data.map((slot: BeginSlot) => ({
-      messageId: slot.message_id,
-      attachmentId: slot.attachment_id,
-      storagePath: slot.storage_path,
-    })),
+    messageId,
+    slots: data
+      .filter((slot: BeginSlot) => slot.storage_path && slot.attachment_id)
+      .map((slot: BeginSlot) => ({
+        messageId: slot.message_id,
+        attachmentId: slot.attachment_id,
+        storagePath: slot.storage_path,
+      })),
   };
 }
 
@@ -118,7 +156,9 @@ async function completeAssignmentSubmission(messageId: string): Promise<string> 
   const { data, error } = await supabase.rpc('complete_project_assignment_submission', {
     p_message_id: messageId,
   });
-  if (error) throw new Error(mapConversationAttachmentError(error));
+  if (error) {
+    throw new Error(mapProjectSubmissionRpcError(error));
+  }
   if (!data) throw new Error('Could not finalize submission.');
   return data as string;
 }
@@ -158,12 +198,29 @@ export async function sendProjectAssignmentSubmission(input: {
     throw new Error('Submission already sent.');
   }
 
-  if (input.stagedItems.length < 1) {
-    throw new Error('Add at least one file.');
+  const noteText = input.note?.trim() ?? '';
+  if (input.stagedItems.length < 1 && !noteText) {
+    throw new Error('Add a message or at least one file.');
   }
 
+  const plannedAttachmentCount = input.stagedItems.length;
+  const sessionAttachmentCount = session.slots.length;
+  const draftOutOfSync =
+    session.messageId &&
+    !session.submissionPublished &&
+    plannedAttachmentCount !== sessionAttachmentCount;
+
   try {
-    if (!session.messageId || session.slots.length === 0) {
+    if (draftOutOfSync || (session.messageId && input.stagedItems.length < 1 && session.slots.length > 0)) {
+      await abortProjectAssignmentSubmissionSendSession(session);
+      session.messageId = null;
+      session.conversationId = null;
+      session.slots = [];
+      session.storageUploaded = false;
+      session.uploadAttempted = false;
+    }
+
+    if (!session.messageId) {
       const reserved = await reserveAssignmentSubmissionSlots({
         assignmentId: input.assignmentId,
         milestoneId: input.milestoneId,
@@ -172,7 +229,7 @@ export async function sendProjectAssignmentSubmission(input: {
       });
       session.conversationId = reserved.conversationId;
       session.slots = reserved.slots;
-      session.messageId = reserved.slots[0]?.messageId ?? null;
+      session.messageId = reserved.messageId;
     }
 
     if (!session.messageId) {
@@ -180,8 +237,11 @@ export async function sendProjectAssignmentSubmission(input: {
     }
 
     if (!session.storageUploaded) {
-      session.uploadAttempted = true;
-      for (let index = 0; index < input.stagedItems.length; index += 1) {
+      if (session.slots.length < 1) {
+        session.storageUploaded = true;
+      } else {
+        session.uploadAttempted = true;
+        for (let index = 0; index < input.stagedItems.length; index += 1) {
         const staged = input.stagedItems[index];
         const slot = session.slots[index];
         if (!staged || !slot) throw new Error('Could not upload file.');
@@ -192,14 +252,15 @@ export async function sendProjectAssignmentSubmission(input: {
                 input.onUploadProgress?.(overall);
               }
             : undefined;
-        await uploadPreparedConversationAttachmentToSlot({
-          slot,
-          prepared: staged.prepared,
-          onProgress: progress,
-          replaceExisting: true,
-        });
+          await uploadPreparedConversationAttachmentToSlot({
+            slot,
+            prepared: staged.prepared,
+            onProgress: progress,
+            replaceExisting: true,
+          });
+        }
+        session.storageUploaded = true;
       }
-      session.storageUploaded = true;
     }
 
     const submissionId = await completeAssignmentSubmission(session.messageId);
@@ -207,7 +268,8 @@ export async function sendProjectAssignmentSubmission(input: {
     return { session, submissionId };
   } catch (error) {
     const mapped = mapSubmissionError(error);
-    if (session.storageUploaded) {
+    const uploadWasRequired = session.slots.length > 0;
+    if (session.storageUploaded || !uploadWasRequired) {
       throw new ProjectAssignmentSubmissionSendFailedError(mapped.message, session);
     }
     throw new ProjectAssignmentSubmissionUploadFailedError(mapped.message, session);

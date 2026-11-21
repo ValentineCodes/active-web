@@ -5073,6 +5073,7 @@ export type Database = {
           worker_rating_average: number | null
           worker_rating_count: number | null
           worker_username: string | null
+          worker_may_submit: boolean
         }[]
       }
       get_project_contribution_accounting: {

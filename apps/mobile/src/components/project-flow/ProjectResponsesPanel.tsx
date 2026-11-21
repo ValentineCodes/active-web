@@ -11,7 +11,8 @@ import { SkeletonBlock } from '@/components/ui/Skeleton';
 import { MARKET } from '@/config';
 import {
   PROJECT_RESPONSE_FILTER_OPTIONS,
-  projectResponseCardStatus,
+  projectResponseFilterEmptyState,
+  projectResponseRowCardStatus,
   projectResponsesForFilter,
   type ProjectResponseFilter,
   type ProjectResponseListRow,
@@ -27,7 +28,7 @@ export function ProjectResponsesPanel({
   allowDiscuss?: boolean;
 }) {
   const openProjectChat = useOpenProjectPreHandshakeConversation();
-  const [filter, setFilter] = useState<ProjectResponseFilter>('awaiting_review');
+  const [filter, setFilter] = useState<ProjectResponseFilter>('all');
   const profileSheetRef = useRef<BottomSheetModal>(null);
   const [profilePreview, setProfilePreview] = useState<{
     userId: string;
@@ -44,7 +45,7 @@ export function ProjectResponsesPanel({
     () => projectResponsesForFilter(responses.data ?? [], filter),
     [filter, responses.data],
   );
-  const statusBadge = projectResponseCardStatus(filter);
+  const emptyCopy = projectResponseFilterEmptyState(filter);
   const showDiscuss = Boolean(allowDiscuss && filter === 'awaiting_review');
 
   const discussAssignment = useCallback(
@@ -80,16 +81,14 @@ export function ProjectResponsesPanel({
         <EmptyState
           layout="list"
           icon="people-outline"
-          title={filter === 'awaiting_review' ? 'No responses yet' : 'No one assigned yet'}
-          message={
-            filter === 'awaiting_review'
-              ? 'When workers respond to your project, their offers show up here for review.'
-              : 'Accepted workers appear here once you assign them.'
-          }
+          title={emptyCopy.title}
+          message={emptyCopy.message}
         />
       ) : (
         <View className="gap-3">
-          {visibleRows.map((row) => (
+          {visibleRows.map((row) => {
+            const rowStatus = projectResponseRowCardStatus(row);
+            return (
             <View key={row.assignment_id}>
               <ResponseCard
                 displayName={row.display_name}
@@ -116,8 +115,8 @@ export function ProjectResponsesPanel({
                 currency={MARKET.currency}
                 createdAt={row.created_at}
                 responderAvailable={Boolean(row.responder_available)}
-                statusLabel={statusBadge.label}
-                statusTone={statusBadge.tone}
+                statusLabel={rowStatus.label}
+                statusTone={rowStatus.tone}
                 proposedDeliveryDurationValue={row.proposed_delivery_duration_value}
                 proposedDeliveryDurationUnit={row.proposed_delivery_duration_unit}
                 proposedDeliveryAt={row.proposed_delivery_at}
@@ -132,7 +131,8 @@ export function ProjectResponsesPanel({
                 }
               />
             </View>
-          ))}
+            );
+          })}
         </View>
       )}
 

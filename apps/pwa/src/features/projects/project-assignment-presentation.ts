@@ -1,11 +1,14 @@
-import type { Database } from '@/lib/supabase/database.types';
+import type {
+  ProjectAssignmentDetail,
+  ProjectAssignmentMilestoneRow,
+} from '@/features/projects/project-api';
 
-type AssignmentStatus = Database['public']['Enums']['project_assignment_status'];
+type AssignmentStatus = ProjectAssignmentDetail['status'];
 
 const STATUS_LABELS: Record<AssignmentStatus, string> = {
   offered: 'Offered',
   terms_negotiation: 'Negotiating terms',
-  accepted: 'Accepted',
+  accepted: 'Assigned',
   commenced: 'In progress',
   completed: 'Completed',
   cancelled: 'Cancelled',
@@ -23,4 +26,29 @@ export function projectAssignmentStatusBadge(status: AssignmentStatus): {
   if (status === 'cancelled') return { label, tone: 'danger' };
   if (status === 'accepted') return { label, tone: 'info' };
   return { label, tone: 'neutral' };
+}
+
+export function resolveWorkerMaySubmit(
+  row: ProjectAssignmentDetail,
+  milestones?: ProjectAssignmentMilestoneRow[],
+): boolean {
+  if (typeof row.worker_may_submit === 'boolean') {
+    return row.worker_may_submit;
+  }
+  if (row.payment_structure === 'milestone' && milestones?.length) {
+    return milestones.some(
+      (m) => m.status === 'in_progress' || m.status === 'revision_requested',
+    );
+  }
+  return true;
+}
+
+export function workerAssignmentAwaitingSubmissionReview(
+  row: ProjectAssignmentDetail,
+  milestones?: ProjectAssignmentMilestoneRow[],
+): boolean {
+  if (!row.viewer_is_worker || row.status !== 'commenced' || row.has_open_dispute) {
+    return false;
+  }
+  return !resolveWorkerMaySubmit(row, milestones);
 }

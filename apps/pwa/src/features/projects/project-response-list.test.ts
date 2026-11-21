@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 
 import {
   projectResponseCreatorMayReview,
+  projectResponseListBucket,
+  projectResponsesForFilter,
   type ProjectResponseListRow,
 } from '@/features/projects/project-response-list';
 
@@ -30,6 +32,24 @@ function row(
     ...overrides,
   };
 }
+
+describe('projectResponseListBucket', () => {
+  it('splits completed from active assignments', () => {
+    expect(projectResponseListBucket('completed')).toBe('completed');
+    expect(projectResponseListBucket('commenced')).toBe('assigned');
+    expect(projectResponseListBucket('accepted')).toBe('assigned');
+  });
+
+  it('filters lists by tab', () => {
+    const rows = [
+      row({ assignment_id: 'a1', worker_id: 'w1', status: 'completed' }),
+      row({ assignment_id: 'a2', worker_id: 'w2', status: 'commenced' }),
+    ];
+    expect(projectResponsesForFilter(rows, 'assigned')).toHaveLength(1);
+    expect(projectResponsesForFilter(rows, 'completed')).toHaveLength(1);
+    expect(projectResponsesForFilter(rows, 'all')).toHaveLength(2);
+  });
+});
 
 describe('projectResponseCreatorMayReview', () => {
   it('trusts creator_may_review when true', () => {
