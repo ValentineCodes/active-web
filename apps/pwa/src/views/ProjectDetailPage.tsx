@@ -13,6 +13,7 @@ import { ProjectResponsesPanel } from '@/components/project-flow/ProjectResponse
 import { ProjectDetailTabs, type ProjectDetailTab } from '@/components/project-flow/ProjectDetailTabs';
 import { ProjectFundingCard } from '@/components/project-flow/ProjectFundingCard';
 import { ProjectResponseTabPanel } from '@/components/project-flow/ProjectResponseTabPanel';
+import { ProjectWorkerWorkPanel } from '@/components/project-flow/ProjectWorkerWorkPanel';
 import { RequestAttachmentSection } from '@/components/request-flow/RequestAttachmentSection';
 import { ResponseCreationFlow } from '@/components/request-flow/ResponseCreationFlow';
 import { RequestFlowHeader } from '@/components/request-flow/RequestFlowHeader';
@@ -25,16 +26,20 @@ import { EmptyState, InlineError, LoadingState } from '@/components/ui/StateView
 import { MARKET } from '@/config';
 import { hasProfilePhotoReady, useMyProfile } from '@/features/profile/api';
 import {
+  useMyProjectAssignments,
   useProject,
   useProjectActivity,
   useProjectResponses,
 } from '@/features/projects/project-api';
+import { filterWorkerAssignmentsForProject } from '@/features/projects/project-worker-work';
+import { useMyProjectResponse } from '@/features/projects/project-responses-api';
 import { projectViewerMayViewAssignments } from '@/features/projects/project-assignments-visibility';
 import {
   personProfileFromProjectDetail,
   projectCreatorProfileFields,
 } from '@/features/projects/project-creator-profile';
 import { projectViewerMayContribute } from '@/features/projects/project-contribute';
+import { projectCreatorCanReviewWorkerResponses } from '@/features/projects/project-response-review';
 import { useWorkerProjectPreHandshakeConversation } from '@/features/projects/project-conversation-api';
 import {
   projectResponseWizardInitialOffer,
@@ -88,41 +93,64 @@ export function ProjectDetailPage() {
   const [flowKey, setFlowKey] = useState(0);
   const [needsPhotoStep, setNeedsPhotoStep] = useState(false);
 
+  const detail = project.data;
+
   const mayViewAssignments = Boolean(
-    project.data && projectViewerMayViewAssignments(project.data),
+    detail && projectViewerMayViewAssignments(detail),
   );
   const projectResponses = useProjectResponses(id, { enabled: mayViewAssignments });
+  const myProjectResponse = useMyProjectResponse(id);
+  const myProjectAssignments = useMyProjectAssignments({
+    enabled: Boolean(detail && !detail.viewer_is_creator),
+  });
   const activity = useProjectActivity(id);
+  const workerActiveAssignments = useMemo(
+    () => filterWorkerAssignmentsForProject(myProjectAssignments.data ?? [], id),
+    [id, myProjectAssignments.data],
+  );
+  const workerHasActiveWork = workerActiveAssignments.length > 0;
 
-  const detail = project.data;
   const workerPreHandshakeChat = useWorkerProjectPreHandshakeConversation(
     id,
-    Boolean(detail && !detail.viewer_is_creator && existingResponse),
+    Boolean(
+      detail &&
+        !detail.viewer_is_creator &&
+        existingResponse &&
+        !workerHasActiveWork,
+    ),
   );
-  const headerTitle = detail?.viewer_is_creator ? 'Your project' : 'Project';
+  const headerTitle = detail?.viewer_is_creator
+    ? 'Your project'
+    : workerHasActiveWork
+      ? 'Your project work'
+      : 'Project';
   const showAssignmentsTabFromData = Boolean(
     detail && projectViewerMayViewAssignments(detail),
   );
-  const showResponseTab = Boolean(detail && !detail.viewer_is_creator);
+  const showWorkerWorkTab = Boolean(detail && !detail.viewer_is_creator && workerHasActiveWork);
+  const showResponseTab = Boolean(detail && !detail.viewer_is_creator && !workerHasActiveWork);
 
   useEffect(() => {
     if (!detail || defaultTabSet.current) return;
     defaultTabSet.current = true;
     if (!detail.viewer_is_creator) {
-      setTab('response');
+      setTab(workerHasActiveWork ? 'work' : 'response');
     } else if (showAssignmentsTabFromData) {
-      setTab('assignments');
+      setTab('responses');
     }
-  }, [detail, showAssignmentsTabFromData]);
+  }, [detail, showAssignmentsTabFromData, workerHasActiveWork]);
 
   useEffect(() => {
-    if (!showAssignmentsTabFromData && tab === 'assignments') {
-      setTab(showResponseTab ? 'response' : 'activity');
+    if (!showAssignmentsTabFromData && tab === 'responses') {
+      setTab(showWorkerWorkTab ? 'work' : showResponseTab ? 'response' : 'activity');
     }
     if (!showResponseTab && tab === 'response') {
-      setTab('activity');
+      setTab(showWorkerWorkTab ? 'work' : 'activity');
     }
-  }, [showAssignmentsTabFromData, showResponseTab, tab]);
+    if (!showWorkerWorkTab && tab === 'work') {
+      setTab(showResponseTab ? 'response' : 'activity');
+    }
+  }, [showAssignmentsTabFromData, showResponseTab, showWorkerWorkTab, tab]);
 
   const progress = useMemo(() => {
     if (!detail) return null;
@@ -143,13 +171,13 @@ export function ProjectDetailPage() {
   const initialMessage = existingResponse?.message ?? '';
 
   const beginFlow = useCallback(() => {
-    if (!respondable) return;
+    if (!respondable || workerHasActiveWork) return;
     respond.reset();
     setNeedsPhotoStep(!hasProfilePhotoReady(profile.data));
     setFlowStep(0);
     setFlowKey((k) => k + 1);
     setInFlow(true);
-  }, [profile.data, respond, respondable]);
+  }, [profile.data, respond, respondable, workerHasActiveWork]);
 
   const exitFlow = () => {
     setInFlow(false);
@@ -198,7 +226,14 @@ export function ProjectDetailPage() {
     });
   };
 
-  if (project.isPending || (showResponseTab && respondMetaPending)) {
+  const workerAssignmentsLoading =
+    Boolean(detail && !detail.viewer_is_creator) && myProjectAssignments.isPending;
+
+  if (
+    project.isPending ||
+    workerAssignmentsLoading ||
+    (showResponseTab && respondMetaPending)
+  ) {
     return (
       <Screen className="flex min-h-0 flex-1 flex-col">
         <RequestFlowHeader title={headerTitle} onBack={() => router.back()} />
@@ -272,10 +307,21 @@ export function ProjectDetailPage() {
 
   const creatorProfile = projectCreatorProfileFields(detail);
   const showAssignmentsTab = showAssignmentsTabFromData;
+  const groupChatConversationId = detail.group_chat_conversation_id ?? null;
+  const groupChatUnread = detail.group_chat_unread_count ?? 0;
 
   return (
     <Screen className="relative flex min-h-0 flex-1 flex-col">
-      <RequestFlowHeader title={headerTitle} onBack={() => router.back()} />
+      <RequestFlowHeader
+        title={headerTitle}
+        onBack={() => router.back()}
+        onChatPress={
+          groupChatConversationId
+            ? () => router.push(conversationHref(groupChatConversationId, `/project/${id}`))
+            : undefined
+        }
+        chatUnreadCount={groupChatUnread}
+      />
 
       <div className="relative min-h-0 flex-1">
         <div className="h-full overflow-y-auto px-5 pb-12">
@@ -307,6 +353,21 @@ export function ProjectDetailPage() {
                 locationLabel={locationLabel}
                 fundingStatusLabel={detail.funding_status}
                 onOpenContribute={canContribute ? () => setContributeOpen(true) : undefined}
+                currency={MARKET.currency}
+                budgetTotalKobo={detail.budget_total_kobo}
+                contributedTotalKobo={detail.contributed_total_kobo}
+                budgetBreakdown={
+                  detail.viewer_may_view_budget_breakdown &&
+                  detail.paid_out_total_kobo != null &&
+                  detail.reserved_total_kobo != null &&
+                  detail.available_total_kobo != null
+                    ? {
+                        paidOutKobo: detail.paid_out_total_kobo,
+                        reservedKobo: detail.reserved_total_kobo,
+                        availableKobo: detail.available_total_kobo,
+                      }
+                    : null
+                }
               />
             ) : null}
 
@@ -338,14 +399,28 @@ export function ProjectDetailPage() {
               onChange={setTab}
               showAssignments={showAssignmentsTab}
               showResponse={showResponseTab}
+              showWorkerWork={showWorkerWorkTab}
             />
 
             <div className="flex flex-col gap-3 pb-2">
+              {tab === 'work' && showWorkerWorkTab ? (
+                <ProjectWorkerWorkPanel
+                  projectId={id}
+                  assignments={workerActiveAssignments}
+                  assignmentsLoading={myProjectAssignments.isPending}
+                  assignmentsError={
+                    myProjectAssignments.error instanceof Error
+                      ? myProjectAssignments.error
+                      : null
+                  }
+                  onRetry={() => void myProjectAssignments.refetch()}
+                />
+              ) : null}
               {tab === 'response' && showResponseTab ? (
                 <ProjectResponseTabPanel
                   budgetMajor={budgetMajor}
                   existingResponse={existingResponse}
-                  respondAllowed={respondAllowed}
+                  respondAllowed={respondAllowed && !workerHasActiveWork}
                   respondError={respond.error instanceof Error ? respond.error : null}
                   withdrawError={withdraw.error instanceof Error ? withdraw.error : null}
                   withdrawLoading={withdraw.isPending}
@@ -354,10 +429,12 @@ export function ProjectDetailPage() {
                   onCancelResponse={confirmWithdraw}
                 />
               ) : null}
-              {tab === 'assignments' && showAssignmentsTab ? (
+              {tab === 'responses' && showAssignmentsTab ? (
                 <ProjectResponsesPanel
                   responses={projectResponses}
                   allowDiscuss={Boolean(detail.viewer_is_creator)}
+                  allowReview={Boolean(detail.viewer_is_creator)}
+                  canReviewResponses={projectCreatorCanReviewWorkerResponses(detail)}
                   projectId={id}
                 />
               ) : null}

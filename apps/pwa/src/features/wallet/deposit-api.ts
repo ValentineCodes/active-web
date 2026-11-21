@@ -1,4 +1,5 @@
 import { depositCallbackUrl } from '@/features/wallet/deposit-callback';
+import { readEdgeFunctionPayload } from '@/lib/supabase/function-invoke';
 import { supabase } from '@/lib/supabase/client';
 
 export { depositCallbackUrl, isDepositCallbackPath, referenceFromSearchParams } from '@/features/wallet/deposit-callback';
@@ -85,19 +86,10 @@ export async function initializeWalletDeposit(
     },
   });
 
-  if (error) {
-    throw error;
-  }
+  const payload = await readEdgeFunctionPayload<InitializeDepositResult>(data, error, {
+    functionName: 'paystack-initialize',
+  });
 
-  if (data && typeof data === 'object' && 'error' in data && typeof data.error === 'string') {
-    throw new Error(data.error);
-  }
-
-  if (!data || typeof data !== 'object') {
-    throw new Error('Invalid response from payment service');
-  }
-
-  const payload = data as InitializeDepositResult;
   if (!payload.authorization_url || !payload.reference) {
     throw new Error('Payment could not be started');
   }
@@ -110,26 +102,16 @@ export async function verifyWalletDeposit(reference: string): Promise<VerifyDepo
     body: { reference },
   });
 
-  if (error) {
-    throw error;
-  }
-
-  if (data && typeof data === 'object' && 'error' in data && typeof data.error === 'string') {
-    throw new Error(data.error);
-  }
-
-  if (!data || typeof data !== 'object') {
-    throw new Error('Invalid verify response');
-  }
-
-  return data as VerifyDepositResult;
+  return readEdgeFunctionPayload<VerifyDepositResult>(data, error, {
+    functionName: 'paystack-verify',
+  });
 }
 
 export async function waitForWalletDepositSettlement(
   reference: string,
   options: { maxAttempts?: number; intervalMs?: number } = {},
 ): Promise<VerifyDepositResult> {
-  const maxAttempts = options.maxAttempts ?? 15;
+  const maxAttempts = options.maxAttempts ?? 20;
   const intervalMs = options.intervalMs ?? 2000;
 
   let last: VerifyDepositResult | null = null;

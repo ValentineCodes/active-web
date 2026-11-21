@@ -3910,6 +3910,10 @@ export type Database = {
         Args: { p_assignment_id: string }
         Returns: undefined
       }
+      accept_project_worker_response: {
+        Args: { p_assignment_id: string }
+        Returns: undefined
+      }
       accept_response: { Args: { p_response_id: string }; Returns: string }
       admin_actor_may_reveal_user_nin: {
         Args: { p_actor_admin_id: string }
@@ -4384,6 +4388,24 @@ export type Database = {
         Returns: boolean
       }
       avatar_is_published: { Args: { p_name: string }; Returns: boolean }
+      begin_project_assignment_submission: {
+        Args: {
+          p_assignment_id: string
+          p_milestone_id?: string
+          p_note?: string
+          p_planned_attachments?: Json
+        }
+        Returns: {
+          attachment_id: string
+          conversation_id: string
+          message_id: string
+          storage_path: string
+        }[]
+      }
+      complete_project_assignment_submission: {
+        Args: { p_message_id: string }
+        Returns: string
+      }
       begin_request_message_with_attachments: {
         Args: {
           p_body?: string
@@ -4979,6 +5001,7 @@ export type Database = {
         Returns: {
           attachment_path: string
           budget_total_kobo: number
+          available_total_kobo: number
           committed_compensation_kobo: number
           contributed_total_kobo: number
           creator_avatar_path: string
@@ -5001,6 +5024,8 @@ export type Database = {
           min_contribution_kobo: number
           min_funding_target_kobo: number
           min_target_reached_at: string
+          paid_out_total_kobo: number
+          pool_reserved_total_kobo: number
           project_id: string
           project_visibility: Database["public"]["Enums"]["project_visibility"]
           reserved_total_kobo: number
@@ -5011,6 +5036,9 @@ export type Database = {
           viewer_is_creator: boolean
           viewer_may_contribute: boolean
           viewer_may_view_assignments: boolean
+          viewer_may_view_budget_breakdown: boolean
+          group_chat_conversation_id: string
+          group_chat_unread_count: number
         }[]
       }
       get_project_assignment: {
@@ -5021,20 +5049,30 @@ export type Database = {
           commenced_at: string
           compensation_total_kobo: number
           creator_id: string
+          creator_may_release_payment: boolean
           deliverables: string
           description: string
           due_at: string
+          has_open_dispute: boolean
           payment_structure: Database["public"]["Enums"]["payment_structure"]
           project_id: string
+          release_payment_milestone_id: string | null
           reservation_amount_kobo: number
           reservation_released_kobo: number
           reservation_secured: boolean
           status: Database["public"]["Enums"]["project_assignment_status"]
           terms_version: number
           title: string
+          viewer_is_contributor: boolean
           viewer_is_creator: boolean
           viewer_is_worker: boolean
+          viewer_may_report: boolean
+          worker_avatar_path: string | null
+          worker_display_name: string | null
           worker_id: string
+          worker_rating_average: number | null
+          worker_rating_count: number | null
+          worker_username: string | null
         }[]
       }
       get_project_contribution_accounting: {
@@ -5093,6 +5131,7 @@ export type Database = {
           message_type: Database["public"]["Enums"]["conversation_message_type"]
           metadata: Json
           read_at: string
+          sender_display_name: string
           sender_id: string
         }[]
       }
@@ -5383,6 +5422,7 @@ export type Database = {
           bio: string
           completion_percent: number
           created_at: string
+          creator_may_review: boolean
           display_name: string
           identity_verified: boolean
           message: string
@@ -5395,7 +5435,15 @@ export type Database = {
           rating_count: number
           responder_available: boolean
           status: Database["public"]["Enums"]["project_assignment_status"]
+          terms_proposed_by: string
           worker_id: string
+        }[]
+      }
+      list_project_group_conversation_members: {
+        Args: { p_conversation_id: string }
+        Returns: {
+          display_name: string
+          user_id: string
         }[]
       }
       list_request_messages: {
@@ -5408,6 +5456,7 @@ export type Database = {
           message_type: Database["public"]["Enums"]["conversation_message_type"]
           metadata: Json
           read_at: string
+          sender_display_name: string
           sender_id: string
         }[]
       }
@@ -5774,6 +5823,10 @@ export type Database = {
           p_kind?: Database["public"]["Enums"]["service_problem_kind"]
         }
         Returns: string
+      }
+      reject_project_worker_response: {
+        Args: { p_assignment_id: string; p_reason?: string }
+        Returns: undefined
       }
       report_service_problem: {
         Args: {

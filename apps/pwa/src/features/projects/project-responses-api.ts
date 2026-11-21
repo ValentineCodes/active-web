@@ -152,3 +152,40 @@ export function useWithdrawProjectResponse() {
     },
   });
 }
+
+function invalidateProjectResponseQueries(queryClient: ReturnType<typeof useQueryClient>, projectId: string) {
+  void queryClient.invalidateQueries({ queryKey: queryKeys.projectResponses(projectId) });
+  void queryClient.invalidateQueries({ queryKey: queryKeys.project(projectId) });
+  void queryClient.invalidateQueries({ queryKey: queryKeys.projectAssignments(projectId) });
+  void queryClient.invalidateQueries({ queryKey: queryKeys.myProjectAssignments });
+  void queryClient.invalidateQueries({ queryKey: queryKeys.projectActivity(projectId) });
+  void queryClient.invalidateQueries({ queryKey: queryKeys.conversationInbox });
+}
+
+export function useAcceptProjectWorkerResponse(projectId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (assignmentId: string) => {
+      const { error } = await supabase.rpc('accept_project_worker_response', {
+        p_assignment_id: assignmentId,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => invalidateProjectResponseQueries(queryClient, projectId),
+    onError: () => invalidateProjectResponseQueries(queryClient, projectId),
+  });
+}
+
+export function useRejectProjectWorkerResponse(projectId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: { assignmentId: string; reason: string | null }) => {
+      const { error } = await supabase.rpc('reject_project_worker_response', {
+        p_assignment_id: input.assignmentId,
+        p_reason: input.reason ?? undefined,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => invalidateProjectResponseQueries(queryClient, projectId),
+  });
+}

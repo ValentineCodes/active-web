@@ -5,6 +5,10 @@ import { parseWalletDepositMetadata } from '../paystack/webhook.ts';
 import type { VerifyTransactionData } from '../paystack/types.ts';
 import { findDepositByPaymentReference, type DepositRecord } from './lookup.ts';
 import {
+  paystackTransactionIsSuccessful,
+  paystackTransactionIsTerminalFailure,
+} from './paystack-transaction-status.ts';
+import {
   DepositSettlementError,
   markDepositFailed,
   settleDepositFromPaystack,
@@ -78,8 +82,8 @@ export async function verifyWalletDepositWithPaystack(
 
   const verified = await paystack.verifyTransaction(deposit.reference);
 
-  if (verified.status !== 'success') {
-    if (deposit.status === 'pending') {
+  if (!paystackTransactionIsSuccessful(verified.status)) {
+    if (deposit.status === 'pending' && paystackTransactionIsTerminalFailure(verified.status)) {
       await markDepositFailed(service, deposit.reference);
     }
 
@@ -89,7 +93,9 @@ export async function verifyWalletDepositWithPaystack(
       amount_kobo: verified.amount,
       currency: verified.currency,
       wallet_credited: false,
-      deposit_status: 'failed',
+      deposit_status: paystackTransactionIsTerminalFailure(verified.status)
+        ? 'failed'
+        : deposit.status,
     };
   }
 

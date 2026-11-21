@@ -13,6 +13,12 @@ type FundingVisibility = Database['public']['Enums']['project_funding_visibility
 export type MyProjectAssignmentRow =
   Database['public']['Functions']['list_my_project_assignments']['Returns'][number];
 
+export type ProjectAssignmentDetail =
+  Database['public']['Functions']['get_project_assignment']['Returns'][number];
+
+export type ProjectAssignmentMilestoneRow =
+  Database['public']['Functions']['list_project_assignment_milestones']['Returns'][number];
+
 export function useMyEntitlements() {
   return useQuery({
     queryKey: queryKeys.myEntitlements,
@@ -261,6 +267,115 @@ type MyCreatedProjectRow = {
   budget_total_kobo: number;
   contributed_total_kobo: number;
 };
+
+export function useProjectAssignment(assignmentId: string | undefined) {
+  const id = assignmentId?.trim() ?? '';
+  return useQuery({
+    queryKey: queryKeys.projectAssignment(id),
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('get_project_assignment', {
+        p_assignment_id: id,
+      });
+      if (error) throw error;
+      return (data?.[0] ?? null) as ProjectAssignmentDetail | null;
+    },
+    enabled: id.length > 0,
+  });
+}
+
+export function useProjectAssignmentMilestones(assignmentId: string | undefined) {
+  const id = assignmentId?.trim() ?? '';
+  return useQuery({
+    queryKey: queryKeys.projectAssignmentMilestones(id),
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('list_project_assignment_milestones', {
+        p_assignment_id: id,
+      });
+      if (error) throw error;
+      return (data ?? []) as ProjectAssignmentMilestoneRow[];
+    },
+    enabled: id.length > 0,
+  });
+}
+
+export function useApproveProjectAssignmentPayout(projectId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: { assignmentId: string; milestoneId?: string | null }) => {
+      const { data, error } = await supabase.rpc('approve_and_payout_project_assignment', {
+        p_assignment_id: input.assignmentId,
+        p_milestone_id: input.milestoneId ?? undefined,
+        p_idempotency_key: createIdempotencyKey('project-assignment-payout'),
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (_paymentId, input) => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.projectAssignment(input.assignmentId) });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.projectAssignmentMilestones(input.assignmentId) });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.project(projectId) });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.projectAssignments(projectId) });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.projectResponses(projectId) });
+    },
+  });
+}
+
+export function useStartProjectAssignment() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (assignmentId: string) => {
+      const { error } = await supabase.rpc('start_project_assignment', {
+        p_assignment_id: assignmentId,
+      });
+      if (error) throw error;
+    },
+    onSuccess: (_void, assignmentId) => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.projectAssignment(assignmentId) });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.myProjectAssignments });
+    },
+  });
+}
+
+export function useSubmitProjectAssignmentWork() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: { assignmentId: string; milestoneId?: string; note?: string }) => {
+      const { data, error } = await supabase.rpc('submit_project_assignment_work', {
+        p_assignment_id: input.assignmentId,
+        p_milestone_id: input.milestoneId,
+        p_note: input.note,
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (_void, input) => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.projectAssignment(input.assignmentId) });
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.projectAssignmentMilestones(input.assignmentId),
+      });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.myProjectAssignments });
+    },
+  });
+}
+
+export function useReportProjectAssignmentProblem(assignmentId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: { description: string }) => {
+      const { data, error } = await supabase.rpc('report_project_assignment_problem', {
+        p_assignment_id: assignmentId,
+        p_kind: 'completion_issue',
+        p_description: input.description,
+        p_evidence_paths: [],
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.projectAssignment(assignmentId) });
+    },
+  });
+}
 
 export function useMyCreatedProjects() {
   return useQuery({

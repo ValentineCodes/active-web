@@ -9,9 +9,10 @@ import { conversationHref } from '@/lib/conversation-navigation';
 import { ActivityStatusFilter } from '@/components/activity/ActivityStatusFilter';
 import { ResponseCard } from '@/components/ResponseCard';
 import {
-  PersonProfileSheet,
-  type PersonProfilePreview,
-} from '@/components/profile/PersonProfileSheet';
+  ResponderProfileSheet,
+  type ResponderProfileSheetActions,
+} from '@/components/request-flow/ResponderProfileSheet';
+import { projectCreatorCanReviewWorkerResponses } from '@/features/projects/project-response-review';
 import { EmptyState, InlineError } from '@/components/ui/StateView';
 import { SkeletonBlock } from '@/components/ui/Skeleton';
 import { MARKET } from '@/config';
@@ -23,21 +24,48 @@ import {
   type ProjectResponseListRow,
 } from '@/features/projects/project-response-list';
 import { useOpenProjectPreHandshakeConversation } from '@/features/projects/project-conversation-api';
+import {
+  useAcceptProjectWorkerResponse,
+  useRejectProjectWorkerResponse,
+} from '@/features/projects/project-responses-api';
 import { showAppToast } from '@/lib/toast';
+import { toUserMessage } from '@/lib/supabase/errors';
+
+type ProjectResponderProfilePreview = {
+  userId: string;
+  displayName: string | null;
+  avatarPath: string | null;
+  bio: string | null;
+  ratingAverage: number | null;
+  ratingCount: number | null;
+  completionPercent: number | null;
+  pendingResponse?: {
+    assignmentId: string;
+    responderAvailable: boolean;
+  };
+};
 
 export function ProjectResponsesPanel({
   responses,
   allowDiscuss,
+  allowReview,
+  canReviewResponses,
   projectId,
 }: {
   responses: UseQueryResult<ProjectResponseListRow[]>;
   allowDiscuss?: boolean;
+  /** Creator-only accept/reject in the response sheet */
+  allowReview?: boolean;
+  canReviewResponses?: boolean;
   projectId: string;
 }) {
   const router = useRouter();
   const openProjectChat = useOpenProjectPreHandshakeConversation();
+  const acceptResponse = useAcceptProjectWorkerResponse(projectId);
+  const rejectResponse = useRejectProjectWorkerResponse(projectId);
   const [filter, setFilter] = useState<ProjectResponseFilter>('awaiting_review');
-  const [profilePreview, setProfilePreview] = useState<PersonProfilePreview | null>(null);
+  const [profilePreview, setProfilePreview] = useState<ProjectResponderProfilePreview | null>(null);
+  const mayReviewResponses = canReviewResponses ?? true;
   const showDiscuss = Boolean(allowDiscuss && filter === 'awaiting_review');
 
   const discussAssignment = useCallback(
@@ -54,11 +82,82 @@ export function ProjectResponsesPanel({
     [openProjectChat, projectId, router],
   );
 
+  const navigateToAssignment = useCallback(
+    (assignmentId: string) => {
+      router.push(`/project/${projectId}/assignment/${assignmentId}`);
+    },
+    [projectId, router],
+  );
+
   const visibleRows = useMemo(
     () => projectResponsesForFilter(responses.data ?? [], filter),
     [filter, responses.data],
   );
   const statusBadge = projectResponseCardStatus(filter);
+
+  const dismissPreview = useCallback(() => {
+    setProfilePreview(null);
+  }, []);
+
+  const responderProfileFromRow = useCallback(
+    (row: ProjectResponseListRow, allowSelection: boolean): ProjectResponderProfilePreview => ({
+      userId: row.worker_id,
+      displayName: row.display_name,
+      avatarPath: row.avatar_path,
+      bio: row.bio,
+      ratingAverage: row.rating_average,
+      ratingCount: row.rating_count,
+      completionPercent: row.completion_percent,
+      pendingResponse: allowSelection
+        ? {
+            assignmentId: row.assignment_id,
+            responderAvailable: Boolean(row.responder_available),
+          }
+        : undefined,
+    }),
+    [],
+  );
+
+  const profileSheetActions: ResponderProfileSheetActions | undefined =
+    profilePreview?.pendingResponse && allowReview && mayReviewResponses
+      ? {
+          responderAvailable: profilePreview.pendingResponse.responderAvailable,
+          acceptLoading: acceptResponse.isPending,
+          declineLoading: rejectResponse.isPending,
+          onAccept: () => {
+            const assignmentId = profilePreview.pendingResponse!.assignmentId;
+            acceptResponse.mutate(assignmentId, {
+              onSuccess: () => {
+                dismissPreview();
+                showAppToast(
+                  'Worker assigned — secure compensation before they start work',
+                  'info',
+                );
+              },
+              onError: (error) => {
+                showAppToast(toUserMessage(error), 'danger');
+                void responses.refetch();
+              },
+            });
+          },
+          onDecline: (reason) => {
+            const assignmentId = profilePreview.pendingResponse!.assignmentId;
+            rejectResponse.mutate(
+              { assignmentId, reason },
+              {
+                onSuccess: () => {
+                  dismissPreview();
+                  showAppToast('Declined');
+                },
+                onError: (error) => {
+                  showAppToast(toUserMessage(error), 'danger');
+                  void responses.refetch();
+                },
+              },
+            );
+          },
+        }
+      : undefined;
 
   if (responses.isPending) {
     return <SkeletonBlock className="h-32 w-full rounded-2xl" />;
@@ -98,16 +197,14 @@ export function ProjectResponsesPanel({
                 ratingCount={row.rating_count}
                 completionPercent={row.completion_percent}
                 onViewProfile={() =>
-                  setProfilePreview({
-                    userId: row.worker_id,
-                    displayName: row.display_name,
-                    avatarPath: row.avatar_path,
-                    bio: row.bio,
-                    ratingAverage: row.rating_average,
-                    ratingCount: row.rating_count,
-                    completionPercent: row.completion_percent,
-                    identityVerified: Boolean(row.identity_verified),
-                  })
+                  setProfilePreview(
+                    responderProfileFromRow(
+                      row,
+                      Boolean(
+                        allowReview && mayReviewResponses && filter === 'awaiting_review',
+                      ),
+                    ),
+                  )
                 }
                 message={row.message}
                 quotedAmount={row.quoted_amount}
@@ -128,16 +225,26 @@ export function ProjectResponsesPanel({
                   openProjectChat.isPending &&
                   openProjectChat.variables === row.assignment_id
                 }
+                onOpenDetail={
+                  filter === 'assigned' ? () => navigateToAssignment(row.assignment_id) : undefined
+                }
               />
             </li>
           ))}
         </ul>
       )}
 
-      <PersonProfileSheet
-        open={profilePreview !== null}
-        profile={profilePreview}
-        onClose={() => setProfilePreview(null)}
+      <ResponderProfileSheet
+        open={profilePreview != null}
+        onClose={dismissPreview}
+        userId={profilePreview?.userId}
+        displayName={profilePreview?.displayName ?? null}
+        avatarPath={profilePreview?.avatarPath ?? null}
+        bio={profilePreview?.bio}
+        ratingAverage={profilePreview?.ratingAverage ?? null}
+        ratingCount={profilePreview?.ratingCount ?? null}
+        completionPercent={profilePreview?.completionPercent}
+        responseActions={profileSheetActions}
       />
     </div>
   );

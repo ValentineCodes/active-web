@@ -66,6 +66,13 @@ function notFoundMessage(functionName?: string): Error {
     return new Error(hint);
   }
 
+  if (functionName === 'paystack-initialize' || functionName === 'paystack-verify') {
+    const hint = local
+      ? 'Payments need Edge Functions running locally. Run pnpm db:serve in the project root (with pnpm db:start up) and set PAYSTACK_SECRET_KEY / PAYSTACK_PUBLIC_KEY in supabase/functions/.env, then try again.'
+      : 'Payment service is unavailable. Deploy paystack-initialize and paystack-verify and configure Paystack keys on the server.';
+    return new Error(hint);
+  }
+
   const hint = local
     ? 'This action needs Edge Functions running locally. Run pnpm db:serve in the project root, then try again.'
     : 'This action is not available yet. Deploy the latest Edge Functions and try again.';

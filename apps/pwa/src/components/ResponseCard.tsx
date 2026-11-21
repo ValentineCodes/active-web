@@ -28,6 +28,7 @@ export function ResponseCard({
   responderAvailable,
   onDiscussPress,
   discussLoading,
+  onOpenDetail,
   statusLabel,
   statusTone,
   proposedMilestones,
@@ -50,6 +51,7 @@ export function ResponseCard({
   responderAvailable: boolean;
   onDiscussPress?: () => void;
   discussLoading?: boolean;
+  onOpenDetail?: () => void;
   statusLabel?: string;
   statusTone?: BadgeTone;
   proposedMilestones?: MilestoneProposalItem[];
@@ -119,6 +121,16 @@ export function ResponseCard({
       ) : null}
 
       <ResponderScheduleAvailability available={responderAvailable} />
+
+      {onOpenDetail ? (
+        <button
+          type="button"
+          className="w-full rounded-xl border border-hairline bg-surface px-4 py-3 text-left text-sm font-semibold text-ink active:opacity-90"
+          onClick={onOpenDetail}
+        >
+          View assignment
+        </button>
+      ) : null}
     </article>
   );
 }

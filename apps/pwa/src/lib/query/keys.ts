@@ -37,6 +37,9 @@ export const queryKeys = {
   workerProjectPreHandshakeConversation: (projectId: string) =>
     ['worker-project-pre-handshake-conversation', projectId] as const,
   projectAssignments: (projectId: string) => ['project-assignments', projectId] as const,
+  projectAssignment: (assignmentId: string) => ['project-assignment', assignmentId] as const,
+  projectAssignmentMilestones: (assignmentId: string) =>
+    ['project-assignment-milestones', assignmentId] as const,
   projectResponses: (projectId: string) => ['project-responses', projectId] as const,
   projectContributions: (projectId: string) => ['project-contributions', projectId] as const,
   projectActivity: (projectId: string) => ['project-activity', projectId] as const,
@@ -49,6 +52,8 @@ export const queryKeys = {
   resolvedRequestConversation: (lookupId: string) =>
     ['resolved-request-conversation', lookupId] as const,
   requestMessages: (conversationId: string) => ['request-messages', conversationId] as const,
+  projectGroupConversationMembers: (conversationId: string) =>
+    ['project-group-conversation-members', conversationId] as const,
   conversationInbox: ['conversation-inbox'] as const,
   conversationInboxUnreadCount: ['conversation-inbox-unread-count'] as const,
   avatarUrl: (path: string) => ['avatar-url', path] as const,

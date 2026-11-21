@@ -10,10 +10,16 @@ export function RequestFlowHeader({
   title,
   onBack,
   menuActions,
+  onChatPress,
+  chatUnreadCount,
+  chatAccessibilityLabel = 'Open project chat',
 }: {
   title: string;
   onBack: () => void;
   menuActions?: { label: string; onPress: () => void; destructive?: boolean }[];
+  onChatPress?: () => void;
+  chatUnreadCount?: number;
+  chatAccessibilityLabel?: string;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -39,7 +45,24 @@ export function RequestFlowHeader({
         title={title}
         onBack={onBack}
         right={
-          onMore ? (
+          onChatPress || onMore ? (
+            <div className="flex flex-row items-center gap-1">
+              {onChatPress ? (
+                <div className="relative">
+                  <IconButton
+                    icon="chatbubble-outline"
+                    accessibilityLabel={chatAccessibilityLabel}
+                    onClick={onChatPress}
+                  />
+                  {(chatUnreadCount ?? 0) > 0 ? (
+                    <span
+                      aria-hidden
+                      className="absolute right-1 top-1 h-2.5 w-2.5 rounded-full border border-canvas bg-danger"
+                    />
+                  ) : null}
+                </div>
+              ) : null}
+              {onMore ? (
             <div ref={menuRef} className="relative">
               <IconButton
                 icon="ellipsis-horizontal"
@@ -69,6 +92,8 @@ export function RequestFlowHeader({
                     </button>
                   ))}
                 </div>
+              ) : null}
+            </div>
               ) : null}
             </div>
           ) : undefined

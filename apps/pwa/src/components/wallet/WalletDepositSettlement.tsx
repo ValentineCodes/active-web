@@ -82,6 +82,11 @@ export function WalletDepositSettlement() {
         return;
       }
 
+      if (result.status === 'pending' || result.status === 'ongoing' || result.status === 'processing') {
+        setPhase('still_processing');
+        return;
+      }
+
       setError(new Error('Payment was not confirmed. Your wallet was not charged.'));
       setPhase('failed');
     },

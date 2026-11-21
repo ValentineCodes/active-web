@@ -4,12 +4,12 @@ import { useCallback, useLayoutEffect, useRef, useState } from 'react';
 
 import { cn } from '@/lib/cn';
 
-export type ProjectDetailTab = 'response' | 'assignments' | 'activity';
+export type ProjectDetailTab = 'response' | 'work' | 'responses' | 'activity';
 
 const INDICATOR_WIDTH = 28;
 
 const MANAGER_TABS: { id: ProjectDetailTab; label: string }[] = [
-  { id: 'assignments', label: 'Responses' },
+  { id: 'responses', label: 'Responses' },
   { id: 'activity', label: 'Activity' },
 ];
 
@@ -18,22 +18,31 @@ const WORKER_TABS: { id: ProjectDetailTab; label: string }[] = [
   { id: 'activity', label: 'Activity' },
 ];
 
+const WORKER_WORK_TABS: { id: ProjectDetailTab; label: string }[] = [
+  { id: 'work', label: 'Your work' },
+  { id: 'activity', label: 'Activity' },
+];
+
 export function ProjectDetailTabs({
   active,
   onChange,
   showAssignments,
   showResponse,
+  showWorkerWork,
 }: {
   active: ProjectDetailTab;
   onChange: (tab: ProjectDetailTab) => void;
   showAssignments: boolean;
   showResponse: boolean;
+  showWorkerWork?: boolean;
 }) {
-  const visibleTabs = showResponse
-    ? WORKER_TABS
-    : showAssignments
+  const visibleTabs = showWorkerWork
+    ? WORKER_WORK_TABS
+    : showResponse
+      ? WORKER_TABS
+      : showAssignments
       ? MANAGER_TABS
-      : MANAGER_TABS.filter((tab) => tab.id !== 'assignments');
+      : MANAGER_TABS.filter((tab) => tab.id !== 'responses');
 
   const containerRef = useRef<HTMLDivElement>(null);
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);

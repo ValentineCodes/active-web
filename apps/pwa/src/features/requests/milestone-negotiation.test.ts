@@ -27,8 +27,8 @@ describe('milestone negotiation', () => {
 
   it('shows responder counterproposal on help summary when proposed', () => {
     const requester = [
-      { position: 1, title: 'Original A', amount: 5000 },
-      { position: 2, title: 'Original B', amount: 5000 },
+      { position: 1, title: 'Original A', description: '', amount: 5000 },
+      { position: 2, title: 'Original B', description: '', amount: 5000 },
     ];
     const proposals = [
       {
@@ -49,8 +49,8 @@ describe('milestone negotiation', () => {
 
   it('keeps requester plan when helper did not propose changes', () => {
     const requester = [
-      { position: 1, title: 'Original A', amount: 5000 },
-      { position: 2, title: 'Original B', amount: 5000 },
+      { position: 1, title: 'Original A', description: '', amount: 5000 },
+      { position: 2, title: 'Original B', description: '', amount: 5000 },
     ];
 
     const display = responderDisplayedMilestones([], 'r1', requester);

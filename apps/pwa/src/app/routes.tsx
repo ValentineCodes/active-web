@@ -24,6 +24,7 @@ import { RequestRoutePage } from '@/views/RequestRoutePage';
 import { RespondRedirectPage } from '@/views/RespondRedirectPage';
 import { PublicProfilePage } from '@/views/PublicProfilePage';
 import { SearchPage } from '@/views/SearchPage';
+import { ProjectAssignmentDetailPage } from '@/views/ProjectAssignmentDetailPage';
 import { ProjectDetailPage } from '@/views/ProjectDetailPage';
 import { ProjectNewPage } from '@/views/ProjectNewPage';
 import { SettingsPage } from '@/views/SettingsPage';
@@ -132,6 +133,10 @@ export function AppRoutes() {
             <Route path="/notifications" element={<NotificationsPage />} />
           </Route>
           <Route path="/project/:id" element={<ProjectDetailPage />} />
+          <Route
+            path="/project/:id/assignment/:assignmentId"
+            element={<ProjectAssignmentDetailPage />}
+          />
           <Route path="/u/:username" element={<PublicProfilePageRoute />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/profile/edit" element={<ProfileEditPage />} />

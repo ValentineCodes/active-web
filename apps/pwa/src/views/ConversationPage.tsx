@@ -2,7 +2,7 @@
 
 import { leaveMessageThread, parseConversationReturnTo } from '@/lib/conversation-navigation';
 import { useRouter, useSearchParams } from '@/lib/navigation';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { LiveProfilePhotoCapture } from '@/components/profile/LiveProfilePhotoCapture';
 import { ProfilePhotoCaptureContent } from '@/components/profile/ProfilePhotoCaptureContent';
@@ -42,6 +42,11 @@ import { formatSharedLocationMessageBody } from '@/features/requests/conversatio
 import { formatAgo } from '@/lib/format';
 import { positionErrorMessage, requestPosition } from '@/lib/geolocation';
 import { showAppToast } from '@/lib/toast';
+import { useProjectGroupConversationMembers } from '@/features/projects/project-group-chat-api';
+import {
+  formatGroupMemberNames,
+  isProjectGroupConversation,
+} from '@/features/projects/project-group-chat-display';
 
 export function ConversationPage() {
   const router = useRouter();
@@ -69,6 +74,24 @@ export function ConversationPage() {
   const [focused, setFocused] = useState(true);
   const [captureOpen, setCaptureOpen] = useState(false);
   const [sharingLocation, setSharingLocation] = useState(false);
+
+  const isProjectGroupChat = isProjectGroupConversation(
+    conversation.data?.counterpartyDisplayName ?? null,
+  );
+  const groupMembers = useProjectGroupConversationMembers(conversationId, isProjectGroupChat);
+  const groupMemberSubtitle = isProjectGroupChat
+    ? formatGroupMemberNames(
+        (groupMembers.data ?? []).map((row: { display_name: string | null }) => row.display_name ?? ''),
+      )
+    : null;
+  const senderDisplayNameByUserId = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const row of groupMembers.data ?? []) {
+      const name = row.display_name?.trim();
+      if (name) map.set(row.user_id, name);
+    }
+    return map;
+  }, [groupMembers.data]);
 
   const sendLockRef = useRef(false);
   const cancelUploadRef = useRef(false);
@@ -299,6 +322,7 @@ export function ConversationPage() {
         counterpartyName={conversation.data.counterpartyDisplayName}
         counterpartyAvatarPath={conversation.data.counterpartyAvatarPath}
         requestTitle={conversation.data.requestTitle}
+        groupMemberSubtitle={groupMemberSubtitle}
         onBack={goBack}
       />
 
@@ -317,6 +341,8 @@ export function ConversationPage() {
                 isOutgoing={message.senderId === userId}
                 viewerUserId={userId}
                 outgoingUploadStateByAttachmentId={outgoingUploadByMessageId[message.id]}
+                isProjectGroupChat={isProjectGroupChat}
+                senderDisplayNameByUserId={senderDisplayNameByUserId}
               />
             </div>
           ))}

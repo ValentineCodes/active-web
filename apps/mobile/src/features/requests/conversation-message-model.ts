@@ -49,11 +49,11 @@ export function parseRequestMessageAttachments(
   for (const row of value) {
     if (!row || typeof row !== 'object' || Array.isArray(row)) continue;
     const record = row as Record<string, Json | undefined>;
-    const id = record.id;
+    const id = record.id ?? record.attachment_id;
     const storagePath = record.storage_path;
     const mimeType = record.mime_type;
     const attachmentType = record.attachment_type;
-    const createdAt = record.created_at;
+    const createdAt = record.created_at ?? record.uploaded_at;
     if (
       typeof id !== 'string' ||
       typeof storagePath !== 'string' ||

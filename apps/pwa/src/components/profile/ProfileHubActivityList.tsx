@@ -26,7 +26,8 @@ import {
   myResponseActivityOfferLine,
   requestNavigationPath,
 } from '@/features/requests/activity-list';
-import { useMyCreatedProjects } from '@/features/projects/project-api';
+import { useMyCreatedProjects, useMyProjectAssignments } from '@/features/projects/project-api';
+import { isWorkerActiveAssignmentStatus } from '@/features/projects/project-worker-work';
 import { formatMoney } from '@/lib/format';
 import { useClientPagination } from '@/lib/hooks/use-client-pagination';
 import { useRouter } from '@/lib/navigation';
@@ -48,6 +49,9 @@ export function ProfileHubActivityList({ activeTab, listHeader }: Props) {
 
   const activity = useActivityFeed();
   const projects = useMyCreatedProjects();
+  const projectAssignments = useMyProjectAssignments({
+    enabled: activeTab === 'responses',
+  });
 
   const [requestFilter, setRequestFilter] = useState<MyRequestActivityFilter>('all');
   const [responseFilter, setResponseFilter] = useState<MyResponseActivityFilter>('all');
@@ -64,6 +68,12 @@ export function ProfileHubActivityList({ activeTab, listHeader }: Props) {
         myResponseMatchesActivityFilter(response, responseFilter),
       ),
     [activity.myResponses, responseFilter],
+  );
+
+  const activeProjectAssignments = useMemo(
+    () =>
+      (projectAssignments.data ?? []).filter((row) => isWorkerActiveAssignmentStatus(row.status)),
+    [projectAssignments.data],
   );
 
   const projectRows = useMemo(() => projects.data ?? [], [projects.data]);
@@ -275,6 +285,24 @@ export function ProfileHubActivityList({ activeTab, listHeader }: Props) {
       </div>
     ) : activeTab === 'responses' ? (
       <div className="flex flex-col gap-3">
+        {activeProjectAssignments.length > 0 ? (
+          <div className="mb-2 flex flex-col gap-2">
+            <p className="text-sm font-semibold text-ink">Project work</p>
+            {activeProjectAssignments.map((row) => (
+              <Link
+                key={row.assignment_id}
+                href={`/project/${row.project_id}`}
+                className="rounded-2xl border border-hairline bg-elevated p-4 active:opacity-90"
+              >
+                <p className="text-base font-semibold text-ink">{row.project_title}</p>
+                <p className="mt-1 text-sm capitalize text-muted">
+                  {row.status.replaceAll('_', ' ')} ·{' '}
+                  {formatMoney(row.compensation_total_kobo / 100, MARKET.currency)}
+                </p>
+              </Link>
+            ))}
+          </div>
+        ) : null}
         {responsePage.visibleItems.map((response) => (
           <ActivityMyResponseCard
             key={response.response_id}

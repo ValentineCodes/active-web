@@ -3,6 +3,7 @@
 import { IonIcon } from '@/components/ui/IonIcon';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
+import { ProjectBudgetBreakdown } from '@/components/project-flow/ProjectBudgetBreakdown';
 import { ionIcons } from '@/components/ui/ion-icons';
 import { useColors } from '@/theme/ThemeProvider';
 
@@ -16,6 +17,14 @@ type ProjectFundingCardProps = {
   locationLabel: string;
   fundingStatusLabel: string;
   onOpenContribute?: () => void;
+  currency: string;
+  budgetTotalKobo: number;
+  contributedTotalKobo: number;
+  budgetBreakdown?: {
+    paidOutKobo: number;
+    reservedKobo: number;
+    availableKobo: number;
+  } | null;
 };
 
 export function ProjectFundingCard({
@@ -28,6 +37,10 @@ export function ProjectFundingCard({
   locationLabel,
   fundingStatusLabel,
   onOpenContribute,
+  currency,
+  budgetTotalKobo,
+  contributedTotalKobo,
+  budgetBreakdown,
 }: ProjectFundingCardProps) {
   const colors = useColors();
   const statusTone =
@@ -63,6 +76,17 @@ export function ProjectFundingCard({
           {minTargetMet ? ' · reached' : ''}
         </p>
       </div>
+
+      {budgetBreakdown ? (
+        <ProjectBudgetBreakdown
+          currency={currency}
+          budgetTotalKobo={budgetTotalKobo}
+          contributedTotalKobo={contributedTotalKobo}
+          paidOutKobo={budgetBreakdown.paidOutKobo}
+          reservedKobo={budgetBreakdown.reservedKobo}
+          availableKobo={budgetBreakdown.availableKobo}
+        />
+      ) : null}
 
       <div className="h-px bg-hairline" />
 

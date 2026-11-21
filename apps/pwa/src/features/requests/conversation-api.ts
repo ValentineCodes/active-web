@@ -85,6 +85,7 @@ type ConversationMessageType = Database['public']['Enums']['conversation_message
 type MessageRow = {
   message_id: string;
   sender_id: string;
+  sender_display_name?: string | null;
   message_type: ConversationMessageType;
   body: string;
   metadata: Json;
@@ -115,6 +116,7 @@ function mapMessage(row: MessageRow): RequestMessage {
   return {
     id: row.message_id,
     senderId: row.sender_id,
+    senderDisplayName: row.sender_display_name ?? null,
     messageType: row.message_type,
     body: row.body,
     metadata: mapMessageMetadata(row.metadata),
@@ -796,6 +798,16 @@ function createLiveConversationChannel(
     .on(
       'postgres_changes',
       {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'project_group_messages',
+        filter: `conversation_id=eq.${conversationId}`,
+      },
+      onMessageInsert,
+    )
+    .on(
+      'postgres_changes',
+      {
         event: 'UPDATE',
         schema: 'public',
         table: 'request_message_attachments',
@@ -851,6 +863,48 @@ function createLiveConversationChannel(
         event: 'UPDATE',
         schema: 'public',
         table: 'project_messages',
+        filter: `conversation_id=eq.${conversationId}`,
+      },
+      (payload) => {
+        const row = payload.new as RealtimeMessageRow;
+        if (!row?.id || row.conversation_id !== conversationId) return;
+
+        patchMessageReadAtInCache(queryClient, conversationId, row.id, row.read_at);
+      },
+    )
+    .on(
+      'postgres_changes',
+      {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'project_group_message_attachments',
+        filter: `conversation_id=eq.${conversationId}`,
+      },
+      async (payload) => {
+        const row = payload.new as {
+          message_id?: string;
+          uploaded_at?: string | null;
+          conversation_id?: string;
+          sender_id?: string;
+        };
+        if (!row?.message_id || row.conversation_id !== conversationId) return;
+        if (!row.uploaded_at) return;
+
+        try {
+          await hydrateRequestMessageInCache(queryClient, conversationId, row.message_id);
+        } catch {
+          void queryClient.invalidateQueries({
+            queryKey: queryKeys.requestMessages(conversationId),
+          });
+        }
+      },
+    )
+    .on(
+      'postgres_changes',
+      {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'project_group_messages',
         filter: `conversation_id=eq.${conversationId}`,
       },
       (payload) => {

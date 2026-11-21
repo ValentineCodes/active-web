@@ -41,3 +41,22 @@ export function projectResponseCardStatus(filter: ProjectResponseFilter): {
     ? { label: 'Awaiting review', tone: 'warning' }
     : { label: 'Assigned', tone: 'active' };
 }
+
+/** Worker-initiated offer waiting for creator accept/reject (not creator-assigned offers). */
+export function projectResponseCreatorMayReview(row: ProjectResponseListRow): boolean {
+  if (row.creator_may_review === true) return true;
+
+  const proposedBy = row.terms_proposed_by;
+  if (proposedBy != null && proposedBy !== '') {
+    return (
+      proposedBy === row.worker_id &&
+      (row.status === 'offered' || row.status === 'terms_negotiation')
+    );
+  }
+
+  if (row.creator_may_review === false) {
+    return false;
+  }
+
+  return row.status === 'offered' || row.status === 'terms_negotiation';
+}
