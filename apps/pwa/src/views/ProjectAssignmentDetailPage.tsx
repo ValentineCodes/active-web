@@ -1,9 +1,8 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import { ProjectAssignmentDeadlineCard } from '@/components/project-flow/ProjectAssignmentDeadlineCard';
-import { ProjectWorkerAssignmentActions } from '@/components/project-flow/ProjectWorkerAssignmentActions';
 import { MilestonePlanCard } from '@/components/request-flow/MilestonePlanCard';
 import { RequestCallout } from '@/components/request-flow/RequestCallout';
 import { RequestFlowHeader } from '@/components/request-flow/RequestFlowHeader';
@@ -13,7 +12,7 @@ import { ReportIssueModal } from '@/components/support/ReportIssueModal';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Screen } from '@/components/ui/Screen';
-import { EmptyState, InlineError } from '@/components/ui/StateView';
+import { EmptyState, InlineError, LoadingState } from '@/components/ui/StateView';
 import { SkeletonBlock } from '@/components/ui/Skeleton';
 import { MARKET } from '@/config';
 import {
@@ -23,7 +22,10 @@ import {
   useProjectAssignmentMilestones,
   useReportProjectAssignmentProblem,
 } from '@/features/projects/project-api';
-import { projectAssignmentStatusBadge } from '@/features/projects/project-assignment-presentation';
+import {
+  projectAssignmentSectionHeading,
+  projectAssignmentStatusBadge,
+} from '@/features/projects/project-assignment-presentation';
 import { REQUEST_REPORT_ISSUES } from '@/features/support/report-issue-options';
 import { conversationHref } from '@/lib/conversation-navigation';
 import { formatMoney, formatWhenHome } from '@/lib/format';
@@ -67,6 +69,16 @@ export function ProjectAssignmentDetailPage() {
   const groupChatId = project.data?.group_chat_conversation_id ?? null;
 
   const statusBadge = row ? projectAssignmentStatusBadge(row.status) : null;
+  const projectTitle = project.data?.title ?? null;
+  const assignmentSectionHeading = row
+    ? projectAssignmentSectionHeading(row.title, projectTitle)
+    : '';
+
+  useEffect(() => {
+    if (row?.viewer_is_worker && projectId) {
+      router.replace(`/project/${projectId}`);
+    }
+  }, [projectId, row?.viewer_is_worker, router]);
 
   const releasePayment = () => {
     if (!row?.creator_may_release_payment) return;
@@ -113,6 +125,17 @@ export function ProjectAssignmentDetailPage() {
         <RequestFlowHeader title="Assignment" onBack={() => router.push(`/project/${projectId}`)} />
         <div className="px-5">
           <InlineError error={assignment.error} onRetry={() => void assignment.refetch()} />
+        </div>
+      </Screen>
+    );
+  }
+
+  if (row?.viewer_is_worker) {
+    return (
+      <Screen className="flex min-h-0 flex-1 flex-col">
+        <RequestFlowHeader title="Assignment" onBack={() => router.push(`/project/${projectId}`)} />
+        <div className="px-5">
+          <LoadingState label="Opening project…" />
         </div>
       </Screen>
     );
@@ -175,7 +198,11 @@ export function ProjectAssignmentDetailPage() {
             }
           />
 
-          <RequestTitleSection title={row.title} description={row.description} />
+          {assignmentSectionHeading ? (
+            <RequestTitleSection title={assignmentSectionHeading} description={row.description} />
+          ) : row.description?.trim() ? (
+            <p className="text-base leading-6 text-muted">{row.description.trim()}</p>
+          ) : null}
 
           <div className="flex flex-col gap-2 rounded-2xl border border-hairline bg-elevated p-4">
             <p className="text-xs font-bold uppercase tracking-widest text-subtle">Agreed compensation</p>
@@ -192,7 +219,14 @@ export function ProjectAssignmentDetailPage() {
             </div>
           ) : null}
 
-          <ProjectAssignmentDeadlineCard dueAt={row.due_at} status={row.status} />
+          <ProjectAssignmentDeadlineCard
+            dueAt={row.due_at}
+            status={row.status}
+            commencedAt={row.commenced_at}
+            proposedDeliveryDurationValue={row.proposed_delivery_duration_value}
+            proposedDeliveryDurationUnit={row.proposed_delivery_duration_unit}
+            viewerIsWorker={row.viewer_is_worker}
+          />
 
           {reservedLabel ? (
             <RequestCallout
@@ -248,12 +282,6 @@ export function ProjectAssignmentDetailPage() {
               </ul>
             </div>
           ) : null}
-
-          <ProjectWorkerAssignmentActions
-            row={row}
-            milestones={milestones.data}
-            projectId={projectId}
-          />
 
           <div className="flex flex-col gap-2 pt-2">
             {row.viewer_is_creator && row.creator_may_release_payment ? (

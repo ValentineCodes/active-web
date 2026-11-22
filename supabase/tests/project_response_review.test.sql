@@ -157,6 +157,17 @@ select lives_ok(
   'worker may commence after acceptance secured compensation'
 );
 
+select cmp_ok(
+  (
+    select extract(epoch from (due_at::timestamptz - commenced_at::timestamptz))::bigint
+    from public.get_project_assignment(:'response_assignment_id'::uuid)
+    limit 1
+  ),
+  '>=',
+  (extract(epoch from interval '14 days')::bigint - 120),
+  'binding due_at is commenced_at plus proposed duration'
+);
+
 -- Accept fails when pool cannot secure agreed compensation
 select pg_temp.act_as('d4444444-4444-4444-4444-444444444444') as _ \gset
 select lives_ok($$select public.start_premium_trial()$$, 'premium stranger worker for oversize offer');

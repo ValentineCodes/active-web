@@ -31,10 +31,12 @@ export function ProjectWorkerAssignmentActions({
   row,
   milestones,
   projectId,
+  assignmentTitle,
 }: {
   row: ProjectAssignmentDetail;
   milestones?: ProjectAssignmentMilestoneRow[];
   projectId?: string;
+  assignmentTitle?: string;
 }) {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -150,12 +152,12 @@ export function ProjectWorkerAssignmentActions({
         open={submitOpen}
         assignmentId={row.assignment_id}
         milestoneId={milestoneId}
-        assignmentTitle={row.title}
+        assignmentTitle={assignmentTitle ?? row.title}
         onClose={() => setSubmitOpen(false)}
         onSubmitted={(result) => {
           void onSubmitted(result).then(() => {
           if (result.conversationId) {
-            const returnTo = `/project/${projectId ?? row.project_id}/assignment/${row.assignment_id}`;
+            const returnTo = `/project/${projectId ?? row.project_id}`;
             router.push(conversationHref(result.conversationId, returnTo));
           }
           });

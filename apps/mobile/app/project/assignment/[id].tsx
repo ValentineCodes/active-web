@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ScrollView, Text, TextInput, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 
@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Header } from '@/components/ui/Header';
 import { Screen } from '@/components/ui/Screen';
 import { ActivityCardListSkeleton } from '@/components/ui/content-skeletons';
-import { EmptyState, InlineError } from '@/components/ui/StateView';
+import { EmptyState, InlineError, LoadingState } from '@/components/ui/StateView';
 import { MARKET } from '@/config';
 import {
   useAcceptProjectAssignment,
@@ -33,6 +33,12 @@ export default function ProjectAssignmentScreen() {
   const submitWork = useSubmitProjectAssignmentWork();
 
   const row = assignment.data;
+
+  useEffect(() => {
+    if (row?.viewer_is_worker) {
+      router.replace(`/project/${row.project_id}`);
+    }
+  }, [row?.project_id, row?.viewer_is_worker]);
 
   if (assignment.isPending) {
     return (
@@ -62,6 +68,15 @@ export default function ProjectAssignmentScreen() {
           title="Assignment unavailable"
           message="You may not have access to this assignment."
         />
+      </Screen>
+    );
+  }
+
+  if (row.viewer_is_worker) {
+    return (
+      <Screen>
+        <Header title="Assignment" onBack={() => router.back()} />
+        <LoadingState label="Opening project…" />
       </Screen>
     );
   }

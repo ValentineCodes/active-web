@@ -4,7 +4,6 @@ import { ProjectAssignmentDeadlineCard } from '@/components/project-flow/Project
 import { ProjectWorkerAssignmentActions } from '@/components/project-flow/ProjectWorkerAssignmentActions';
 import { RequestCallout } from '@/components/request-flow/RequestCallout';
 import { Badge } from '@/components/ui/Badge';
-import { Button } from '@/components/ui/Button';
 import { InlineError } from '@/components/ui/StateView';
 import { SkeletonBlock } from '@/components/ui/Skeleton';
 import { MARKET } from '@/config';
@@ -13,11 +12,12 @@ import {
   useProjectAssignmentMilestones,
 } from '@/features/projects/project-api';
 import {
+  projectAssignmentDisplayTitle,
+  projectAssignmentSectionHeading,
   projectAssignmentStatusBadge,
   workerAssignmentAwaitingSubmissionReview,
 } from '@/features/projects/project-assignment-presentation';
 import { formatMoney } from '@/lib/format';
-import { useRouter } from '@/lib/navigation';
 
 export function ProjectWorkerAssignmentWorkCard({
   projectId,
@@ -29,7 +29,6 @@ export function ProjectWorkerAssignmentWorkCard({
   /** Fallback label when detail is still loading */
   listTitle?: string | null;
 }) {
-  const router = useRouter();
   const assignment = useProjectAssignment(assignmentId);
   const milestones = useProjectAssignmentMilestones(
     assignment.data?.payment_structure === 'milestone' ? assignmentId : undefined,
@@ -60,13 +59,17 @@ export function ProjectWorkerAssignmentWorkCard({
   const badge = workerAssignmentAwaitingSubmissionReview(row, milestones.data)
     ? { label: 'Awaiting review', tone: 'warning' as const }
     : projectAssignmentStatusBadge(row.status);
-  const title = row.title || listTitle || 'Your assignment';
+  const sectionHeading = projectAssignmentSectionHeading(row.title, listTitle);
+  const submitLabel =
+    projectAssignmentDisplayTitle(row.title, listTitle) || listTitle || 'this assignment';
 
   return (
     <article className="shadow-card flex flex-col gap-4 rounded-2xl border border-hairline bg-elevated p-4">
       <Badge label={badge.label} tone={badge.tone} />
       <div className="flex flex-col gap-1">
-        <h3 className="text-lg font-bold text-ink">{title}</h3>
+        {sectionHeading ? (
+          <h3 className="text-lg font-bold text-ink">{sectionHeading}</h3>
+        ) : null}
         <p className="text-base font-semibold text-active">
           {formatMoney(row.compensation_total_kobo / 100, MARKET.currency)}
         </p>
@@ -79,7 +82,14 @@ export function ProjectWorkerAssignmentWorkCard({
         </div>
       ) : null}
 
-      <ProjectAssignmentDeadlineCard dueAt={row.due_at} status={row.status} />
+      <ProjectAssignmentDeadlineCard
+        dueAt={row.due_at}
+        status={row.status}
+        commencedAt={row.commenced_at}
+        proposedDeliveryDurationValue={row.proposed_delivery_duration_value}
+        proposedDeliveryDurationUnit={row.proposed_delivery_duration_unit}
+        viewerIsWorker
+      />
 
       <RequestCallout
         tone={row.reservation_secured ? 'info' : 'warning'}
@@ -102,13 +112,7 @@ export function ProjectWorkerAssignmentWorkCard({
         row={row}
         milestones={milestones.data}
         projectId={projectId}
-      />
-
-      <Button
-        label="Assignment details"
-        variant="secondary"
-        corner="2xl"
-        onClick={() => router.push(`/project/${projectId}/assignment/${assignmentId}`)}
+        assignmentTitle={submitLabel}
       />
     </article>
   );

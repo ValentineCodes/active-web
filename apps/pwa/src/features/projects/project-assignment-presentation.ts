@@ -5,6 +5,30 @@ import type {
 
 type AssignmentStatus = ProjectAssignmentDetail['status'];
 
+export const PROJECT_RESPONSE_PLACEHOLDER_TITLE = 'Your project response';
+
+export function projectAssignmentDisplayTitle(
+  termsTitle: string | null | undefined,
+  projectTitle?: string | null,
+): string {
+  const trimmed = termsTitle?.trim() ?? '';
+  if (!trimmed || trimmed === PROJECT_RESPONSE_PLACEHOLDER_TITLE) {
+    return projectTitle?.trim() ?? '';
+  }
+  return trimmed;
+}
+
+/** Heading when assignment scope title differs from the project listing title. */
+export function projectAssignmentSectionHeading(
+  termsTitle: string | null | undefined,
+  projectTitle?: string | null,
+): string {
+  const resolved = projectAssignmentDisplayTitle(termsTitle, projectTitle);
+  const project = projectTitle?.trim() ?? '';
+  if (!resolved || (project && resolved === project)) return '';
+  return resolved;
+}
+
 const STATUS_LABELS: Record<AssignmentStatus, string> = {
   offered: 'Offered',
   terms_negotiation: 'Negotiating terms',

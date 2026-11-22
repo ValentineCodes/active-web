@@ -5037,6 +5037,10 @@ export type Database = {
           due_at: string
           has_open_dispute: boolean
           payment_structure: Database["public"]["Enums"]["payment_structure"]
+          proposed_delivery_duration_unit:
+            | Database["public"]["Enums"]["delivery_duration_unit"]
+            | null
+          proposed_delivery_duration_value: number | null
           project_id: string
           release_payment_milestone_id: string | null
           reservation_amount_kobo: number
@@ -5055,6 +5059,7 @@ export type Database = {
           worker_rating_average: number | null
           worker_rating_count: number | null
           worker_username: string | null
+          worker_may_submit: boolean
         }[]
       }
       get_project_contribution_accounting: {
