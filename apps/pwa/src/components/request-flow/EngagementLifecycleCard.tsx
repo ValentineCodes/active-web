@@ -78,6 +78,10 @@ export function EngagementLifecycleCard(props: EngagementLifecycleCardProps) {
     now,
   );
   const hasStarted = Boolean(props.startedAt) || props.requestStatus === 'in_progress';
+  const helperStartExplainer = proposedDeliveryExplainerForHelper(hasStarted);
+  const proposedExplainer = props.viewerIsRequester
+    ? proposedDeliveryExplainerForRequester(hasStarted)
+    : proposedDeliveryExplainerForHelper(hasStarted);
 
   const showStartCountdown =
     !props.startedAt &&
@@ -138,18 +142,16 @@ export function EngagementLifecycleCard(props: EngagementLifecycleCardProps) {
               ? `Accepted — you have ${formatCountdownDuration(startRemaining)} to press Start.`
               : 'The start window has ended.'}
           </p>
-          <p className="text-sm text-muted">{proposedDeliveryExplainerForHelper(hasStarted)}</p>
+          {helperStartExplainer ? (
+            <p className="text-sm text-muted">{helperStartExplainer}</p>
+          ) : null}
         </RequestCallout>
       ) : null}
 
       {proposedLabel ? (
         <RequestCallout tone="info" title="Proposed delivery">
           <p className="text-sm font-semibold text-ink">{proposedLabel}</p>
-          <p className="text-sm text-muted">
-            {props.viewerIsRequester
-              ? proposedDeliveryExplainerForRequester(hasStarted)
-              : proposedDeliveryExplainerForHelper(hasStarted)}
-          </p>
+          {proposedExplainer ? <p className="text-sm text-muted">{proposedExplainer}</p> : null}
         </RequestCallout>
       ) : null}
 
@@ -161,7 +163,6 @@ export function EngagementLifecycleCard(props: EngagementLifecycleCardProps) {
           {bindingCalendarLabel ? (
             <p className="text-sm text-muted">{bindingCalendarLabel}</p>
           ) : null}
-          <p className="text-sm text-muted">Set by the server when work started.</p>
         </RequestCallout>
       ) : null}
 

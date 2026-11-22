@@ -52,7 +52,7 @@ export function formatInDurationPreview(value: number, unit: DeliveryDurationUni
 }
 
 export function formatDeliveryInDuration(value: number, unit: DeliveryDurationUnit): string {
-  return `Delivery in ${value} ${unitLabel(unit, value)}.`;
+  return formatInDurationPreview(value, unit);
 }
 
 export function proposedDeliveryLabelFromRow(input: {

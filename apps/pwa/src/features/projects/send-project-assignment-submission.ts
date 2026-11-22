@@ -96,7 +96,7 @@ function mapProjectSubmissionRpcError(error: unknown): string {
     return 'Add a profile photo in the app before you can submit work in chat.';
   }
   const msg = mapConversationAttachmentError(error);
-  if (msg.includes("upload this file")) {
+  if (msg.includes('upload this file')) {
     return 'Could not submit deliverables. Try again.';
   }
   return msg;
@@ -198,11 +198,6 @@ export async function sendProjectAssignmentSubmission(input: {
     throw new Error('Submission already sent.');
   }
 
-  const noteText = input.note?.trim() ?? '';
-  if (input.stagedItems.length < 1 && !noteText) {
-    throw new Error('Add a message or at least one file.');
-  }
-
   const plannedAttachmentCount = input.stagedItems.length;
   const sessionAttachmentCount = session.slots.length;
   const draftOutOfSync =
@@ -211,7 +206,10 @@ export async function sendProjectAssignmentSubmission(input: {
     plannedAttachmentCount !== sessionAttachmentCount;
 
   try {
-    if (draftOutOfSync || (session.messageId && input.stagedItems.length < 1 && session.slots.length > 0)) {
+    if (
+      draftOutOfSync ||
+      (session.messageId && input.stagedItems.length < 1 && session.slots.length > 0)
+    ) {
       await abortProjectAssignmentSubmissionSendSession(session);
       session.messageId = null;
       session.conversationId = null;
@@ -242,16 +240,16 @@ export async function sendProjectAssignmentSubmission(input: {
       } else {
         session.uploadAttempted = true;
         for (let index = 0; index < input.stagedItems.length; index += 1) {
-        const staged = input.stagedItems[index];
-        const slot = session.slots[index];
-        if (!staged || !slot) throw new Error('Could not upload file.');
-        const progress =
-          input.onUploadProgress && input.stagedItems.length > 0
-            ? (fraction: number) => {
-                const overall = (index + fraction) / input.stagedItems.length;
-                input.onUploadProgress?.(overall);
-              }
-            : undefined;
+          const staged = input.stagedItems[index];
+          const slot = session.slots[index];
+          if (!staged || !slot) throw new Error('Could not upload file.');
+          const progress =
+            input.onUploadProgress && input.stagedItems.length > 0
+              ? (fraction: number) => {
+                  const overall = (index + fraction) / input.stagedItems.length;
+                  input.onUploadProgress?.(overall);
+                }
+              : undefined;
           await uploadPreparedConversationAttachmentToSlot({
             slot,
             prepared: staged.prepared,

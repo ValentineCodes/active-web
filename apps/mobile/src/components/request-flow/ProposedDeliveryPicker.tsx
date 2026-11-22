@@ -43,7 +43,7 @@ export function ProposedDeliveryPicker({
     <View className="gap-3 rounded-2xl bg-surface p-4">
       <Text className="text-base font-semibold text-ink">How long until delivery?</Text>
       <Text className="text-sm leading-5 text-muted">
-        Choose how much time you need after you press Start. The countdown does not begin until then.
+        Choose how much time you need after you press Start.
       </Text>
       <Text className="text-base font-semibold text-ink">{preview}</Text>
       {validationMessage ? <Text className="text-sm text-warning">{validationMessage}</Text> : null}

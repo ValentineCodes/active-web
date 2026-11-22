@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useId, useRef, useState, type ReactNode, type PointerEvent } from 'react';
 import { createPortal } from 'react-dom';
 
-import { Button } from '@/components/ui/Button';
+import { IconButton } from '@/components/ui/IconButton';
 import { zIndex } from '@/design-system/layout';
 import { cn } from '@/lib/cn';
 
@@ -140,13 +140,15 @@ export function BottomSheet({
             <h2 id={titleId} className="text-base font-semibold text-ink">
               {title}
             </h2>
-            <Button
-              label="Close"
-              variant="ghost"
-              className="!w-auto shrink-0 !px-3 !py-2"
-              onClick={tryClose}
-              disabled={!dismissible}
-            />
+            <span className={cn(!dismissible && 'pointer-events-none opacity-40')}>
+              <IconButton
+                icon="close"
+                accessibilityLabel="Close"
+                onClick={tryClose}
+                size={36}
+                iconSize={22}
+              />
+            </span>
           </header>
         ) : null}
         <div className="max-h-[min(70dvh,520px)] overflow-y-auto px-5 py-4 pb-[max(1rem,env(safe-area-inset-bottom))]">

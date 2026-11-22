@@ -12,7 +12,6 @@ import {
   ResponderProfileSheet,
   type ResponderProfileSheetActions,
 } from '@/components/request-flow/ResponderProfileSheet';
-import { projectCreatorCanReviewWorkerResponses } from '@/features/projects/project-response-review';
 import { EmptyState, InlineError } from '@/components/ui/StateView';
 import { SkeletonBlock } from '@/components/ui/Skeleton';
 import { MARKET } from '@/config';
@@ -20,6 +19,7 @@ import {
   PROJECT_RESPONSE_FILTER_OPTIONS,
   projectResponseFilterEmptyState,
   projectResponseCreatorMayDiscuss,
+  projectResponseCreatorMayReview,
   projectResponseRowCardStatus,
   projectResponseRowMayOpenAssignment,
   projectResponsesForFilter,
@@ -52,14 +52,12 @@ export function ProjectResponsesPanel({
   responses,
   allowDiscuss,
   allowReview,
-  canReviewResponses,
   projectId,
 }: {
   responses: UseQueryResult<ProjectResponseListRow[]>;
   allowDiscuss?: boolean;
   /** Creator-only accept/reject in the response sheet */
   allowReview?: boolean;
-  canReviewResponses?: boolean;
   projectId: string;
 }) {
   const router = useRouter();
@@ -68,7 +66,6 @@ export function ProjectResponsesPanel({
   const rejectResponse = useRejectProjectWorkerResponse(projectId);
   const [filter, setFilter] = useState<ProjectResponseFilter>('all');
   const [profilePreview, setProfilePreview] = useState<ProjectResponderProfilePreview | null>(null);
-  const mayReviewResponses = canReviewResponses ?? true;
 
   const discussAssignment = useCallback(
     (assignmentId: string) => {
@@ -121,7 +118,7 @@ export function ProjectResponsesPanel({
   );
 
   const profileSheetActions: ResponderProfileSheetActions | undefined =
-    profilePreview?.pendingResponse && allowReview && mayReviewResponses
+    profilePreview?.pendingResponse && allowReview
       ? {
           responderAvailable: profilePreview.pendingResponse.responderAvailable,
           acceptLoading: acceptResponse.isPending,
@@ -131,10 +128,7 @@ export function ProjectResponsesPanel({
             acceptResponse.mutate(assignmentId, {
               onSuccess: () => {
                 dismissPreview();
-                showAppToast(
-                  'Worker assigned — secure compensation before they start work',
-                  'info',
-                );
+                showAppToast('Worker assigned', 'success');
               },
               onError: (error) => {
                 showAppToast(toUserMessage(error), 'danger');
@@ -200,9 +194,7 @@ export function ProjectResponsesPanel({
                   setProfilePreview(
                     responderProfileFromRow(
                       row,
-                      Boolean(
-                        allowReview && mayReviewResponses && filter === 'awaiting_review',
-                      ),
+                      Boolean(allowReview && projectResponseCreatorMayReview(row)),
                     ),
                   )
                 }

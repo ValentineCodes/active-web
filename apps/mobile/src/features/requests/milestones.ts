@@ -161,7 +161,7 @@ export function milestoneItemsFromProposalJson(
     }));
 }
 
-export function paymentStructureLabel(structure: PaymentStructure | null | undefined) {
-  if (structure === 'milestone') return 'Milestone payments';
-  return 'Single payment';
+export function paymentStructureLabel(structure: PaymentStructure | null | undefined): string | null {
+  if (structure === 'milestone') return 'Milestones';
+  return null;
 }

@@ -45,13 +45,6 @@ export function ProjectWorkerWorkPanel({
 
   return (
     <div className="flex flex-col gap-4">
-      <RequestCallout tone="info" title="You&apos;re on this project">
-        <p className="text-sm text-muted">
-          Deliverables and proof belong in the shared project team chat (project header). Use the
-          actions below for each assignment you&apos;re working on.
-        </p>
-      </RequestCallout>
-
       {assignments.length > 1 ? (
         <p className="text-sm font-semibold text-ink">
           {assignments.length} assignments on this project

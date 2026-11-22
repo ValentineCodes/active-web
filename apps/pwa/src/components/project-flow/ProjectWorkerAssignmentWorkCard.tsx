@@ -66,9 +66,12 @@ export function ProjectWorkerAssignmentWorkCard({
   return (
     <article className="shadow-card flex flex-col gap-4 rounded-2xl border border-hairline bg-elevated p-4">
       <Badge label={badge.label} tone={badge.tone} />
-      <div className="flex flex-col gap-1">
+      <div className="flex flex-col gap-2">
         {sectionHeading ? (
           <h3 className="text-lg font-bold text-ink">{sectionHeading}</h3>
+        ) : null}
+        {row.description?.trim() ? (
+          <p className="whitespace-pre-wrap text-base leading-6 text-ink">{row.description.trim()}</p>
         ) : null}
         <p className="text-base font-semibold text-active">
           {formatMoney(row.compensation_total_kobo / 100, MARKET.currency)}
@@ -88,19 +91,15 @@ export function ProjectWorkerAssignmentWorkCard({
         commencedAt={row.commenced_at}
         proposedDeliveryDurationValue={row.proposed_delivery_duration_value}
         proposedDeliveryDurationUnit={row.proposed_delivery_duration_unit}
-        viewerIsWorker
       />
 
-      <RequestCallout
-        tone={row.reservation_secured ? 'info' : 'warning'}
-        title={row.reservation_secured ? 'Compensation secured' : 'Compensation not secured'}
-      >
-        <p className="text-sm text-muted">
-          {row.reservation_secured
-            ? 'Your agreed pay is reserved from the project pool.'
-            : 'You cannot commence until the creator secures compensation from the pool.'}
-        </p>
-      </RequestCallout>
+      {!row.reservation_secured ? (
+        <RequestCallout tone="warning" title="Compensation not secured">
+          <p className="text-sm text-muted">
+            You cannot commence until the creator secures compensation from the pool.
+          </p>
+        </RequestCallout>
+      ) : null}
 
       {row.has_open_dispute ? (
         <RequestCallout tone="danger" title="Open dispute">

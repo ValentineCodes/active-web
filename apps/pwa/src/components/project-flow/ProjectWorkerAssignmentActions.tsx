@@ -120,25 +120,13 @@ export function ProjectWorkerAssignmentActions({
       ) : null}
 
       {canSubmit ? (
-        <div className="flex flex-col gap-3 rounded-2xl border border-hairline bg-surface p-4">
-          <p className="text-base font-semibold text-ink">Submit deliverables</p>
-          <p className="text-sm text-muted">
-            Formal submissions are posted to the project team chat. Add a message, files, or both;
-            ordinary chat messages do not count as submissions.
-          </p>
-          {row.payment_structure === 'milestone' && milestoneId ? (
-            <p className="text-xs text-subtle">
-              Milestone:{' '}
-              {milestones?.find((m) => m.milestone_id === milestoneId)?.title ?? 'Current step'}
-            </p>
-          ) : null}
-          <Button
-            label="Submit work"
-            size="lg"
-            corner="2xl"
-            onClick={() => setSubmitOpen(true)}
-          />
-        </div>
+        <Button
+          label="Submit"
+          variant="active"
+          size="lg"
+          corner="2xl"
+          onClick={() => setSubmitOpen(true)}
+        />
       ) : null}
 
       {row.status === 'completed' ? (

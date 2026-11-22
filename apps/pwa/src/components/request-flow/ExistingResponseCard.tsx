@@ -125,9 +125,6 @@ export function ExistingResponseCard({
           <div className="rounded-2xl border border-hairline bg-surface px-4 py-3">
             <p className="text-xs font-medium text-subtle">Proposed delivery</p>
             <p className="mt-1 text-sm leading-6 text-ink">{proposedDeliveryLabel}</p>
-            <p className="mt-2 text-xs text-muted">
-              Countdown begins when you press Start after they accept, not at this proposed time.
-            </p>
           </div>
         ) : null}
 

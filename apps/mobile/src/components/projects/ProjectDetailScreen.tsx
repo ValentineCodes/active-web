@@ -44,7 +44,10 @@ import {
 } from '@/features/projects/project-api';
 import { projectCreatorProfileFields } from '@/features/projects/project-creator-profile';
 import { projectViewerMayViewAssignments } from '@/features/projects/project-assignments-visibility';
-import { projectViewerMayContribute } from '@/features/projects/project-contribute';
+import {
+  projectContributionRemainingMajor,
+  projectViewerMayContribute,
+} from '@/features/projects/project-contribute';
 import { projectDetailBadge } from '@/features/projects/project-status';
 import { useProfile } from '@/features/profile/api';
 import {
@@ -484,6 +487,10 @@ export function ProjectDetailScreen({ projectId }: { projectId: string }) {
         ref={contributeSheetRef}
         projectId={projectId}
         minContributionMajor={koboToMajor(detail.min_contribution_kobo)}
+        maxContributionMajor={projectContributionRemainingMajor(
+          detail.budget_total_kobo,
+          detail.contributed_total_kobo,
+        )}
         projectTitle={detail.title}
         onInsufficientWallet={setInsufficientWalletPrompt}
       />

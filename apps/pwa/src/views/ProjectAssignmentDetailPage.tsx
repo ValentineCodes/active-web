@@ -160,14 +160,6 @@ export function ProjectAssignmentDetailPage() {
   }
 
   const compensationLabel = formatMoney(koboToMajor(row.compensation_total_kobo), MARKET.currency);
-  const reservedLabel =
-    row.reservation_secured && row.reservation_amount_kobo != null
-      ? formatMoney(koboToMajor(row.reservation_amount_kobo), MARKET.currency)
-      : null;
-  const releasedLabel =
-    row.reservation_released_kobo > 0
-      ? formatMoney(koboToMajor(row.reservation_released_kobo), MARKET.currency)
-      : null;
 
   return (
     <Screen className="relative flex min-h-0 flex-1 flex-col">
@@ -198,13 +190,7 @@ export function ProjectAssignmentDetailPage() {
             <p className="text-base leading-6 text-muted">{row.description.trim()}</p>
           ) : null}
 
-          <div className="flex flex-col gap-2 rounded-2xl border border-hairline bg-elevated p-4">
-            <p className="text-xs font-bold uppercase tracking-widest text-subtle">Agreed compensation</p>
-            <p className="text-xl font-bold text-ink">{compensationLabel}</p>
-            <p className="text-sm capitalize text-muted">
-              {row.payment_structure.replaceAll('_', ' ')} payment
-            </p>
-          </div>
+          <p className="text-xl font-bold text-ink">{compensationLabel}</p>
 
           {row.deliverables ? (
             <div className="flex flex-col gap-2 rounded-2xl bg-surface p-4">
@@ -219,20 +205,12 @@ export function ProjectAssignmentDetailPage() {
             commencedAt={row.commenced_at}
             proposedDeliveryDurationValue={row.proposed_delivery_duration_value}
             proposedDeliveryDurationUnit={row.proposed_delivery_duration_unit}
-            viewerIsWorker={row.viewer_is_worker}
           />
 
-          {reservedLabel ? (
-            <RequestCallout
-              tone={row.reservation_secured ? 'info' : 'warning'}
-              title={row.reservation_secured ? 'Compensation secured' : 'Compensation not secured'}
-            >
+          {!row.reservation_secured ? (
+            <RequestCallout tone="warning" title="Compensation not secured">
               <p className="text-sm text-muted">
-                {row.reservation_secured
-                  ? `${reservedLabel} reserved from the project pool.${
-                      releasedLabel ? ` ${releasedLabel} paid out so far.` : ''
-                    }`
-                  : 'Secure compensation from the project pool before work can start.'}
+                Secure compensation from the project pool before work can start.
               </p>
             </RequestCallout>
           ) : null}

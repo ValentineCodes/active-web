@@ -39,8 +39,10 @@ import {
   personProfileFromProjectDetail,
   projectCreatorProfileFields,
 } from '@/features/projects/project-creator-profile';
-import { projectViewerMayContribute } from '@/features/projects/project-contribute';
-import { projectCreatorCanReviewWorkerResponses } from '@/features/projects/project-response-review';
+import {
+  projectContributionRemainingMajor,
+  projectViewerMayContribute,
+} from '@/features/projects/project-contribute';
 import { useWorkerProjectPreHandshakeConversation } from '@/features/projects/project-conversation-api';
 import {
   projectResponseWizardInitialOffer,
@@ -426,7 +428,6 @@ export function ProjectDetailPage() {
                   responses={projectResponses}
                   allowDiscuss={Boolean(detail.viewer_is_creator)}
                   allowReview={Boolean(detail.viewer_is_creator)}
-                  canReviewResponses={projectCreatorCanReviewWorkerResponses(detail)}
                   projectId={id}
                 />
               ) : null}
@@ -447,6 +448,10 @@ export function ProjectDetailPage() {
         projectId={id}
         projectTitle={detail.title}
         minContributionMajor={koboToMajor(detail.min_contribution_kobo)}
+        maxContributionMajor={projectContributionRemainingMajor(
+          detail.budget_total_kobo,
+          detail.contributed_total_kobo,
+        )}
         onClose={() => setContributeOpen(false)}
       />
 

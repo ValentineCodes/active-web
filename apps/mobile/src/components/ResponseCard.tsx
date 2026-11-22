@@ -118,9 +118,6 @@ export function ResponseCard({
                 Proposed delivery
               </Text>
               <Text className="text-sm leading-5 text-ink">{proposedDeliveryLabel}</Text>
-              <Text className="text-xs text-muted">
-                Countdown begins when they press Start after you accept.
-              </Text>
             </View>
           ) : null}
         </View>

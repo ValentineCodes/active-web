@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from '@/lib/navigation';
 
 import { InsufficientWalletSheet } from '@/components/request-flow/InsufficientWalletSheet';
@@ -8,11 +8,13 @@ import { BottomSheet } from '@/components/ui/BottomSheet';
 import { Button } from '@/components/ui/Button';
 import { MoneyAmountInput } from '@/components/ui/MoneyAmountInput';
 import { MARKET } from '@/config';
+import { projectContributionAmountPresets } from '@/features/projects/project-contribute';
 import { useContributeToProject } from '@/features/projects/project-api';
 import { useMyWallet } from '@/features/wallet/api';
 import { walletLockShortfallMajor, walletTopUpPath } from '@/features/wallet/top-up';
 import { formatMoney } from '@/lib/format';
 import { isInsufficientWalletBalanceError, toUserMessage } from '@/lib/supabase/errors';
+import { cn } from '@/lib/cn';
 import { showAppToast } from '@/lib/toast';
 
 const INSUFFICIENT_WALLET_MESSAGE =
@@ -28,6 +30,7 @@ type Props = {
   projectId: string;
   projectTitle: string;
   minContributionMajor: number;
+  maxContributionMajor: number;
   onClose: () => void;
 };
 
@@ -36,6 +39,7 @@ export function ProjectContributeModal({
   projectId,
   projectTitle,
   minContributionMajor,
+  maxContributionMajor,
   onClose,
 }: Props) {
   const router = useRouter();
@@ -45,6 +49,11 @@ export function ProjectContributeModal({
     useState<InsufficientWalletPrompt | null>(null);
   const contribute = useContributeToProject();
   const wallet = useMyWallet();
+  const amountPresets = useMemo(
+    () => projectContributionAmountPresets(minContributionMajor, maxContributionMajor),
+    [maxContributionMajor, minContributionMajor],
+  );
+  const parsedAmount = Number(amount.replace(/[^\d]/g, '')) || null;
 
   useEffect(() => {
     if (!open) {
@@ -72,6 +81,13 @@ export function ProjectContributeModal({
     if (major < minContributionMajor) {
       showAppToast(
         `Minimum contribution is ${formatMoney(minContributionMajor, MARKET.currency)}.`,
+        'warning',
+      );
+      return;
+    }
+    if (maxContributionMajor > 0 && major > maxContributionMajor) {
+      showAppToast(
+        `Maximum contribution is ${formatMoney(maxContributionMajor, MARKET.currency)}.`,
         'warning',
       );
       return;
@@ -105,6 +121,7 @@ export function ProjectContributeModal({
   }, [
     amount,
     contribute,
+    maxContributionMajor,
     minContributionMajor,
     onClose,
     openInsufficientWalletFlow,
@@ -155,8 +172,31 @@ export function ProjectContributeModal({
                 onChangeText={(text) => setAmount(text.replace(/[^\d]/g, ''))}
               />
             </div>
+            {amountPresets.length > 0 ? (
+              <div className="flex flex-wrap gap-2">
+                {amountPresets.map((preset) => {
+                  const selected = parsedAmount === preset;
+                  return (
+                    <button
+                      key={preset}
+                      type="button"
+                      className={cn(
+                        'rounded-xl px-4 py-2.5 text-base font-semibold active:opacity-90',
+                        selected ? 'border border-active bg-surface text-active' : 'bg-surface text-muted',
+                      )}
+                      onClick={() => setAmount(String(preset))}
+                    >
+                      {formatMoney(preset, MARKET.currency)}
+                    </button>
+                  );
+                })}
+              </div>
+            ) : null}
             <p className="text-sm text-muted">
-              Minimum {formatMoney(minContributionMajor, MARKET.currency)}
+              Min {formatMoney(minContributionMajor, MARKET.currency)}
+              {maxContributionMajor > 0
+                ? ` · Max ${formatMoney(maxContributionMajor, MARKET.currency)}`
+                : null}
             </p>
           </div>
 

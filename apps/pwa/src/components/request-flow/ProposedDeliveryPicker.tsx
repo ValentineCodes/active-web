@@ -55,7 +55,7 @@ export function ProposedDeliveryPicker({
     <div className="flex flex-col gap-3 rounded-2xl bg-surface p-4">
       <p className="text-base font-semibold text-ink">How long until delivery?</p>
       <p className="text-sm leading-5 text-muted">
-        Choose how much time you need after you press Start. The countdown does not begin until then.
+        Choose how much time you need after you press Start.
       </p>
       <p className="text-base font-semibold text-ink">{preview}</p>
       {validationMessage ? <p className="text-sm text-warning">{validationMessage}</p> : null}

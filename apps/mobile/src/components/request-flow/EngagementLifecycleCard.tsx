@@ -77,6 +77,10 @@ export function EngagementLifecycleCard(props: EngagementLifecycleCardProps) {
     now,
   );
   const hasStarted = Boolean(props.startedAt) || props.requestStatus === 'in_progress';
+  const helperStartExplainer = proposedDeliveryExplainerForHelper(hasStarted);
+  const proposedExplainer = props.viewerIsRequester
+    ? proposedDeliveryExplainerForRequester(hasStarted)
+    : proposedDeliveryExplainerForHelper(hasStarted);
 
   const showStartCountdown =
     !props.startedAt &&
@@ -137,20 +141,18 @@ export function EngagementLifecycleCard(props: EngagementLifecycleCardProps) {
               ? `Accepted — you have ${formatCountdownDuration(startRemaining)} to press Start.`
               : 'The start window has ended.'}
           </Text>
-          <Text className="text-sm text-muted">
-            {proposedDeliveryExplainerForHelper(hasStarted)}
-          </Text>
+          {helperStartExplainer ? (
+            <Text className="text-sm text-muted">{helperStartExplainer}</Text>
+          ) : null}
         </RequestCallout>
       ) : null}
 
       {proposedLabel ? (
         <RequestCallout tone="info" title="Proposed delivery">
           <Text className="text-sm font-semibold text-ink">{proposedLabel}</Text>
-          <Text className="text-sm text-muted">
-            {props.viewerIsRequester
-              ? proposedDeliveryExplainerForRequester(hasStarted)
-              : proposedDeliveryExplainerForHelper(hasStarted)}
-          </Text>
+          {proposedExplainer ? (
+            <Text className="text-sm text-muted">{proposedExplainer}</Text>
+          ) : null}
         </RequestCallout>
       ) : null}
 
@@ -162,7 +164,6 @@ export function EngagementLifecycleCard(props: EngagementLifecycleCardProps) {
           {bindingCalendarLabel ? (
             <Text className="text-sm text-muted">{bindingCalendarLabel}</Text>
           ) : null}
-          <Text className="text-sm text-muted">Set by the server when work started.</Text>
         </RequestCallout>
       ) : null}
 

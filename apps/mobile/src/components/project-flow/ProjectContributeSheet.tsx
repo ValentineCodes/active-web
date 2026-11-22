@@ -1,5 +1,5 @@
 import { forwardRef, useCallback, useImperativeHandle, useMemo, useRef, useState } from 'react';
-import { Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import {
   BottomSheetBackdrop,
   BottomSheetModal,
@@ -15,12 +15,14 @@ import { Button } from '@/components/ui/Button';
 import { KeyboardStickyFooter } from '@/components/ui/KeyboardStickyFooter';
 import { MoneyAmountInput } from '@/components/ui/MoneyAmountInput';
 import { MARKET } from '@/config';
+import { projectContributionAmountPresets } from '@/features/projects/project-contribute';
 import { useContributeToProject } from '@/features/projects/project-api';
 import { useMyWallet } from '@/features/wallet/api';
 import { walletLockShortfallMajor } from '@/features/wallet/top-up';
 import { formatMoney } from '@/lib/format';
 import { isInsufficientWalletBalanceError, toUserMessage } from '@/lib/supabase/errors';
 import { showAppToast } from '@/lib/toast';
+import { cn } from '@/lib/cn';
 import { useColors } from '@/theme';
 
 const INSUFFICIENT_WALLET_MESSAGE =
@@ -39,6 +41,7 @@ export type ProjectContributeSheetHandle = {
 type ProjectContributeSheetProps = {
   projectId: string;
   minContributionMajor: number;
+  maxContributionMajor: number;
   projectTitle: string;
   onInsufficientWallet: (prompt: ProjectContributeInsufficientWalletPrompt) => void;
 };
@@ -47,7 +50,7 @@ export const ProjectContributeSheet = forwardRef<
   ProjectContributeSheetHandle,
   ProjectContributeSheetProps
 >(function ProjectContributeSheet(
-  { projectId, minContributionMajor, projectTitle, onInsufficientWallet },
+  { projectId, minContributionMajor, maxContributionMajor, projectTitle, onInsufficientWallet },
   ref,
 ) {
   const colors = useColors();
@@ -57,6 +60,11 @@ export const ProjectContributeSheet = forwardRef<
   const [amount, setAmount] = useState('');
   const contribute = useContributeToProject();
   const wallet = useMyWallet();
+  const amountPresets = useMemo(
+    () => projectContributionAmountPresets(minContributionMajor, maxContributionMajor),
+    [maxContributionMajor, minContributionMajor],
+  );
+  const parsedAmount = Number(amount.replace(/[^\d]/g, '')) || null;
 
   useImperativeHandle(ref, () => ({
     present: () => {
@@ -94,6 +102,13 @@ export const ProjectContributeSheet = forwardRef<
       );
       return;
     }
+    if (maxContributionMajor > 0 && major > maxContributionMajor) {
+      showAppToast(
+        `Maximum contribution is ${formatMoney(maxContributionMajor, MARKET.currency)}.`,
+        'warning',
+      );
+      return;
+    }
 
     if (wallet.isSuccess) {
       const availableMajor = wallet.data.available;
@@ -123,6 +138,7 @@ export const ProjectContributeSheet = forwardRef<
   }, [
     amount,
     contribute,
+    maxContributionMajor,
     minContributionMajor,
     openInsufficientWalletFlow,
     projectId,
@@ -184,8 +200,39 @@ export const ProjectContributeSheet = forwardRef<
                   InputComponent={BottomSheetTextInput}
                 />
               </View>
+              {amountPresets.length > 0 ? (
+                <View className="flex-row flex-wrap gap-2">
+                  {amountPresets.map((preset) => {
+                    const selected = parsedAmount === preset;
+                    return (
+                      <Pressable
+                        key={preset}
+                        accessibilityRole="button"
+                        accessibilityState={{ selected }}
+                        onPress={() => setAmount(String(preset))}
+                        className={cn(
+                          'rounded-xl px-4 py-2.5 active:opacity-90',
+                          selected ? 'border border-active bg-surface' : 'bg-surface',
+                        )}
+                      >
+                        <Text
+                          className={cn(
+                            'text-base font-semibold',
+                            selected ? 'text-active' : 'text-muted',
+                          )}
+                        >
+                          {formatMoney(preset, MARKET.currency)}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              ) : null}
               <Text className="text-sm text-muted">
-                Minimum {formatMoney(minContributionMajor, MARKET.currency)}
+                Min {formatMoney(minContributionMajor, MARKET.currency)}
+                {maxContributionMajor > 0
+                  ? ` · Max ${formatMoney(maxContributionMajor, MARKET.currency)}`
+                  : null}
               </Text>
             </View>
           </BottomSheetScrollView>

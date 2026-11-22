@@ -91,7 +91,7 @@ export default function ProjectAssignmentScreen() {
           <Text className="font-display text-xl text-ink">{row.title}</Text>
           <Text className="text-sm capitalize text-muted">{row.status.replaceAll('_', ' ')}</Text>
           <Text className="text-base font-medium text-ink">
-            {formatMoney(compensationMajor, MARKET.currency)} · {row.payment_structure}
+            {formatMoney(compensationMajor, MARKET.currency)}
           </Text>
           {row.due_at ? (
             <Text className="text-sm text-muted">Due {formatWhenHome(row.due_at)}</Text>
@@ -106,20 +106,14 @@ export default function ProjectAssignmentScreen() {
           </View>
         ) : null}
 
-        <View className="rounded-2xl bg-surface p-3">
-          <Text className="text-sm font-semibold text-ink">Compensation security</Text>
-          <Text className="text-sm text-muted">
-            {row.reservation_secured
-              ? 'Assignment compensation is secured in the project pool.'
-              : 'Compensation is not yet fully secured. Workers cannot commence until it is.'}
-          </Text>
-          {row.reservation_secured ? (
-            <Text className="mt-1 text-xs text-subtle">
-              Reserved {formatMoney(row.reservation_amount_kobo / 100, MARKET.currency)} · Released{' '}
-              {formatMoney(row.reservation_released_kobo / 100, MARKET.currency)}
+        {!row.reservation_secured ? (
+          <View className="rounded-2xl bg-surface p-3">
+            <Text className="text-sm font-semibold text-ink">Compensation not secured</Text>
+            <Text className="text-sm text-muted">
+              Workers cannot commence until compensation is secured from the project pool.
             </Text>
-          ) : null}
-        </View>
+          </View>
+        ) : null}
 
         {row.viewer_is_worker && row.status === 'offered' ? (
           <Button
@@ -141,7 +135,7 @@ export default function ProjectAssignmentScreen() {
             variant="secondary"
             onPress={() =>
               reserve.mutate(row.assignment_id, {
-                onSuccess: () => showAppToast('Compensation secured', { type: 'success' }),
+                onSuccess: () => showAppToast('Compensation reserved', { type: 'success' }),
                 onError: (error) =>
                   showAppToast(error instanceof Error ? error.message : 'Could not reserve', 'warning'),
               })
@@ -166,7 +160,6 @@ export default function ProjectAssignmentScreen() {
 
         {row.viewer_is_worker && row.status === 'commenced' ? (
           <View className="gap-2 rounded-2xl border border-hairline p-3">
-            <Text className="font-semibold text-ink">Submit work</Text>
             <TextInput
               value={note}
               onChangeText={setNote}
