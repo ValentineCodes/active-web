@@ -1,5 +1,15 @@
 const DEFAULT_MEMBER_LINE_MAX_CHARS = 56;
 
+export function groupMemberLineLabels(
+  members: readonly { user_id: string; display_name: string | null }[],
+  viewerUserId: string | undefined,
+): string[] {
+  return members.map((row) => {
+    if (viewerUserId && row.user_id === viewerUserId) return 'You';
+    return row.display_name?.trim() ?? '';
+  });
+}
+
 /** Comma-separated member list with "..." when over the character budget (WhatsApp-style subtitle). */
 export function formatGroupMemberNames(
   names: readonly string[],

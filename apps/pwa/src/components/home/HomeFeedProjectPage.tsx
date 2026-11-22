@@ -10,7 +10,7 @@ import type { PublicProject } from '@/features/projects/project-browse-api';
 import { useRequestAttachmentUrl } from '@/features/requests/request-attachment-url';
 import { requestOutcomeDescription } from '@/features/requests/outcome';
 import { MARKET } from '@/config';
-import { formatAgo, formatCoarseLocationLabel, formatMoney } from '@/lib/format';
+import { formatAgo, formatCoarseLocationLabel, formatMoney, formatWhenHome } from '@/lib/format';
 import { useTheme } from '@/theme/ThemeProvider';
 
 const PHOTO_BOTTOM_SCRIM =
@@ -56,7 +56,9 @@ export function HomeFeedProjectPage({ project, pageHeight, tabBarInset }: Props)
   const description = requestOutcomeDescription(project.description);
   const postedLabel = project.posted_at ? formatAgo(project.posted_at) : null;
   const budgetMajor = project.budget_total_kobo / 100;
-  const contributedMajor = project.contributed_total_kobo / 100;
+  const fundingDeadlineLabel = project.funding_deadline_at
+    ? formatWhenHome(project.funding_deadline_at)
+    : null;
   const locationLabel = locationLabelForProject(project);
   const showContributeCta =
     project.funding_status === 'open' || project.funding_status === 'target_met';
@@ -87,7 +89,7 @@ export function HomeFeedProjectPage({ project, pageHeight, tabBarInset }: Props)
       title={title}
       description={description}
       budgetMajor={budgetMajor}
-      contributedMajor={contributedMajor}
+      fundingDeadlineLabel={fundingDeadlineLabel}
       locationLabel={locationLabel}
       titleClass={titleClass}
       bodyClass={bodyClass}
@@ -198,7 +200,7 @@ function ProjectDetails({
   title,
   description,
   budgetMajor,
-  contributedMajor,
+  fundingDeadlineLabel,
   locationLabel,
   titleClass,
   bodyClass,
@@ -212,7 +214,7 @@ function ProjectDetails({
   title: string;
   description: string | null;
   budgetMajor: number;
-  contributedMajor: number;
+  fundingDeadlineLabel: string | null;
   locationLabel: string;
   titleClass: string;
   bodyClass: string;
@@ -229,11 +231,11 @@ function ProjectDetails({
         <span className="rounded-full bg-active px-3 py-1 text-sm font-bold text-on-brand">
           {formatMoney(budgetMajor, MARKET.currency)}
         </span>
-        <span className={whenChipClass}>
-          <span className={whenTextClass}>
-            {formatMoney(contributedMajor, MARKET.currency)} raised
+        {fundingDeadlineLabel ? (
+          <span className={whenChipClass}>
+            <span className={whenTextClass}>{fundingDeadlineLabel}</span>
           </span>
-        </span>
+        ) : null}
       </div>
 
       <h2 className={`line-clamp-3 ${titleClass}`}>{title}</h2>

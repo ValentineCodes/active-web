@@ -18,8 +18,6 @@ type ProjectFundingCardProps = {
   fundingStatusLabel: string;
   onOpenContribute?: () => void;
   currency: string;
-  budgetTotalKobo: number;
-  contributedTotalKobo: number;
   budgetBreakdown?: {
     paidOutKobo: number;
     reservedKobo: number;
@@ -38,8 +36,6 @@ export function ProjectFundingCard({
   fundingStatusLabel,
   onOpenContribute,
   currency,
-  budgetTotalKobo,
-  contributedTotalKobo,
   budgetBreakdown,
 }: ProjectFundingCardProps) {
   const colors = useColors();
@@ -67,7 +63,7 @@ export function ProjectFundingCard({
       </div>
 
       <div className="flex flex-col gap-2">
-        <p className="text-sm font-semibold text-ink">{contributedLabel} raised</p>
+        <p className="text-sm font-semibold text-ink">{contributedLabel}</p>
         <div className="h-2 overflow-hidden rounded-full bg-hairline">
           <div className="h-full bg-active" style={{ width: `${progressPct}%` }} />
         </div>
@@ -80,8 +76,6 @@ export function ProjectFundingCard({
       {budgetBreakdown ? (
         <ProjectBudgetBreakdown
           currency={currency}
-          budgetTotalKobo={budgetTotalKobo}
-          contributedTotalKobo={contributedTotalKobo}
           paidOutKobo={budgetBreakdown.paidOutKobo}
           reservedKobo={budgetBreakdown.reservedKobo}
           availableKobo={budgetBreakdown.availableKobo}
@@ -94,7 +88,7 @@ export function ProjectFundingCard({
         <div className="flex min-w-0 flex-col gap-1">
           <div className="flex flex-row items-center gap-1.5">
             <IonIcon icon={ionIcons['time-outline']} size={14} color={colors.subtle} />
-            <p className="text-xs font-semibold uppercase tracking-wide text-subtle">When</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-subtle">Deadline</p>
           </div>
           <p className="text-base font-semibold break-words text-ink">{whenLabel}</p>
         </div>

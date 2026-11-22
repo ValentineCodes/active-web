@@ -8,6 +8,7 @@ import {
   type PersonProfilePreview,
 } from '@/components/profile/PersonProfileSheet';
 import { ProjectContributeModal } from '@/components/project-flow/ProjectContributeModal';
+import { ProjectGroupChatFab } from '@/components/project-flow/ProjectGroupChatFab';
 import { ProjectActivityPanel } from '@/components/project-flow/ProjectDetailTabPanels';
 import { ProjectResponsesPanel } from '@/components/project-flow/ProjectResponsesPanel';
 import { ProjectDetailTabs, type ProjectDetailTab } from '@/components/project-flow/ProjectDetailTabs';
@@ -312,19 +313,12 @@ export function ProjectDetailPage() {
 
   return (
     <Screen className="relative flex min-h-0 flex-1 flex-col">
-      <RequestFlowHeader
-        title={headerTitle}
-        onBack={() => router.back()}
-        onChatPress={
-          groupChatConversationId
-            ? () => router.push(conversationHref(groupChatConversationId, `/project/${id}`))
-            : undefined
-        }
-        chatUnreadCount={groupChatUnread}
-      />
+      <RequestFlowHeader title={headerTitle} onBack={() => router.back()} />
 
       <div className="relative min-h-0 flex-1">
-        <div className="h-full overflow-y-auto px-5 pb-12">
+        <div
+          className={`h-full overflow-y-auto px-5 ${groupChatConversationId ? 'pb-28' : 'pb-12'}`}
+        >
           <div className="flex flex-col gap-5">
             <RequestMetaRow badgeLabel={badge.label} badgeTone={badge.tone} trailing={metaTime} />
 
@@ -354,8 +348,6 @@ export function ProjectDetailPage() {
                 fundingStatusLabel={detail.funding_status}
                 onOpenContribute={canContribute ? () => setContributeOpen(true) : undefined}
                 currency={MARKET.currency}
-                budgetTotalKobo={detail.budget_total_kobo}
-                contributedTotalKobo={detail.contributed_total_kobo}
                 budgetBreakdown={
                   detail.viewer_may_view_budget_breakdown &&
                   detail.paid_out_total_kobo != null &&
@@ -457,6 +449,15 @@ export function ProjectDetailPage() {
         minContributionMajor={koboToMajor(detail.min_contribution_kobo)}
         onClose={() => setContributeOpen(false)}
       />
+
+      {groupChatConversationId ? (
+        <ProjectGroupChatFab
+          unreadCount={groupChatUnread}
+          onPress={() =>
+            router.push(conversationHref(groupChatConversationId, `/project/${id}`))
+          }
+        />
+      ) : null}
     </Screen>
   );
 }

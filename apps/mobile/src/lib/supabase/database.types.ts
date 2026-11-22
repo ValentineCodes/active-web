@@ -4439,6 +4439,7 @@ export type Database = {
           creator_display_name: string
           creator_id: string
           description: string
+          funding_deadline_at: string
           funding_status: Database["public"]["Enums"]["project_funding_status"]
           location_label: string
           min_funding_target_kobo: number

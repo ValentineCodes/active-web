@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 
 import { ProjectAssignmentDeadlineCard } from '@/components/project-flow/ProjectAssignmentDeadlineCard';
+import { ProjectGroupChatFab } from '@/components/project-flow/ProjectGroupChatFab';
 import { MilestonePlanCard } from '@/components/request-flow/MilestonePlanCard';
 import { RequestCallout } from '@/components/request-flow/RequestCallout';
 import { RequestFlowHeader } from '@/components/request-flow/RequestFlowHeader';
@@ -170,18 +171,11 @@ export function ProjectAssignmentDetailPage() {
 
   return (
     <Screen className="relative flex min-h-0 flex-1 flex-col">
-      <RequestFlowHeader
-        title="Assignment"
-        onBack={() => router.push(`/project/${projectId}`)}
-        onChatPress={
-          groupChatId
-            ? () => router.push(conversationHref(groupChatId, returnTo))
-            : undefined
-        }
-        chatUnreadCount={project.data?.group_chat_unread_count ?? 0}
-      />
+      <RequestFlowHeader title="Assignment" onBack={() => router.push(`/project/${projectId}`)} />
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-12">
+      <div
+        className={`min-h-0 flex-1 overflow-y-auto px-5 ${groupChatId ? 'pb-28' : 'pb-12'}`}
+      >
         <div className="flex flex-col gap-5">
           {statusBadge ? <Badge label={statusBadge.label} tone={statusBadge.tone} /> : null}
 
@@ -306,6 +300,13 @@ export function ProjectAssignmentDetailPage() {
           </div>
         </div>
       </div>
+
+      {groupChatId ? (
+        <ProjectGroupChatFab
+          unreadCount={project.data?.group_chat_unread_count ?? 0}
+          onPress={() => router.push(conversationHref(groupChatId, returnTo))}
+        />
+      ) : null}
 
       <ReportIssueModal
         open={reportOpen}

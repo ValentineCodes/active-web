@@ -106,6 +106,10 @@ export function projectResponseFilterEmptyState(filter: ProjectResponseFilter): 
   }
 }
 
+export function projectResponseCreatorMayDiscuss(row: ProjectResponseListRow): boolean {
+  return row.status === 'offered' || row.status === 'terms_negotiation';
+}
+
 /** Worker-initiated offer waiting for creator accept/reject (not creator-assigned offers). */
 export function projectResponseCreatorMayReview(row: ProjectResponseListRow): boolean {
   if (row.creator_may_review === true) return true;

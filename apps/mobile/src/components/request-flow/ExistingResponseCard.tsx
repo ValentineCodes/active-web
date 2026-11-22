@@ -2,6 +2,7 @@ import { Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import { MilestonePlanCard } from '@/components/request-flow/MilestonePlanCard';
+import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import type { MilestoneProposalItem } from '@/features/requests/milestones';
 import {
@@ -26,6 +27,8 @@ type Props = {
   proposedDeliveryDurationUnit?: DeliveryDurationUnit | null;
   proposedDeliveryAt?: string | null;
   proposedDeliveryTimezone?: string | null;
+  compactPendingStatus?: boolean;
+  pendingStatusLabel?: string;
 };
 
 /** Pending response the helper already sent — offer preview and edit / withdraw actions. */
@@ -43,6 +46,8 @@ export function ExistingResponseCard({
   proposedDeliveryDurationUnit,
   proposedDeliveryAt,
   proposedDeliveryTimezone,
+  compactPendingStatus = false,
+  pendingStatusLabel = 'Awaiting acceptance',
 }: Props) {
   const colors = useColors();
   const offerLabel = quotedAmount !== null ? formatMoney(quotedAmount, currency) : '—';
@@ -59,22 +64,25 @@ export function ExistingResponseCard({
 
   return (
     <View className="overflow-hidden rounded-3xl border border-hairline bg-elevated">
-      <View className="flex-row items-start gap-3 border-b border-hairline bg-warning-soft px-5 py-4">
-        <View className="mt-0.5 h-9 w-9 items-center justify-center rounded-full bg-warning/15">
-          <Ionicons name="time-outline" size={20} color={colors.warning} />
+      {compactPendingStatus ? null : (
+        <View className="flex-row items-start gap-3 border-b border-hairline bg-warning-soft px-5 py-4">
+          <View className="mt-0.5 h-9 w-9 items-center justify-center rounded-full bg-warning/15">
+            <Ionicons name="time-outline" size={20} color={colors.warning} />
+          </View>
+          <View className="min-w-0 flex-1">
+            <Text className="text-xs font-semibold uppercase tracking-wide text-warning">
+              {pendingStatusLabel}
+            </Text>
+            <Text className="mt-1 text-sm leading-5 text-muted">
+              The requester can accept your offer or keep looking. You are not committed until they
+              choose you.
+            </Text>
+          </View>
         </View>
-        <View className="min-w-0 flex-1">
-          <Text className="text-xs font-semibold uppercase tracking-wide text-warning">
-            Awaiting acceptance
-          </Text>
-          <Text className="mt-1 text-sm leading-5 text-muted">
-            The requester can accept your offer or keep looking. You are not committed until they
-            choose you.
-          </Text>
-        </View>
-      </View>
+      )}
 
       <View className="gap-5 px-5 py-5">
+        {compactPendingStatus ? <Badge label={pendingStatusLabel} tone="warning" /> : null}
         <View className="flex-row items-end justify-between gap-4">
           <View>
             <Text className="text-xs font-medium text-subtle">Your offer</Text>

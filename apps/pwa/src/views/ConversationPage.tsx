@@ -45,6 +45,7 @@ import { showAppToast } from '@/lib/toast';
 import { useProjectGroupConversationMembers } from '@/features/projects/project-group-chat-api';
 import {
   formatGroupMemberNames,
+  groupMemberLineLabels,
   isProjectGroupConversation,
 } from '@/features/projects/project-group-chat-display';
 
@@ -80,9 +81,7 @@ export function ConversationPage() {
   );
   const groupMembers = useProjectGroupConversationMembers(conversationId, isProjectGroupChat);
   const groupMemberSubtitle = isProjectGroupChat
-    ? formatGroupMemberNames(
-        (groupMembers.data ?? []).map((row: { display_name: string | null }) => row.display_name ?? ''),
-      )
+    ? formatGroupMemberNames(groupMemberLineLabels(groupMembers.data ?? [], userId ?? undefined))
     : null;
   const senderDisplayNameByUserId = useMemo(() => {
     const map = new Map<string, string>();

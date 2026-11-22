@@ -10,7 +10,7 @@ import { MARKET } from '@/config';
 import type { PublicProject } from '@/features/projects/project-browse-api';
 import { useRequestAttachmentUrl } from '@/features/requests/request-attachment-url';
 import { requestOutcomeDescription } from '@/features/requests/outcome';
-import { formatAgo, formatCoarseLocationLabel, formatMoney } from '@/lib/format';
+import { formatAgo, formatCoarseLocationLabel, formatMoney, formatWhenHome } from '@/lib/format';
 import { useColors, useTheme } from '@/theme';
 
 type HomeFeedProjectPageProps = {
@@ -91,7 +91,9 @@ export function HomeFeedProjectPage({ project, pageHeight, tabBarInset }: HomeFe
   const description = requestOutcomeDescription(project.description);
   const postedLabel = project.posted_at ? formatAgo(project.posted_at) : null;
   const budgetMajor = project.budget_total_kobo / 100;
-  const contributedMajor = project.contributed_total_kobo / 100;
+  const fundingDeadlineLabel = project.funding_deadline_at
+    ? formatWhenHome(project.funding_deadline_at)
+    : null;
   const locationLabel = locationLabelForProject(project);
 
   const titleClass = lightCopy
@@ -226,11 +228,11 @@ export function HomeFeedProjectPage({ project, pageHeight, tabBarInset }: HomeFe
                 {formatMoney(budgetMajor, MARKET.currency)}
               </Text>
             </View>
-            <View className={whenChipClass}>
-              <Text className={whenTextClass}>
-                {formatMoney(contributedMajor, MARKET.currency)} raised
-              </Text>
-            </View>
+            {fundingDeadlineLabel ? (
+              <View className={whenChipClass}>
+                <Text className={whenTextClass}>{fundingDeadlineLabel}</Text>
+              </View>
+            ) : null}
           </View>
 
           <Text className={titleClass} numberOfLines={3}>

@@ -1,6 +1,7 @@
 'use client';
 
 import { MilestonePlanCard } from '@/components/request-flow/MilestonePlanCard';
+import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { IonIcon } from '@/components/ui/IonIcon';
 import { ionIcons } from '@/components/ui/ion-icons';
@@ -27,6 +28,9 @@ type Props = {
   proposedDeliveryDurationUnit?: DeliveryDurationUnit | null;
   proposedDeliveryAt?: string | null;
   proposedDeliveryTimezone?: string | null;
+  /** Project worker responses: badge only. Request respond keeps the explainer banner. */
+  compactPendingStatus?: boolean;
+  pendingStatusLabel?: string;
 };
 
 /** Pending response the helper already sent — offer preview and edit / withdraw actions. */
@@ -44,6 +48,8 @@ export function ExistingResponseCard({
   proposedDeliveryDurationUnit,
   proposedDeliveryAt,
   proposedDeliveryTimezone,
+  compactPendingStatus = false,
+  pendingStatusLabel = 'Awaiting acceptance',
 }: Props) {
   const colors = useColors();
   const offerLabel =
@@ -61,22 +67,27 @@ export function ExistingResponseCard({
 
   return (
     <section className="shadow-card overflow-hidden rounded-3xl border border-hairline bg-elevated">
-      <header className="flex flex-row items-start gap-3 border-b border-hairline bg-warning-soft px-5 py-4">
-        <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-warning/15">
-          <IonIcon icon={ionIcons['time-outline']} size={20} color={colors.warning} />
-        </span>
-        <div className="min-w-0 flex-1">
-          <p className="text-xs font-semibold uppercase tracking-wide text-warning">
-            Awaiting acceptance
-          </p>
-          <p className="mt-1 text-sm leading-5 text-muted">
-            The requester can accept your offer or keep looking. You are not committed until they
-            choose you.
-          </p>
-        </div>
-      </header>
+      {compactPendingStatus ? null : (
+        <header className="flex flex-row items-start gap-3 border-b border-hairline bg-warning-soft px-5 py-4">
+          <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-warning/15">
+            <IonIcon icon={ionIcons['time-outline']} size={20} color={colors.warning} />
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="text-xs font-semibold uppercase tracking-wide text-warning">
+              {pendingStatusLabel}
+            </p>
+            <p className="mt-1 text-sm leading-5 text-muted">
+              The requester can accept your offer or keep looking. You are not committed until they
+              choose you.
+            </p>
+          </div>
+        </header>
+      )}
 
       <div className="flex flex-col gap-5 px-5 py-5">
+        {compactPendingStatus ? (
+          <Badge label={pendingStatusLabel} tone="warning" />
+        ) : null}
         <div className="flex flex-row items-end justify-between gap-4">
           <div>
             <p className="text-xs font-medium text-subtle">Your offer</p>

@@ -1,6 +1,23 @@
 import { describe, expect, it } from 'vitest';
 
-import { formatGroupMemberNames } from '@/features/projects/project-group-chat-display';
+import {
+  formatGroupMemberNames,
+  groupMemberLineLabels,
+} from '@/features/projects/project-group-chat-display';
+
+describe('groupMemberLineLabels', () => {
+  it('uses You for the signed-in member', () => {
+    expect(
+      groupMemberLineLabels(
+        [
+          { user_id: 'a', display_name: 'Ada' },
+          { user_id: 'b', display_name: 'Ben' },
+        ],
+        'b',
+      ),
+    ).toEqual(['Ada', 'You']);
+  });
+});
 
 describe('formatGroupMemberNames', () => {
   it('joins names with commas', () => {

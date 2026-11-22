@@ -12,6 +12,7 @@ import { MARKET } from '@/config';
 import {
   PROJECT_RESPONSE_FILTER_OPTIONS,
   projectResponseFilterEmptyState,
+  projectResponseCreatorMayDiscuss,
   projectResponseRowCardStatus,
   projectResponsesForFilter,
   type ProjectResponseFilter,
@@ -46,7 +47,6 @@ export function ProjectResponsesPanel({
     [filter, responses.data],
   );
   const emptyCopy = projectResponseFilterEmptyState(filter);
-  const showDiscuss = Boolean(allowDiscuss && filter === 'awaiting_review');
 
   const discussAssignment = useCallback(
     (assignmentId: string) => {
@@ -122,10 +122,13 @@ export function ProjectResponsesPanel({
                 proposedDeliveryAt={row.proposed_delivery_at}
                 proposedDeliveryTimezone={row.proposed_delivery_timezone}
                 onDiscussPress={
-                  showDiscuss ? () => discussAssignment(row.assignment_id) : undefined
+                  allowDiscuss && projectResponseCreatorMayDiscuss(row)
+                    ? () => discussAssignment(row.assignment_id)
+                    : undefined
                 }
                 discussLoading={
-                  showDiscuss &&
+                  allowDiscuss &&
+                  projectResponseCreatorMayDiscuss(row) &&
                   openProjectChat.isPending &&
                   openProjectChat.variables === row.assignment_id
                 }

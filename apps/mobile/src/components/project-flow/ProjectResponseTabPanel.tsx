@@ -50,6 +50,8 @@ export function ProjectResponseTabPanel({
           message={existingResponse.message}
           proposedDeliveryDurationValue={existingResponse.proposedDeliveryDurationValue}
           proposedDeliveryDurationUnit={existingResponse.proposedDeliveryDurationUnit}
+          compactPendingStatus
+          pendingStatusLabel="Awaiting review"
           onEdit={onEditResponse}
           onCancel={onCancelResponse}
           cancelLoading={withdrawLoading}

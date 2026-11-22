@@ -71,7 +71,7 @@ export function ProjectFundingCard({
           <View className="min-w-0 flex-1 gap-1 pr-1">
             <View className="flex-row items-center gap-1.5">
               <Ionicons name="time-outline" size={14} color={colors.subtle} />
-              <Text className="text-xs font-semibold uppercase tracking-wide text-subtle">When</Text>
+              <Text className="text-xs font-semibold uppercase tracking-wide text-subtle">Deadline</Text>
             </View>
             <Text className="text-base font-semibold text-ink">{whenLabel}</Text>
           </View>
