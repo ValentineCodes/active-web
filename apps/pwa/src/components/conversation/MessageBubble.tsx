@@ -18,17 +18,17 @@ export function MessageBubble({
   }
 
   return (
-    <div className={cn('max-w-[85%]', isOutgoing ? 'self-end' : 'self-start')}>
-      <div
-        className={cn(
-          'rounded-2xl px-4 py-2.5',
-          isOutgoing ? 'rounded-br-md bg-active' : 'rounded-bl-md border border-hairline bg-elevated',
-        )}
-      >
-        {message.body ? (
-          <p className={cn('text-base leading-6', isOutgoing ? 'text-on-brand' : 'text-ink')}>{message.body}</p>
-        ) : null}
-      </div>
+    <div
+      className={cn(
+        'w-max max-w-full rounded-2xl px-4 py-2.5',
+        isOutgoing ? 'rounded-br-md bg-active' : 'rounded-bl-md border border-hairline bg-elevated',
+      )}
+    >
+      {message.body ? (
+        <span className={cn('text-base leading-6', isOutgoing ? 'text-on-brand' : 'text-ink')}>
+          {message.body}
+        </span>
+      ) : null}
     </div>
   );
 }

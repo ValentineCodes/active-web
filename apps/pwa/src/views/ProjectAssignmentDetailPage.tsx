@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 
+import { ProjectAssignmentCompletionSection } from '@/components/project-flow/ProjectAssignmentCompletionSection';
 import { ProjectAssignmentDeadlineCard } from '@/components/project-flow/ProjectAssignmentDeadlineCard';
 import { ProjectGroupChatFab } from '@/components/project-flow/ProjectGroupChatFab';
 import { MilestonePlanCard } from '@/components/request-flow/MilestonePlanCard';
@@ -29,6 +30,7 @@ import {
 } from '@/features/projects/project-assignment-presentation';
 import { REQUEST_REPORT_ISSUES } from '@/features/support/report-issue-options';
 import { conversationHref } from '@/lib/conversation-navigation';
+import { projectAssignmentRateHref } from '@/lib/project-assignment-rating-navigation';
 import { formatMoney, formatWhenHome } from '@/lib/format';
 import { useRouter } from '@/lib/navigation';
 import { useRouteParam } from '@/lib/route-param';
@@ -83,6 +85,7 @@ export function ProjectAssignmentDetailPage() {
 
   const releasePayment = () => {
     if (!row?.creator_may_release_payment) return;
+    const shouldPromptRate = !row.viewer_has_rated;
     approvePayout.mutate(
       {
         assignmentId: row.assignment_id,
@@ -92,6 +95,9 @@ export function ProjectAssignmentDetailPage() {
         onSuccess: () => {
           showAppToast('Payment released', 'success');
           void project.refetch();
+          if (shouldPromptRate && projectId && assignmentId) {
+            router.push(projectAssignmentRateHref(projectId, assignmentId));
+          }
         },
         onError: (error) => showAppToast(toUserMessage(error), 'danger'),
       },
@@ -247,12 +253,25 @@ export function ProjectAssignmentDetailPage() {
                     <p className="text-sm capitalize text-muted">
                       {milestone.status.replaceAll('_', ' ')} ·{' '}
                       {formatMoney(koboToMajor(milestone.amount_kobo), MARKET.currency)}
-                      {milestone.due_at ? ` · due ${formatWhenHome(milestone.due_at)}` : ''}
+                      {row.status !== 'completed' && milestone.due_at
+                        ? ` · due ${formatWhenHome(milestone.due_at)}`
+                        : ''}
                     </p>
                   </li>
                 ))}
               </ul>
             </div>
+          ) : null}
+
+          {row.status === 'completed' ? (
+            <ProjectAssignmentCompletionSection
+              completedAt={row.completed_at}
+              receivedRatingStars={row.received_rating_stars}
+              receivedRatingComment={row.received_rating_comment}
+              viewerMayRate={Boolean(row.viewer_may_rate)}
+              viewerIsCreator={Boolean(row.viewer_is_creator)}
+              onRate={() => router.push(projectAssignmentRateHref(projectId, assignmentId))}
+            />
           ) : null}
 
           <div className="flex flex-col gap-2 pt-2">

@@ -30,8 +30,7 @@ export function PersonRow({
   trailing?: ReactNode;
   onPress?: () => void;
 }) {
-  const hasRatings = (ratingCount ?? 0) > 0 && ratingAverage != null;
-  const showRating = ratingAverage !== undefined && hasRatings;
+  const showRating = ratingAverage !== undefined && ratingCount !== undefined;
   const showInlineStat = Boolean(inlineStat);
   const showMeta = Boolean(meta && !inlineStat);
   const contentBelowName = showRating || showInlineStat || showMeta;
@@ -53,7 +52,9 @@ export function PersonRow({
         </div>
         {showRating || showInlineStat ? (
           <div className="flex flex-row flex-wrap items-center gap-1.5">
-            {showRating ? <StarRating average={ratingAverage ?? null} count={ratingCount ?? 0} /> : null}
+            {showRating ? (
+              <StarRating average={ratingAverage ?? null} count={ratingCount ?? 0} />
+            ) : null}
             {showInlineStat ? (
               <>
                 {showRating ? <span className="text-sm text-subtle">·</span> : null}

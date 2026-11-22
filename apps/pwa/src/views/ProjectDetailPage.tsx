@@ -122,11 +122,7 @@ export function ProjectDetailPage() {
         !workerHasActiveWork,
     ),
   );
-  const headerTitle = detail?.viewer_is_creator
-    ? 'Your project'
-    : workerHasActiveWork
-      ? 'Your project work'
-      : 'Project';
+  const headerTitle = detail?.viewer_is_creator ? 'Your project' : 'Project';
   const showAssignmentsTabFromData = Boolean(
     detail && projectViewerMayViewAssignments(detail),
   );

@@ -27,8 +27,7 @@ export function ProjectAssignmentDeadlineCard({
 }) {
   const [now, setNow] = useState(() => new Date());
 
-  const hasBindingDeadline =
-    status === 'commenced' || (status === 'completed' && Boolean(commencedAt));
+  const hasBindingDeadline = status === 'commenced';
   const showProposedDelivery = !hasBindingDeadline;
 
   const showLiveCountdown = status === 'commenced';
@@ -38,6 +37,8 @@ export function ProjectAssignmentDeadlineCard({
     const handle = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(handle);
   }, [dueAt, showLiveCountdown]);
+
+  if (status === 'completed') return null;
 
   if (showProposedDelivery) {
     if (
@@ -62,24 +63,15 @@ export function ProjectAssignmentDeadlineCard({
   const countdown = formatDeliveryRemaining(dueAt, now);
   const calendarLabel = formatDeliveryInstantLabel(dueAt, null);
 
-  const title = overdue
-    ? 'Past delivery deadline'
-    : status === 'completed'
-      ? 'Delivery deadline'
-      : 'Delivery deadline';
+  const title = overdue ? 'Past delivery deadline' : 'Delivery deadline';
 
   return (
-    <RequestCallout
-      tone={overdue ? 'danger' : status === 'completed' ? 'info' : 'warning'}
-      title={title}
-    >
+    <RequestCallout tone={overdue ? 'danger' : 'warning'} title={title}>
       <div className="flex flex-col gap-1">
         {showLiveCountdown && countdown ? (
           <p className="text-sm font-semibold text-ink">{countdown}</p>
         ) : (
-          <p className="text-sm text-ink">
-            {status === 'completed' ? formatWhenHome(dueAt) : `Due ${formatWhenHome(dueAt)}`}
-          </p>
+          <p className="text-sm text-ink">Due {formatWhenHome(dueAt)}</p>
         )}
         {status === 'commenced' && calendarLabel ? (
           <p className="text-sm text-muted">{calendarLabel}</p>

@@ -15,6 +15,30 @@ import {
   messageHasAttachments,
 } from '@/features/requests/conversation-message-model';
 import { isProjectAssignmentSubmissionMessage } from '@/features/projects/project-assignment-submission-message';
+import { cn } from '@/lib/cn';
+
+function ChatMessageColumn({
+  isOutgoing,
+  isProjectGroupChat,
+  children,
+}: {
+  isOutgoing: boolean;
+  isProjectGroupChat?: boolean;
+  children: ReactNode;
+}) {
+  const wideIncomingGroup = Boolean(isProjectGroupChat) && !isOutgoing;
+  return (
+    <div
+      className={cn(
+        'flex w-max shrink-0 flex-col',
+        wideIncomingGroup ? 'max-w-[92%]' : 'max-w-[85%]',
+        isOutgoing ? 'items-end' : 'items-start',
+      )}
+    >
+      {children}
+    </div>
+  );
+}
 
 export const ConversationMessageItem = memo(function ConversationMessageItem({
   message,
@@ -31,18 +55,20 @@ export const ConversationMessageItem = memo(function ConversationMessageItem({
   isProjectGroupChat?: boolean;
   senderDisplayNameByUserId?: ReadonlyMap<string, string>;
 }) {
-  const wrapGroupMessage = (node: ReactNode) => (
-    <GroupChatMessageShell
-      showSenderName={Boolean(isProjectGroupChat)}
-      isOutgoing={isOutgoing}
-      senderName={
-        message.senderDisplayName ??
-        senderDisplayNameByUserId?.get(message.senderId) ??
-        null
-      }
-    >
-      {node}
-    </GroupChatMessageShell>
+  const wrapForDisplay = (node: ReactNode) => (
+    <ChatMessageColumn isOutgoing={isOutgoing} isProjectGroupChat={isProjectGroupChat}>
+      <GroupChatMessageShell
+        showSenderName={Boolean(isProjectGroupChat)}
+        isOutgoing={isOutgoing}
+        senderName={
+          message.senderDisplayName ??
+          senderDisplayNameByUserId?.get(message.senderId) ??
+          null
+        }
+      >
+        {node}
+      </GroupChatMessageShell>
+    </ChatMessageColumn>
   );
 
   if (isSystemMessage(message)) {
@@ -51,7 +77,7 @@ export const ConversationMessageItem = memo(function ConversationMessageItem({
 
   if (isTextMessage(message)) {
     if (isProjectAssignmentSubmissionMessage(message)) {
-      return wrapGroupMessage(
+      return wrapForDisplay(
         <ProjectAssignmentSubmissionMessageBubble
           message={message}
           isOutgoing={isOutgoing}
@@ -68,7 +94,7 @@ export const ConversationMessageItem = memo(function ConversationMessageItem({
     }
 
     if (hasAttachments) {
-      return wrapGroupMessage(
+      return wrapForDisplay(
         <AttachmentMessageBubble
           message={message}
           isOutgoing={isOutgoing}
@@ -78,7 +104,7 @@ export const ConversationMessageItem = memo(function ConversationMessageItem({
     }
 
     if (hasBody) {
-      return wrapGroupMessage(<MessageBubble message={message} isOutgoing={isOutgoing} />);
+      return wrapForDisplay(<MessageBubble message={message} isOutgoing={isOutgoing} />);
     }
 
     return null;

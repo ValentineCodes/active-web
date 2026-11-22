@@ -5,7 +5,6 @@ import { useQueryClient } from '@tanstack/react-query';
 
 import { ProjectAssignmentSubmitSheet } from '@/components/project-flow/ProjectAssignmentSubmitSheet';
 import { Button } from '@/components/ui/Button';
-import { MARKET } from '@/config';
 import type { ProjectAssignmentDetail, ProjectAssignmentMilestoneRow } from '@/features/projects/project-api';
 import { useStartProjectAssignment } from '@/features/projects/project-api';
 import { queryKeys } from '@/lib/query/keys';
@@ -127,13 +126,6 @@ export function ProjectWorkerAssignmentActions({
           corner="2xl"
           onClick={() => setSubmitOpen(true)}
         />
-      ) : null}
-
-      {row.status === 'completed' ? (
-        <p className="text-sm text-muted">
-          This assignment is complete. Payment total:{' '}
-          {MARKET.currency} {(row.compensation_total_kobo / 100).toLocaleString()}.
-        </p>
       ) : null}
 
       <ProjectAssignmentSubmitSheet

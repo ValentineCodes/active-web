@@ -33,17 +33,21 @@ export function Badge({
   label,
   tone = 'neutral',
   dot = true,
+  nowrap = false,
 }: {
   label: string;
   tone?: Tone;
   dot?: boolean;
+  nowrap?: boolean;
 }) {
   return (
     <span
       className={cn('inline-flex items-center gap-1.5 self-start rounded-full px-3 py-1', tones[tone])}
     >
       {dot ? <span className={cn('h-1.5 w-1.5 rounded-full', dots[tone])} aria-hidden /> : null}
-      <span className={cn('text-xs font-semibold', labels[tone])}>{label}</span>
+      <span className={cn('text-xs font-semibold', labels[tone], nowrap && 'whitespace-nowrap')}>
+        {label}
+      </span>
     </span>
   );
 }

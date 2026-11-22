@@ -1,5 +1,6 @@
 'use client';
 
+import { ProjectAssignmentCompletionSection } from '@/components/project-flow/ProjectAssignmentCompletionSection';
 import { ProjectAssignmentDeadlineCard } from '@/components/project-flow/ProjectAssignmentDeadlineCard';
 import { ProjectWorkerAssignmentActions } from '@/components/project-flow/ProjectWorkerAssignmentActions';
 import { RequestCallout } from '@/components/request-flow/RequestCallout';
@@ -18,6 +19,8 @@ import {
   workerAssignmentAwaitingSubmissionReview,
 } from '@/features/projects/project-assignment-presentation';
 import { formatMoney } from '@/lib/format';
+import { projectAssignmentRateHref } from '@/lib/project-assignment-rating-navigation';
+import { useRouter } from '@/lib/navigation';
 
 export function ProjectWorkerAssignmentWorkCard({
   projectId,
@@ -29,6 +32,7 @@ export function ProjectWorkerAssignmentWorkCard({
   /** Fallback label when detail is still loading */
   listTitle?: string | null;
 }) {
+  const router = useRouter();
   const assignment = useProjectAssignment(assignmentId);
   const milestones = useProjectAssignmentMilestones(
     assignment.data?.payment_structure === 'milestone' ? assignmentId : undefined,
@@ -85,13 +89,26 @@ export function ProjectWorkerAssignmentWorkCard({
         </div>
       ) : null}
 
-      <ProjectAssignmentDeadlineCard
-        dueAt={row.due_at}
-        status={row.status}
-        commencedAt={row.commenced_at}
-        proposedDeliveryDurationValue={row.proposed_delivery_duration_value}
-        proposedDeliveryDurationUnit={row.proposed_delivery_duration_unit}
-      />
+      {row.status !== 'completed' ? (
+        <ProjectAssignmentDeadlineCard
+          dueAt={row.due_at}
+          status={row.status}
+          commencedAt={row.commenced_at}
+          proposedDeliveryDurationValue={row.proposed_delivery_duration_value}
+          proposedDeliveryDurationUnit={row.proposed_delivery_duration_unit}
+        />
+      ) : null}
+
+      {row.status === 'completed' ? (
+        <ProjectAssignmentCompletionSection
+          completedAt={row.completed_at}
+          receivedRatingStars={row.received_rating_stars}
+          receivedRatingComment={row.received_rating_comment}
+          viewerMayRate={Boolean(row.viewer_may_rate)}
+          viewerIsCreator={false}
+          onRate={() => router.push(projectAssignmentRateHref(projectId, assignmentId))}
+        />
+      ) : null}
 
       {!row.reservation_secured ? (
         <RequestCallout tone="warning" title="Compensation not secured">

@@ -385,13 +385,12 @@ export function AttachmentMessageBubble({
   }
 
   return (
-    <div className={cn('max-w-[85%]', isOutgoing ? 'self-end' : 'self-start')}>
-      <div
-        className={cn(
-          'overflow-hidden rounded-2xl',
-          isOutgoing ? 'rounded-br-md bg-active' : 'rounded-bl-md border border-hairline bg-elevated',
-        )}
-      >
+    <div
+      className={cn(
+        'w-max max-w-full overflow-hidden rounded-2xl',
+        isOutgoing ? 'rounded-br-md bg-active' : 'rounded-bl-md border border-hairline bg-elevated',
+      )}
+    >
         {attachments.length > 0 ? (
           <div className="flex flex-col gap-0.5">
             {useImageGallery ? (
@@ -424,7 +423,6 @@ export function AttachmentMessageBubble({
             {body}
           </p>
         ) : null}
-      </div>
     </div>
   );
 }

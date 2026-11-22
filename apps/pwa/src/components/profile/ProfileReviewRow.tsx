@@ -10,27 +10,27 @@ import type { ReceivedRating } from '@/features/profile/reviews-api';
 
 export function ProfileReviewRow({
   review,
-  requestPath,
+  destinationPath,
 }: {
   review: ReceivedRating;
-  requestPath: string;
+  destinationPath: string;
 }) {
   const navigate = useNavigate();
   const name = review.raterDisplayName?.trim() || 'Community member';
   const comment = review.comment?.trim();
   const hasComment = Boolean(comment);
 
-  const openRequest = () => navigate(requestPath);
+  const openDestination = () => navigate(destinationPath);
 
   return (
     <article
       role="link"
       tabIndex={0}
-      onClick={openRequest}
+      onClick={openDestination}
       onKeyDown={(event) => {
         if (event.key === 'Enter' || event.key === ' ') {
           event.preventDefault();
-          openRequest();
+          openDestination();
         }
       }}
       className={cn(

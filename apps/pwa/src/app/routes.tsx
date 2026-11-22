@@ -25,6 +25,7 @@ import { RespondRedirectPage } from '@/views/RespondRedirectPage';
 import { PublicProfilePage } from '@/views/PublicProfilePage';
 import { SearchPage } from '@/views/SearchPage';
 import { ProjectAssignmentDetailPage } from '@/views/ProjectAssignmentDetailPage';
+import { ProjectAssignmentRatePage } from '@/views/ProjectAssignmentRatePage';
 import { ProjectDetailPage } from '@/views/ProjectDetailPage';
 import { ProjectNewPage } from '@/views/ProjectNewPage';
 import { SettingsPage } from '@/views/SettingsPage';
@@ -136,6 +137,10 @@ export function AppRoutes() {
           <Route
             path="/project/:id/assignment/:assignmentId"
             element={<ProjectAssignmentDetailPage />}
+          />
+          <Route
+            path="/project/:id/assignment/:assignmentId/rate"
+            element={<ProjectAssignmentRatePage />}
           />
           <Route path="/u/:username" element={<PublicProfilePageRoute />} />
           <Route path="/profile" element={<ProfilePage />} />

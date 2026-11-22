@@ -2,8 +2,6 @@
 
 import type { ReactNode } from 'react';
 
-import { cn } from '@/lib/cn';
-
 export function GroupChatMessageShell({
   senderName,
   showSenderName,
@@ -20,8 +18,8 @@ export function GroupChatMessageShell({
   }
 
   return (
-    <div className={cn('flex max-w-[92%] flex-col gap-0.5 self-start')}>
-      <p className="px-1 text-xs font-semibold text-brand">{senderName}</p>
+    <div className="flex flex-col items-start gap-0.5">
+      <span className="px-1 text-xs font-semibold text-brand">{senderName}</span>
       {children}
     </div>
   );

@@ -8,7 +8,7 @@ import { StarRating } from '@/components/ui/Stars';
 import { EmptyState, InlineError, LoadingState } from '@/components/ui/StateView';
 import { useMyProfile } from '@/features/profile/api';
 import { useMyReceivedRatings } from '@/features/profile/reviews-api';
-import { participationRequestPath } from '@/features/requests/activity-list';
+import { receivedRatingDestinationPath } from '@/features/profile/received-rating-navigation';
 import { useMyResponses } from '@/features/requests/responses-api';
 import { useMyRequests } from '@/features/requests/requester-api';
 import { showQuerySkeleton } from '@/lib/query/show-skeleton';
@@ -62,7 +62,7 @@ export function ReviewsPage() {
           layout="list"
           icon="star-outline"
           title="No reviews yet"
-          message="Complete work and your partners can leave feedback after each request."
+          message="Complete work and your partners can leave feedback after requests and projects."
         />
       ) : (
         <div className="overflow-hidden rounded-2xl border border-hairline bg-elevated px-4">
@@ -70,7 +70,7 @@ export function ReviewsPage() {
             <ProfileReviewRow
               key={review.ratingId}
               review={review}
-              requestPath={participationRequestPath(review.requestId, {
+              destinationPath={receivedRatingDestinationPath(review, {
                 myRequestIds,
                 myResponses: myResponses.data,
               })}

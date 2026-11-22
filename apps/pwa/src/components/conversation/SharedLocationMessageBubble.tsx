@@ -21,7 +21,7 @@ export function SharedLocationMessageBubble({
   const mapsUrl = sharedLocationMapsUrl(position);
 
   return (
-    <div className={cn('max-w-[85%]', isOutgoing ? 'self-end' : 'self-start')}>
+    <div className="w-max max-w-full">
       <a
         href={mapsUrl}
         target="_blank"

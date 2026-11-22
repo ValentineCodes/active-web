@@ -298,6 +298,34 @@ export function useProjectAssignmentMilestones(assignmentId: string | undefined)
   });
 }
 
+export function useRateProjectAssignment(projectId: string | undefined, assignmentId: string | undefined) {
+  const queryClient = useQueryClient();
+  const pid = projectId?.trim() ?? '';
+  const aid = assignmentId?.trim() ?? '';
+
+  return useMutation({
+    mutationFn: async (input: { stars: number; comment: string | null }) => {
+      const { error } = await supabase.rpc('rate_project_assignment', {
+        p_assignment_id: aid,
+        p_stars: input.stars,
+        p_comment: input.comment ?? undefined,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.projectAssignment(aid) });
+      if (pid) {
+        void queryClient.invalidateQueries({ queryKey: queryKeys.project(pid) });
+        void queryClient.invalidateQueries({ queryKey: queryKeys.projectResponses(pid) });
+        void queryClient.invalidateQueries({ queryKey: queryKeys.projectAssignments(pid) });
+        void queryClient.invalidateQueries({ queryKey: queryKeys.myProjectAssignments });
+      }
+      void queryClient.invalidateQueries({ queryKey: ['profile'] });
+      void queryClient.invalidateQueries({ queryKey: ['my-received-ratings'] });
+    },
+  });
+}
+
 export function useApproveProjectAssignmentPayout(projectId: string) {
   const queryClient = useQueryClient();
   return useMutation({

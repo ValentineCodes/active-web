@@ -36,15 +36,23 @@ export function isProjectAssignmentSubmissionMessage(message: RequestMessage): b
   return parseProjectAssignmentSubmissionMetadata(message.metadata) !== null;
 }
 
-export function projectAssignmentSubmissionReviewLabel(reviewState: string | undefined): string {
+/** Worker-written note only — omits legacy server default bodies. */
+export function projectAssignmentSubmissionDisplayNote(body: string): string {
+  const trimmed = body.trim();
+  if (/^Submitted work for /i.test(trimmed)) return '';
+  return trimmed;
+}
+
+/** Single-line label on the formal submission chip in project group chat. */
+export function projectAssignmentSubmissionChatBadgeLabel(reviewState: string | undefined): string {
   switch (reviewState) {
     case 'approved_paid':
-      return 'Payment released';
+      return 'Approved and paid';
     case 'milestone_paid':
       return 'Milestone paid';
     case 'awaiting_review':
-      return 'Awaiting review';
+      return 'Work done! Please review';
     default:
-      return 'Submitted';
+      return 'Work done! Please review';
   }
 }

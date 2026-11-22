@@ -6,7 +6,9 @@ import { supabase } from '@/lib/supabase/client';
 
 export type ReceivedRating = {
   ratingId: string;
-  requestId: string;
+  requestId: string | null;
+  projectAssignmentId: string | null;
+  projectId: string | null;
   stars: number;
   comment: string | null;
   createdAt: string;
@@ -17,7 +19,9 @@ export type ReceivedRating = {
 
 function mapRow(row: {
   rating_id: string;
-  request_id: string;
+  request_id: string | null;
+  project_assignment_id: string | null;
+  project_id: string | null;
   stars: number;
   comment: string | null;
   created_at: string;
@@ -28,6 +32,8 @@ function mapRow(row: {
   return {
     ratingId: row.rating_id,
     requestId: row.request_id,
+    projectAssignmentId: row.project_assignment_id,
+    projectId: row.project_id,
     stars: row.stars,
     comment: row.comment,
     createdAt: row.created_at,

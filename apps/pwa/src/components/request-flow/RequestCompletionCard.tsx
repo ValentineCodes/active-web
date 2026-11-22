@@ -6,16 +6,18 @@ export function RequestCompletionCard({
   completedAtLabel,
   ratingStars,
   ratingComment,
+  heading = 'Request complete',
 }: {
   completedAtLabel: string;
   ratingStars?: number | null;
   ratingComment?: string | null;
+  heading?: string;
 }) {
   const colors = useColors();
 
   return (
     <div className="shadow-card flex flex-col items-center gap-3 rounded-2xl border border-brand/30 bg-brand-soft p-6">
-      <p className="text-lg font-bold text-brand">Request complete</p>
+      <p className="text-lg font-bold text-brand">{heading}</p>
       <p className="text-sm text-muted">{completedAtLabel}</p>
       {ratingStars ? (
         <div className="flex w-full flex-col items-center gap-2">

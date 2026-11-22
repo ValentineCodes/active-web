@@ -16,6 +16,7 @@ import { ConversationMessageItem } from '@/components/conversation/ConversationM
 import { Button } from '@/components/ui/Button';
 import { Screen } from '@/components/ui/Screen';
 import { InlineError, LoadingState } from '@/components/ui/StateView';
+import { cn } from '@/lib/cn';
 import { useRouteParam } from '@/lib/route-param';
 import { useUserId } from '@/features/auth/use-user-id';
 import { uploadLiveProfilePhoto } from '@/features/profile/capture-live-profile-photo';
@@ -330,21 +331,27 @@ export function ConversationPage() {
           <LoadingState label="Loading messages…" />
         ) : null}
         <div className="flex flex-col gap-2">
-          {rows.map((message, index) => (
-            <div key={message.id} className="flex flex-col">
+          {rows.map((message, index) => {
+            const isOutgoing = message.senderId === userId;
+            return (
+            <div
+              key={message.id}
+              className={cn('flex w-full flex-col', isOutgoing ? 'items-end' : 'items-start')}
+            >
               {shouldShowChatDaySeparatorChronological(rows, index) ? (
                 <ConversationDateSeparator label={formatAgo(message.createdAt)} />
               ) : null}
               <ConversationMessageItem
                 message={message}
-                isOutgoing={message.senderId === userId}
+                isOutgoing={isOutgoing}
                 viewerUserId={userId}
                 outgoingUploadStateByAttachmentId={outgoingUploadByMessageId[message.id]}
                 isProjectGroupChat={isProjectGroupChat}
                 senderDisplayNameByUserId={senderDisplayNameByUserId}
               />
             </div>
-          ))}
+            );
+          })}
           <div ref={messagesEndRef} />
         </div>
       </div>

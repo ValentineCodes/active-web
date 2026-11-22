@@ -13,7 +13,7 @@ import { usePullToRefresh } from '@/lib/query/use-pull-to-refresh';
 import { showQuerySkeleton } from '@/lib/query/show-skeleton';
 import { useProfile } from '@/features/profile/api';
 import { useMyReceivedRatings } from '@/features/profile/reviews-api';
-import { participationRequestPath } from '@/features/requests/activity-list';
+import { receivedRatingDestinationPath } from '@/features/profile/received-rating-navigation';
 import { useMyResponses } from '@/features/requests/responses-api';
 import { useMyRequests } from '@/features/requests/requester-api';
 
@@ -79,7 +79,7 @@ export default function ProfileReviewsScreen() {
             <EmptyState
               icon="star-outline"
               title="No reviews yet"
-              message="Complete work and your partners can leave feedback after each request."
+              message="Complete work and your partners can leave feedback after requests and projects."
             />
           ) : (
             <View className="overflow-hidden rounded-2xl border border-hairline bg-elevated px-4">
@@ -88,7 +88,7 @@ export default function ProfileReviewsScreen() {
                   key={review.ratingId}
                   review={review}
                   showDivider={index > 0}
-                  requestPath={participationRequestPath(review.requestId, {
+                  destinationPath={receivedRatingDestinationPath(review, {
                     myRequestIds,
                     myResponses: myResponses.data,
                   })}

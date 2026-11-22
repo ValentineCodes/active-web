@@ -8,17 +8,17 @@ import type { ReceivedRating } from '@/features/profile/reviews-api';
 
 export function ProfileReviewRow({
   review,
-  requestPath,
+  destinationPath,
   showDivider,
 }: {
   review: ReceivedRating;
-  requestPath: string;
+  destinationPath: string;
   showDivider?: boolean;
 }) {
   const name = review.raterDisplayName?.trim() || 'Community member';
   const comment = review.comment?.trim();
   const value = Math.min(5, Math.max(1, Math.round(review.stars)));
-  const navigateToRequest = () => router.push(requestPath as Parameters<typeof router.push>[0]);
+  const openDestination = () => router.push(destinationPath as Parameters<typeof router.push>[0]);
 
   return (
     <View>
@@ -26,8 +26,8 @@ export function ProfileReviewRow({
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={comment ? `Review: ${comment}` : `Review from ${name}`}
-        accessibilityHint="Opens the request this review is about"
-        onPress={navigateToRequest}
+        accessibilityHint="Opens the work this review is about"
+        onPress={openDestination}
         className="gap-3 py-5 active:opacity-80"
       >
         {comment ? (

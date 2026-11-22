@@ -1351,6 +1351,7 @@ export type Database = {
           assignment_id: string
           created_at: string
           evidence_paths: string[]
+          group_message_id: string | null
           id: string
           milestone_id: string | null
           note: string | null
@@ -1360,6 +1361,7 @@ export type Database = {
           assignment_id: string
           created_at?: string
           evidence_paths?: string[]
+          group_message_id?: string | null
           id?: string
           milestone_id?: string | null
           note?: string | null
@@ -1369,6 +1371,7 @@ export type Database = {
           assignment_id?: string
           created_at?: string
           evidence_paths?: string[]
+          group_message_id?: string | null
           id?: string
           milestone_id?: string | null
           note?: string | null
@@ -1380,6 +1383,13 @@ export type Database = {
             columns: ["assignment_id"]
             isOneToOne: false
             referencedRelation: "project_assignments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_assignment_submissions_group_message_id_fkey"
+            columns: ["group_message_id"]
+            isOneToOne: false
+            referencedRelation: "project_group_messages"
             referencedColumns: ["id"]
           },
           {
@@ -1786,6 +1796,186 @@ export type Database = {
           },
         ]
       }
+      project_group_conversation_members: {
+        Row: {
+          conversation_id: string
+          joined_at: string
+          role: Database["public"]["Enums"]["project_group_member_role"]
+          user_id: string
+        }
+        Insert: {
+          conversation_id: string
+          joined_at?: string
+          role: Database["public"]["Enums"]["project_group_member_role"]
+          user_id: string
+        }
+        Update: {
+          conversation_id?: string
+          joined_at?: string
+          role?: Database["public"]["Enums"]["project_group_member_role"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_group_conversation_members_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "project_group_conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_group_conversation_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_group_conversations: {
+        Row: {
+          created_at: string
+          id: string
+          project_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          project_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          project_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_group_conversations_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: true
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_group_message_attachments: {
+        Row: {
+          attachment_type: Database["public"]["Enums"]["conversation_attachment_type"]
+          conversation_id: string
+          created_at: string
+          file_name: string | null
+          file_size: number | null
+          id: string
+          message_id: string
+          mime_type: string
+          sender_id: string
+          storage_path: string
+          uploaded_at: string | null
+        }
+        Insert: {
+          attachment_type: Database["public"]["Enums"]["conversation_attachment_type"]
+          conversation_id: string
+          created_at?: string
+          file_name?: string | null
+          file_size?: number | null
+          id?: string
+          message_id: string
+          mime_type: string
+          sender_id: string
+          storage_path: string
+          uploaded_at?: string | null
+        }
+        Update: {
+          attachment_type?: Database["public"]["Enums"]["conversation_attachment_type"]
+          conversation_id?: string
+          created_at?: string
+          file_name?: string | null
+          file_size?: number | null
+          id?: string
+          message_id?: string
+          mime_type?: string
+          sender_id?: string
+          storage_path?: string
+          uploaded_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_group_message_attachments_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "project_group_conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_group_message_attachments_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "project_group_messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_group_message_attachments_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_group_messages: {
+        Row: {
+          body: string
+          conversation_id: string
+          created_at: string
+          id: string
+          message_type: Database["public"]["Enums"]["conversation_message_type"]
+          metadata: Json | null
+          read_at: string | null
+          sender_id: string
+          updated_at: string
+        }
+        Insert: {
+          body: string
+          conversation_id: string
+          created_at?: string
+          id?: string
+          message_type?: Database["public"]["Enums"]["conversation_message_type"]
+          metadata?: Json | null
+          read_at?: string | null
+          sender_id: string
+          updated_at?: string
+        }
+        Update: {
+          body?: string
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          message_type?: Database["public"]["Enums"]["conversation_message_type"]
+          metadata?: Json | null
+          read_at?: string | null
+          sender_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_group_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "project_group_conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_group_messages_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       project_messages: {
         Row: {
           body: string
@@ -2041,30 +2231,40 @@ export type Database = {
           comment: string | null
           created_at: string
           id: string
+          project_assignment_id: string | null
           ratee_id: string
           rater_id: string
-          request_id: string
+          request_id: string | null
           stars: number
         }
         Insert: {
           comment?: string | null
           created_at?: string
           id?: string
+          project_assignment_id?: string | null
           ratee_id: string
           rater_id: string
-          request_id: string
+          request_id?: string | null
           stars: number
         }
         Update: {
           comment?: string | null
           created_at?: string
           id?: string
+          project_assignment_id?: string | null
           ratee_id?: string
           rater_id?: string
-          request_id?: string
+          request_id?: string | null
           stars?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "ratings_project_assignment_id_fkey"
+            columns: ["project_assignment_id"]
+            isOneToOne: false
+            referencedRelation: "project_assignments"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "ratings_ratee_id_fkey"
             columns: ["ratee_id"]
@@ -3915,6 +4115,14 @@ export type Database = {
         Returns: undefined
       }
       accept_response: { Args: { p_response_id: string }; Returns: string }
+      add_project_group_conversation_member: {
+        Args: {
+          p_project_id: string
+          p_role: Database["public"]["Enums"]["project_group_member_role"]
+          p_user_id: string
+        }
+        Returns: undefined
+      }
       admin_actor_may_reveal_user_nin: {
         Args: { p_actor_admin_id: string }
         Returns: boolean
@@ -4331,6 +4539,10 @@ export type Database = {
         Args: { p_project_id: string; p_user_id: string }
         Returns: undefined
       }
+      assert_may_view_project_assignment: {
+        Args: { p_assignment_id: string; p_user_id: string }
+        Returns: undefined
+      }
       assert_onboarded: { Args: never; Returns: string }
       assert_premium_project_creation_entitlement: {
         Args: { p_user_id: string }
@@ -4388,6 +4600,20 @@ export type Database = {
         Returns: boolean
       }
       avatar_is_published: { Args: { p_name: string }; Returns: boolean }
+      begin_project_assignment_submission: {
+        Args: {
+          p_assignment_id: string
+          p_milestone_id?: string
+          p_note?: string
+          p_planned_attachments?: Json
+        }
+        Returns: {
+          attachment_id: string
+          conversation_id: string
+          message_id: string
+          storage_path: string
+        }[]
+      }
       begin_request_message_with_attachments: {
         Args: {
           p_body?: string
@@ -4535,6 +4761,10 @@ export type Database = {
           }
       clone_request_from_prior: {
         Args: { p_idempotency_key: string; p_source_request_id: string }
+        Returns: string
+      }
+      complete_project_assignment_submission: {
+        Args: { p_message_id: string }
         Returns: string
       }
       complete_request: { Args: { p_request_id: string }; Returns: undefined }
@@ -4792,6 +5022,10 @@ export type Database = {
         }
         Returns: number
       }
+      discard_project_assignment_submission_drafts: {
+        Args: { p_assignment_id: string; p_milestone_id?: string }
+        Returns: undefined
+      }
       discovery_radius_m: { Args: never; Returns: number }
       dismiss_worker_failure_to_start: {
         Args: { p_request_id: string }
@@ -4802,6 +5036,10 @@ export type Database = {
         Returns: undefined
       }
       display_first_name: { Args: { p_display_name: string }; Returns: string }
+      ensure_project_group_conversation: {
+        Args: { p_project_id: string }
+        Returns: string
+      }
       ensure_request_conversation: {
         Args: {
           p_request_id: string
@@ -4983,8 +5221,8 @@ export type Database = {
         Args: { p_project_id: string }
         Returns: {
           attachment_path: string
-          budget_total_kobo: number
           available_total_kobo: number
+          budget_total_kobo: number
           committed_compensation_kobo: number
           contributed_total_kobo: number
           creator_avatar_path: string
@@ -5003,6 +5241,8 @@ export type Database = {
           funding_timezone: string
           funding_unsuccessful_at: string
           funding_visibility: Database["public"]["Enums"]["project_funding_visibility"]
+          group_chat_conversation_id: string
+          group_chat_unread_count: number
           location_label: string
           min_contribution_kobo: number
           min_funding_target_kobo: number
@@ -5020,8 +5260,6 @@ export type Database = {
           viewer_may_contribute: boolean
           viewer_may_view_assignments: boolean
           viewer_may_view_budget_breakdown: boolean
-          group_chat_conversation_id: string
-          group_chat_unread_count: number
         }[]
       }
       get_project_assignment: {
@@ -5031,6 +5269,10 @@ export type Database = {
           assignment_id: string
           commenced_at: string
           compensation_total_kobo: number
+          completed_at: string
+          counterparty_avatar_path: string
+          counterparty_display_name: string
+          counterparty_id: string
           creator_id: string
           creator_may_release_payment: boolean
           deliverables: string
@@ -5038,29 +5280,31 @@ export type Database = {
           due_at: string
           has_open_dispute: boolean
           payment_structure: Database["public"]["Enums"]["payment_structure"]
-          proposed_delivery_duration_unit:
-            | Database["public"]["Enums"]["delivery_duration_unit"]
-            | null
-          proposed_delivery_duration_value: number | null
           project_id: string
-          release_payment_milestone_id: string | null
+          proposed_delivery_duration_unit: Database["public"]["Enums"]["delivery_duration_unit"]
+          proposed_delivery_duration_value: number
+          received_rating_comment: string
+          received_rating_stars: number
+          release_payment_milestone_id: string
           reservation_amount_kobo: number
           reservation_released_kobo: number
           reservation_secured: boolean
           status: Database["public"]["Enums"]["project_assignment_status"]
           terms_version: number
           title: string
+          viewer_has_rated: boolean
           viewer_is_contributor: boolean
           viewer_is_creator: boolean
           viewer_is_worker: boolean
+          viewer_may_rate: boolean
           viewer_may_report: boolean
-          worker_avatar_path: string | null
-          worker_display_name: string | null
+          worker_avatar_path: string
+          worker_display_name: string
           worker_id: string
-          worker_rating_average: number | null
-          worker_rating_count: number | null
-          worker_username: string | null
           worker_may_submit: boolean
+          worker_rating_average: number
+          worker_rating_count: number
+          worker_username: string
         }[]
       }
       get_project_contribution_accounting: {
@@ -5402,6 +5646,13 @@ export type Database = {
           viewer_is_self: boolean
         }[]
       }
+      list_project_group_conversation_members: {
+        Args: { p_conversation_id: string }
+        Returns: {
+          display_name: string
+          user_id: string
+        }[]
+      }
       list_project_responses: {
         Args: { p_limit?: number; p_offset?: number; p_project_id: string }
         Returns: {
@@ -5425,13 +5676,6 @@ export type Database = {
           status: Database["public"]["Enums"]["project_assignment_status"]
           terms_proposed_by: string
           worker_id: string
-        }[]
-      }
-      list_project_group_conversation_members: {
-        Args: { p_conversation_id: string }
-        Returns: {
-          display_name: string
-          user_id: string
         }[]
       }
       list_request_messages: {
@@ -5545,6 +5789,8 @@ export type Database = {
         Returns: {
           comment: string
           created_at: string
+          project_assignment_id: string
+          project_id: string
           rater_avatar_path: string
           rater_display_name: string
           rater_id: string
@@ -5685,6 +5931,10 @@ export type Database = {
         Args: { p_assignment_id: string }
         Returns: boolean
       }
+      project_assignment_release_milestone_id: {
+        Args: { p_assignment_id: string }
+        Returns: string
+      }
       project_assignment_release_payment: {
         Args: {
           p_approved_by: string
@@ -5697,6 +5947,22 @@ export type Database = {
           p_total_kobo: number
         }
         Returns: string
+      }
+      project_assignment_submission_assert_may_submit: {
+        Args: {
+          p_assignment_id: string
+          p_milestone_id: string
+          p_user_id: string
+        }
+        Returns: undefined
+      }
+      project_assignment_submission_metadata: {
+        Args: { p_review_state: string; p_submission_id: string }
+        Returns: Json
+      }
+      project_assignment_sync_submission_message_review: {
+        Args: { p_review_state: string; p_submission_id: string }
+        Returns: undefined
       }
       project_conversation_is_accessible: {
         Args: { p_conversation_id: string; p_user_id: string }
@@ -5717,9 +5983,29 @@ export type Database = {
       project_funding_default_period_interval: { Args: never; Returns: string }
       project_funding_min_period_interval: { Args: never; Returns: string }
       project_funding_period_interval: { Args: never; Returns: string }
+      project_group_conversation_for_project: {
+        Args: { p_project_id: string; p_user_id: string }
+        Returns: string
+      }
+      project_group_conversation_is_accessible: {
+        Args: { p_conversation_id: string; p_user_id: string }
+        Returns: boolean
+      }
+      project_group_message_attachments_for_row: {
+        Args: { p_message_id: string }
+        Returns: Json
+      }
+      project_group_unread_count: {
+        Args: { p_conversation_id: string; p_user_id: string }
+        Returns: number
+      }
       project_media_visible_to_party: {
         Args: { p_name: string; p_user_id: string }
         Returns: boolean
+      }
+      project_paid_out_total_kobo: {
+        Args: { p_project_id: string }
+        Returns: number
       }
       project_pool_unreserved_kobo: {
         Args: { p_project_id: string }
@@ -5727,6 +6013,14 @@ export type Database = {
       }
       project_reservations_fully_attributed: {
         Args: { p_project_id: string }
+        Returns: boolean
+      }
+      project_secured_unpaid_kobo: {
+        Args: { p_project_id: string }
+        Returns: number
+      }
+      project_worker_response_awaiting_creator_review: {
+        Args: { p_assignment_id: string }
         Returns: boolean
       }
       propose_project_assignment_terms: {
@@ -5767,6 +6061,10 @@ export type Database = {
         Args: { p_response: Json; p_tokens: string[] }
         Returns: undefined
       }
+      rate_project_assignment: {
+        Args: { p_assignment_id: string; p_comment?: string; p_stars: number }
+        Returns: undefined
+      }
       rate_request: {
         Args: { p_comment?: string; p_request_id: string; p_stars: number }
         Returns: undefined
@@ -5790,6 +6088,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      reject_project_worker_response: {
+        Args: { p_assignment_id: string; p_reason?: string }
+        Returns: undefined
+      }
       release_project_assignment_reservation: {
         Args: { p_assignment_id: string }
         Returns: undefined
@@ -5811,10 +6113,6 @@ export type Database = {
           p_kind?: Database["public"]["Enums"]["service_problem_kind"]
         }
         Returns: string
-      }
-      reject_project_worker_response: {
-        Args: { p_assignment_id: string; p_reason?: string }
-        Returns: undefined
       }
       report_service_problem: {
         Args: {
@@ -6545,6 +6843,7 @@ export type Database = {
         | "fully_funded"
         | "unsuccessful"
       project_funding_visibility: "invite_only" | "public"
+      project_group_member_role: "creator" | "contributor" | "worker"
       project_pool_reservation_status: "active" | "released"
       project_status: "draft" | "live" | "funding_unsuccessful" | "cancelled"
       project_visibility: "private"
@@ -6842,6 +7141,7 @@ export const Constants = {
         "unsuccessful",
       ],
       project_funding_visibility: ["invite_only", "public"],
+      project_group_member_role: ["creator", "contributor", "worker"],
       project_pool_reservation_status: ["active", "released"],
       project_status: ["draft", "live", "funding_unsuccessful", "cancelled"],
       project_visibility: ["private"],
