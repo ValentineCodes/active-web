@@ -27,16 +27,30 @@ export function SystemMessageRow({
   const key = lifecycleKey(message);
   const completionLike =
     key.includes('complete') ||
+    key.startsWith('assignment_submitted') ||
     /marked the request as complete/i.test(message.body) ||
-    displayBody.startsWith('You marked');
-  const icon = completionLike ? ionIcons['checkmark-circle-outline'] : ionIcons['information-circle-outline'];
+    /says the work is done/i.test(message.body) ||
+    displayBody.startsWith('You marked') ||
+    displayBody.startsWith('You say');
+  const paymentLike =
+    key.startsWith('assignment_payment_released') ||
+    /payment has been released/i.test(displayBody);
+  const icon = paymentLike
+    ? ionIcons['wallet-outline']
+    : completionLike
+      ? ionIcons['checkmark-circle-outline']
+      : ionIcons['information-circle-outline'];
 
   return (
     <div className="flex w-full justify-center px-2 py-1">
       <div
         className={cn(
           'flex max-w-sm items-start gap-2.5 rounded-2xl border px-3.5 py-2.5 shadow-card',
-          completionLike ? 'border-active/25 bg-active-soft/70' : 'border-hairline bg-surface',
+          paymentLike
+            ? 'border-brand/25 bg-brand-soft/70'
+            : completionLike
+              ? 'border-active/25 bg-active-soft/70'
+              : 'border-hairline bg-surface',
         )}
         role="status"
       >
@@ -44,7 +58,7 @@ export function SystemMessageRow({
           <IonIcon
             icon={icon}
             size={16}
-            color={completionLike ? colors.active : colors.muted}
+            color={paymentLike ? colors.brand : completionLike ? colors.active : colors.muted}
           />
         </span>
         <p className="min-w-0 flex-1 text-left text-sm font-medium leading-5 text-muted">{displayBody}</p>

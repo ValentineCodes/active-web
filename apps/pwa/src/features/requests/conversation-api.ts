@@ -750,7 +750,8 @@ function createLiveConversationChannel(
     if (!row?.id || row.conversation_id !== conversationId) return;
 
     const isOwnMessage = row.sender_id === options.viewerId;
-    if (!isOwnMessage) {
+    const isTimelineRow = row.message_type === 'system';
+    if (!isOwnMessage || isTimelineRow) {
       upsertMessageInCache(queryClient, conversationId, mapRealtimeMessage(row));
     }
 
@@ -907,11 +908,25 @@ function createLiveConversationChannel(
         table: 'project_group_messages',
         filter: `conversation_id=eq.${conversationId}`,
       },
-      (payload) => {
+      async (payload) => {
         const row = payload.new as RealtimeMessageRow;
+        const oldRow = payload.old as RealtimeMessageRow | undefined;
         if (!row?.id || row.conversation_id !== conversationId) return;
 
-        patchMessageReadAtInCache(queryClient, conversationId, row.id, row.read_at);
+        if (oldRow?.read_at !== row.read_at) {
+          patchMessageReadAtInCache(queryClient, conversationId, row.id, row.read_at);
+        }
+
+        try {
+          const hydrated = await fetchRequestMessageForViewer(row.id);
+          if (hydrated) {
+            upsertMessageInCache(queryClient, conversationId, hydrated);
+          }
+        } catch {
+          void queryClient.invalidateQueries({
+            queryKey: queryKeys.requestMessages(conversationId),
+          });
+        }
       },
     )
     .subscribe((status) => {

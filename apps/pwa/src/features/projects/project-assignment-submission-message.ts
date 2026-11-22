@@ -42,17 +42,3 @@ export function projectAssignmentSubmissionDisplayNote(body: string): string {
   if (/^Submitted work for /i.test(trimmed)) return '';
   return trimmed;
 }
-
-/** Single-line label on the formal submission chip in project group chat. */
-export function projectAssignmentSubmissionChatBadgeLabel(reviewState: string | undefined): string {
-  switch (reviewState) {
-    case 'approved_paid':
-      return 'Approved and paid';
-    case 'milestone_paid':
-      return 'Milestone paid';
-    case 'awaiting_review':
-      return 'Work done! Please review';
-    default:
-      return 'Work done! Please review';
-  }
-}

@@ -109,7 +109,7 @@ select lives_ok(
   'commence'
 );
 
-select throws_ok(
+select lives_ok(
   format(
     $$select public.begin_project_assignment_submission(
       %L::uuid,
@@ -119,9 +119,7 @@ select throws_ok(
     )$$,
     :'assignment_id'
   ),
-  '22023',
-  null,
-  'requires a message or at least one file'
+  'may start a submission draft without note or files yet'
 );
 
 select pg_temp.act_as('f2222222-2222-2222-2222-222222222222') as _ \gset
@@ -159,8 +157,20 @@ select ok(
   coalesce(
     (select metadata->>'kind' from public.project_group_messages where id = :'message_id'::uuid),
     ''
-  ) = 'project_assignment_submission',
-  'submission message published with assignment metadata'
+  ) = '',
+  'worker deliverable line stays a normal chat message'
+);
+
+select ok(
+  (
+    select m.message_type::text
+    from public.project_group_messages m
+    where m.conversation_id = :'conversation_id'::uuid
+      and m.metadata ->> 'lifecycle_key' like 'assignment_submitted:%'
+    order by m.created_at desc
+    limit 1
+  ) = 'system',
+  'work done appears as a centered timeline row'
 );
 
 select throws_ok(

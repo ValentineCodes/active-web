@@ -22,6 +22,7 @@ import { useUserId } from '@/features/auth/use-user-id';
 import { uploadLiveProfilePhoto } from '@/features/profile/capture-live-profile-photo';
 import { useChatSendGate } from '@/features/profile/use-chat-send-gate';
 import { shouldShowChatDaySeparatorChronological } from '@/features/requests/chat-day-separators';
+import { isProjectGroupAnnouncementMessage } from '@/features/projects/project-group-announcement';
 import {
   createPendingMessageId,
   useLiveConversationMessages,
@@ -30,6 +31,7 @@ import {
   useSendRequestMessage,
   useSendRequestMessageAttachment,
 } from '@/features/requests/conversation-api';
+import { isSystemMessage } from '@/features/requests/conversation-message-model';
 import {
   initialUploadStates,
   isConversationUploadCancelledError,
@@ -333,10 +335,16 @@ export function ConversationPage() {
         <div className="flex flex-col gap-2">
           {rows.map((message, index) => {
             const isOutgoing = message.senderId === userId;
+            const centeredTimeline =
+              isProjectGroupAnnouncementMessage(message) ||
+              (isProjectGroupChat && isSystemMessage(message));
             return (
             <div
               key={message.id}
-              className={cn('flex w-full flex-col', isOutgoing ? 'items-end' : 'items-start')}
+              className={cn(
+                'flex w-full flex-col',
+                centeredTimeline ? 'items-center' : isOutgoing ? 'items-end' : 'items-start',
+              )}
             >
               {shouldShowChatDaySeparatorChronological(rows, index) ? (
                 <ConversationDateSeparator label={formatAgo(message.createdAt)} />

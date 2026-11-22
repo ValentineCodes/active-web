@@ -4,8 +4,8 @@ import { memo, type ReactNode } from 'react';
 
 import { AttachmentMessageBubble } from '@/components/conversation/AttachmentMessageBubble';
 import { GroupChatMessageShell } from '@/components/conversation/GroupChatMessageShell';
-import { ProjectAssignmentSubmissionMessageBubble } from '@/components/conversation/ProjectAssignmentSubmissionMessageBubble';
 import { MessageBubble } from '@/components/conversation/MessageBubble';
+import { GroupAnnouncementRow } from '@/components/conversation/GroupAnnouncementRow';
 import { SystemMessageRow } from '@/components/conversation/SystemMessageRow';
 import type { RequestMessage } from '@/features/requests/conversation-message-model';
 import type { ConversationAttachmentUploadState } from '@/features/requests/conversation-attachment-upload-state';
@@ -14,7 +14,12 @@ import {
   isTextMessage,
   messageHasAttachments,
 } from '@/features/requests/conversation-message-model';
-import { isProjectAssignmentSubmissionMessage } from '@/features/projects/project-assignment-submission-message';
+import { isProjectGroupAnnouncementMessage } from '@/features/projects/project-group-announcement';
+import {
+  isProjectAssignmentSubmissionMessage,
+  projectAssignmentSubmissionDisplayNote,
+} from '@/features/projects/project-assignment-submission-message';
+import { viewerFacingSystemMessageBody } from '@/features/requests/conversation-system-message-display';
 import { cn } from '@/lib/cn';
 
 function ChatMessageColumn({
@@ -71,23 +76,25 @@ export const ConversationMessageItem = memo(function ConversationMessageItem({
     </ChatMessageColumn>
   );
 
+  if (isProjectGroupAnnouncementMessage(message)) {
+    return (
+      <GroupAnnouncementRow
+        body={viewerFacingSystemMessageBody(message, viewerUserId)}
+      />
+    );
+  }
+
   if (isSystemMessage(message)) {
     return <SystemMessageRow message={message} viewerUserId={viewerUserId} />;
   }
 
   if (isTextMessage(message)) {
-    if (isProjectAssignmentSubmissionMessage(message)) {
-      return wrapForDisplay(
-        <ProjectAssignmentSubmissionMessageBubble
-          message={message}
-          isOutgoing={isOutgoing}
-          uploadStateByAttachmentId={outgoingUploadStateByAttachmentId}
-        />,
-      );
-    }
+    const chatMessage = isProjectAssignmentSubmissionMessage(message)
+      ? { ...message, body: projectAssignmentSubmissionDisplayNote(message.body) }
+      : message;
 
-    const hasBody = message.body.trim().length > 0;
-    const hasAttachments = messageHasAttachments(message);
+    const hasBody = chatMessage.body.trim().length > 0;
+    const hasAttachments = messageHasAttachments(chatMessage);
 
     if (!hasBody && !hasAttachments) {
       return null;
@@ -96,7 +103,7 @@ export const ConversationMessageItem = memo(function ConversationMessageItem({
     if (hasAttachments) {
       return wrapForDisplay(
         <AttachmentMessageBubble
-          message={message}
+          message={chatMessage}
           isOutgoing={isOutgoing}
           uploadStateByAttachmentId={outgoingUploadStateByAttachmentId}
         />,
@@ -104,7 +111,7 @@ export const ConversationMessageItem = memo(function ConversationMessageItem({
     }
 
     if (hasBody) {
-      return wrapForDisplay(<MessageBubble message={message} isOutgoing={isOutgoing} />);
+      return wrapForDisplay(<MessageBubble message={chatMessage} isOutgoing={isOutgoing} />);
     }
 
     return null;
