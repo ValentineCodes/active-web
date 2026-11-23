@@ -1,4 +1,4 @@
-import { useCallback, useMemo, type RefObject } from 'react';
+import { useCallback, useMemo, type ReactNode, type RefObject } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import {
   BottomSheetBackdrop,
@@ -6,46 +6,38 @@ import {
   BottomSheetView,
   type BottomSheetBackdropProps,
 } from '@gorhom/bottom-sheet';
-import { Ionicons } from '@expo/vector-icons';
+import { FontAwesome6, Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BottomSheetWindow } from '@/components/ui/BottomSheetWindow';
-import { cn } from '@/lib/cn';
 import { useColors } from '@/theme';
 
 type CreateChoice = 'request' | 'project';
 
-export type CreateChoiceBottomSheetHandle = {
-  present: () => void;
-  dismiss: () => void;
-};
-
 function CreateOptionCard({
   title,
-  description,
+  caption,
   icon,
   onPress,
 }: {
   title: string;
-  description: string;
-  icon: keyof typeof Ionicons.glyphMap;
+  caption: string;
+  icon: ReactNode;
   onPress: () => void;
 }) {
-  const colors = useColors();
-
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={title}
-      accessibilityHint={description}
+      accessibilityHint={caption}
       onPress={onPress}
-      className="flex-1 gap-2 rounded-2xl border border-hairline bg-surface p-4 active:opacity-90"
+      className="min-w-0 flex-1 gap-2 rounded-2xl border border-hairline bg-surface p-4 active:opacity-90"
     >
       <View className="h-11 w-11 items-center justify-center rounded-xl bg-active-soft">
-        <Ionicons name={icon} size={24} color={colors.active} />
+        {icon}
       </View>
-      <Text className="text-lg font-bold text-ink">{title}</Text>
-      <Text className="text-sm leading-5 text-muted">{description}</Text>
+      <Text className="text-base font-semibold text-ink">{title}</Text>
+      <Text className="text-sm leading-5 text-muted">{caption}</Text>
     </Pressable>
   );
 }
@@ -61,7 +53,7 @@ export function CreateChoiceBottomSheet({
 }) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const snapPoints = useMemo(() => [280 + insets.bottom], [insets.bottom]);
+  const snapPoints = useMemo(() => [252 + insets.bottom], [insets.bottom]);
 
   const renderBackdrop = useCallback(
     (props: BottomSheetBackdropProps) => (
@@ -85,32 +77,23 @@ export function CreateChoiceBottomSheet({
       <BottomSheetView
         style={{ paddingBottom: Math.max(insets.bottom, 16), paddingHorizontal: 20, gap: 16 }}
       >
-        <View className="gap-1">
-          <Text className="text-2xl font-bold text-ink">Create</Text>
-          <Text className="text-base text-muted">Choose what you want to post on Active.</Text>
-        </View>
+        <Text className="text-xl font-semibold text-ink">What do you need?</Text>
         <View className="flex-row gap-3">
           <CreateOptionCard
-            title="Request"
-            description="Find someone to do one job for you."
-            icon="document-text-outline"
+            title="Ask for help"
+            caption="One job, one helper nearby"
+            icon={
+              <FontAwesome6 name="handshake" iconStyle="regular" size={22} color={colors.active} />
+            }
             onPress={() => onChoose('request')}
           />
           <CreateOptionCard
-            title="Project"
-            description="Raise funds and coordinate multiple workers."
-            icon="people-outline"
+            title="Start a project"
+            caption="Raise money and bring in workers"
+            icon={<Ionicons name="people-outline" size={24} color={colors.active} />}
             onPress={() => onChoose('project')}
           />
         </View>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Cancel"
-          onPress={() => sheetRef.current?.dismiss()}
-          className={cn('items-center py-2 active:opacity-80')}
-        >
-          <Text className="text-base font-semibold text-muted">Cancel</Text>
-        </Pressable>
       </BottomSheetView>
     </BottomSheetModal>
   );
