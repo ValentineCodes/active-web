@@ -34,7 +34,9 @@ export function discoverSliceCount(payload: DiscoverPayload, category: SearchDis
   if (category === 'projects') return payload.projects?.length ?? 0;
   if (category === 'requests') return payload.requests?.length ?? 0;
   const topCount =
-    (payload.requests?.length ?? 0) + (payload.people?.length ?? 0) + (payload.projects?.length ?? 0);
+    (payload.requests?.length ?? 0) +
+    (payload.people?.length ?? 0) +
+    (payload.projects?.length ?? 0);
   return topCount;
 }
 

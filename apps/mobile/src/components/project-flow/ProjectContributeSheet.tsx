@@ -198,6 +198,23 @@ export const ProjectContributeSheet = forwardRef<
                   value={amount}
                   onChangeText={(text) => setAmount(text.replace(/[^\d]/g, ''))}
                   InputComponent={BottomSheetTextInput}
+                  trailing={
+                    <View className="items-end pl-3">
+                      <Text className="text-xs font-medium text-muted">Available</Text>
+                      {wallet.isPending ? (
+                        <Text className="text-sm font-semibold text-subtle">…</Text>
+                      ) : wallet.isError ? (
+                        <Text className="text-sm font-semibold text-danger">—</Text>
+                      ) : (
+                        <Text className="text-sm font-semibold text-ink">
+                          {formatMoney(
+                            wallet.data?.available ?? 0,
+                            wallet.data?.currency ?? MARKET.currency,
+                          )}
+                        </Text>
+                      )}
+                    </View>
+                  }
                 />
               </View>
               {amountPresets.length > 0 ? (

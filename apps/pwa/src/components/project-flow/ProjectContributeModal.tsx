@@ -170,6 +170,23 @@ export function ProjectContributeModal({
                 accessibilityLabel="Contribution amount"
                 value={amount}
                 onChangeText={(text) => setAmount(text.replace(/[^\d]/g, ''))}
+                trailing={
+                  <div className="flex flex-col items-end pl-3">
+                    <span className="text-xs font-medium text-muted">Available</span>
+                    {wallet.isPending ? (
+                      <span className="text-sm font-semibold text-subtle">…</span>
+                    ) : wallet.isError ? (
+                      <span className="text-sm font-semibold text-danger">—</span>
+                    ) : (
+                      <span className="text-sm font-semibold text-ink">
+                        {formatMoney(
+                          wallet.data?.available ?? 0,
+                          wallet.data?.currency ?? MARKET.currency,
+                        )}
+                      </span>
+                    )}
+                  </div>
+                }
               />
             </div>
             {amountPresets.length > 0 ? (

@@ -8,6 +8,7 @@ import {
   type PersonProfilePreview,
 } from '@/components/profile/PersonProfileSheet';
 import { ProjectContributeModal } from '@/components/project-flow/ProjectContributeModal';
+import { ProjectInviteContributorsModal } from '@/components/project-flow/ProjectInviteContributorsModal';
 import { ProjectGroupChatFab } from '@/components/project-flow/ProjectGroupChatFab';
 import { ProjectActivityPanel } from '@/components/project-flow/ProjectDetailTabPanels';
 import { ProjectResponsesPanel } from '@/components/project-flow/ProjectResponsesPanel';
@@ -75,6 +76,7 @@ export function ProjectDetailPage() {
   const id = useRouteParam('id');
   const [tab, setTab] = useState<ProjectDetailTab>('activity');
   const [contributeOpen, setContributeOpen] = useState(false);
+  const [inviteOpen, setInviteOpen] = useState(false);
   const [creatorProfilePreview, setCreatorProfilePreview] = useState<PersonProfilePreview | null>(
     null,
   );
@@ -161,6 +163,9 @@ export function ProjectDetailPage() {
   }, [detail]);
 
   const canContribute = Boolean(detail && projectViewerMayContribute(detail));
+  const canInviteContributors = Boolean(
+    detail?.viewer_is_creator && detail.funding_visibility === 'invite_only',
+  );
   const budgetMajor = detail ? detail.budget_total_kobo / 100 : 0;
 
   const initialOfferInput = useMemo(
@@ -350,6 +355,12 @@ export function ProjectDetailPage() {
                 fundingStatusLabel={detail.funding_status}
                 showContributedProgress={projectShowsFundingRaised(detail.funding_status)}
                 onOpenContribute={canContribute ? () => setContributeOpen(true) : undefined}
+                onOpenInvite={
+                  canInviteContributors &&
+                  projectShowsFundingRaised(detail.funding_status)
+                    ? () => setInviteOpen(true)
+                    : undefined
+                }
                 currency={MARKET.currency}
                 budgetBreakdown={
                   detail.viewer_may_view_budget_breakdown &&
@@ -445,6 +456,12 @@ export function ProjectDetailPage() {
           detail.contributed_total_kobo,
         )}
         onClose={() => setContributeOpen(false)}
+      />
+
+      <ProjectInviteContributorsModal
+        open={inviteOpen}
+        projectId={id}
+        onClose={() => setInviteOpen(false)}
       />
 
       {workerPreHandshakeConversationId ? (

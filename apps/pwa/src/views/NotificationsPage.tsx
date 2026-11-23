@@ -142,9 +142,20 @@ export function NotificationsPage() {
       router.push(stored);
       return;
     }
-    if (stored && /^\/(request|respond|engagement|messages|rate)\//.test(stored)) {
-      router.push(stored);
+    if (
+      stored &&
+      /^\/(request|respond|engagement|messages|rate|project)\//.test(stored)
+    ) {
+      router.push(stored.split('?')[0] ?? stored);
       return;
+    }
+
+    if (item.type === 'project_contributor_invited') {
+      const projectId = item.metadata?.project_id;
+      if (typeof projectId === 'string' && projectId.length > 0) {
+        router.push(`/project/${projectId}`);
+        return;
+      }
     }
 
     if (item.requestId) {

@@ -55,4 +55,5 @@ export const NOTIFICATION_TYPES = [
   'dispute_resolved',
   'funds_released_after_resolution',
   'rate_experience',
+  'project_contributor_invited',
 ] as const satisfies readonly NotificationType[];

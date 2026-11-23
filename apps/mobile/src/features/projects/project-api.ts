@@ -6,7 +6,11 @@ import { createIdempotencyKey } from '@/lib/idempotency-key';
 import { queryKeys } from '@/lib/query/keys';
 import { supabase } from '@/lib/supabase/client';
 import type { Database } from '@/lib/supabase/database.types';
-import { localDateIso, localTimeIso, REQUEST_EXPIRY_TIMEZONE } from '@/features/requests/request-expiry';
+import {
+  localDateIso,
+  localTimeIso,
+  REQUEST_EXPIRY_TIMEZONE,
+} from '@/features/requests/request-expiry';
 
 type FundingVisibility = Database['public']['Enums']['project_funding_visibility'];
 
@@ -305,7 +309,9 @@ export function useContributeToProject() {
     },
     onSuccess: (_id, input) => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.project(input.projectId) });
-      void queryClient.invalidateQueries({ queryKey: queryKeys.projectContributions(input.projectId) });
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.projectContributions(input.projectId),
+      });
       void queryClient.invalidateQueries({ queryKey: queryKeys.projectActivity(input.projectId) });
     },
   });
@@ -385,7 +391,9 @@ export function useSubmitProjectAssignmentWork() {
       return data;
     },
     onSuccess: (_void, input) => {
-      void queryClient.invalidateQueries({ queryKey: queryKeys.projectAssignment(input.assignmentId) });
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.projectAssignment(input.assignmentId),
+      });
       void queryClient.invalidateQueries({
         queryKey: queryKeys.projectAssignmentSubmissions(input.assignmentId),
       });

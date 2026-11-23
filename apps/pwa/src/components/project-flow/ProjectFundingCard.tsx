@@ -18,6 +18,7 @@ type ProjectFundingCardProps = {
   fundingStatusLabel: string;
   showContributedProgress: boolean;
   onOpenContribute?: () => void;
+  onOpenInvite?: () => void;
   currency: string;
   budgetBreakdown?: {
     paidOutKobo: number;
@@ -37,6 +38,7 @@ export function ProjectFundingCard({
   fundingStatusLabel,
   showContributedProgress,
   onOpenContribute,
+  onOpenInvite,
   currency,
   budgetBreakdown,
 }: ProjectFundingCardProps) {
@@ -70,10 +72,21 @@ export function ProjectFundingCard({
           <div className="h-2 overflow-hidden rounded-full bg-hairline">
             <div className="h-full bg-active" style={{ width: `${progressPct}%` }} />
           </div>
-          <p className="text-xs text-muted">
-            Min. target {minTargetLabel}
-            {minTargetMet ? ' · reached' : ''}
-          </p>
+          <div className="flex flex-row items-center justify-between gap-2">
+            <p className="text-xs text-muted">
+              Min. target {minTargetLabel}
+              {minTargetMet ? ' · reached' : ''}
+            </p>
+            {onOpenInvite ? (
+              <button
+                type="button"
+                onClick={onOpenInvite}
+                className="shrink-0 text-sm font-semibold text-active active:opacity-90"
+              >
+                Invite
+              </button>
+            ) : null}
+          </div>
         </div>
       ) : null}
 

@@ -1,7 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { DESCRIPTION_LIMITS, TITLE_LIMITS } from '@/config';
-import { localDateIso, localTimeIso, REQUEST_EXPIRY_TIMEZONE } from '@/features/requests/request-expiry-core';
+import {
+  localDateIso,
+  localTimeIso,
+  REQUEST_EXPIRY_TIMEZONE,
+} from '@/features/requests/request-expiry-core';
 import { resolveRequestTagIdsForRpc, type RequestTag } from '@/features/requests/tags';
 import { createIdempotencyKey } from '@/lib/idempotency-key';
 import { queryKeys } from '@/lib/query/keys';
@@ -118,7 +122,9 @@ export function useContributeToProject() {
     },
     onSuccess: (_id, input) => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.project(input.projectId) });
-      void queryClient.invalidateQueries({ queryKey: queryKeys.projectContributions(input.projectId) });
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.projectContributions(input.projectId),
+      });
       void queryClient.invalidateQueries({ queryKey: queryKeys.projectActivity(input.projectId) });
       void queryClient.invalidateQueries({ queryKey: queryKeys.browseOpenProjectsAll });
     },
@@ -299,7 +305,10 @@ export function useProjectAssignmentMilestones(assignmentId: string | undefined)
   });
 }
 
-export function useRateProjectAssignment(projectId: string | undefined, assignmentId: string | undefined) {
+export function useRateProjectAssignment(
+  projectId: string | undefined,
+  assignmentId: string | undefined,
+) {
   const queryClient = useQueryClient();
   const pid = projectId?.trim() ?? '';
   const aid = assignmentId?.trim() ?? '';
@@ -340,8 +349,12 @@ export function useApproveProjectAssignmentPayout(projectId: string) {
       return data;
     },
     onSuccess: (_paymentId, input) => {
-      void queryClient.invalidateQueries({ queryKey: queryKeys.projectAssignment(input.assignmentId) });
-      void queryClient.invalidateQueries({ queryKey: queryKeys.projectAssignmentMilestones(input.assignmentId) });
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.projectAssignment(input.assignmentId),
+      });
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.projectAssignmentMilestones(input.assignmentId),
+      });
       void queryClient.invalidateQueries({ queryKey: queryKeys.project(projectId) });
       void queryClient.invalidateQueries({ queryKey: queryKeys.projectAssignments(projectId) });
       void queryClient.invalidateQueries({ queryKey: queryKeys.projectResponses(projectId) });
@@ -378,7 +391,9 @@ export function useSubmitProjectAssignmentWork() {
       return data;
     },
     onSuccess: (_void, input) => {
-      void queryClient.invalidateQueries({ queryKey: queryKeys.projectAssignment(input.assignmentId) });
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.projectAssignment(input.assignmentId),
+      });
       void queryClient.invalidateQueries({
         queryKey: queryKeys.projectAssignmentMilestones(input.assignmentId),
       });

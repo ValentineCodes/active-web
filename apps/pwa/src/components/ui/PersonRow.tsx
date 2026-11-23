@@ -13,6 +13,7 @@ export function PersonRow({
   ratingAverage,
   ratingCount,
   meta,
+  username,
   inlineStat,
   identityVerified = false,
   size = 'md',
@@ -24,6 +25,7 @@ export function PersonRow({
   ratingAverage?: number | null;
   ratingCount?: number | null;
   meta?: string;
+  username?: string | null;
   inlineStat?: string;
   identityVerified?: boolean;
   size?: 'sm' | 'md';
@@ -46,8 +48,14 @@ export function PersonRow({
         <Avatar path={avatarPath} name={name} size={size} />
       </span>
       <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-        <div className="flex max-w-full flex-row items-center gap-1">
+        <div className="flex max-w-full min-w-0 flex-row items-center gap-1">
           <p className="min-w-0 truncate text-base font-semibold text-ink">{name ?? 'Helper'}</p>
+          {username ? (
+            <>
+              <span className="shrink-0 text-sm text-subtle">·</span>
+              <p className="min-w-0 truncate text-sm text-muted">@{username}</p>
+            </>
+          ) : null}
           {identityVerified ? <IdentityVerifiedBadge /> : null}
         </div>
         {showRating || showInlineStat ? (

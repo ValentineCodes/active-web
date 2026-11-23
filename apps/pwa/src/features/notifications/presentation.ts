@@ -76,6 +76,7 @@ export function notificationVisual(type: NotificationType): NotificationVisual {
       return { icon: 'notifications-outline', ...amber };
     case 'response_accepted':
     case 'response_not_selected':
+    case 'project_contributor_invited':
       return { icon: 'checkmark-circle', ...blue };
     case 'completion_requested':
       return { icon: 'checkmark-circle', ...purple };

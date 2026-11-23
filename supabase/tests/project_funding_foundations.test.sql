@@ -151,6 +151,33 @@ select lives_ok(
   'creator invites contributor'
 );
 
+select pg_temp.act_as('a2222222-2222-2222-2222-222222222222') as _ \gset
+select cmp_ok(
+  (select count(*)::bigint from public.notification_inbox
+   where user_id = 'a2222222-2222-2222-2222-222222222222'::uuid
+     and type = 'project_contributor_invited'::public.notification_type
+     and dedupe_key = public.notification_dedupe_key(
+       'project_contributor_invited'::public.notification_type,
+       'a2222222-2222-2222-2222-222222222222'::uuid,
+       format('project:%s:contributor_invite:a2222222-2222-2222-2222-222222222222', :'project_id')
+     )),
+  '>=',
+  1::bigint,
+  'invitee notified on contributor invite'
+);
+
+select pg_temp.act_as('a1111111-1111-1111-1111-111111111111') as _ \gset
+select throws_ok(
+  format(
+    'select public.invite_project_contributor(%L::uuid, %L::uuid)',
+    :'project_id',
+    'a2222222-2222-2222-2222-222222222222'
+  ),
+  '55000',
+  null,
+  'cannot invite same contributor twice'
+);
+
 select pg_temp.act_as_owner() as _ \gset
 select lives_ok(
   $$select public.wallet_record_deposit(

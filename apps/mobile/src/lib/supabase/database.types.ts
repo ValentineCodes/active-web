@@ -4476,6 +4476,16 @@ export type Database = {
         }
         Returns: undefined
       }
+      append_project_group_assignment_system_message: {
+        Args: {
+          p_body: string
+          p_conversation_id: string
+          p_extra_metadata?: Json
+          p_lifecycle_key: string
+          p_sender_id: string
+        }
+        Returns: string
+      }
       append_request_conversation_system_message: {
         Args: {
           p_body: string
@@ -5645,6 +5655,12 @@ export type Database = {
           reserved_kobo: number
           viewer_is_creator: boolean
           viewer_is_self: boolean
+        }[]
+      }
+      list_project_contributor_invitations: {
+        Args: { p_project_id: string }
+        Returns: {
+          invitee_id: string
         }[]
       }
       list_project_group_conversation_members: {
@@ -6817,6 +6833,7 @@ export type Database = {
         | "engagement_cancellation_requested"
         | "engagement_cancellation_declined"
         | "withdrawal_submitted"
+        | "project_contributor_invited"
       payment_lock_bucket: "locked" | "pending"
       payment_lock_status: "active" | "released" | "refunded"
       payment_status:
@@ -7111,6 +7128,7 @@ export const Constants = {
         "engagement_cancellation_requested",
         "engagement_cancellation_declined",
         "withdrawal_submitted",
+        "project_contributor_invited",
       ],
       payment_lock_bucket: ["locked", "pending"],
       payment_lock_status: ["active", "released", "refunded"],

@@ -30,6 +30,7 @@ export const queryKeys = {
     latitude: number | null,
     longitude: number | null,
   ) => ['search-discover', category, query, latitude, longitude] as const,
+  searchPeople: (query: string) => ['search-people', query] as const,
   project: (projectId: string) => ['project', projectId] as const,
   myCreatedProjects: ['my-created-projects'] as const,
   myProjectAssignments: ['my-project-assignments'] as const,
@@ -42,6 +43,8 @@ export const queryKeys = {
     ['project-assignment-milestones', assignmentId] as const,
   projectResponses: (projectId: string) => ['project-responses', projectId] as const,
   projectContributions: (projectId: string) => ['project-contributions', projectId] as const,
+  projectContributorInvitations: (projectId: string) =>
+    ['project-contributor-invitations', projectId] as const,
   projectActivity: (projectId: string) => ['project-activity', projectId] as const,
   browseRequest: (requestId: string, latitude: number | null, longitude: number | null) =>
     ['browse-request', requestId, latitude, longitude] as const,

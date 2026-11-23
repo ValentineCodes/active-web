@@ -98,6 +98,7 @@ export function notificationVisual(type: NotificationType): NotificationVisual {
         ...amber,
       };
     case 'response_accepted':
+    case 'project_contributor_invited':
       return {
         icon: 'checkmark-circle-outline',
         ...blue,
@@ -171,7 +172,7 @@ export type NotificationNavigationInput = Pick<
 >;
 
 const NOTIFICATION_ROUTE_PATTERN =
-  /^\/(request|respond|engagement|conversation|rate)\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  /^\/(request|respond|engagement|conversation|rate|project)\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 const WALLET_WITHDRAWAL_ROUTE_PATTERN =
   /^\/wallet\/withdrawal\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -235,6 +236,13 @@ export function resolveNotificationHref(item: NotificationNavigationInput): stri
     item.type === 'funds_returned'
   ) {
     return '/wallet';
+  }
+
+  if (item.type === 'project_contributor_invited') {
+    const projectId = item.metadata?.project_id;
+    if (typeof projectId === 'string' && projectId.length > 0) {
+      return `/project/${projectId}`;
+    }
   }
 
   return null;
