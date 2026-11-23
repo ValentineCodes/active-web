@@ -9,12 +9,15 @@ import { useAttendance } from '@/features/attendance/api';
 import { pickHomeActiveRequest } from '@/features/requests/home-active-request';
 import { useMyRequests } from '@/features/requests/requester-api';
 import { useMyResponses } from '@/features/requests/responses-api';
-import { useMyProfile } from '@/features/profile/api';
+import { useOptionalMyProfile } from '@/features/profile/api';
+import { useHasSession } from '@/features/auth/use-user-id';
+import { showHomeActiveRequestBanner } from '@/features/home/home-guest';
 import { useMyWallet } from '@/features/wallet/api';
 import { showQuerySkeleton } from '@/lib/query/show-skeleton';
 
 export function HomePage() {
-  const profile = useMyProfile();
+  const hasSession = useHasSession();
+  const profile = useOptionalMyProfile();
   const attendance = useAttendance();
   const requests = useMyRequests();
   const responses = useMyResponses();
@@ -23,8 +26,8 @@ export function HomePage() {
   const activeRequest = pickHomeActiveRequest(requests.data, responses.data);
   const profileSkeleton = showQuerySkeleton(profile);
 
-  if (profile.isLoading && !profile.data) return <LoadingState label="Loading…" />;
-  if (profile.isError) {
+  if (hasSession && profile.isLoading && !profile.data) return <LoadingState label="Loading…" />;
+  if (hasSession && profile.isError) {
     return (
       <Screen className="px-5 pt-4">
         <InlineError error={profile.error} />
@@ -34,27 +37,40 @@ export function HomePage() {
 
   return (
     <Screen className="h-full min-h-0 overflow-hidden bg-canvas">
-      <PlusMaybeActiveBanner activeRequest={activeRequest} profileSkeleton={profileSkeleton} profile={profile} attendance={attendance} wallet={wallet} />
+      <PlusMaybeActiveBanner
+        hasSession={hasSession}
+        guest={!hasSession}
+        activeRequest={activeRequest}
+        profileSkeleton={profileSkeleton}
+        profile={profile}
+        attendance={attendance}
+        wallet={wallet}
+      />
     </Screen>
   );
 }
 
 function PlusMaybeActiveBanner({
+  hasSession,
+  guest,
   activeRequest,
   profileSkeleton,
   profile,
   attendance,
   wallet,
 }: {
+  hasSession: boolean;
+  guest: boolean;
   activeRequest: ReturnType<typeof pickHomeActiveRequest>;
   profileSkeleton: boolean;
-  profile: ReturnType<typeof useMyProfile>;
+  profile: ReturnType<typeof useOptionalMyProfile>;
   attendance: ReturnType<typeof useAttendance>;
   wallet: ReturnType<typeof useMyWallet>;
 }) {
   return (
     <div className={`flex min-h-0 flex-1 flex-col ${activeRequest ? 'gap-2' : ''}`}>
       <HomeFeedHeader
+        guest={guest}
         loading={profileSkeleton}
         displayName={profile.data?.display_name ?? null}
         avatarPath={profile.data?.avatar_path ?? null}
@@ -62,7 +78,7 @@ function PlusMaybeActiveBanner({
         walletAvailable={wallet.data?.available ?? null}
         walletCurrency={wallet.data?.currency ?? null}
       />
-      {activeRequest ? (
+      {showHomeActiveRequestBanner(hasSession, activeRequest) && activeRequest ? (
         <HomeActiveRequestBanner title={activeRequest.title} to={`/engagement/${activeRequest.id}`} />
       ) : null}
       <HomeFeed searchQuery="" />

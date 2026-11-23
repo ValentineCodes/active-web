@@ -19,7 +19,7 @@ pnpm pwa:typecheck && pnpm pwa:lint && pnpm pwa:test && pnpm pwa:build
 | Route | PWA view | Native reference | Status | Notes |
 | --- | --- | --- | --- | --- |
 | `/` | redirect | — | OK | Entry redirect |
-| `/welcome` | `WelcomePage` | `app/(guest)/welcome` | Aligned | Hero + pill CTA, tokens |
+| `/welcome` | Redirect → `/home` | `app/(guest)/welcome` | Partial | PWA uses contextual sheet + `/sign-in`; no standalone welcome |
 | `/sign-in` | `SignInPage` | auth stack | Mostly | `FlowScreen`, `OtpInput`; dashed OTP not pixel-identical |
 | `/onboarding` | `OnboardingPage` | onboarding | Aligned | `FlowScreen` |
 | `/home` | `HomePage` | home feed | Aligned | Feed cards, banner, search affordance |

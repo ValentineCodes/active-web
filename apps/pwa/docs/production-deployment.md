@@ -75,6 +75,12 @@ Icons are PNG assets in `public/icons/`, generated from the same 1024×1024 bran
 
 **Not cached:** authenticated API responses, sessions, wallet balances, profile payloads, chat, signed storage URLs, Edge Function responses, payment verification.
 
+## Guest marketplace (deploy notes)
+
+- Anon grants are limited to marketplace **read** RPCs and narrow storage SELECT policies (`guest_marketplace_read` migration). Do not widen anon access to fix test failures.
+- Pending auth intent uses `sessionStorage` (`active:pending-auth-action`); survives OTP refresh, cleared on dismiss or successful consume.
+- Public marketplace routes are client-side only; CDN must still not cache personalized API responses (Serwist `NetworkOnly` on Supabase).
+
 TanStack Query holds in-memory data only for the session; `queryClient.clear()` on sign-out. Session-scoped `sessionStorage` keys (wallet checkout, withdraw idempotency, search recents) are cleared via `clearClientUserState()`.
 
 ## Mobile-only gate
@@ -128,7 +134,7 @@ If CSP is enabled, verify Paystack redirect/checkout and Supabase Realtime (`wss
 | **Location** | Request posting uses browser geolocation when enabled; permission prompts are per-browser. |
 | **Paystack** | Same-tab redirect to Paystack; return to `/wallet/deposit/callback` → checkout verifies via `paystack-verify` only. |
 | **Auth** | Chunked `localStorage` session via Supabase client; `detectSessionInUrl: false`; token refresh tied to `visibilitychange`. |
-| **Realtime** | Conversation/request channels unsubscribed on navigation; full page sign-out navigates to `/welcome`. |
+| **Realtime** | Conversation/request channels unsubscribed on navigation; full page sign-out navigates to `/home`. |
 | **Sign-out / account switch** | `signOut` + `SIGNED_OUT`: `clearClientUserState()`, `queryClient.clear()` — no wallet/search context carried to the next account. |
 
 ## Production launch checklist

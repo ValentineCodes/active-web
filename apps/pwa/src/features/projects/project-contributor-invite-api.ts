@@ -46,7 +46,7 @@ export function useProjectContributorInvitations(projectId: string, enabled: boo
         p_project_id: projectId,
       });
       if (error) throw error;
-      return (data ?? []).map((row) => row.invitee_id);
+      return (data ?? []).map((row: { invitee_id: string }) => row.invitee_id);
     },
     enabled: enabled && Boolean(projectId),
   });

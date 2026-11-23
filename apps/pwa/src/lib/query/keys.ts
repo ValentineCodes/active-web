@@ -32,6 +32,7 @@ export const queryKeys = {
   ) => ['search-discover', category, query, latitude, longitude] as const,
   searchPeople: (query: string) => ['search-people', query] as const,
   project: (projectId: string) => ['project', projectId] as const,
+  guestProject: (projectId: string) => ['guest-project', projectId] as const,
   myCreatedProjects: ['my-created-projects'] as const,
   myProjectAssignments: ['my-project-assignments'] as const,
   myProjectResponse: (projectId: string) => ['my-project-response', projectId] as const,

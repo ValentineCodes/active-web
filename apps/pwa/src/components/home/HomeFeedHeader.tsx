@@ -6,6 +6,7 @@ import { hasProviderCommitments, type MyAttendance } from '@/features/attendance
 import { formatGreetingFirstName, formatGreetingPeriod, formatMoney } from '@/lib/format';
 
 type Props = {
+  guest?: boolean;
   loading: boolean;
   displayName: string | null;
   avatarPath: string | null;
@@ -15,6 +16,7 @@ type Props = {
 };
 
 export function HomeFeedHeader({
+  guest = false,
   loading,
   displayName,
   avatarPath,
@@ -23,6 +25,16 @@ export function HomeFeedHeader({
   walletCurrency,
 }: Props) {
   const firstName = formatGreetingFirstName(displayName);
+
+  if (guest) {
+    return (
+      <div className="flex flex-row items-center justify-between gap-3 px-5 py-2">
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-xl font-bold leading-7 text-ink">{formatGreetingPeriod()}</p>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (

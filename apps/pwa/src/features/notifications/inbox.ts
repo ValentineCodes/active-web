@@ -2,6 +2,8 @@
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
+import { useHasSession } from '@/features/auth/use-user-id';
+
 import type { InboxNotification } from '@/features/notifications/types';
 import { queryKeys } from '@/lib/query/keys';
 import { supabase } from '@/lib/supabase/client';
@@ -58,8 +60,10 @@ export function useNotificationInbox() {
 }
 
 export function useNotificationUnreadCount() {
+  const enabled = useHasSession();
   return useQuery({
     queryKey: queryKeys.notificationUnreadCount,
+    enabled,
     queryFn: async () => {
       const { count, error } = await supabase
         .from('notification_inbox')

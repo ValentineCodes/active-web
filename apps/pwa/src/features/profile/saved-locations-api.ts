@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
+import { useHasSession } from '@/features/auth/use-user-id';
 import type { Position } from '@/lib/geolocation';
 import { queryKeys } from '@/lib/query/keys';
 import { supabase } from '@/lib/supabase/client';
@@ -15,8 +16,10 @@ export const MAX_SAVED_LOCATIONS = 5;
 export type SavedLocation = RpcRow<Functions['list_my_saved_locations']['Returns']>;
 
 export function useMySavedLocations() {
+  const enabled = useHasSession();
   return useQuery({
     queryKey: queryKeys.savedLocations,
+    enabled,
     queryFn: async (): Promise<SavedLocation[]> => {
       const { data, error } = await supabase.rpc('list_my_saved_locations');
       if (error) throw error;

@@ -2,6 +2,8 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
+import { useHasSession } from '@/features/auth/use-user-id';
+
 import { MARKET } from '@/config';
 import type { DeliveryDurationUnit } from '@/features/requests/delivery-duration';
 import { responseWizardInitialOffer } from '@/features/requests/responses-api';
@@ -51,6 +53,7 @@ export function canRespondToProject(detail: ProjectDetail): boolean {
 
 export function useMyProjectResponse(projectId: string) {
   const id = projectId.trim();
+  const enabled = useHasSession();
   return useQuery({
     queryKey: queryKeys.myProjectResponse(id),
     queryFn: async () => {
@@ -60,11 +63,12 @@ export function useMyProjectResponse(projectId: string) {
       if (error) throw error;
       return data?.[0] ?? null;
     },
-    enabled: id.length > 0,
+    enabled: enabled && id.length > 0,
   });
 }
 
 export function useProjectForRespond(projectId: string) {
+  const hasSession = useHasSession();
   const project = useProject(projectId);
   const myResponse = useMyProjectResponse(projectId);
   const detail = project.data;
@@ -87,13 +91,13 @@ export function useProjectForRespond(projectId: string) {
     project: detail,
     request,
     existingResponse,
-    isPending: project.isPending || myResponse.isPending,
+    isPending: project.isPending || (hasSession && myResponse.isPending),
     isError: project.isError || myResponse.isError,
     error: project.error ?? myResponse.error,
     refetch: async () => {
       await Promise.all([project.refetch(), myResponse.refetch()]);
     },
-    respondAllowed: detail ? canRespondToProject(detail) : false,
+    respondAllowed: detail && hasSession ? canRespondToProject(detail) : false,
   };
 }
 

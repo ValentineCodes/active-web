@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
 
-import { useUserId } from '@/features/auth/use-user-id';
+import { useHasSession, useUserId } from '@/features/auth/use-user-id';
 import type { Position } from '@/lib/geolocation';
 import { DESCRIPTION_LIMITS } from '@/config/index';
 import { resolveRequestTagIdsForRpc, type RequestTag } from '@/features/requests/tags';
@@ -76,8 +76,10 @@ type MyRequest = Guaranteed<
 >;
 
 export function useMyRequests() {
+  const enabled = useHasSession();
   return useQuery({
     queryKey: queryKeys.myRequests,
+    enabled,
     queryFn: async (): Promise<MyRequest[]> => {
       const { data, error } = await supabase
         .from('my_requests')

@@ -13,6 +13,7 @@ import {
   useSearchRequestsInfinite,
   type PublicRequest,
 } from '@/features/requests/browse-api';
+import { useHasSession } from '@/features/auth/use-user-id';
 import { useMyRequests } from '@/features/requests/requester-api';
 import { useMyResponses } from '@/features/requests/responses-api';
 import { queryKeys } from '@/lib/query/keys';
@@ -28,6 +29,7 @@ import {
 const OPEN_REQUEST_STATUSES = new Set(['posted', 'searching']);
 
 export function useHomeBrowseFeed(searchQuery: string, screenFocused = true) {
+  const hasSession = useHasSession();
   const queryClient = useQueryClient();
   const activeSearch = searchQuery.trim();
   const screenFocusedRef = useRef(screenFocused);
@@ -158,15 +160,17 @@ export function useHomeBrowseFeed(searchQuery: string, screenFocused = true) {
           (showQuerySkeleton(open) || (projectsBrowseEnabled && showQuerySkeleton(openProjects))));
 
   const refetch = useCallback(async () => {
-    await Promise.all([
+    const tasks: Promise<unknown>[] = [
       queryClient.invalidateQueries({ queryKey: queryKeys.browseNearbyAll }),
       queryClient.invalidateQueries({ queryKey: queryKeys.browseOpenAll }),
       queryClient.invalidateQueries({ queryKey: queryKeys.browseOpenProjectsAll }),
       queryClient.invalidateQueries({ queryKey: queryKeys.requestSearchAll }),
-      myRequests.refetch(),
-      myResponses.refetch(),
-    ]);
-  }, [myRequests, myResponses, queryClient]);
+    ];
+    if (hasSession) {
+      tasks.push(myRequests.refetch(), myResponses.refetch());
+    }
+    await Promise.all(tasks);
+  }, [hasSession, myRequests, myResponses, queryClient]);
 
   const fetchNextPage = useCallback(() => {
     if (!activeQuery?.hasNextPage || activeQuery.isFetchingNextPage) return;

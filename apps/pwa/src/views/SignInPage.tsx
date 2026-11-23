@@ -13,6 +13,7 @@ import { ScreenHeading } from '@/components/ui/ScreenHeading';
 import { InlineError } from '@/components/ui/StateView';
 import { MARKET } from '@/config/market';
 import { isPlausiblePhone, sendPhoneOtp, toE164, verifyPhoneOtp } from '@/features/auth/api';
+import { resumePendingAction } from '@/features/auth/pending-action-resume';
 import { profileQueryOptions } from '@/features/profile/api';
 import { supabase } from '@/lib/supabase/client';
 
@@ -46,7 +47,11 @@ export function SignInPage() {
       return queryClient.fetchQuery(profileQueryOptions(userId));
     },
     onSuccess: (profile) => {
-      router.replace(profile.display_name ? '/home' : '/onboarding');
+      if (!profile.display_name?.trim()) {
+        router.replace('/onboarding');
+        return;
+      }
+      resumePendingAction(router);
     },
   });
 
@@ -116,7 +121,7 @@ export function SignInPage() {
         <div className="grow px-6 pb-4 pt-[max(1rem,env(safe-area-inset-top))]">
           <ScreenHeading
             title={otpSent ? 'Verify your number' : 'Enter your phone number'}
-            onBack={() => router.push('/welcome')}
+            onBack={() => router.replace('/home')}
           />
 
           <p className="mt-3 text-sm leading-6 text-muted">

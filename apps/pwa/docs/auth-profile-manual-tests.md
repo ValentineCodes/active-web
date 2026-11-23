@@ -2,11 +2,21 @@
 
 Run against `pnpm pwa:dev` on HTTPS or a trusted LAN host (camera requires secure context).
 
+## Guest marketplace (incognito)
+
+See [guest-marketplace.md](./guest-marketplace.md) for the full browse + five-gate checklist. Quick smoke:
+
+1. Incognito → `/home` → time-only header, feed loads.
+2. Tab **+** and bell → contextual auth sheet (not immediate redirect away from marketplace).
+3. Dismiss the sheet (backdrop or close); marketplace remains usable.
+4. Sign in from sheet → OTP → onboarding if needed → resume (notifications, respond flow, or contribute modal without auto-submit).
+5. `/u/:username` loads with no auth prompt; `/profile` as guest → home + profile prompt.
+
 ## Phone OTP (Mobile Safari / Android Chrome)
 
-1. Open `/welcome` → Agree and continue → enter valid test OTP phone.
+1. From contextual sheet or `/sign-in`, enter valid test OTP phone.
 2. Receive SMS, enter 6-digit code → land on onboarding or home.
-3. Sign out from Profile → confirm return to welcome; session cleared on reload.
+3. Sign out from Profile → confirm return to `/home`; session cleared on reload.
 
 ## Multi-tab session
 

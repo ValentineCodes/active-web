@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  guestMaySeeProjectContributeCta,
   projectContributionAmountPresets,
   projectContributionRemainingMajor,
 } from '@/features/projects/project-contribute';
@@ -25,5 +26,26 @@ describe('projectContributionAmountPresets', () => {
 
   it('returns empty when no capacity remains', () => {
     expect(projectContributionAmountPresets(500, 0)).toEqual([]);
+  });
+});
+
+describe('guestMaySeeProjectContributeCta', () => {
+  it('shows contribute entry for public open funding even when viewer flags are false', () => {
+    expect(
+      guestMaySeeProjectContributeCta({
+        viewer_is_creator: false,
+        viewer_may_contribute: false,
+        funding_status: 'open',
+        funding_visibility: 'public',
+      }),
+    ).toBe(true);
+    expect(
+      guestMaySeeProjectContributeCta({
+        viewer_is_creator: false,
+        viewer_may_contribute: false,
+        funding_status: 'open',
+        funding_visibility: 'invite_only',
+      }),
+    ).toBe(false);
   });
 });

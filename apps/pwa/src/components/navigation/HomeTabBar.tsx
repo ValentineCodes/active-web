@@ -4,14 +4,16 @@ import type { ReactNode, RefObject } from 'react';
 import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 import Link from '@/components/AppLink';
-import { usePathname } from '@/lib/navigation';
+import { usePathname, useRouter } from '@/lib/navigation';
+
+import { useContextualAuth } from '@/features/auth/ContextualAuthProvider';
+import { useHasSession } from '@/features/auth/use-user-id';
 
 import { useCreateComposer } from '@/components/create/CreateComposerProvider';
 import { IonIcon } from '@/components/ui/IonIcon';
 import { ionIcons } from '@/components/ui/ion-icons';
 import { useConversationInboxUnreadCount } from '@/features/requests/conversation-inbox-api';
 import { useNotificationUnreadCount } from '@/features/notifications/inbox';
-import { useMyRequests } from '@/features/requests/requester-api';
 import { useColors } from '@/theme/ThemeProvider';
 
 const TAB_COUNT = 4;
@@ -88,23 +90,29 @@ function isTabActive(pathname: string, href: string, end?: boolean): boolean {
 
 export function HomeTabBar() {
   const pathname = usePathname();
+  const router = useRouter();
+  const hasSession = useHasSession();
+  const contextualAuth = useContextualAuth();
   const colors = useColors();
   const unread = useNotificationUnreadCount();
-  const { data: requests } = useMyRequests();
   const { isOpen, openCreateComposer } = useCreateComposer();
   useConversationInboxUnreadCount();
 
   const rowRef = useRef<HTMLDivElement>(null);
   const slotRefs = useRef<(HTMLElement | null)[]>(Array.from({ length: TAB_COUNT }, () => null));
 
-  const waitingResponses =
-    requests?.reduce(
-      (total, request) =>
-        request.status === 'posted' || request.status === 'searching'
-          ? total + request.pending_response_count
-          : total,
-      0,
-    ) ?? 0;
+  const notificationBadge =
+    hasSession && unread.data && unread.data > 0 ? unread.data : undefined;
+
+  const onCreateTabPress = () => {
+    if (hasSession) openCreateComposer();
+    else contextualAuth.requestAuth({ type: 'create' });
+  };
+
+  const onNotificationsTabPress = () => {
+    if (hasSession) router.push('/notifications');
+    else contextualAuth.requestAuth({ type: 'notifications' });
+  };
 
   const createActive =
     isOpen ||
@@ -204,7 +212,7 @@ export function HomeTabBar() {
             type="button"
             aria-label="Create request"
             aria-pressed={createActive}
-            onClick={openCreateComposer}
+            onClick={onCreateTabPress}
             className="relative z-[1] flex min-h-11 flex-1 flex-col items-center justify-center py-0.5 active:opacity-90"
           >
             <TabBarSlot>
@@ -215,17 +223,35 @@ export function HomeTabBar() {
               />
             </TabBarSlot>
           </button>
-          <TabIcon
-            href="/notifications"
-            label="Notifications"
-            isActive={notificationsActive}
-            slotRef={assignTabSlotRef(slotRefs, 3)}
-            iconOutline={ionIcons['notifications-outline']}
-            iconSelected={ionIcons.notifications}
-            badge={unread.data && unread.data > 0 ? unread.data : undefined}
-            activeColor={activeColor}
-            inactiveColor={inactiveColor}
-          />
+          {hasSession ? (
+            <TabIcon
+              href="/notifications"
+              label="Notifications"
+              isActive={notificationsActive}
+              slotRef={assignTabSlotRef(slotRefs, 3)}
+              iconOutline={ionIcons['notifications-outline']}
+              iconSelected={ionIcons.notifications}
+              badge={notificationBadge}
+              activeColor={activeColor}
+              inactiveColor={inactiveColor}
+            />
+          ) : (
+            <button
+              ref={assignTabSlotRef(slotRefs, 3)}
+              type="button"
+              aria-label="Notifications"
+              onClick={onNotificationsTabPress}
+              className="relative z-[1] flex min-h-11 flex-1 flex-col items-center justify-center py-0.5 active:opacity-90"
+            >
+              <TabBarSlot>
+                <IonIcon
+                  icon={notificationsActive ? ionIcons.notifications : ionIcons['notifications-outline']}
+                  size={24}
+                  color={notificationsActive ? activeColor : inactiveColor}
+                />
+              </TabBarSlot>
+            </button>
+          )}
         </div>
       </div>
     </nav>

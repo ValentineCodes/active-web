@@ -2,7 +2,10 @@
 
 import { keepPreviousData, useInfiniteQuery, useQuery, type QueryClient } from '@tanstack/react-query';
 
+import { MARKET } from '@/config';
 import type { Position } from '@/lib/geolocation';
+import { shouldPersistDiscoveryCoordinates } from '@/features/home/home-guest';
+import { useSession } from '@/features/auth/use-session';
 import { queryKeys } from '@/lib/query/keys';
 import { supabase } from '@/lib/supabase/client';
 import type { Database } from '@/lib/supabase/database.types';
@@ -92,6 +95,40 @@ export function useBrowseRequestPreview(requestId: string) {
   });
 }
 
+async function fetchBrowseRequestAtReference(requestId: string) {
+  const { latitude, longitude } = MARKET.guestBrowseReference;
+  const { data, error } = await supabase.rpc('browse_request', {
+    p_request_id: requestId,
+    p_latitude: latitude,
+    p_longitude: longitude,
+  });
+  if (error) throw error;
+  return data?.[0] ?? null;
+}
+
+/** Guest deep links — loads public request detail without device location or discovery logging. */
+export function useBrowseRequestGuestDetail(
+  requestId: string,
+  options?: { enabled?: boolean },
+) {
+  const id = requestId.trim();
+  const { session, isAuthHydrated } = useSession();
+  const preview = useBrowseRequestPreview(id);
+  const enabled =
+    (options?.enabled ?? true) &&
+    isAuthHydrated &&
+    !session &&
+    id.length > 0 &&
+    !preview.data;
+
+  return useQuery({
+    queryKey: [...queryKeys.browseRequestPreview(id), 'guest-load'],
+    enabled,
+    staleTime: 60_000,
+    queryFn: () => fetchBrowseRequestAtReference(id),
+  });
+}
+
 export const HOME_BROWSE_PAGE_SIZE = 10;
 
 function nextBrowseOffset(lastPage: PublicRequest[], pageParam: number) {
@@ -100,6 +137,11 @@ function nextBrowseOffset(lastPage: PublicRequest[], pageParam: number) {
 }
 
 async function recordDiscoveryCoordinates(position: Position) {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  if (!shouldPersistDiscoveryCoordinates(Boolean(session))) return;
+
   const { error } = await supabase.rpc('record_discovery_coordinates', {
     p_latitude: position.latitude,
     p_longitude: position.longitude,

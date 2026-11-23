@@ -3,9 +3,11 @@ import { Navigate, Outlet, Route, Routes } from 'react-router-dom';
 import { AppShell } from '@/components/AppShell';
 import {
   GuestOnlyLayout,
+  PublicMarketplaceLayout,
   RequireAuthLayout,
   RequireOnboardingLayout,
   RequireSignedInLayout,
+  SessionHydrationLayout,
 } from '@/features/auth/route-guards';
 import { withSearchParamsPage } from '@/lib/client-page';
 import { ConversationPage } from '@/views/ConversationPage';
@@ -32,7 +34,6 @@ import { SettingsPage } from '@/views/SettingsPage';
 import { PrivacySettingsPage } from '@/views/settings/PrivacySettingsPage';
 import { PremiumSettingsPage } from '@/views/settings/PremiumSettingsPage';
 import { SignInPage } from '@/views/SignInPage';
-import { WelcomePage } from '@/views/WelcomePage';
 import { BankAccountAddPage } from '@/views/profile/BankAccountAddPage';
 import { BankAccountsPage } from '@/views/profile/BankAccountsPage';
 import { SavedLocationsPage } from '@/views/profile/SavedLocationsPage';
@@ -49,11 +50,27 @@ import { WalletWithdrawReviewPage } from '@/views/wallet/WalletWithdrawReviewPag
 import { WalletWithdrawalDetailPage } from '@/views/wallet/WalletWithdrawalDetailPage';
 import { WalletTransactionPage } from '@/views/wallet/WalletTransactionPage';
 
+function SessionHydrationShell() {
+  return (
+    <SessionHydrationLayout>
+      <Outlet />
+    </SessionHydrationLayout>
+  );
+}
+
 function GuestShell() {
   return (
     <GuestOnlyLayout>
       <Outlet />
     </GuestOnlyLayout>
+  );
+}
+
+function PublicMarketplaceShell() {
+  return (
+    <PublicMarketplaceLayout>
+      <Outlet />
+    </PublicMarketplaceLayout>
   );
 }
 
@@ -116,62 +133,69 @@ export function AppRoutes() {
       <Route path="/" element={<Navigate to="/home" replace />} />
       <Route path="/install" element={<InstallAppPage />} />
 
-      <Route element={<GuestShell />}>
-        <Route path="/welcome" element={<WelcomePage />} />
-        <Route path="/sign-in" element={<SignInPage />} />
-      </Route>
-
-      <Route element={<AuthShell />}>
-        <Route element={<OnboardingShell />}>
-          <Route path="/onboarding" element={<OnboardingPage />} />
+      <Route element={<SessionHydrationShell />}>
+        <Route element={<GuestShell />}>
+          <Route path="/welcome" element={<Navigate to="/home" replace />} />
+          <Route path="/sign-in" element={<SignInPage />} />
         </Route>
 
-        <Route element={<SignedInShell />}>
+        <Route element={<PublicMarketplaceShell />}>
           <Route element={<TabsShell />}>
             <Route path="/home" element={<HomePageRoute />} />
             <Route path="/search" element={<SearchPageRoute />} />
-            <Route path="/activity" element={<Navigate to="/profile?tab=requests" replace />} />
-            <Route path="/notifications" element={<NotificationsPage />} />
           </Route>
-          <Route path="/project/:id" element={<ProjectDetailPage />} />
-          <Route
-            path="/project/:id/assignment/:assignmentId"
-            element={<ProjectAssignmentDetailPage />}
-          />
-          <Route
-            path="/project/:id/assignment/:assignmentId/rate"
-            element={<ProjectAssignmentRatePage />}
-          />
-          <Route path="/u/:username" element={<PublicProfilePageRoute />} />
-          <Route path="/profile" element={<ProfilePage />} />
-          <Route path="/profile/edit" element={<ProfileEditPage />} />
-          <Route path="/profile/reviews" element={<ReviewsPage />} />
-          <Route path="/profile/locations" element={<SavedLocationsPage />} />
-          <Route path="/profile/bank-accounts" element={<BankAccountsPage />} />
-          <Route path="/profile/bank-accounts/add" element={<BankAccountAddPageRoute />} />
-          <Route path="/notification-settings" element={<NotificationSettingsPage />} />
-          <Route path="/settings" element={<SettingsPage />} />
-          <Route path="/settings/privacy" element={<PrivacySettingsPage />} />
-          <Route path="/settings/premium" element={<PremiumSettingsPage />} />
-          <Route path="/messages" element={<MessagesPage />} />
-          <Route path="/messages/:id" element={<ConversationPage />} />
-          <Route path="/request/new" element={<RequestNewPageRoute />} />
-          <Route path="/project/new" element={<ProjectNewPage />} />
           <Route path="/request/:id" element={<RequestRoutePage />} />
           <Route path="/respond/:id" element={<RespondRedirectPageRoute />} />
-          <Route path="/engagement/:id" element={<EngagementPage />} />
-          <Route path="/rate/:id" element={<RatePage />} />
-          <Route path="/wallet" element={<WalletPage />} />
-          <Route path="/wallet/history" element={<WalletHistoryPage />} />
-          <Route path="/wallet/transaction/:id" element={<WalletTransactionPage />} />
-          <Route path="/wallet/add" element={<WalletAddPageRoute />} />
-          <Route path="/wallet/withdraw" element={<WalletWithdrawPageRoute />} />
-          <Route path="/wallet/withdraw/review" element={<WalletWithdrawReviewPageRoute />} />
-          <Route path="/wallet/withdraw/result" element={<WalletWithdrawResultPageRoute />} />
-          <Route path="/wallet/withdrawal/:id" element={<WalletWithdrawalDetailPage />} />
-          <Route path="/wallet/deposit/checkout" element={<WalletDepositCheckoutPage />} />
-          <Route path="/wallet/deposit/review" element={<WalletDepositReviewPageRoute />} />
-          <Route path="/wallet/deposit/callback" element={<WalletDepositCallbackPageRoute />} />
+          <Route path="/project/:id" element={<ProjectDetailPage />} />
+          <Route path="/u/:username" element={<PublicProfilePageRoute />} />
+        </Route>
+
+        <Route element={<AuthShell />}>
+          <Route element={<OnboardingShell />}>
+            <Route path="/onboarding" element={<OnboardingPage />} />
+          </Route>
+
+          <Route element={<SignedInShell />}>
+            <Route element={<TabsShell />}>
+              <Route path="/activity" element={<Navigate to="/profile?tab=requests" replace />} />
+              <Route path="/notifications" element={<NotificationsPage />} />
+            </Route>
+            <Route
+              path="/project/:id/assignment/:assignmentId"
+              element={<ProjectAssignmentDetailPage />}
+            />
+            <Route
+              path="/project/:id/assignment/:assignmentId/rate"
+              element={<ProjectAssignmentRatePage />}
+            />
+            <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/profile/edit" element={<ProfileEditPage />} />
+            <Route path="/profile/reviews" element={<ReviewsPage />} />
+            <Route path="/profile/locations" element={<SavedLocationsPage />} />
+            <Route path="/profile/bank-accounts" element={<BankAccountsPage />} />
+            <Route path="/profile/bank-accounts/add" element={<BankAccountAddPageRoute />} />
+            <Route path="/notification-settings" element={<NotificationSettingsPage />} />
+            <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/settings/privacy" element={<PrivacySettingsPage />} />
+            <Route path="/settings/premium" element={<PremiumSettingsPage />} />
+            <Route path="/messages" element={<MessagesPage />} />
+            <Route path="/messages/:id" element={<ConversationPage />} />
+            <Route path="/request/new" element={<RequestNewPageRoute />} />
+            <Route path="/project/new" element={<ProjectNewPage />} />
+            <Route path="/engagement/:id" element={<EngagementPage />} />
+            <Route path="/rate/:id" element={<RatePage />} />
+            <Route path="/wallet" element={<WalletPage />} />
+            <Route path="/wallet/history" element={<WalletHistoryPage />} />
+            <Route path="/wallet/transaction/:id" element={<WalletTransactionPage />} />
+            <Route path="/wallet/add" element={<WalletAddPageRoute />} />
+            <Route path="/wallet/withdraw" element={<WalletWithdrawPageRoute />} />
+            <Route path="/wallet/withdraw/review" element={<WalletWithdrawReviewPageRoute />} />
+            <Route path="/wallet/withdraw/result" element={<WalletWithdrawResultPageRoute />} />
+            <Route path="/wallet/withdrawal/:id" element={<WalletWithdrawalDetailPage />} />
+            <Route path="/wallet/deposit/checkout" element={<WalletDepositCheckoutPage />} />
+            <Route path="/wallet/deposit/review" element={<WalletDepositReviewPageRoute />} />
+            <Route path="/wallet/deposit/callback" element={<WalletDepositCallbackPageRoute />} />
+          </Route>
         </Route>
       </Route>
 

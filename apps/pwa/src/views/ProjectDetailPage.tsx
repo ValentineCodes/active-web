@@ -1,8 +1,6 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useRouter } from '@/lib/navigation';
-
 import {
   PersonProfileSheet,
   type PersonProfilePreview,
@@ -26,7 +24,12 @@ import { RequestTitleSection } from '@/components/request-flow/RequestTitleSecti
 import { Screen } from '@/components/ui/Screen';
 import { EmptyState, InlineError, LoadingState } from '@/components/ui/StateView';
 import { MARKET } from '@/config';
-import { hasProfilePhotoReady, useMyProfile } from '@/features/profile/api';
+import { useContextualAuth } from '@/features/auth/ContextualAuthProvider';
+import { useHasSession } from '@/features/auth/use-user-id';
+import { RESUME_CONTRIBUTE_QUERY } from '@/features/auth/pending-action-resume';
+import { useRouter, useSearchParams } from '@/lib/navigation';
+import { guestMayInteractWithProject } from '@/features/marketplace/guest-view';
+import { hasProfilePhotoReady, useOptionalMyProfile } from '@/features/profile/api';
 import {
   useMyProjectAssignments,
   useProject,
@@ -41,6 +44,7 @@ import {
   projectCreatorProfileFields,
 } from '@/features/projects/project-creator-profile';
 import {
+  guestMaySeeProjectContributeCta,
   projectContributionRemainingMajor,
   projectViewerMayContribute,
 } from '@/features/projects/project-contribute';
@@ -73,7 +77,11 @@ function fundingProgress(contributed: number, budget: number, minTarget: number)
 
 export function ProjectDetailPage() {
   const router = useRouter();
+  const search = useSearchParams();
+  const contextualAuth = useContextualAuth();
+  const hasSession = useHasSession();
   const id = useRouteParam('id');
+  const contributeResumeConsumed = useRef(false);
   const [tab, setTab] = useState<ProjectDetailTab>('activity');
   const [contributeOpen, setContributeOpen] = useState(false);
   const [inviteOpen, setInviteOpen] = useState(false);
@@ -82,14 +90,10 @@ export function ProjectDetailPage() {
   );
   const defaultTabSet = useRef(false);
 
-  const profile = useMyProfile();
+  const profile = useOptionalMyProfile();
   const project = useProject(id);
-  const {
-    request: respondable,
-    existingResponse,
-    respondAllowed,
-    isPending: respondMetaPending,
-  } = useProjectForRespond(id);
+  const { request: respondable, existingResponse, respondAllowed, isPending: respondMetaPending } =
+    useProjectForRespond(id);
   const respond = useRespondToProject();
   const withdraw = useWithdrawProjectResponse();
 
@@ -106,7 +110,7 @@ export function ProjectDetailPage() {
   const projectResponses = useProjectResponses(id, { enabled: mayViewAssignments });
   const myProjectResponse = useMyProjectResponse(id);
   const myProjectAssignments = useMyProjectAssignments({
-    enabled: Boolean(detail && !detail.viewer_is_creator),
+    enabled: hasSession && Boolean(detail && !detail.viewer_is_creator),
   });
   const activity = useProjectActivity(id);
   const workerActiveAssignments = useMemo(
@@ -117,29 +121,35 @@ export function ProjectDetailPage() {
 
   const workerPreHandshakeChat = useWorkerProjectPreHandshakeConversation(
     id,
-    Boolean(
-      detail &&
-        !detail.viewer_is_creator &&
-        existingResponse &&
-        !workerHasActiveWork,
-    ),
+    hasSession &&
+      Boolean(
+        detail &&
+          !detail.viewer_is_creator &&
+          existingResponse &&
+          !workerHasActiveWork,
+      ),
   );
   const headerTitle = detail?.viewer_is_creator ? 'Your project' : 'Project';
   const showAssignmentsTabFromData = Boolean(
     detail && projectViewerMayViewAssignments(detail),
   );
-  const showWorkerWorkTab = Boolean(detail && !detail.viewer_is_creator && workerHasActiveWork);
-  const showResponseTab = Boolean(detail && !detail.viewer_is_creator && !workerHasActiveWork);
+  const mayInteractAsVisitor = guestMayInteractWithProject(hasSession, Boolean(detail?.viewer_is_creator));
+  const showWorkerWorkTab = Boolean(
+    mayInteractAsVisitor && detail && !detail.viewer_is_creator && workerHasActiveWork,
+  );
+  const showResponseTab = Boolean(
+    mayInteractAsVisitor && detail && !detail.viewer_is_creator && !workerHasActiveWork,
+  );
 
   useEffect(() => {
     if (!detail || defaultTabSet.current) return;
     defaultTabSet.current = true;
     if (!detail.viewer_is_creator) {
-      setTab(workerHasActiveWork ? 'work' : 'response');
+      setTab(hasSession ? (workerHasActiveWork ? 'work' : 'response') : 'activity');
     } else if (showAssignmentsTabFromData) {
       setTab('responses');
     }
-  }, [detail, showAssignmentsTabFromData, workerHasActiveWork]);
+  }, [detail, hasSession, showAssignmentsTabFromData, workerHasActiveWork]);
 
   useEffect(() => {
     if (!showAssignmentsTabFromData && tab === 'responses') {
@@ -162,9 +172,34 @@ export function ProjectDetailPage() {
     );
   }, [detail]);
 
-  const canContribute = Boolean(detail && projectViewerMayContribute(detail));
+  const canContribute = Boolean(hasSession && detail && projectViewerMayContribute(detail));
+  const showGuestContributeEntry = Boolean(
+    !hasSession && detail && projectShowsFundingRaised(detail.funding_status) && guestMaySeeProjectContributeCta(detail),
+  );
+
+  const openContributeEntry = useCallback(() => {
+    if (!detail) return;
+    if (hasSession && canContribute) {
+      setContributeOpen(true);
+      return;
+    }
+    if (!hasSession) {
+      contextualAuth.requestAuth({ type: 'contribute', projectId: id });
+    }
+  }, [canContribute, contextualAuth, detail, hasSession, id]);
+
+  useEffect(() => {
+    if (!hasSession || !detail || contributeResumeConsumed.current) return;
+    if (search.get(RESUME_CONTRIBUTE_QUERY) !== '1') return;
+    contributeResumeConsumed.current = true;
+    router.replace(`/project/${id}`);
+    if (canContribute) setContributeOpen(true);
+  }, [canContribute, detail, hasSession, id, router, search]);
+
   const canInviteContributors = Boolean(
-    detail?.viewer_is_creator && detail.funding_visibility === 'invite_only',
+    hasSession &&
+      detail?.viewer_is_creator &&
+      detail.funding_visibility === 'invite_only',
   );
   const budgetMajor = detail ? detail.budget_total_kobo / 100 : 0;
 
@@ -233,11 +268,7 @@ export function ProjectDetailPage() {
   const workerAssignmentsLoading =
     Boolean(detail && !detail.viewer_is_creator) && myProjectAssignments.isPending;
 
-  if (
-    project.isPending ||
-    workerAssignmentsLoading ||
-    (showResponseTab && respondMetaPending)
-  ) {
+  if (project.isPending || (hasSession && (workerAssignmentsLoading || (showResponseTab && respondMetaPending)))) {
     return (
       <Screen className="flex min-h-0 flex-1 flex-col">
         <RequestFlowHeader title={headerTitle} onBack={() => router.back()} />
@@ -310,10 +341,10 @@ export function ProjectDetailPage() {
     : 'Not set';
 
   const creatorProfile = projectCreatorProfileFields(detail);
-  const showAssignmentsTab = showAssignmentsTabFromData;
-  const groupChatConversationId = detail.group_chat_conversation_id ?? null;
-  const groupChatUnread = detail.group_chat_unread_count ?? 0;
-  const workerPreHandshakeConversationId = workerPreHandshakeChat.data ?? null;
+  const showAssignmentsTab = hasSession && showAssignmentsTabFromData;
+  const groupChatConversationId = hasSession ? (detail.group_chat_conversation_id ?? null) : null;
+  const groupChatUnread = hasSession ? (detail.group_chat_unread_count ?? 0) : 0;
+  const workerPreHandshakeConversationId = hasSession ? (workerPreHandshakeChat.data ?? null) : null;
   const showWorkerDiscussFab = Boolean(workerPreHandshakeConversationId);
   const showGroupChatFab = Boolean(groupChatConversationId);
   const scrollBottomPadding = showWorkerDiscussFab || showGroupChatFab ? 'pb-28' : 'pb-12';
@@ -354,7 +385,9 @@ export function ProjectDetailPage() {
                 locationLabel={locationLabel}
                 fundingStatusLabel={detail.funding_status}
                 showContributedProgress={projectShowsFundingRaised(detail.funding_status)}
-                onOpenContribute={canContribute ? () => setContributeOpen(true) : undefined}
+                onOpenContribute={
+                  canContribute || showGuestContributeEntry ? openContributeEntry : undefined
+                }
                 onOpenInvite={
                   canInviteContributors &&
                   projectShowsFundingRaised(detail.funding_status)

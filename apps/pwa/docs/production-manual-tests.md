@@ -4,7 +4,7 @@ Run against a **HTTPS** staging or production PWA origin after `pnpm pwa:build` 
 
 ## Android Chrome
 
-1. Open `{PWA_ORIGIN}/welcome` — sign in with SMS OTP.
+1. Open `{PWA_ORIGIN}/sign-in` (or gate from marketplace) — sign in with SMS OTP.
 2. Profile → **Install app** — use **Install Active** when prompted (or browser menu).
 3. Launch from home screen — verify standalone chrome (no URL bar).
 4. Toggle airplane mode — reload; app shell may load but home feed should error (no cached Supabase JSON).

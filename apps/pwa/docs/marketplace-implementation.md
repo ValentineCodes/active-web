@@ -2,13 +2,19 @@
 
 Scope: marketplace flows in `apps/pwa` only, using existing Supabase contracts. Wallet/Paystack UI and deployment hardening are out of scope.
 
+## Guest marketplace (Phases 1–5)
+
+- **Browse without sign-in:** public shell on `/home`, `/search`, request/project/public profile deep links. See [guest-marketplace.md](./guest-marketplace.md) for routes, gates, and manual tests.
+- **Backend:** `20261222000000_guest_marketplace_read.sql` + pgTAP `guest_marketplace_read.test.sql` (24 tests).
+- **Contextual auth:** five gates only; pending action in `sessionStorage`; resume after OTP/onboarding via `resumePendingAction()`.
+
 ## Feature matrix
 
 | # | Feature | Status | Notes |
 |---|---------|--------|-------|
 | 1 | Profile & account settings | **Partial** | `/profile`, `/profile/edit`, live camera avatar. No notification-tag interests UI, saved locations, or NIN flow. |
 | 2 | Request create / edit | **Partial** | `/request/new` single-page form (title, description, offer, tags, location, optional photo). Edit via `?edit=` not fully hydrated from server. No multi-step wizard or funding/wallet gate UI. |
-| 3 | Browse & discovery | **Complete** | Home infinite feed (`browse_open_requests`, `browse_nearby_requests`, `record_discovery_coordinates`). |
+| 3 | Browse & discovery | **Complete** | Home infinite feed (`browse_open_requests`, `browse_nearby_requests`). Guests skip `record_discovery_coordinates`. |
 | 4 | Search & tags | **Partial** | `/search` uses `search_discover` (Top/Requests/People/Projects). Home decoupled from `q=`. Tag picker on create; no dedicated home tag filter chips. |
 | 5 | Request details & approximate location | **Partial** | Respond flow shows coarse `location_label` / proximity; owner view on `/request/:id`. |
 | 6 | Responses & counteroffers | **Complete** | `respond_to_request`, optional quote/message; withdraw. |
@@ -22,7 +28,7 @@ Scope: marketplace flows in `apps/pwa` only, using existing Supabase contracts. 
 
 ## Backend contracts (RPCs / storage)
 
-- **Browse:** `browse_open_requests`, `browse_nearby_requests`, `search_requests`, `browse_request`, `record_discovery_coordinates`
+- **Browse (guest + auth):** `browse_open_requests`, `browse_nearby_requests`, `search_requests`, `browse_request`, `browse_project` (anon), `search_discover`, `get_public_profile`, `record_discovery_coordinates` (session only)
 - **Requests (requester):** `create_request`, `update_request`, `list_request_responses`, `accept_response`, `decline_response`, `extend_request`, `complete_request`, `get_engagement`, `report_service_problem`, `contest_service_problem`, `rate_request`
 - **Responses:** `respond_to_request`, `withdraw_response`, `mark_service_complete`, `start_request`
 - **Chat:** `list_my_request_conversations`, `open_pre_handshake_conversation`, `resolve_request_conversation`, `list_request_messages`, `send_request_message`, `begin_request_message_with_attachments`, `complete_request_message_with_attachments`, `abort_request_message_with_attachments`
@@ -35,8 +41,9 @@ Scope: marketplace flows in `apps/pwa` only, using existing Supabase contracts. 
 ```bash
 pnpm pwa:typecheck
 pnpm pwa:lint
-pnpm pwa:test   # 11 tests
+pnpm pwa:test   # 64+ unit/route/guest tests (see vitest output)
 pnpm pwa:build
+supabase test db supabase/tests/guest_marketplace_read.test.sql
 ```
 
 ## Known gaps

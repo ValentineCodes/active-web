@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { SearchResultListSkeleton } from '@/components/ui/content-skeletons';
 import { EmptyState, InlineError } from '@/components/ui/StateView';
 import { MARKET } from '@/config';
-import { useUserId } from '@/features/auth/use-user-id';
+import { useOptionalUserId } from '@/features/auth/use-user-id';
 import {
   SearchDiscoverCategory,
   useSearchDiscover,
@@ -76,7 +76,7 @@ function ProjectRowBody({ row }: { row: SearchDiscoverListRow & { kind: 'project
 export function SearchPage() {
   const colors = useColors();
   const router = useRouter();
-  const userId = useUserId();
+  const userId = useOptionalUserId();
   const searchParams = useSearchParams();
   const initialQuery = searchParams.get('q')?.trim() ?? '';
 

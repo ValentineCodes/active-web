@@ -3,6 +3,7 @@
 import { useEffect, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
+import { useHasSession } from '@/features/auth/use-user-id';
 import { persistConversationRead } from '@/features/requests/conversation-api';
 import { queryKeys } from '@/lib/query/keys';
 import { supabase } from '@/lib/supabase/client';
@@ -60,8 +61,10 @@ export function useConversationInbox() {
 }
 
 export function useConversationInboxUnreadCount() {
+  const enabled = useHasSession();
   return useQuery({
     queryKey: queryKeys.conversationInboxUnreadCount,
+    enabled,
     queryFn: async () => {
       const rows = await fetchConversationInbox();
       return rows.reduce((total, row) => total + row.unreadCount, 0);

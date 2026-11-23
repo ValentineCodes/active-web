@@ -17,7 +17,7 @@ export function SettingsPage() {
   const leave = useMutation({
     mutationFn: signOut,
     onSuccess: () => {
-      window.location.href = '/welcome';
+      window.location.href = '/home';
     },
   });
   const { preference, setPreference } = useTheme();

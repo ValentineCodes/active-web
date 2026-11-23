@@ -1,5 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
+import { useHasSession } from '@/features/auth/use-user-id';
+import { useSession } from '@/features/auth/use-session';
+
 import { DESCRIPTION_LIMITS, TITLE_LIMITS } from '@/config';
 import {
   localDateIso,
@@ -132,7 +135,8 @@ export function useContributeToProject() {
 }
 
 export function useMyProjectAssignments(options?: { enabled?: boolean }) {
-  const enabled = options?.enabled !== false;
+  const hasSession = useHasSession();
+  const enabled = hasSession && options?.enabled !== false;
   return useQuery({
     queryKey: queryKeys.myProjectAssignments,
     queryFn: async () => {
@@ -207,9 +211,11 @@ export function useProjectContributions(projectId: string | undefined) {
 }
 
 export function useProjectActivity(projectId: string | undefined) {
+  const hasSession = useHasSession();
   const id = projectId?.trim() ?? '';
   return useQuery({
     queryKey: queryKeys.projectActivity(id),
+    enabled: hasSession && id.length > 0,
     queryFn: async () => {
       const { data, error } = await supabase.rpc('list_project_activity', {
         p_project_id: id,
@@ -219,7 +225,6 @@ export function useProjectActivity(projectId: string | undefined) {
       if (error) throw error;
       return data ?? [];
     },
-    enabled: id.length > 0,
   });
 }
 
@@ -256,12 +261,22 @@ async function fetchProject(projectId: string) {
   return data?.[0] ?? null;
 }
 
+async function fetchGuestProject(projectId: string) {
+  const { data, error } = await supabase.rpc('browse_project', {
+    p_project_id: projectId,
+  });
+  if (error) throw error;
+  return data?.[0] ?? null;
+}
+
 export function useProject(projectId: string | undefined) {
+  const { session, isAuthHydrated } = useSession();
   const id = projectId?.trim() ?? '';
+  const guest = isAuthHydrated && !session;
   return useQuery({
-    queryKey: queryKeys.project(id),
-    queryFn: () => fetchProject(id),
-    enabled: id.length > 0,
+    queryKey: guest ? queryKeys.guestProject(id) : queryKeys.project(id),
+    queryFn: () => (guest ? fetchGuestProject(id) : fetchProject(id)),
+    enabled: id.length > 0 && isAuthHydrated,
   });
 }
 

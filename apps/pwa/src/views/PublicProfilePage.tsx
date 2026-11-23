@@ -7,6 +7,7 @@ import { AvatarWithViewer } from '@/components/profile/AvatarWithViewer';
 import { CrownSummary } from '@/components/profile/CrownSummary';
 import { EmptyState, InlineError } from '@/components/ui/StateView';
 import { PublicProfileSkeleton } from '@/components/ui/content-skeletons';
+import { publicProfileShowsCrown } from '@/features/marketplace/guest-view';
 import { usePublicProfile } from '@/features/profile/public-profile-api';
 
 export function PublicProfilePage() {
@@ -46,7 +47,7 @@ export function PublicProfilePage() {
 
   const data = profile.data;
   const displayName = data.display_name ?? data.username;
-  const showCrown = data.crown_tier !== 'hidden';
+  const showCrown = publicProfileShowsCrown(data.crown_public, data.crown_tier);
 
   return (
     <FlowScreen title={displayName} backTo="/search" bodyClassName="flex flex-col gap-5">

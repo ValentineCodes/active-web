@@ -18,7 +18,7 @@ import { Button } from '@/components/ui/Button';
 import { IonIcon } from '@/components/ui/IonIcon';
 import { EmptyState, InlineError, LoadingState } from '@/components/ui/StateView';
 import { ionIcons } from '@/components/ui/ion-icons';
-import { hasProfilePhotoReady, useMyProfile } from '@/features/profile/api';
+import { hasProfilePhotoReady, useOptionalMyProfile } from '@/features/profile/api';
 import {
   savedLocationPosition,
   useMySavedLocations,
@@ -54,6 +54,12 @@ import { queryKeys } from '@/lib/query/keys';
 import { useRouter, useSearchParams } from '@/lib/navigation';
 import { supabase } from '@/lib/supabase/client';
 import { useRouteParam } from '@/lib/route-param';
+import { useContextualAuth } from '@/features/auth/ContextualAuthProvider';
+import { useHasSession } from '@/features/auth/use-user-id';
+import {
+  guestMaySubmitRequestResponse,
+  guestShowsRequestParticipation,
+} from '@/features/marketplace/guest-view';
 import { showAppToast } from '@/lib/toast';
 import { useColors } from '@/theme/ThemeProvider';
 
@@ -72,6 +78,8 @@ type PendingLocationAction =
 export function RespondPage() {
   const router = useRouter();
   const colors = useColors();
+  const hasSession = useHasSession();
+  const contextualAuth = useContextualAuth();
   const id = useRouteParam('id');
   const search = useSearchParams();
   const start = search.get('start');
@@ -81,11 +89,11 @@ export function RespondPage() {
   );
 
   const myResponses = useMyResponses();
-  const profile = useMyProfile();
+  const profile = useOptionalMyProfile();
   const respond = useRespondToRequest();
   const withdrawResponse = useWithdrawResponse();
   const submitMilestoneProposal = useSubmitResponseMilestoneProposal();
-  const milestonePlan = useRequestMilestonePlanForRespond(id);
+  const milestonePlan = useRequestMilestonePlanForRespond(id, hasSession);
   const queryClient = useQueryClient();
   const preHandshakeConversation = useResponderPreHandshakeConversation(id);
   const savedLocations = useMySavedLocations();
@@ -119,6 +127,10 @@ export function RespondPage() {
   } = useRequestForResponse(id, position);
 
   useEffect(() => {
+    if (!hasSession) {
+      setLocationChecked(true);
+      return;
+    }
     if (seedPosition) {
       setPosition(seedPosition);
       setLocationChecked(true);
@@ -136,7 +148,7 @@ export function RespondPage() {
     return () => {
       active = false;
     };
-  }, [seedPosition]);
+  }, [hasSession, seedPosition]);
 
   const requesterOffer = request?.offered_amount ?? null;
   const initialOfferInput = useMemo(
@@ -191,7 +203,7 @@ export function RespondPage() {
   }, [position, existingResponse, beginFlow, openLocationSheet]);
 
   useEffect(() => {
-    if (!autoStartPending.current || isPending || !request) return;
+    if (!hasSession || !autoStartPending.current || isPending || !request) return;
     if (existingResponse) {
       autoStartPending.current = false;
       return;
@@ -203,21 +215,25 @@ export function RespondPage() {
     autoStartPending.current = false;
     const handle = window.setTimeout(() => tryBeginFlow(), 0);
     return () => window.clearTimeout(handle);
-  }, [isPending, request, needsLocation, existingResponse, tryBeginFlow]);
+  }, [hasSession, isPending, request, needsLocation, existingResponse, tryBeginFlow]);
 
   const exitFlow = () => {
     setInFlow(false);
     setFlowStep(0);
   };
 
-  const activeAsHelper = myResponses.data?.find(
+  const activeAsHelper = hasSession
+    ? myResponses.data?.find(
     (row) =>
       row.request_id === id &&
       isHelperEngagementView({
         responseStatus: row.response_status,
         requestStatus: row.request_status,
       }),
-  );
+  )
+    : undefined;
+
+  const participationVisible = guestShowsRequestParticipation(hasSession);
 
   const mutateResponse = (postPosition: Position | null, payload: PendingSubmit) => {
     if (!request) return;
@@ -405,7 +421,7 @@ export function RespondPage() {
     );
   }
 
-  const respondAllowed = canRespondToRequest(request);
+  const respondAllowed = guestMaySubmitRequestResponse(hasSession, request);
 
   if (inFlow) {
     return (
@@ -458,7 +474,7 @@ export function RespondPage() {
             onRequesterPress={() => setRequesterProfileOpen(true)}
           />
 
-          {declinedParticipation ? (
+          {participationVisible && declinedParticipation ? (
             <RequestCallout
               tone="danger"
               title={
@@ -474,7 +490,7 @@ export function RespondPage() {
                     : 'Someone else was chosen for this request.')}
               </p>
             </RequestCallout>
-          ) : !respondAllowed && !existingResponse ? (
+          ) : participationVisible && !respondAllowed && !existingResponse ? (
             <RequestCallout tone="warning" title="Too far away to respond">
               <p className="text-sm text-muted">
                 You can read this request, but only helpers within the local discovery area can send a
@@ -483,7 +499,7 @@ export function RespondPage() {
             </RequestCallout>
           ) : null}
 
-          {declinedParticipation ? null : existingResponse ? (
+          {participationVisible && !declinedParticipation && existingResponse ? (
             <ExistingResponseCard
               currency={request.currency}
               quotedAmount={existingResponse.quotedAmount}
@@ -503,7 +519,7 @@ export function RespondPage() {
               onCancel={confirmWithdraw}
               cancelLoading={withdrawResponse.isPending}
             />
-          ) : respondAllowed || needsLocation ? (
+          ) : participationVisible && (respondAllowed || needsLocation) ? (
             <div className="flex flex-row items-start gap-3 rounded-2xl bg-surface p-4">
               <IonIcon icon={ionIcons['lock-closed-outline']} size={18} color={colors.muted} />
               <p className="flex-1 text-sm text-muted">
@@ -513,10 +529,24 @@ export function RespondPage() {
             </div>
           ) : null}
 
-          {respond.isError ? <InlineError error={respond.error} /> : null}
-          {withdrawResponse.isError ? <InlineError error={withdrawResponse.error} /> : null}
+          {participationVisible && respond.isError ? <InlineError error={respond.error} /> : null}
+          {participationVisible && withdrawResponse.isError ? (
+            <InlineError error={withdrawResponse.error} />
+          ) : null}
 
-          {!declinedParticipation && !existingResponse && (respondAllowed || needsLocation) ? (
+          {!hasSession && request ? (
+            <Button
+              label="Sign in to respond"
+              variant="active"
+              size="lg"
+              corner="2xl"
+              onClick={() => contextualAuth.requestAuth({ type: 'respond', requestId: id })}
+            />
+          ) : null}
+          {participationVisible &&
+          !declinedParticipation &&
+          !existingResponse &&
+          (respondAllowed || needsLocation) ? (
             <Button
               label="Respond to request"
               variant="active"
@@ -533,7 +563,7 @@ export function RespondPage() {
         profile={personProfileFromRespondableRequest(request)}
         onClose={() => setRequesterProfileOpen(false)}
       />
-      {workerDiscussConversationId ? (
+      {participationVisible && workerDiscussConversationId ? (
         <ProjectGroupChatFab
           accessibilityLabel="Open chat with requester"
           onPress={() =>
@@ -541,7 +571,7 @@ export function RespondPage() {
           }
         />
       ) : null}
-      {locationModal}
+      {participationVisible ? locationModal : null}
     </div>
   );
 }

@@ -2,6 +2,7 @@
 
 import { Navigate } from 'react-router-dom';
 
+import { useHasSession } from '@/features/auth/use-user-id';
 import { isHelperEngagementView } from '@/features/requests/activity-list';
 import { useMyResponses } from '@/features/requests/responses-api';
 import { useMyRequests } from '@/features/requests/requester-api';
@@ -16,10 +17,12 @@ export function RequestRoutePage() {
   const id = useRouteParam('id');
   const search = useSearchParams();
   const fromFeedAsMine = search.get('mine') === '1';
+  const hasSession = useHasSession();
   const myRequests = useMyRequests();
   const myResponses = useMyResponses();
   const isMineFromList = myRequests.data?.some((row) => row.request_id === id) ?? false;
-  const isMine = isMineFromList || (fromFeedAsMine && !myRequests.isError);
+  const isMine =
+    hasSession && (isMineFromList || (fromFeedAsMine && !myRequests.isError));
 
   const helperEngagement = myResponses.data?.find(
     (row) =>
@@ -30,7 +33,7 @@ export function RequestRoutePage() {
       }),
   );
 
-  if (myRequests.isPending || myResponses.isPending) {
+  if (hasSession && (myRequests.isPending || myResponses.isPending)) {
     return <LoadingState label="Loading request…" />;
   }
 

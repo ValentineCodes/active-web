@@ -2,6 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 
+import { useHasSession } from '@/features/auth/use-user-id';
 import { queryKeys } from '@/lib/query/keys';
 import { supabase } from '@/lib/supabase/client';
 import type { Database } from '@/lib/supabase/database.types';
@@ -11,8 +12,10 @@ type MyAttendance = Database['public']['Views']['my_attendance']['Row'];
 export type { MyAttendance };
 
 export function useAttendance() {
+  const enabled = useHasSession();
   return useQuery({
     queryKey: queryKeys.attendance,
+    enabled,
     queryFn: async (): Promise<MyAttendance> => {
       const { data, error } = await supabase
         .from('my_attendance')

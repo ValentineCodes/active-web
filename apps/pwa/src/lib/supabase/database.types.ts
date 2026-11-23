@@ -5227,6 +5227,47 @@ export type Database = {
         Args: { p_withdrawal_id: string }
         Returns: Json
       }
+      browse_project: {
+        Args: { p_project_id: string }
+        Returns: {
+          attachment_path: string
+          budget_total_kobo: number
+          committed_compensation_kobo: number
+          contributed_total_kobo: number
+          creator_avatar_path: string
+          creator_bio: string
+          creator_completion_percent: number
+          creator_display_name: string
+          creator_id: string
+          creator_identity_verified: boolean
+          creator_rating_average: number
+          creator_rating_count: number
+          description: string
+          fully_funded_at: string
+          funding_deadline_at: string
+          funding_opened_at: string
+          funding_status: Database["public"]["Enums"]["project_funding_status"]
+          funding_timezone: string
+          funding_unsuccessful_at: string
+          funding_visibility: Database["public"]["Enums"]["project_funding_visibility"]
+          group_chat_conversation_id: string
+          group_chat_unread_count: number
+          location_label: string
+          min_contribution_kobo: number
+          min_funding_target_kobo: number
+          min_target_reached_at: string
+          project_id: string
+          project_visibility: Database["public"]["Enums"]["project_visibility"]
+          reserved_total_kobo: number
+          status: Database["public"]["Enums"]["project_status"]
+          tag_slugs: string[]
+          title: string
+          viewer_is_contributor: boolean
+          viewer_is_creator: boolean
+          viewer_may_contribute: boolean
+          viewer_may_view_assignments: boolean
+        }[]
+      }
       get_project: {
         Args: { p_project_id: string }
         Returns: {

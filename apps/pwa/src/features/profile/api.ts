@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
-import { useUserId } from '@/features/auth/use-user-id';
+import { useOptionalUserId, useUserId } from '@/features/auth/use-user-id';
 import { isSupabaseAuthError, recoverSessionOnAuthError } from '@/lib/supabase/auth-recovery';
 import { queryKeys } from '@/lib/query/keys';
 import { supabase } from '@/lib/supabase/client';
@@ -45,6 +45,12 @@ export function useProfile(userId: string | undefined) {
 
 export function useMyProfile() {
   const userId = useUserId();
+  return useProfile(userId);
+}
+
+/** Profile for the current session when present; safe on public marketplace routes. */
+export function useOptionalMyProfile() {
+  const userId = useOptionalUserId();
   return useProfile(userId);
 }
 

@@ -6,10 +6,12 @@ import type { RealtimeChannel } from '@supabase/supabase-js';
 
 import {
   useBrowseRequest,
+  useBrowseRequestGuestDetail,
   useBrowseRequestPreview,
   type BrowseRequestDetail,
 } from '@/features/requests/browse-api';
-import { useUserId } from '@/features/auth/use-user-id';
+import { useHasSession, useUserId } from '@/features/auth/use-user-id';
+import { useSession } from '@/features/auth/use-session';
 import type { Position } from '@/lib/geolocation';
 import { queryKeys } from '@/lib/query/keys';
 import type { DeliveryDurationUnit } from '@/features/requests/delivery-duration';
@@ -67,9 +69,10 @@ export function canRespondToRequest(request: RespondableRequest): boolean {
 }
 
 export function useResponderPreHandshakeConversation(requestId: string) {
+  const enabled = useHasSession();
   return useQuery({
     queryKey: ['responder-pre-handshake-conversation', requestId],
-    enabled: requestId.length > 0,
+    enabled: enabled && requestId.length > 0,
     queryFn: async (): Promise<string | null> => {
       const { data, error } = await supabase.rpc('get_responder_pre_handshake_conversation', {
         p_request_id: requestId,
@@ -152,6 +155,8 @@ function isOpenRequestStatus(status: string | null | undefined): boolean {
 
 /** Opens a request for responding via browse + the caller's existing response row. */
 export function useRequestForResponse(requestId: string, position: Position | null) {
+  const { session } = useSession();
+  const isGuest = !session;
   const mine = useMyResponses();
   const pendingRow = mine.data?.find(
     (row) => row.request_id === requestId && row.response_status === 'pending',
@@ -163,9 +168,10 @@ export function useRequestForResponse(requestId: string, position: Position | nu
     (row) => row.request_id === requestId && row.response_status === 'accepted',
   );
   const participationRow = pendingRow ?? declinedRow ?? acceptedRow ?? null;
-  const browseEnabled = mine.isSuccess && !participationRow;
-  const browse = useBrowseRequest(requestId, position, { enabled: browseEnabled });
+  const browseEnabled = (!session || mine.isSuccess) && !participationRow;
+  const browse = useBrowseRequest(requestId, position, { enabled: browseEnabled && !isGuest });
   const preview = useBrowseRequestPreview(requestId);
+  const guestDetail = useBrowseRequestGuestDetail(requestId, { enabled: isGuest && !participationRow });
 
   const previewRequest = preview.data ? fromBrowseRequest(preview.data) : null;
 
@@ -173,7 +179,9 @@ export function useRequestForResponse(requestId: string, position: Position | nu
     ? fromMyResponse(participationRow)
     : browse.data
       ? fromBrowseRequest(browse.data)
-      : previewRequest;
+      : guestDetail.data
+        ? fromBrowseRequest(guestDetail.data)
+        : previewRequest;
 
   const existing: ExistingResponse | null = pendingRow
     ? {
@@ -200,16 +208,26 @@ export function useRequestForResponse(requestId: string, position: Position | nu
     existingResponse: existing,
     pendingResponseRow: pendingRow ?? null,
     declinedParticipation,
-    needsLocation: browseEnabled && position === null,
+    needsLocation: !isGuest && browseEnabled && position === null,
     isFetchingMatch: browse.isFetching,
     browseConfirmedClosed:
-      browseEnabled && position !== null && browse.isSuccess && !browse.data && !preview.data,
-    isPending:
-      (mine.isPending && !mine.data && !preview.data) ||
-      (browseEnabled && position !== null && browse.isPending && !browse.data && !preview.data),
-    isError: browse.isError || mine.isError,
-    error: browse.error ?? mine.error,
+      !isGuest &&
+      browseEnabled &&
+      position !== null &&
+      browse.isSuccess &&
+      !browse.data &&
+      !preview.data,
+    isPending: isGuest
+      ? guestDetail.isPending && !guestDetail.data && !preview.data
+      : (mine.isPending && !mine.data && !preview.data) ||
+        (browseEnabled && position !== null && browse.isPending && !browse.data && !preview.data),
+    isError: isGuest ? guestDetail.isError : browse.isError || mine.isError,
+    error: isGuest ? guestDetail.error : browse.error ?? mine.error,
     refetch: async () => {
+      if (isGuest) {
+        await guestDetail.refetch();
+        return;
+      }
       await mine.refetch();
       if (browseEnabled && position !== null) {
         await browse.refetch();
@@ -303,8 +321,10 @@ export function useLiveResponseUpdates() {
 }
 
 export function useMyResponses() {
+  const enabled = useHasSession();
   return useQuery({
     queryKey: queryKeys.myResponses,
+    enabled,
     queryFn: async (): Promise<MyResponse[]> => {
       const { data, error } = await supabase.rpc('my_responses');
       if (error) throw error;

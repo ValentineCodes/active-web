@@ -48,11 +48,14 @@ export function projectContributionAmountPresets(minMajor: number, maxMajor: num
   }
 
   const inner = sorted.slice(1, -1);
-  const picked = new Set<number>([sorted[0], sorted[sorted.length - 1]]);
+  const first = sorted[0]!;
+  const last = sorted[sorted.length - 1]!;
+  const picked = new Set<number>([first, last]);
   const slots = MAX_CONTRIBUTION_PRESET_PILLS - 2;
   for (let i = 0; i < slots; i++) {
     const idx = Math.round(((i + 1) / (slots + 1)) * (inner.length - 1));
-    picked.add(inner[idx]);
+    const amount = inner[idx]!;
+    picked.add(amount);
   }
   return [...picked].sort((a, b) => a - b);
 }
@@ -64,4 +67,10 @@ export function projectViewerMayContribute(detail: ProjectContributeEligibility)
   if (detail.funding_visibility === 'public') return true;
   if (detail.viewer_is_creator) return true;
   return false;
+}
+
+/** Guest browse detail sets `viewer_may_contribute` false — use funding visibility for the CTA. */
+export function guestMaySeeProjectContributeCta(detail: ProjectContributeEligibility): boolean {
+  if (!OPEN_FUNDING.includes(detail.funding_status)) return false;
+  return detail.funding_visibility === 'public' && !detail.viewer_is_creator;
 }

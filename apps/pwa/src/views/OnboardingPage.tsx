@@ -12,6 +12,7 @@ import { InlineError } from '@/components/ui/StateView';
 import { TextAreaField, TextField } from '@/components/ui/TextField';
 import { useUserId } from '@/features/auth/use-user-id';
 import { uploadLiveProfilePhoto } from '@/features/profile/capture-live-profile-photo';
+import { resumePendingAction } from '@/features/auth/pending-action-resume';
 import { useMyProfile, useSaveProfile } from '@/features/profile/api';
 
 export function OnboardingPage() {
@@ -27,8 +28,8 @@ export function OnboardingPage() {
   const isNameValid = trimmedName.length >= 2 && trimmedName.length <= 60;
 
   useEffect(() => {
-    if (profile.data?.display_name) {
-      router.replace('/home');
+    if (profile.data?.display_name?.trim()) {
+      resumePendingAction(router);
     }
   }, [router, profile.data?.display_name]);
 
@@ -94,7 +95,7 @@ export function OnboardingPage() {
               onClick={() =>
                 save.mutate(
                   { display_name: trimmedName, bio: bio.trim() || null },
-                  { onSuccess: () => router.replace('/home') },
+                  { onSuccess: () => resumePendingAction(router) },
                 )
               }
             />
