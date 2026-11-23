@@ -29,6 +29,7 @@ import {
 } from '@/features/requests/browse-api';
 import { useHomeBrowseFeed } from '@/features/requests/use-home-browse-feed';
 import { useHomeFeedContentInset } from '@/components/ui/tab-bar-insets';
+import { useFlatListScrollRestoration } from '@/lib/navigation/use-flat-list-scroll-restoration';
 import { usePullToRefresh } from '@/lib/query/use-pull-to-refresh';
 
 type HomeFeedProps = {
@@ -41,6 +42,7 @@ export function HomeFeed({ searchQuery }: HomeFeedProps) {
   const tabBarInset = useHomeFeedContentInset();
   const [pageHeight, setPageHeight] = useState(0);
   const profileSheetRef = useRef<BottomSheetModal>(null);
+  const listRef = useRef<FlatList<HomeBrowseFeedRow>>(null);
   const [profileRequest, setProfileRequest] = useState<PublicRequest | null>(null);
 
   const onFeedLayout = useCallback((event: LayoutChangeEvent) => {
@@ -150,6 +152,19 @@ export function HomeFeed({ searchQuery }: HomeFeedProps) {
   );
 
   const listReady = pageHeight > 0;
+  const scrollReady = listReady && feed.rows.length > 0;
+  const onPersistScroll = useFlatListScrollRestoration(
+    'screen:home-feed',
+    listRef,
+    scrollReady,
+  );
+
+  const onListScroll = useCallback(
+    (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+      onPersistScroll(event);
+    },
+    [onPersistScroll],
+  );
 
   return (
     <View className="min-h-0 flex-1 bg-canvas" onLayout={onFeedLayout}>
@@ -201,6 +216,7 @@ export function HomeFeed({ searchQuery }: HomeFeedProps) {
         </View>
       ) : listReady ? (
         <FlatList
+          ref={listRef}
           style={{ flex: 1 }}
           className="bg-canvas"
           data={feed.rows}
@@ -216,6 +232,8 @@ export function HomeFeed({ searchQuery }: HomeFeedProps) {
           onEndReached={onEndReached}
           onEndReachedThreshold={0.35}
           onMomentumScrollEnd={onMomentumScrollEnd}
+          onScroll={onListScroll}
+          scrollEventThrottle={16}
           windowSize={3}
           maxToRenderPerBatch={2}
           removeClippedSubviews

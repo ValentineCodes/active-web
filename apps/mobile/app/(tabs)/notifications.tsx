@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { FlatList, Pressable, RefreshControl, Text, View } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
@@ -35,6 +35,7 @@ import { useProfile } from '@/features/profile/api';
 import { queryKeys } from '@/lib/query/keys';
 import { usePullToRefresh } from '@/lib/query/use-pull-to-refresh';
 import { showQuerySkeleton } from '@/lib/query/show-skeleton';
+import { useFlatListScrollRestoration } from '@/lib/navigation/use-flat-list-scroll-restoration';
 import {
   openNotificationSettings,
   readPushPermission,
@@ -54,6 +55,13 @@ export default function NotificationsScreen() {
   const [bannerDismissed, setBannerDismissed] = useState(true);
   const [enabling, setEnabling] = useState(false);
   const [markingAll, setMarkingAll] = useState(false);
+  const listRef = useRef<FlatList<InboxNotification>>(null);
+  const scrollReady = inbox.isSuccess || inbox.isError;
+  const onPersistScroll = useFlatListScrollRestoration(
+    `screen:notifications:${filter}`,
+    listRef,
+    scrollReady,
+  );
 
   const refreshPermissionState = useCallback(() => {
     void readPushPermission().then(setPermission);
@@ -202,8 +210,11 @@ export default function NotificationsScreen() {
 
       {inbox.isSuccess || inbox.isError ? (
         <FlatList
+          ref={listRef}
           className="flex-1"
           data={filteredItems}
+          onScroll={onPersistScroll}
+          scrollEventThrottle={16}
           keyExtractor={(item) => item.id}
           contentContainerClassName="px-5 pt-1"
           contentContainerStyle={{

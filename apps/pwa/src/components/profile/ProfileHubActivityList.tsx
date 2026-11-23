@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo, useState, type ReactNode, type UIEvent } from 'react';
+import { useCallback, useMemo, useRef, useState, type ReactNode, type UIEvent } from 'react';
 
 import { ActivityStatusFilter } from '@/components/activity/ActivityStatusFilter';
 import { useActivityFeed } from '@/components/activity/useActivityFeed';
@@ -44,6 +44,7 @@ import { formatMoney } from '@/lib/format';
 import { useClientPagination } from '@/lib/hooks/use-client-pagination';
 import { useRouter } from '@/lib/navigation';
 import { readAppTabBarInset } from '@/components/ui/tab-bar-insets';
+import { useElementScrollRestoration } from '@/lib/navigation/use-element-scroll-restoration';
 
 import type { ProfileHubTab } from '@/components/profile/ProfileStickyTabs';
 
@@ -62,6 +63,7 @@ type Props = {
 export function ProfileHubActivityList({ activeTab, listHeader }: Props) {
   const router = useRouter();
   const scrollPadding = readAppTabBarInset(24);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   const activity = useActivityFeed();
   const projects = useMyCreatedProjects();
@@ -156,14 +158,21 @@ export function ProfileHubActivityList({ activeTab, listHeader }: Props) {
   const { hasMore, loadMore, isLoading, isError, showRequestFilter, showResponseFilter, itemCount } =
     tabState;
 
+  const onPersistScroll = useElementScrollRestoration(
+    `screen:profile:${activeTab}`,
+    scrollRef,
+    !isLoading,
+  );
+
   const onScroll = useCallback(
     (event: UIEvent<HTMLDivElement>) => {
+      onPersistScroll(event);
       const el = event.currentTarget;
       if (el.scrollHeight - el.scrollTop - el.clientHeight < SCROLL_LOAD_THRESHOLD_PX) {
         loadMore();
       }
     },
-    [loadMore],
+    [loadMore, onPersistScroll],
   );
 
   const listFilter = (
@@ -373,6 +382,7 @@ export function ProfileHubActivityList({ activeTab, listHeader }: Props) {
 
   return (
     <div
+      ref={scrollRef}
       key={activeTab}
       className="h-full overflow-y-auto px-5"
       style={{ paddingBottom: scrollPadding }}

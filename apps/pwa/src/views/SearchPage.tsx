@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import AppLink from '@/components/AppLink';
 import { Screen } from '@/components/ui/Screen';
@@ -21,6 +21,7 @@ import { readPositionIfPermitted, type Position } from '@/lib/geolocation';
 import { useRouter, useSearchParams } from '@/lib/navigation';
 import { cn } from '@/lib/cn';
 import { readAppTabBarInset } from '@/components/ui/tab-bar-insets';
+import { useElementScrollRestoration } from '@/lib/navigation/use-element-scroll-restoration';
 import { useColors } from '@/theme/ThemeProvider';
 
 const CATEGORIES: { id: SearchDiscoverCategory; label: string }[] = [
@@ -151,12 +152,21 @@ export function SearchPage() {
   const onCategory = useCallback((id: SearchDiscoverCategory) => setCategory(id), []);
 
   const tabBarInset = readAppTabBarInset(8);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const scrollReady = query.length > 0 && !isLoading;
+  const onPersistScroll = useElementScrollRestoration(
+    `screen:search:${category}`,
+    scrollRef,
+    scrollReady,
+  );
 
   return (
     <Screen className="flex h-full min-h-0 flex-1 flex-col bg-canvas">
       <div
+        ref={scrollRef}
         className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-4 pt-2"
         style={{ paddingBottom: tabBarInset }}
+        onScroll={onPersistScroll}
       >
         <h1 className="font-display text-2xl text-ink">Search</h1>
         <div className="relative">

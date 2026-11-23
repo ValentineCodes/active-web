@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from '@/lib/navigation';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 
 import {
@@ -35,6 +35,7 @@ import { notificationNavigationPath } from '@/features/requests/activity-list';
 import { queryKeys } from '@/lib/query/keys';
 import { showQuerySkeleton } from '@/lib/query/show-skeleton';
 import type { InboxNotification } from '@/features/notifications/types';
+import { useElementScrollRestoration } from '@/lib/navigation/use-element-scroll-restoration';
 
 type WebPushPermission = NotificationPermission | 'unsupported';
 
@@ -75,6 +76,13 @@ export function NotificationsPage() {
   const inboxSkeleton = showQuerySkeleton(inbox);
   const inboxEmpty = (inbox.isSuccess || inbox.isError) && filteredItems.length === 0;
   const paddingBottom = readAppTabBarInset(24);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const scrollReady = inbox.isSuccess || inbox.isError;
+  const onPersistScroll = useElementScrollRestoration(
+    `screen:notifications:${filter}`,
+    scrollRef,
+    scrollReady,
+  );
 
   const pushPrefEnabled = profile.data?.push_notifications_enabled !== false;
   const osGranted = permission === 'granted';
@@ -229,7 +237,12 @@ export function NotificationsPage() {
           )}
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto px-5 pt-1" style={{ paddingBottom }}>
+        <div
+          ref={scrollRef}
+          className="min-h-0 flex-1 overflow-y-auto px-5 pt-1"
+          style={{ paddingBottom }}
+          onScroll={onPersistScroll}
+        >
           {inboxSkeleton ? (
             <InboxSkeletonList />
           ) : inbox.isSuccess || inbox.isError ? (

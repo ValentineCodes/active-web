@@ -16,6 +16,7 @@ import { ionIcons } from '@/components/ui/ion-icons';
 import { useHomeBrowseFeed, type HomeBrowseFeedRow } from '@/features/requests/use-home-browse-feed';
 import type { PublicRequest } from '@/features/requests/browse-api';
 import { useHomeFeedTabBarInset } from '@/components/ui/tab-bar-insets';
+import { useElementScrollRestoration } from '@/lib/navigation/use-element-scroll-restoration';
 import { useColors } from '@/theme/ThemeProvider';
 
 type Props = {
@@ -26,6 +27,7 @@ export function HomeFeed({ searchQuery }: Props) {
   const feed = useHomeBrowseFeed(searchQuery, true);
   const tabBarInset = useHomeFeedTabBarInset();
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const scrollRef = useRef<HTMLDivElement | null>(null);
   const [pageHeight, setPageHeight] = useState(0);
   const [profilePreview, setProfilePreview] = useState<PersonProfilePreview | null>(null);
   const [profileOpen, setProfileOpen] = useState(false);
@@ -47,16 +49,19 @@ export function HomeFeed({ searchQuery }: Props) {
     return () => observer.disconnect();
   }, []);
 
+  const listReady = pageHeight > 0;
+  const scrollReady = listReady && feed.rows.length > 0;
+  const onPersistScroll = useElementScrollRestoration('screen:home-feed', scrollRef, scrollReady);
+
   const onScroll = useCallback(
     (event: React.UIEvent<HTMLDivElement>) => {
+      onPersistScroll(event);
       if (pageHeight < 1 || !feed.hasNextPage || feed.isFetchingNextPage) return;
       const index = Math.round(event.currentTarget.scrollTop / pageHeight);
       if (index >= feed.rows.length - 2) feed.fetchNextPage();
     },
-    [feed, pageHeight],
+    [feed, onPersistScroll, pageHeight],
   );
-
-  const listReady = pageHeight > 0;
 
   return (
     <div ref={containerRef} className="relative flex min-h-0 flex-1 flex-col bg-canvas">
@@ -84,6 +89,7 @@ export function HomeFeed({ searchQuery }: Props) {
         <FeedEmptyBody className="min-h-0 flex-1" />
       ) : listReady ? (
         <div
+          ref={scrollRef}
           className="h-full snap-y snap-mandatory overflow-y-auto overscroll-y-contain bg-canvas [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           onScroll={onScroll}
         >

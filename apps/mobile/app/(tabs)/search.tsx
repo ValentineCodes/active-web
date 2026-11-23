@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   FlatList,
   Pressable,
@@ -25,6 +25,7 @@ import {
 import { buildTopDiscoverRows, flattenDiscoverPages } from '@/features/search/discovery-rows';
 import type { SearchDiscoverListRow } from '@/features/search/discovery-types';
 import { readPositionIfPermitted, type Position } from '@/lib/location';
+import { useFlatListScrollRestoration } from '@/lib/navigation/use-flat-list-scroll-restoration';
 import { poppinsInputTypography } from '@/theme/fonts';
 import { useColors } from '@/theme';
 
@@ -200,6 +201,14 @@ export default function SearchTabScreen() {
     [openRequest],
   );
 
+  const resultsListRef = useRef<FlatList<SearchDiscoverListRow>>(null);
+  const scrollReady = query.length > 0 && !isLoading;
+  const onPersistScroll = useFlatListScrollRestoration(
+    `screen:search:${category}`,
+    resultsListRef,
+    scrollReady,
+  );
+
   return (
     <Screen className="bg-canvas" edges={['top']}>
       <View className="gap-3 px-4 pb-3 pt-2">
@@ -249,7 +258,10 @@ export default function SearchTabScreen() {
       </View>
 
       <FlatList
+        ref={resultsListRef}
         data={rows}
+        onScroll={onPersistScroll}
+        scrollEventThrottle={16}
         keyExtractor={(item) => item.key}
         contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 24, gap: 12, flexGrow: 1 }}
         ListEmptyComponent={listEmpty}

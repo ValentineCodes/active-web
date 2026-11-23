@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState, type ReactElement } from 'react';
+import { useCallback, useMemo, useRef, useState, type ReactElement } from 'react';
 import { FlatList, Pressable, RefreshControl, Text, View } from 'react-native';
 import { type Href, router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -30,6 +30,7 @@ import {
 import { useMyCreatedProjects } from '@/features/projects/project-api';
 import { formatMoney } from '@/lib/format';
 import { useClientPagination } from '@/lib/hooks/use-client-pagination';
+import { useFlatListScrollRestoration } from '@/lib/navigation/use-flat-list-scroll-restoration';
 
 import type { ProfileHubTab } from '@/components/profile/ProfileStickyTabs';
 
@@ -43,6 +44,7 @@ type Props = {
 export function ProfileHubActivityList({ activeTab, listHeader }: Props) {
   const insets = useSafeAreaInsets();
   const scrollPadding = insets.bottom + 24;
+  const listRef = useRef<FlatList<unknown>>(null);
 
   const activity = useActivityFeed();
   const projects = useMyCreatedProjects();
@@ -249,7 +251,11 @@ export function ProfileHubActivityList({ activeTab, listHeader }: Props) {
     projectRows.length,
     projects.error,
     projects.refetch,
-  ]);
+    ]);
+
+  const scrollStorageKey = `screen:profile:${activeTab}`;
+  const scrollReady = !isLoading;
+  const onPersistScroll = useFlatListScrollRestoration(scrollStorageKey, listRef, scrollReady);
 
   const keyExtractor = useCallback(
     (item: (typeof visibleItems)[number]) => {
@@ -266,8 +272,11 @@ export function ProfileHubActivityList({ activeTab, listHeader }: Props) {
 
   return (
     <FlatList
+      ref={listRef}
       key={activeTab}
       data={visibleItems}
+      onScroll={onPersistScroll}
+      scrollEventThrottle={16}
       keyExtractor={keyExtractor}
       ListHeaderComponent={listHeaderComponent}
       contentContainerStyle={{
