@@ -7,16 +7,18 @@ import { useColors } from '@/theme/ThemeProvider';
 export function ProjectGroupChatFab({
   onPress,
   unreadCount = 0,
+  accessibilityLabel = 'Open project team chat',
 }: {
   onPress: () => void;
   unreadCount?: number;
+  accessibilityLabel?: string;
 }) {
   const colors = useColors();
 
   return (
     <button
       type="button"
-      aria-label="Open project team chat"
+      aria-label={accessibilityLabel}
       onClick={onPress}
       className="absolute right-5 z-40 flex h-14 w-14 items-center justify-center rounded-full border border-hairline bg-active shadow-card active:opacity-90"
       style={{

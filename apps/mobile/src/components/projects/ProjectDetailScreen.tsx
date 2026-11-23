@@ -17,6 +17,7 @@ import { ProjectResponseTabPanel } from '@/components/project-flow/ProjectRespon
 import { ProjectResponsesPanel } from '@/components/project-flow/ProjectResponsesPanel';
 import { ResponseCreationFlow } from '@/components/ResponseCreationFlow';
 import { hasProfilePhotoReady } from '@/features/profile/api';
+import { ProjectGroupChatFab } from '@/components/project-flow/ProjectGroupChatFab';
 import { useWorkerProjectPreHandshakeConversation } from '@/features/projects/project-conversation-api';
 import {
   projectResponseWizardInitialOffer,
@@ -348,12 +349,6 @@ export function ProjectDetailScreen({ projectId }: { projectId: string }) {
             completionPercent={creatorProfile.completionPercent}
             identityVerified={creatorProfile.identityVerified}
             onPress={() => creatorProfileSheetRef.current?.present()}
-            onDiscussPress={
-              existingResponse && workerPreHandshakeChat.data
-                ? () => router.push(`/conversation/${workerPreHandshakeChat.data}` as Href)
-                : undefined
-            }
-            discussLoading={workerPreHandshakeChat.isPending}
           />
         ) : null}
 
@@ -435,6 +430,8 @@ export function ProjectDetailScreen({ projectId }: { projectId: string }) {
     [tab],
   );
 
+  const workerPreHandshakeConversationId = workerPreHandshakeChat.data ?? null;
+
   return (
     <Screen className="relative flex-1" edges={['top', 'bottom']}>
       <RequestFlowHeader title={headerTitle} onBack={() => router.back()} />
@@ -449,7 +446,7 @@ export function ProjectDetailScreen({ projectId }: { projectId: string }) {
           contentContainerStyle={{
             gap: 12,
             paddingHorizontal: 20,
-            paddingBottom: 48,
+            paddingBottom: workerPreHandshakeConversationId ? 112 : 48,
             flexGrow: listData.length === 0 ? 1 : undefined,
           }}
           keyboardShouldPersistTaps="handled"
@@ -510,6 +507,15 @@ export function ProjectDetailScreen({ projectId }: { projectId: string }) {
           });
         }}
       />
+
+      {workerPreHandshakeConversationId ? (
+        <ProjectGroupChatFab
+          accessibilityLabel="Open chat with creator"
+          onPress={() =>
+            router.push(`/conversation/${workerPreHandshakeConversationId}` as Href)
+          }
+        />
+      ) : null}
     </Screen>
   );
 }

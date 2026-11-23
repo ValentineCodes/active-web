@@ -10,6 +10,7 @@ import {
 } from '@/components/profile/PersonProfileSheet';
 import { ExistingResponseCard } from '@/components/request-flow/ExistingResponseCard';
 import { RequestCallout } from '@/components/request-flow/RequestCallout';
+import { ProjectGroupChatFab } from '@/components/project-flow/ProjectGroupChatFab';
 import { RequestFlowHeader } from '@/components/request-flow/RequestFlowHeader';
 import { ResponseCreationFlow } from '@/components/request-flow/ResponseCreationFlow';
 import { RequestLocationModal } from '@/components/RequestLocationModal';
@@ -434,11 +435,16 @@ export function RespondPage() {
     );
   }
 
+  const workerDiscussConversationId =
+    existingResponse && preHandshakeConversation.data ? preHandshakeConversation.data : null;
+
   return (
-    <div className="flex min-h-0 flex-1 flex-col bg-canvas">
+    <div className="relative flex min-h-0 flex-1 flex-col bg-canvas">
       <RequestFlowHeader title="Request" onBack={() => router.back()} />
 
-      <div className="min-h-0 flex-1 overflow-y-auto p-5 pb-12">
+      <div
+        className={`min-h-0 flex-1 overflow-y-auto p-5 ${workerDiscussConversationId ? 'pb-28' : 'pb-12'}`}
+      >
         <div className="flex flex-col gap-6">
           <RequestHelpSummary
             request={request}
@@ -450,15 +456,6 @@ export function RespondPage() {
             milestoneItems={existingResponse ? [] : requesterMilestones}
             existingResponse={Boolean(existingResponse)}
             onRequesterPress={() => setRequesterProfileOpen(true)}
-            onRequesterDiscussPress={
-              existingResponse && preHandshakeConversation.data
-                ? () =>
-                    router.push(
-                      conversationHref(preHandshakeConversation.data!, `/request/${id}`),
-                    )
-                : undefined
-            }
-            requesterDiscussLoading={preHandshakeConversation.isPending}
           />
 
           {declinedParticipation ? (
@@ -492,6 +489,8 @@ export function RespondPage() {
               quotedAmount={existingResponse.quotedAmount}
               requesterOffer={requesterOffer}
               message={existingResponse.message}
+              compactPendingStatus
+              pendingStatusLabel="Awaiting review"
               proposedMilestones={
                 myProposedMilestones.length >= 2 ? myProposedMilestones : undefined
               }
@@ -534,6 +533,14 @@ export function RespondPage() {
         profile={personProfileFromRespondableRequest(request)}
         onClose={() => setRequesterProfileOpen(false)}
       />
+      {workerDiscussConversationId ? (
+        <ProjectGroupChatFab
+          accessibilityLabel="Open chat with requester"
+          onPress={() =>
+            router.push(conversationHref(workerDiscussConversationId, `/request/${id}`))
+          }
+        />
+      ) : null}
       {locationModal}
     </div>
   );

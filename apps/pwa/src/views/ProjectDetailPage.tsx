@@ -308,6 +308,10 @@ export function ProjectDetailPage() {
   const showAssignmentsTab = showAssignmentsTabFromData;
   const groupChatConversationId = detail.group_chat_conversation_id ?? null;
   const groupChatUnread = detail.group_chat_unread_count ?? 0;
+  const workerPreHandshakeConversationId = workerPreHandshakeChat.data ?? null;
+  const showWorkerDiscussFab = Boolean(workerPreHandshakeConversationId);
+  const showGroupChatFab = Boolean(groupChatConversationId);
+  const scrollBottomPadding = showWorkerDiscussFab || showGroupChatFab ? 'pb-28' : 'pb-12';
 
   return (
     <Screen className="relative flex min-h-0 flex-1 flex-col">
@@ -315,7 +319,7 @@ export function ProjectDetailPage() {
 
       <div className="relative min-h-0 flex-1">
         <div
-          className={`h-full overflow-y-auto px-5 ${groupChatConversationId ? 'pb-28' : 'pb-12'}`}
+          className={`h-full overflow-y-auto px-5 ${scrollBottomPadding}`}
         >
           <div className="flex flex-col gap-5">
             <RequestMetaRow badgeLabel={badge.label} badgeTone={badge.tone} trailing={metaTime} />
@@ -373,15 +377,6 @@ export function ProjectDetailPage() {
                 completionPercent={creatorProfile.completionPercent}
                 identityVerified={creatorProfile.identityVerified}
                 onPress={() => setCreatorProfilePreview(personProfileFromProjectDetail(detail))}
-                onDiscussPress={
-                  existingResponse && workerPreHandshakeChat.data
-                    ? () =>
-                        router.push(
-                          conversationHref(workerPreHandshakeChat.data!, `/project/${id}`),
-                        )
-                    : undefined
-                }
-                discussLoading={workerPreHandshakeChat.isPending}
               />
             ) : null}
 
@@ -452,6 +447,16 @@ export function ProjectDetailPage() {
         onClose={() => setContributeOpen(false)}
       />
 
+      {workerPreHandshakeConversationId ? (
+        <ProjectGroupChatFab
+          accessibilityLabel="Open chat with creator"
+          onPress={() =>
+            router.push(
+              conversationHref(workerPreHandshakeConversationId, `/project/${id}`),
+            )
+          }
+        />
+      ) : null}
       {groupChatConversationId ? (
         <ProjectGroupChatFab
           unreadCount={groupChatUnread}

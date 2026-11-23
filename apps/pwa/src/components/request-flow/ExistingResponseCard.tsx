@@ -29,7 +29,7 @@ type Props = {
   proposedDeliveryDurationUnit?: DeliveryDurationUnit | null;
   proposedDeliveryAt?: string | null;
   proposedDeliveryTimezone?: string | null;
-  /** Project worker responses: badge only. Request respond keeps the explainer banner. */
+  /** Pending status as a badge only (no explainer banner). */
   compactPendingStatus?: boolean;
   pendingStatusLabel?: string;
 };

@@ -385,8 +385,22 @@ export function EngagementPage() {
   const showReportFooter =
     !inActiveFlow &&
     ((canReportActiveProblem && data.viewer_is_requester) || canReportHelperProblem);
+  const showReportMenu = inActiveFlow || showReportFooter;
   const showRateFooter = data.request_status === 'completed' && !data.viewer_has_rated;
-  const hasFloatingFooter = inActiveFlow || showReportFooter || showRateFooter;
+  const showHelperDoneButton =
+    helperActive &&
+    !isMilestoneEngagement &&
+    ['accepted', 'in_progress'].includes(data.request_status);
+  const showRequesterConfirmButton = requesterActive && !isMilestoneEngagement;
+  const hasInActiveFlowFooter =
+    inActiveFlow &&
+    (showHelperStart ||
+      showHelperDoneButton ||
+      showRequesterConfirmButton ||
+      startRequest.isError ||
+      markServiceComplete.isError ||
+      completeRequest.isError);
+  const hasFloatingFooter = hasInActiveFlowFooter || showRateFooter;
 
   const openMaps = () => openInMaps(data.request_latitude, data.request_longitude);
 
@@ -406,7 +420,21 @@ export function EngagementPage() {
 
   return (
     <Screen className="flex min-h-[100dvh] flex-col">
-      <RequestFlowHeader title={screenTitle} onBack={() => router.back()} />
+      <RequestFlowHeader
+        title={screenTitle}
+        onBack={() => router.back()}
+        menuActions={
+          showReportMenu
+            ? [
+                {
+                  label: 'Report an issue',
+                  onPress: () => setReportIssueOpen(true),
+                  destructive: true,
+                },
+              ]
+            : undefined
+        }
+      />
 
       <div className="relative flex min-h-0 flex-1 flex-col">
         <div
@@ -611,7 +639,7 @@ export function EngagementPage() {
         {hasFloatingFooter ? (
           <div
             ref={footerRef}
-            className="absolute bottom-0 left-0 right-0 flex flex-col gap-3 border-t border-hairline bg-canvas px-5 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))]"
+            className="absolute bottom-0 left-0 right-0 flex flex-col gap-3 bg-transparent px-5 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))]"
           >
             {inActiveFlow ? (
               <>
@@ -640,9 +668,7 @@ export function EngagementPage() {
                     }}
                   />
                 ) : null}
-                {helperActive &&
-                !isMilestoneEngagement &&
-                ['accepted', 'in_progress'].includes(data.request_status) ? (
+                {showHelperDoneButton ? (
                   <Button
                     label="I'm done"
                     variant="active"
@@ -654,7 +680,7 @@ export function EngagementPage() {
                   />
                 ) : null}
 
-                {requesterActive && !isMilestoneEngagement ? (
+                {showRequesterConfirmButton ? (
                   <Button
                     label="Confirm completion"
                     variant="active"
@@ -665,25 +691,7 @@ export function EngagementPage() {
                     onClick={() => setConfirmCompleteOpen(true)}
                   />
                 ) : null}
-
-                <Button
-                  label="Report an issue"
-                  variant="danger"
-                  size="lg"
-                  corner="2xl"
-                  onClick={() => setReportIssueOpen(true)}
-                />
               </>
-            ) : null}
-
-            {showReportFooter ? (
-              <button
-                type="button"
-                className="py-1 text-center text-base font-semibold text-danger active:opacity-80"
-                onClick={() => setReportIssueOpen(true)}
-              >
-                Report an issue
-              </button>
             ) : null}
 
             {showRateFooter ? (

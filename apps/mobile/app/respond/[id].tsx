@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import type { BottomSheetModal } from '@gorhom/bottom-sheet';
 
 import { PersonProfileBottomSheet } from '@/components/PersonProfileBottomSheet';
+import { ProjectGroupChatFab } from '@/components/project-flow/ProjectGroupChatFab';
 import { ExistingResponseCard } from '@/components/request-flow/ExistingResponseCard';
 import { RequestCallout } from '@/components/request-flow/RequestCallout';
 import { RequestFlowHeader } from '@/components/request-flow/RequestFlowHeader';
@@ -390,12 +391,15 @@ export default function RespondScreen() {
     ]);
   };
 
+  const workerDiscussConversationId =
+    existingResponse && preHandshakeConversation.data ? preHandshakeConversation.data : null;
+
   return (
-    <Screen edges={['top', 'bottom']}>
+    <Screen className="relative flex-1" edges={['top', 'bottom']}>
       <RequestFlowHeader title="Request" onBack={() => router.back()} />
 
       <ScrollView
-        contentContainerClassName="gap-6 p-5 pb-12"
+        contentContainerClassName={`gap-6 p-5 ${workerDiscussConversationId ? 'pb-28' : 'pb-12'}`}
         keyboardShouldPersistTaps="handled"
         refreshControl={
           <RefreshControl refreshing={pullRefreshing} onRefresh={() => void onPullRefresh()} />
@@ -409,11 +413,6 @@ export default function RespondScreen() {
           milestoneItems={existingResponse ? [] : requesterMilestones}
           existingResponse={Boolean(existingResponse)}
           onRequesterPress={() => profileSheetRef.current?.present()}
-          onRequesterDiscussPress={
-            existingResponse && preHandshakeConversation.data
-              ? () => router.push(`/conversation/${preHandshakeConversation.data}`)
-              : undefined
-          }
         />
 
         {declinedParticipation ? (
@@ -452,6 +451,8 @@ export default function RespondScreen() {
             quotedAmount={existingResponse.quotedAmount}
             requesterOffer={requesterOffer}
             message={existingResponse.message}
+            compactPendingStatus
+            pendingStatusLabel="Awaiting review"
             proposedMilestones={
               myProposedMilestones.length >= 2 ? myProposedMilestones : undefined
             }
@@ -500,6 +501,13 @@ export default function RespondScreen() {
         completionPercent={request.requester_completion_percent}
         identityVerified={request.requester_identity_verified ?? false}
       />
+
+      {workerDiscussConversationId ? (
+        <ProjectGroupChatFab
+          accessibilityLabel="Open chat with requester"
+          onPress={() => router.push(`/conversation/${workerDiscussConversationId}`)}
+        />
+      ) : null}
     </Screen>
   );
 }

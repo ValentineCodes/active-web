@@ -105,7 +105,20 @@ export function EngagementLifecycleCard(props: EngagementLifecycleCardProps) {
     now,
   });
 
-  if (!proposedLabel && !showStartCountdown && !bindingCountdownLabel && !bindingCalendarLabel) {
+  const showBindingDeadline =
+    hasStarted && Boolean(bindingCountdownLabel || bindingCalendarLabel);
+  const showProposedDelivery = Boolean(proposedLabel) && !showBindingDeadline;
+  const showHelperStart =
+    !props.viewerIsRequester && showHelperStartHint && startRemaining !== null;
+
+  if (
+    !showProposedDelivery &&
+    !showStartCountdown &&
+    !showHelperStart &&
+    !showBindingDeadline &&
+    !failureDismissAvailable &&
+    !missedDismissWindow
+  ) {
     return null;
   }
 
@@ -134,7 +147,7 @@ export function EngagementLifecycleCard(props: EngagementLifecycleCardProps) {
         </RequestCallout>
       ) : null}
 
-      {!props.viewerIsRequester && showHelperStartHint && startRemaining !== null ? (
+      {showHelperStart ? (
         <RequestCallout tone="info" title="Press Start to begin">
           <Text className="text-sm text-muted">
             {startRemaining > 0
@@ -147,7 +160,7 @@ export function EngagementLifecycleCard(props: EngagementLifecycleCardProps) {
         </RequestCallout>
       ) : null}
 
-      {proposedLabel ? (
+      {showProposedDelivery ? (
         <RequestCallout tone="info" title="Proposed delivery">
           <Text className="text-sm font-semibold text-ink">{proposedLabel}</Text>
           {proposedExplainer ? (
@@ -156,8 +169,8 @@ export function EngagementLifecycleCard(props: EngagementLifecycleCardProps) {
         </RequestCallout>
       ) : null}
 
-      {hasStarted && (bindingCountdownLabel || bindingCalendarLabel) ? (
-        <RequestCallout tone="info" title="Binding delivery deadline">
+      {showBindingDeadline ? (
+        <RequestCallout tone="info" title="Delivery deadline">
           {bindingCountdownLabel ? (
             <Text className="text-sm font-semibold text-ink">{bindingCountdownLabel}</Text>
           ) : null}

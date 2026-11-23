@@ -1,7 +1,7 @@
-import { Pressable, Text } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-import { useTheme } from '@/theme';
+import { useColors } from '@/theme';
 
 export function HomeActiveRequestBanner({
   title,
@@ -10,21 +10,22 @@ export function HomeActiveRequestBanner({
   title: string;
   onPress: () => void;
 }) {
-  const { colors, shadow } = useTheme();
+  const colors = useColors();
 
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={`Active now: ${title}`}
       onPress={onPress}
-      style={shadow.raised}
-      className="mx-5 flex-row items-center gap-2.5 rounded-2xl bg-active px-4 py-3 active:opacity-90"
+      className="mx-5 flex-row items-center gap-2.5 rounded-2xl bg-active px-3.5 py-2 active:opacity-90"
     >
-      <Ionicons name="radio-outline" size={18} color={colors.onBrand} />
-      <Text className="min-w-0 flex-1 text-sm font-semibold text-on-brand" numberOfLines={1}>
+      <View className="h-7 w-7 items-center justify-center rounded-full bg-on-brand/15">
+        <View className="h-2 w-2 rounded-full bg-on-brand" />
+      </View>
+      <Text className="min-w-0 flex-1 text-xs font-semibold text-on-brand" numberOfLines={1}>
         Active now · {title}
       </Text>
-      <Ionicons name="chevron-forward" size={18} color={colors.onBrand} />
+      <Ionicons name="chevron-forward" size={16} color={colors.onBrand} />
     </Pressable>
   );
 }

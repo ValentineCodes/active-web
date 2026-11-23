@@ -491,15 +491,44 @@ export default function EngagementScreen() {
   const showReportFooter =
     !inActiveFlow &&
     ((canReportActiveProblem && data.viewer_is_requester) || canReportHelperProblem);
+  const showReportMenu = inActiveFlow || showReportFooter;
   const showRateFooter = data.request_status === 'completed' && !data.viewer_has_rated;
   const hasDismissFooter = showDismissFailure || showDismissMissed;
+  const showHelperDoneButton =
+    helperActive &&
+    !isMilestoneEngagement &&
+    ['accepted', 'in_progress'].includes(data.request_status);
+  const showRequesterConfirmButton = requesterActive && !isMilestoneEngagement;
+  const hasInActiveFlowFooter =
+    inActiveFlow &&
+    (showHelperDoneButton ||
+      showRequesterConfirmButton ||
+      markServiceComplete.isError ||
+      completeRequest.isError);
   const hasFloatingFooter =
-    inActiveFlow || showReportFooter || showRateFooter || showHelperStart || hasDismissFooter;
+    hasInActiveFlowFooter ||
+    showRateFooter ||
+    showHelperStart ||
+    hasDismissFooter;
   const openCounterpartyProfile = () => profileSheetRef.current?.present();
 
   return (
     <Screen>
-      <RequestFlowHeader title={screenTitle} onBack={() => router.back()} />
+      <RequestFlowHeader
+        title={screenTitle}
+        onBack={() => router.back()}
+        menuActions={
+          showReportMenu
+            ? [
+                {
+                  label: 'Report an issue',
+                  onPress: openReportIssue,
+                  destructive: true,
+                },
+              ]
+            : undefined
+        }
+      />
 
       <View className="flex-1">
         <ScrollView
@@ -718,7 +747,7 @@ export default function EngagementScreen() {
 
         {hasFloatingFooter ? (
           <View
-            className="absolute bottom-0 left-0 right-0 gap-3 border-t border-hairline bg-canvas px-5 pt-4"
+            className="absolute bottom-0 left-0 right-0 gap-3 bg-transparent px-5 pt-4"
             style={{ paddingBottom: Math.max(insets.bottom, 16) }}
             onLayout={(event) => setFooterHeight(event.nativeEvent.layout.height)}
           >
@@ -773,9 +802,7 @@ export default function EngagementScreen() {
                   <InlineError error={markServiceComplete.error} />
                 ) : null}
                 {completeRequest.isError ? <InlineError error={completeRequest.error} /> : null}
-                {helperActive &&
-                !isMilestoneEngagement &&
-                ['accepted', 'in_progress'].includes(data.request_status) ? (
+                {showHelperDoneButton ? (
                   <Button
                     label="I'm done"
                     variant="active"
@@ -786,7 +813,7 @@ export default function EngagementScreen() {
                   />
                 ) : null}
 
-                {requesterActive && !isMilestoneEngagement ? (
+                {showRequesterConfirmButton ? (
                   <Button
                     label="Confirm completion"
                     variant="active"
@@ -814,23 +841,6 @@ export default function EngagementScreen() {
                     }
                   />
                 ) : null}
-
-                <Button
-                  label="Report an issue"
-                  variant="danger"
-                  size="lg"
-                  onPress={openReportIssue}
-                />
-              </>
-            ) : null}
-
-            {showReportFooter ? (
-              <>
-                <Pressable accessibilityRole="button" onPress={openReportIssue}>
-                  <Text className="text-center text-base font-semibold text-danger">
-                    Report an issue
-                  </Text>
-                </Pressable>
               </>
             ) : null}
 
