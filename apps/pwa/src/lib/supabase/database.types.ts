@@ -5465,6 +5465,7 @@ export type Database = {
         Returns: {
           budget_total_kobo: number
           contributed_total_kobo: number
+          contributor_count: number
           funding_deadline_at: string
           funding_status: Database["public"]["Enums"]["project_funding_status"]
           project_id: string

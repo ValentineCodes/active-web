@@ -9,6 +9,34 @@ function fundingStatusLabel(status: ProjectFundingStatus): string {
   return status.replaceAll('_', ' ');
 }
 
+const PROJECT_STATUS_META: Record<ProjectStatus, string> = {
+  live: 'Collecting contributions',
+  draft: 'Draft — not published',
+  cancelled: 'Cancelled',
+  funding_unsuccessful: 'Funding did not complete',
+};
+
+export function projectFundingProgressPct(contributedKobo: number, budgetKobo: number): number {
+  if (budgetKobo <= 0) return 0;
+  return Math.min(100, Math.round((contributedKobo / budgetKobo) * 100));
+}
+
+/** Fully funded projects surface budget and status only — not raised amount or progress. */
+export function projectShowsFundingRaised(fundingStatus: ProjectFundingStatus): boolean {
+  return fundingStatus !== 'fully_funded';
+}
+
+export function myCreatedProjectActivityMetaLine(status: ProjectStatus): string {
+  return PROJECT_STATUS_META[status] ?? status.replaceAll('_', ' ');
+}
+
+export function myCreatedProjectContributorCountLine(contributorCount: number | undefined): string {
+  const count = contributorCount ?? 0;
+  if (count <= 0) return 'No contributors yet';
+  if (count === 1) return '1 contributor';
+  return `${count} contributors`;
+}
+
 export function projectDetailBadge(input: {
   status: ProjectStatus;
   funding_status: ProjectFundingStatus;

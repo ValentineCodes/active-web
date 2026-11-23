@@ -51,7 +51,7 @@ import {
   useWithdrawProjectResponse,
 } from '@/features/projects/project-responses-api';
 import { conversationHref } from '@/lib/conversation-navigation';
-import { projectDetailBadge } from '@/features/projects/project-status';
+import { projectDetailBadge, projectShowsFundingRaised } from '@/features/projects/project-status';
 import {
   formatCoarseLocationLabel,
   formatMoney,
@@ -344,6 +344,7 @@ export function ProjectDetailPage() {
                 }
                 locationLabel={locationLabel}
                 fundingStatusLabel={detail.funding_status}
+                showContributedProgress={projectShowsFundingRaised(detail.funding_status)}
                 onOpenContribute={canContribute ? () => setContributeOpen(true) : undefined}
                 currency={MARKET.currency}
                 budgetBreakdown={

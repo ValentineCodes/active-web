@@ -4,6 +4,7 @@ import { ResponderScheduleAvailability } from '@/components/ResponderScheduleAva
 import { MilestonePlanCard } from '@/components/request-flow/MilestonePlanCard';
 import { RequestPersonCard } from '@/components/request-flow/RequestPersonCard';
 import { Badge } from '@/components/ui/Badge';
+import { ExpandableText } from '@/components/ui/ExpandableText';
 import type { MilestoneProposalItem } from '@/features/requests/milestones';
 import {
   type DeliveryDurationUnit,
@@ -95,7 +96,13 @@ export function ResponseCard({
             <p className="text-sm text-muted">{formatAgo(createdAt)}</p>
             {offerLabel ? <p className="text-base font-bold text-active">{offerLabel}</p> : null}
           </div>
-          {message ? <p className="text-base leading-6 text-ink">{message}</p> : null}
+          {message ? (
+            <ExpandableText
+              text={message}
+              modalTitle="Message"
+              className="whitespace-pre-wrap text-base leading-6 text-ink"
+            />
+          ) : null}
           {proposedMilestones && proposedMilestones.length >= 2 && proposedMilestoneTotalMajor != null ? (
             <MilestonePlanCard
               paymentStructure="milestone"

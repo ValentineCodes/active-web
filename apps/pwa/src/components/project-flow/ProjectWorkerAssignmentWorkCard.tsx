@@ -5,6 +5,7 @@ import { ProjectAssignmentDeadlineCard } from '@/components/project-flow/Project
 import { ProjectWorkerAssignmentActions } from '@/components/project-flow/ProjectWorkerAssignmentActions';
 import { RequestCallout } from '@/components/request-flow/RequestCallout';
 import { Badge } from '@/components/ui/Badge';
+import { ExpandableText } from '@/components/ui/ExpandableText';
 import { InlineError } from '@/components/ui/StateView';
 import { SkeletonBlock } from '@/components/ui/Skeleton';
 import { MARKET } from '@/config';
@@ -75,7 +76,11 @@ export function ProjectWorkerAssignmentWorkCard({
           <h3 className="text-lg font-bold text-ink">{sectionHeading}</h3>
         ) : null}
         {row.description?.trim() ? (
-          <p className="whitespace-pre-wrap text-base leading-6 text-ink">{row.description.trim()}</p>
+          <ExpandableText
+            text={row.description.trim()}
+            modalTitle="Scope"
+            className="whitespace-pre-wrap text-base leading-6 text-ink"
+          />
         ) : null}
         <p className="text-base font-semibold text-active">
           {formatMoney(row.compensation_total_kobo / 100, MARKET.currency)}
@@ -85,7 +90,11 @@ export function ProjectWorkerAssignmentWorkCard({
       {row.deliverables ? (
         <div className="flex flex-col gap-1">
           <p className="text-xs font-bold uppercase tracking-widest text-subtle">Deliverables</p>
-          <p className="whitespace-pre-wrap text-sm text-ink">{row.deliverables}</p>
+          <ExpandableText
+            text={row.deliverables}
+            modalTitle="Deliverables"
+            className="whitespace-pre-wrap text-sm text-ink"
+          />
         </div>
       ) : null}
 

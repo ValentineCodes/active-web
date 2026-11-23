@@ -1,6 +1,7 @@
 'use client';
 
 import { MilestonePlanCard } from '@/components/request-flow/MilestonePlanCard';
+import { ExpandableText } from '@/components/ui/ExpandableText';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { IonIcon } from '@/components/ui/IonIcon';
@@ -104,7 +105,13 @@ export function ExistingResponseCard({
         {trimmedMessage ? (
           <div className="rounded-2xl border border-hairline bg-surface px-4 py-3">
             <p className="text-xs font-medium text-subtle">Message</p>
-            <p className="mt-1 whitespace-pre-wrap text-sm leading-6 text-ink">{trimmedMessage}</p>
+            <div className="mt-1">
+              <ExpandableText
+                text={trimmedMessage}
+                modalTitle="Message"
+                className="whitespace-pre-wrap text-sm leading-6 text-ink"
+              />
+            </div>
           </div>
         ) : (
           <p className="text-sm italic text-subtle">No message with your response.</p>

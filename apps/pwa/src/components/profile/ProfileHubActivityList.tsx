@@ -1,11 +1,15 @@
 'use client';
 
-import Link from '@/components/AppLink';
 import { useCallback, useMemo, useState, type ReactNode, type UIEvent } from 'react';
 
 import { ActivityStatusFilter } from '@/components/activity/ActivityStatusFilter';
 import { useActivityFeed } from '@/components/activity/useActivityFeed';
-import { ActivityMyRequestCard, ActivityMyResponseCard } from '@/components/activity/ActivityTabCards';
+import {
+  ActivityMyProjectCard,
+  ActivityMyProjectWorkCard,
+  ActivityMyRequestCard,
+  ActivityMyResponseCard,
+} from '@/components/activity/ActivityTabCards';
 import { ActivityCardListSkeleton } from '@/components/ui/content-skeletons';
 import { EmptyState, InlineError } from '@/components/ui/StateView';
 import { MARKET } from '@/config/index';
@@ -26,7 +30,15 @@ import {
   myResponseActivityOfferLine,
   requestNavigationPath,
 } from '@/features/requests/activity-list';
+import { projectAssignmentStatusBadge } from '@/features/projects/project-assignment-presentation';
 import { useMyCreatedProjects, useMyProjectAssignments } from '@/features/projects/project-api';
+import {
+  myCreatedProjectContributorCountLine,
+  projectDetailBadge,
+  projectFundingProgressPct,
+  projectShowsFundingRaised,
+} from '@/features/projects/project-status';
+import type { Database } from '@/lib/supabase/database.types';
 import { isWorkerActiveAssignmentStatus } from '@/features/projects/project-worker-work';
 import { formatMoney } from '@/lib/format';
 import { useClientPagination } from '@/lib/hooks/use-client-pagination';
@@ -34,6 +46,10 @@ import { useRouter } from '@/lib/navigation';
 import { readAppTabBarInset } from '@/components/ui/tab-bar-insets';
 
 import type { ProfileHubTab } from '@/components/profile/ProfileStickyTabs';
+
+type ProjectStatus = Database['public']['Enums']['project_status'];
+type ProjectFundingStatus = Database['public']['Enums']['project_funding_status'];
+type AssignmentStatus = Database['public']['Enums']['project_assignment_status'];
 
 const PAGE_SIZE = 20;
 const SCROLL_LOAD_THRESHOLD_PX = 240;
@@ -289,17 +305,13 @@ export function ProfileHubActivityList({ activeTab, listHeader }: Props) {
           <div className="mb-2 flex flex-col gap-2">
             <p className="text-sm font-semibold text-ink">Project work</p>
             {activeProjectAssignments.map((row) => (
-              <Link
+              <ActivityMyProjectWorkCard
                 key={row.assignment_id}
-                href={`/project/${row.project_id}`}
-                className="rounded-2xl border border-hairline bg-elevated p-4 active:opacity-90"
-              >
-                <p className="text-base font-semibold text-ink">{row.project_title}</p>
-                <p className="mt-1 text-sm capitalize text-muted">
-                  {row.status.replaceAll('_', ' ')} ·{' '}
-                  {formatMoney(row.compensation_total_kobo / 100, MARKET.currency)}
-                </p>
-              </Link>
+                title={row.project_title}
+                compensationLine={formatMoney(row.compensation_total_kobo / 100, MARKET.currency)}
+                badge={projectAssignmentStatusBadge(row.status as AssignmentStatus)}
+                to={`/project/${row.project_id}`}
+              />
             ))}
           </div>
         ) : null}
@@ -331,22 +343,31 @@ export function ProfileHubActivityList({ activeTab, listHeader }: Props) {
       </div>
     ) : (
       <div className="flex flex-col gap-3">
-        {projectPage.visibleItems.map((row) => (
-          <Link
-            key={row.project_id}
-            href={`/project/${row.project_id}`}
-            className="rounded-2xl border border-hairline bg-elevated p-4 active:opacity-90"
-          >
-            <p className="text-base font-semibold text-ink">{row.title}</p>
-            <p className="mt-1 text-sm capitalize text-muted">
-              {row.status.replaceAll('_', ' ')} · {row.funding_status.replaceAll('_', ' ')}
-            </p>
-            <p className="mt-1 text-sm text-muted">
-              {formatMoney(row.contributed_total_kobo / 100, MARKET.currency)} of{' '}
-              {formatMoney(row.budget_total_kobo / 100, MARKET.currency)}
-            </p>
-          </Link>
-        ))}
+        {projectPage.visibleItems.map((row) => {
+          const contributedMajor = row.contributed_total_kobo / 100;
+          const budgetMajor = row.budget_total_kobo / 100;
+          const fundingStatus = row.funding_status as ProjectFundingStatus;
+          const showFundingRaised = projectShowsFundingRaised(fundingStatus);
+          return (
+            <ActivityMyProjectCard
+              key={row.project_id}
+              title={row.title}
+              raisedLine={formatMoney(contributedMajor, MARKET.currency)}
+              showFundingRaised={showFundingRaised}
+              progressPct={projectFundingProgressPct(
+                row.contributed_total_kobo,
+                row.budget_total_kobo,
+              )}
+              metaLine={myCreatedProjectContributorCountLine(row.contributor_count)}
+              amount={formatMoney(budgetMajor, MARKET.currency)}
+              badge={projectDetailBadge({
+                status: row.status as ProjectStatus,
+                funding_status: fundingStatus,
+              })}
+              to={`/project/${row.project_id}`}
+            />
+          );
+        })}
       </div>
     );
 

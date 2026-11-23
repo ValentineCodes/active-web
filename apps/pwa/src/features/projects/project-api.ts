@@ -266,6 +266,7 @@ type MyCreatedProjectRow = {
   funding_status: string;
   budget_total_kobo: number;
   contributed_total_kobo: number;
+  contributor_count: number;
 };
 
 export function useProjectAssignment(assignmentId: string | undefined) {

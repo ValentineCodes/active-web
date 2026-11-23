@@ -16,6 +16,7 @@ type ProjectFundingCardProps = {
   whenLabel: string;
   locationLabel: string;
   fundingStatusLabel: string;
+  showContributedProgress: boolean;
   onOpenContribute?: () => void;
   currency: string;
   budgetBreakdown?: {
@@ -34,6 +35,7 @@ export function ProjectFundingCard({
   whenLabel,
   locationLabel,
   fundingStatusLabel,
+  showContributedProgress,
   onOpenContribute,
   currency,
   budgetBreakdown,
@@ -62,16 +64,18 @@ export function ProjectFundingCard({
         )}
       </div>
 
-      <div className="flex flex-col gap-2">
-        <p className="text-sm font-semibold text-ink">{contributedLabel}</p>
-        <div className="h-2 overflow-hidden rounded-full bg-hairline">
-          <div className="h-full bg-active" style={{ width: `${progressPct}%` }} />
+      {showContributedProgress ? (
+        <div className="flex flex-col gap-2">
+          <p className="text-sm font-semibold text-ink">{contributedLabel}</p>
+          <div className="h-2 overflow-hidden rounded-full bg-hairline">
+            <div className="h-full bg-active" style={{ width: `${progressPct}%` }} />
+          </div>
+          <p className="text-xs text-muted">
+            Min. target {minTargetLabel}
+            {minTargetMet ? ' · reached' : ''}
+          </p>
         </div>
-        <p className="text-xs text-muted">
-          Min. target {minTargetLabel}
-          {minTargetMet ? ' · reached' : ''}
-        </p>
-      </div>
+      ) : null}
 
       {budgetBreakdown ? (
         <ProjectBudgetBreakdown
