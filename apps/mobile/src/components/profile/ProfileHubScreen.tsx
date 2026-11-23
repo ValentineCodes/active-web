@@ -18,7 +18,7 @@ import { useMyIdentityStatus } from '@/features/identity/api';
 import { useNotificationTagInterests } from '@/features/notifications/tag-interests';
 import { useProfile } from '@/features/profile/api';
 import { useMyReputation } from '@/features/profile/reputation-api';
-import { useMyResponses } from '@/features/requests/responses-api';
+import { useMyCreatedProjects } from '@/features/projects/project-api';
 import { useMyRequests } from '@/features/requests/requester-api';
 import { formatPhoneDisplay } from '@/lib/format';
 import { showQuerySkeleton } from '@/lib/query/show-skeleton';
@@ -45,7 +45,7 @@ export default function ProfileHubScreen() {
   const identityStatus = useMyIdentityStatus();
   const attendance = useAttendance();
   const myRequests = useMyRequests();
-  const myResponses = useMyResponses();
+  const myCreatedProjects = useMyCreatedProjects();
   const reputation = useMyReputation();
   const tagInterests = useNotificationTagInterests();
 
@@ -69,9 +69,9 @@ export default function ProfileHubScreen() {
           request.status,
         ),
       ).length ?? 0;
-    const responseCount = myResponses.data?.length ?? 0;
-    return { data, completed, activeRequests, responseCount };
-  }, [myRequests.data, myResponses.data, profile.data]);
+    const projectCount = myCreatedProjects.data?.length ?? 0;
+    return { data, completed, activeRequests, projectCount };
+  }, [myRequests.data, myCreatedProjects.data, profile.data]);
 
   const headerActions = (
     <View className="flex-row items-center gap-0.5">
@@ -112,7 +112,7 @@ export default function ProfileHubScreen() {
     );
   }
 
-  const { data, completed, activeRequests, responseCount } = stats;
+  const { data, completed, activeRequests, projectCount } = stats;
   const hasCommitments = hasProviderCommitments(attendance.data);
   const crownTier = reputation.data?.crown_tier ?? 'none';
   const crownPoints = reputation.data?.points_main ?? 0;
@@ -175,7 +175,7 @@ export default function ProfileHubScreen() {
         <View className="w-full flex-row rounded-3xl border border-hairline bg-elevated px-2 py-4">
           <ProfileStat value={activeRequests} label="Requests" />
           <View className="w-px self-stretch bg-hairline" />
-          <ProfileStat value={responseCount} label="Responses" />
+          <ProfileStat value={projectCount} label="Projects" />
           <View className="w-px self-stretch bg-hairline" />
           <ProfileStat value={completed} label="Completed" />
         </View>
@@ -198,7 +198,7 @@ export default function ProfileHubScreen() {
       hasCommitments,
       identityStatus.data?.identityVerified,
       onSelectTab,
-      responseCount,
+      projectCount,
       reputation.data?.next_tier,
       reputation.data?.points_to_next_tier,
       reputation.isPending,

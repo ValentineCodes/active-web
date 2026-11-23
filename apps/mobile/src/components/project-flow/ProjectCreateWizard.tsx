@@ -319,7 +319,7 @@ export function ProjectCreateWizard({
   const [minContribution, setMinContribution] = useState('');
   const [fundingMode, setFundingMode] = useState<RequestExpiryMode>('today');
   const [fundingDeadlineAt, setFundingDeadlineAt] = useState(defaultFutureExpiryDate());
-  const [visibility, setVisibility] = useState<FundingVisibility>('invite_only');
+  const [visibility, setVisibility] = useState<FundingVisibility>('public');
   const [tags, setTags] = useState<RequestTag[]>([]);
   const [attachmentUri, setAttachmentUri] = useState<string | null>(null);
   const [attachmentMimeType, setAttachmentMimeType] = useState<string | null>(null);
@@ -630,7 +630,7 @@ export function ProjectCreateWizard({
 
   const posting =
     create.isPending || startTrial.isPending || attachmentUploading || locationModalLoading;
-  const visibilityLabel = visibility === 'invite_only' ? 'Invite-only' : 'Public';
+  const visibilityLabel = visibility === 'invite_only' ? 'Private' : 'Public';
   const deadlineLabel = expirySummaryLabel(
     fundingMode === 'today' ? 'future' : fundingMode,
     effectiveFundingDeadline,
@@ -682,16 +682,10 @@ export function ProjectCreateWizard({
           keyboardShouldPersistTaps="handled"
           className="flex-1"
         >
-          {!canCreate && !entitlements.data?.premium_trial_ends_at && step === 0 ? (
-            <Text className="rounded-2xl border border-hairline bg-surface p-4 text-sm text-muted">
-              Collaborative projects use a one-time 30-day Premium trial — no payment card required.
-            </Text>
-          ) : null}
-
           {step === 0 ? (
             <View className="gap-3">
-              <Text className="text-3xl font-bold leading-9 text-ink">Name your project</Text>
-              <Text className="text-base text-muted">Keep it short and clear.</Text>
+              <Text className="text-3xl font-bold leading-9 text-ink">What do you need?</Text>
+              <Text className="text-base text-muted">Keep it short and concise.</Text>
               <CreateTextArea
                 inputRef={titleInputRef}
                 value={title}
@@ -706,14 +700,18 @@ export function ProjectCreateWizard({
               />
               {fieldErrors.title ? (
                 <Text className="text-sm text-danger">{fieldErrors.title}</Text>
+              ) : trimmedTitle.length > 0 && trimmedTitle.length < CREATE_TITLE_LIMITS.min ? (
+                <Text className="text-sm text-muted">
+                  At least {CREATE_TITLE_LIMITS.min} characters to continue.
+                </Text>
               ) : null}
             </View>
           ) : null}
 
           {step === 1 ? (
             <View className="gap-3">
-              <Text className="text-3xl font-bold leading-9 text-ink">Describe the project</Text>
-              <Text className="text-base text-muted">What are you raising funds for?</Text>
+              <Text className="text-3xl font-bold leading-9 text-ink">Tell us more</Text>
+              <Text className="text-base text-muted">What does success look like?</Text>
               <CreateTextArea
                 value={description}
                 onChangeText={(value) => {
@@ -841,16 +839,21 @@ export function ProjectCreateWizard({
               <Text className="text-base text-muted">Control who can view contribution progress.</Text>
               <View className="flex-row gap-3">
                 <WhenPill
-                  label="Invite-only"
-                  selected={visibility === 'invite_only'}
-                  onPress={() => setVisibility('invite_only')}
-                />
-                <WhenPill
                   label="Public"
                   selected={visibility === 'public'}
                   onPress={() => setVisibility('public')}
                 />
+                <WhenPill
+                  label="Private"
+                  selected={visibility === 'invite_only'}
+                  onPress={() => setVisibility('invite_only')}
+                />
               </View>
+              {visibility === 'invite_only' ? (
+                <Text className="text-base text-muted">
+                  Won&apos;t appear in the home feed. Only people you invite can contribute.
+                </Text>
+              ) : null}
             </View>
           ) : null}
 

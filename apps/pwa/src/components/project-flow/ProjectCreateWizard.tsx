@@ -134,7 +134,7 @@ export function ProjectCreateWizard({
   const [minContribution, setMinContribution] = useState('');
   const [fundingMode, setFundingMode] = useState<RequestExpiryMode>('today');
   const [fundingDeadlineAt, setFundingDeadlineAt] = useState(defaultFutureExpiryDate());
-  const [visibility, setVisibility] = useState<FundingVisibility>('invite_only');
+  const [visibility, setVisibility] = useState<FundingVisibility>('public');
   const [tags, setTags] = useState<RequestTag[]>([]);
   const [attachmentUri, setAttachmentUri] = useState<string | null>(null);
   const [attachmentMimeType, setAttachmentMimeType] = useState<string | null>(null);
@@ -401,7 +401,7 @@ export function ProjectCreateWizard({
 
   const posting =
     create.isPending || startTrial.isPending || attachmentUploading || locationModalLoading;
-  const visibilityLabel = visibility === 'invite_only' ? 'Invite-only' : 'Public';
+  const visibilityLabel = visibility === 'invite_only' ? 'Private' : 'Public';
   const deadlineLabel = expirySummaryLabel(
     fundingMode === 'today' ? 'future' : fundingMode,
     effectiveFundingDeadline,
@@ -444,16 +444,10 @@ export function ProjectCreateWizard({
         <WizardProgress step={step} stepCount={STEP_COUNT} />
 
         <div className="flex flex-col gap-5 px-5 pb-8 pt-5">
-          {!canCreate && !entitlements.data?.premium_trial_ends_at && step === 0 ? (
-            <p className="rounded-2xl border border-hairline bg-surface p-4 text-sm text-muted">
-              Collaborative projects use a one-time 30-day Premium trial — no payment card required.
-            </p>
-          ) : null}
-
           {step === 0 ? (
             <div className="flex flex-col gap-3">
-              <h2 className="text-3xl font-bold leading-9 text-ink">Name your project</h2>
-              <p className="text-base text-muted">Keep it short and clear.</p>
+              <h2 className="text-3xl font-bold leading-9 text-ink">What do you need?</h2>
+              <p className="text-base text-muted">Keep it short and concise.</p>
               <StepTextArea
                 inputRef={titleInputRef}
                 autoFocus
@@ -467,14 +461,20 @@ export function ProjectCreateWizard({
                 minHeight={120}
                 textClassName="text-xl font-semibold"
               />
-              {fieldErrors.title ? <StepFieldError message={fieldErrors.title} /> : null}
+              {fieldErrors.title ? (
+                <StepFieldError message={fieldErrors.title} />
+              ) : trimmedTitle.length > 0 && trimmedTitle.length < CREATE_TITLE_LIMITS.min ? (
+                <p className="text-sm text-muted">
+                  At least {CREATE_TITLE_LIMITS.min} characters to continue.
+                </p>
+              ) : null}
             </div>
           ) : null}
 
           {step === 1 ? (
             <div className="flex flex-col gap-3">
-              <h2 className="text-3xl font-bold leading-9 text-ink">Describe the project</h2>
-              <p className="text-base text-muted">What are you raising funds for?</p>
+              <h2 className="text-3xl font-bold leading-9 text-ink">Tell us more</h2>
+              <p className="text-base text-muted">What does success look like?</p>
               <StepTextArea
                 value={description}
                 onChange={(value) => {
@@ -586,16 +586,21 @@ export function ProjectCreateWizard({
               <p className="text-base text-muted">Control who can view contribution progress.</p>
               <div className="flex flex-row gap-3">
                 <WizardWhenPill
-                  label="Invite-only"
-                  selected={visibility === 'invite_only'}
-                  onClick={() => setVisibility('invite_only')}
-                />
-                <WizardWhenPill
                   label="Public"
                   selected={visibility === 'public'}
                   onClick={() => setVisibility('public')}
                 />
+                <WizardWhenPill
+                  label="Private"
+                  selected={visibility === 'invite_only'}
+                  onClick={() => setVisibility('invite_only')}
+                />
               </div>
+              {visibility === 'invite_only' ? (
+                <p className="text-base text-muted">
+                  Won&apos;t appear in the home feed. Only people you invite can contribute.
+                </p>
+              ) : null}
             </div>
           ) : null}
 

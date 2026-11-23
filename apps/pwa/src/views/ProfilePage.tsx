@@ -20,7 +20,7 @@ import { useMyIdentityStatus } from '@/features/identity/api';
 import { useNotificationTagInterests } from '@/features/notifications/tag-interests';
 import { useMyProfile } from '@/features/profile/api';
 import { useMyReputation } from '@/features/profile/reputation-api';
-import { useMyResponses } from '@/features/requests/responses-api';
+import { useMyCreatedProjects } from '@/features/projects/project-api';
 import { useMyRequests } from '@/features/requests/requester-api';
 import { formatPhoneDisplay } from '@/lib/format';
 import { showAppToast } from '@/lib/toast';
@@ -53,7 +53,7 @@ export function ProfilePage() {
   const identityStatus = useMyIdentityStatus();
   const attendance = useAttendance();
   const myRequests = useMyRequests();
-  const myResponses = useMyResponses();
+  const myCreatedProjects = useMyCreatedProjects();
   const reputation = useMyReputation();
   const tagInterests = useNotificationTagInterests();
 
@@ -82,9 +82,9 @@ export function ProfilePage() {
           request.status,
         ),
       ).length ?? 0;
-    const responseCount = myResponses.data?.length ?? 0;
-    return { data, completed, activeRequests, responseCount };
-  }, [myRequests.data, myResponses.data, profile.data]);
+    const projectCount = myCreatedProjects.data?.length ?? 0;
+    return { data, completed, activeRequests, projectCount };
+  }, [myRequests.data, myCreatedProjects.data, profile.data]);
 
   const headerActions = (
     <div className="flex flex-row items-center gap-0.5">
@@ -125,7 +125,7 @@ export function ProfilePage() {
     );
   }
 
-  const { data, completed, activeRequests, responseCount } = stats;
+  const { data, completed, activeRequests, projectCount } = stats;
   const hasCommitments = hasProviderCommitments(attendance.data);
   const crownTier = reputation.data?.crown_tier ?? 'none';
   const crownPoints = reputation.data?.points_main ?? 0;
@@ -199,7 +199,7 @@ export function ProfilePage() {
         >
           <ProfileStat value={activeRequests} label="Requests" />
           <div className="w-px self-stretch bg-hairline" aria-hidden />
-          <ProfileStat value={responseCount} label="Responses" />
+          <ProfileStat value={projectCount} label="Projects" />
           <div className="w-px self-stretch bg-hairline" aria-hidden />
           <ProfileStat value={completed} label="Completed" />
         </div>
