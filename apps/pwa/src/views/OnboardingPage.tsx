@@ -28,10 +28,9 @@ export function OnboardingPage() {
   const isNameValid = trimmedName.length >= 2 && trimmedName.length <= 60;
 
   useEffect(() => {
-    if (profile.data?.display_name?.trim()) {
-      resumePendingAction(router);
-    }
-  }, [router, profile.data?.display_name]);
+    if (profile.isLoading || !profile.data?.display_name?.trim()) return;
+    resumePendingAction(router);
+  }, [profile.data?.display_name, profile.isLoading, router]);
 
   if (profile.isLoading) return <LoadingScreen label="Loading profile…" />;
 
@@ -92,12 +91,7 @@ export function OnboardingPage() {
               label="Continue"
               disabled={!isNameValid}
               loading={save.isPending}
-              onClick={() =>
-                save.mutate(
-                  { display_name: trimmedName, bio: bio.trim() || null },
-                  { onSuccess: () => resumePendingAction(router) },
-                )
-              }
+              onClick={() => save.mutate({ display_name: trimmedName, bio: bio.trim() || null })}
             />
           </footer>
         </div>

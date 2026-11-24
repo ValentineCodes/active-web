@@ -7,6 +7,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from 'react';
@@ -45,6 +46,8 @@ export function ContextualAuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [actionType, setActionType] = useState<PendingActionInput['type']>('navigate');
+  /** Vaul calls onClose when `open` becomes false — skip clearing intent when heading to `/sign-in`. */
+  const keepPendingOnSheetCloseRef = useRef(false);
 
   const copy = CONTEXTUAL_AUTH_COPY[actionType];
 
@@ -69,10 +72,15 @@ export function ContextualAuthProvider({ children }: { children: ReactNode }) {
 
   const dismiss = useCallback(() => {
     setOpen(false);
+    if (keepPendingOnSheetCloseRef.current) {
+      keepPendingOnSheetCloseRef.current = false;
+      return;
+    }
     clearPendingAction();
   }, []);
 
   const goSignIn = useCallback(() => {
+    keepPendingOnSheetCloseRef.current = true;
     setOpen(false);
     router.push('/sign-in');
   }, [router]);

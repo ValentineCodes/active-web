@@ -2,7 +2,7 @@
 
 import { ActiveBarButton } from '@/components/ui/ActiveBarButton';
 import { ActiveLogo } from '@/components/ui/ActiveLogo';
-import { BottomSheet } from '@/components/ui/BottomSheet';
+import { VaulSheet } from '@/components/ui/VaulSheet';
 import { IconButton } from '@/components/ui/IconButton';
 
 const HEADLINE = 'You need an Active account to continue';
@@ -26,19 +26,17 @@ export function ContextualAuthSheet({
   onLogIn,
 }: Props) {
   return (
-    <BottomSheet
+    <VaulSheet
       open={open}
       onClose={onClose}
       elevated
       footer={
-        <div className="bg-surface px-5 py-4">
-          <p className="text-center text-sm leading-5 text-muted">
-            Already have an account?{' '}
-            <button type="button" className="font-semibold text-brand active:opacity-80" onClick={onLogIn}>
-              {logInLabel}
-            </button>
-          </p>
-        </div>
+        <p className="text-center text-sm leading-5 text-muted">
+          Already have an account?{' '}
+          <button type="button" className="font-semibold text-brand active:opacity-80" onClick={onLogIn}>
+            {logInLabel}
+          </button>
+        </p>
       }
     >
       <div className="relative flex flex-col items-center px-1 pb-2 pt-1 text-center">
@@ -64,6 +62,6 @@ export function ContextualAuthSheet({
           our <span className="whitespace-nowrap font-semibold text-brand">Privacy Policy</span>.
         </p>
       </div>
-    </BottomSheet>
+    </VaulSheet>
   );
 }

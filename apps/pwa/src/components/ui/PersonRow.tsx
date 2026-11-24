@@ -5,7 +5,6 @@ import type { ReactNode } from 'react';
 import { IdentityVerifiedBadge } from '@/components/profile/IdentityVerifiedBadge';
 import { Avatar } from '@/components/ui/Avatar';
 import { StarRating } from '@/components/ui/Stars';
-import { cn } from '@/lib/cn';
 
 export function PersonRow({
   avatarPath,
@@ -35,15 +34,9 @@ export function PersonRow({
   const showRating = ratingAverage !== undefined && ratingCount !== undefined;
   const showInlineStat = Boolean(inlineStat);
   const showMeta = Boolean(meta && !inlineStat);
-  const contentBelowName = showRating || showInlineStat || showMeta;
 
   const row = (
-    <div
-      className={cn(
-        'flex w-full min-w-0 flex-row gap-3',
-        contentBelowName ? 'items-start' : 'items-center',
-      )}
-    >
+    <div className="flex w-full min-w-0 flex-row items-center gap-3">
       <span className="shrink-0">
         <Avatar path={avatarPath} name={name} size={size} />
       </span>

@@ -3,6 +3,7 @@
 import { Drawer } from 'vaul';
 import type { ReactNode } from 'react';
 
+import { zIndex } from '@/design-system/layout';
 import { cn } from '@/lib/cn';
 
 /**
@@ -14,6 +15,7 @@ export function VaulSheet({
   onClose,
   nested = false,
   dismissible = true,
+  elevated = false,
   children,
   footer,
   className,
@@ -23,12 +25,15 @@ export function VaulSheet({
   onClose: () => void;
   nested?: boolean;
   dismissible?: boolean;
+  /** Above the create composer and default sheets (matches `BottomSheet`). */
+  elevated?: boolean;
   children: ReactNode;
   footer?: ReactNode;
   className?: string;
   contentClassName?: string;
 }) {
   const Root = nested ? Drawer.NestedRoot : Drawer.Root;
+  const layerZ = elevated ? zIndex.sheetElevated : zIndex.sheet;
 
   return (
     <Root
@@ -40,26 +45,26 @@ export function VaulSheet({
       }}
     >
       <Drawer.Portal>
-        <Drawer.Overlay className="fixed inset-0 z-[100] bg-black/45" />
+        <Drawer.Overlay className="fixed inset-0 bg-black/45" style={{ zIndex: layerZ }} />
         <Drawer.Content
           className={cn(
-            'fixed inset-x-0 bottom-0 z-[100] mx-auto flex w-full max-w-lg flex-col rounded-t-3xl border border-hairline bg-elevated shadow-raised outline-none',
+            'fixed inset-x-0 bottom-0 mx-auto flex w-full max-w-lg flex-col rounded-t-3xl border border-hairline bg-elevated shadow-raised outline-none',
             'max-h-[min(90dvh,640px)]',
             className,
           )}
+          style={{ zIndex: layerZ }}
         >
           <div className="mx-auto mt-2 h-1 w-10 shrink-0 rounded-full bg-hairline" aria-hidden />
           <div
             className={cn(
-              'overflow-y-auto px-5 py-4 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
-              'max-h-[calc(min(90dvh,640px)-2.5rem)]',
+              'min-h-0 flex-1 overflow-y-auto px-5 py-4 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
               contentClassName,
             )}
           >
             {children}
           </div>
           {footer ? (
-            <footer className="shrink-0 border-t border-hairline px-5 py-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+            <footer className="shrink-0 border-t border-hairline bg-surface px-5 py-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
               {footer}
             </footer>
           ) : null}

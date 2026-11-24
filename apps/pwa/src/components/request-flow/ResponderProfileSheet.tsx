@@ -117,12 +117,7 @@ export function ResponderProfileSheet({
       <div className="flex flex-col gap-5 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
         <Drawer.Title className="sr-only">{title}</Drawer.Title>
         <div className="flex flex-row items-center gap-3">
-          <div
-            className={cn(
-              'flex min-w-0 flex-1 flex-row gap-3',
-              hasRatings ? 'items-start' : 'items-center',
-            )}
-          >
+          <div className="flex min-w-0 flex-1 flex-row items-center gap-3">
             <AvatarWithViewer path={avatarPath} name={displayName} size="md" />
             <div className={cn('min-w-0 flex-1', hasRatings ? 'flex flex-col gap-2' : undefined)}>
               <p className="truncate text-lg font-bold leading-7 text-ink">{title}</p>

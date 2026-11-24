@@ -60,15 +60,19 @@ function useAuthRouteState() {
 export function GuestOnlyLayout({ children }: { children: ReactNode }) {
   const { loading, state } = useAuthRouteState();
   const router = useRouter();
+  const pathname = usePathname();
+  const onSignIn = pathname === '/sign-in';
 
   useEffect(() => {
     if (loading) return;
     if (state === 'needs_onboarding') router.replace('/onboarding');
-    if (state === 'signed_in') router.replace('/home');
-  }, [loading, state, router]);
+    // SignInPage calls resumePendingAction after OTP — do not race replace('/home').
+    if (state === 'signed_in' && !onSignIn) router.replace('/home');
+  }, [loading, onSignIn, router, state]);
 
   if (loading) return <LoadingScreen label="Loading…" />;
-  if (state === 'needs_onboarding' || state === 'signed_in') return <LoadingScreen label="Loading…" />;
+  if (state === 'needs_onboarding') return <LoadingScreen label="Loading…" />;
+  if (state === 'signed_in' && !onSignIn) return <LoadingScreen label="Loading…" />;
 
   return children;
 }
@@ -99,15 +103,19 @@ export function RequireAuthLayout({ children }: { children: ReactNode }) {
 export function RequireOnboardingLayout({ children }: { children: ReactNode }) {
   const { loading, state } = useAuthRouteState();
   const router = useRouter();
+  const pathname = usePathname();
+  const onOnboarding = pathname === '/onboarding';
 
   useEffect(() => {
     if (loading) return;
     if (state === 'guest') router.replace('/home');
-    if (state === 'signed_in') router.replace('/home');
-  }, [loading, state, router]);
+    // OnboardingPage resumes pending intent after profile save.
+    if (state === 'signed_in' && !onOnboarding) router.replace('/home');
+  }, [loading, onOnboarding, router, state]);
 
   if (loading) return <LoadingScreen label="Loading…" />;
-  if (state === 'guest' || state === 'signed_in') return <LoadingScreen label="Loading…" />;
+  if (state === 'guest') return <LoadingScreen label="Loading…" />;
+  if (state === 'signed_in' && !onOnboarding) return <LoadingScreen label="Loading…" />;
 
   return children;
 }

@@ -1,8 +1,8 @@
 'use client';
 
 import { useRouter } from '@/lib/navigation';
-import { useEffect, useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { ActiveBarButton } from '@/components/ui/ActiveBarButton';
 import { OtpInput } from '@/components/auth/OtpInput';
@@ -15,6 +15,7 @@ import { MARKET } from '@/config/market';
 import { isPlausiblePhone, sendPhoneOtp, toE164, verifyPhoneOtp } from '@/features/auth/api';
 import { resumePendingAction } from '@/features/auth/pending-action-resume';
 import { profileQueryOptions } from '@/features/profile/api';
+import { useSession } from '@/features/auth/use-session';
 import { supabase } from '@/lib/supabase/client';
 
 const CODE_LENGTH = 6;
@@ -23,10 +24,19 @@ const RESEND_COOLDOWN_SEC = 30;
 export function SignInPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { session, isAuthHydrated } = useSession();
+  const resumedAfterAuthRef = useRef(false);
   const [phone, setPhone] = useState('');
   const [otpSent, setOtpSent] = useState(false);
   const [otp, setOtp] = useState('');
   const [resendSecondsLeft, setResendSecondsLeft] = useState(0);
+  const [shouldResumePending, setShouldResumePending] = useState(false);
+
+  const resumeAfterAuth = useCallback(() => {
+    if (resumedAfterAuthRef.current) return;
+    resumedAfterAuthRef.current = true;
+    resumePendingAction(router);
+  }, [router]);
 
   const sendCode = useMutation({
     mutationFn: () => sendPhoneOtp(phone),
@@ -51,9 +61,35 @@ export function SignInPage() {
         router.replace('/onboarding');
         return;
       }
-      resumePendingAction(router);
+      setShouldResumePending(true);
     },
   });
+
+  const existingProfile = useQuery({
+    ...profileQueryOptions(session?.user.id ?? ''),
+    enabled: isAuthHydrated && Boolean(session?.user.id),
+  });
+
+  useEffect(() => {
+    const wantsResume = shouldResumePending || (!otpSent && Boolean(session?.user.id));
+    if (!wantsResume) return;
+    if (!isAuthHydrated || existingProfile.isLoading || !session?.user.id) return;
+    if (!existingProfile.data?.display_name?.trim()) {
+      router.replace('/onboarding');
+      return;
+    }
+    setShouldResumePending(false);
+    resumeAfterAuth();
+  }, [
+    existingProfile.data?.display_name,
+    existingProfile.isLoading,
+    isAuthHydrated,
+    otpSent,
+    resumeAfterAuth,
+    router,
+    session?.user.id,
+    shouldResumePending,
+  ]);
 
   const resend = useMutation({
     mutationFn: () => sendPhoneOtp(phone),
