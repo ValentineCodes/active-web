@@ -6,12 +6,12 @@ Scope: `apps/pwa` only. Web push / VAPID is **not** implemented. The in-app noti
 
 Deploy the PWA on its **own HTTPS origin**, separate from the marketing site.
 
-| Item | Requirement |
-| --- | --- |
-| **PWA origin** | Choose a dedicated hostname, e.g. `https://app.<your-domain>` (replace with your production hostname). |
-| **Marketing link** | Point CTAs to `{PWA_ORIGIN}/` or `{PWA_ORIGIN}/install` for install instructions. |
+| Item                | Requirement                                                                                                                            |
+| ------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| **PWA origin**      | Choose a dedicated hostname, e.g. `https://app.<your-domain>` (replace with your production hostname).                                 |
+| **Marketing link**  | Point CTAs to `{PWA_ORIGIN}/` or `{PWA_ORIGIN}/install` for install instructions.                                                      |
 | **Scope isolation** | Do **not** serve the PWA `dist/` from the same origin as `apps/website`. The service worker is registered at `/` on the PWA host only. |
-| **Paystack** | Allow `{PWA_ORIGIN}/wallet/deposit/callback` in Paystack dashboard alongside existing native callbacks. |
+| **Paystack**        | Allow `{PWA_ORIGIN}/wallet/deposit/callback` in Paystack dashboard alongside existing native callbacks.                                |
 
 Example website snippet (for a later `apps/website` change):
 
@@ -46,31 +46,31 @@ Never embed service-role keys, Paystack secret keys, or VAPID private keys in th
 
 Built from `public/manifest.webmanifest` and the Serwist service worker (`src/sw.ts`):
 
-| Field | Value |
-| --- | --- |
-| `name` / `short_name` | Active |
-| `description` | Marketplace for Nigeria |
-| `id` | `/` |
-| `start_url` | `/?source=pwa` |
-| `scope` | `/` |
-| `display` | `standalone` |
-| `orientation` | `any` (phones in landscape remain supported) |
-| `theme_color` | `#166A3D` |
-| `background_color` | `#FFFFFF` |
-| `icons` | `/icons/icon-192.png` (192×192), `/icons/icon-512.png` (512×512, any + maskable) |
+| Field                 | Value                                                                            |
+| --------------------- | -------------------------------------------------------------------------------- |
+| `name` / `short_name` | Active                                                                           |
+| `description`         | Marketplace for Nigeria                                                          |
+| `id`                  | `/`                                                                              |
+| `start_url`           | `/?source=pwa`                                                                   |
+| `scope`               | `/`                                                                              |
+| `display`             | `standalone`                                                                     |
+| `orientation`         | `any` (phones in landscape remain supported)                                     |
+| `theme_color`         | `#166A3D`                                                                        |
+| `background_color`    | `#FFFFFF`                                                                        |
+| `icons`               | `/icons/icon-192.png` (192×192), `/icons/icon-512.png` (512×512, any + maskable) |
 
 Icons are PNG assets in `public/icons/`, generated from the same 1024×1024 brand asset as the native app (read-only copy; `apps/mobile` is not modified).
 
 ## Service worker behavior
 
-| Topic | Behavior |
-| --- | --- |
-| Registration | Serwist `public/sw.js` + `PwaUpdatePrompt` (prompt before `skipWaiting`) |
-| Precache | Build output: JS, CSS, HTML shell, favicon, icons, fonts (if emitted) |
-| Updates | Hourly `registration.update()`; user must tap **Reload now** to activate (`skipWaiting: false`) |
-| Supabase | `NetworkOnly` for `*.supabase.co` |
-| Paystack | `NetworkOnly` for `*.paystack.com` / `*.paystack.co` |
-| Local API dev | `NetworkOnly` for localhost |
+| Topic             | Behavior                                                                                                                           |
+| ----------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| Registration      | Serwist `public/sw.js` + `PwaUpdatePrompt` (prompt before `skipWaiting`)                                                           |
+| Precache          | Build output: JS, CSS, HTML shell, favicon, icons, fonts (if emitted)                                                              |
+| Updates           | Hourly `registration.update()`; user must tap **Reload now** to activate (`skipWaiting: false`)                                    |
+| Supabase          | `NetworkOnly` for `*.supabase.co`                                                                                                  |
+| Paystack          | `NetworkOnly` for `*.paystack.com` / `*.paystack.co`                                                                               |
+| Local API dev     | `NetworkOnly` for localhost                                                                                                        |
 | Navigate fallback | `/index.html` for client routes; **denylist** `/wallet/deposit/callback` so offline fallback does not mask payment return handling |
 
 **Not cached:** authenticated API responses, sessions, wallet balances, profile payloads, chat, signed storage URLs, Edge Function responses, payment verification.
@@ -89,11 +89,12 @@ TanStack Query holds in-memory data only for the session; `queryClient.clear()` 
 
 ## Install experience
 
-| Platform | UX |
-| --- | --- |
-| Android Chrome | `beforeinstallprompt` → **Install Active** on `/install`; menu “Install app” also works |
-| iOS Safari | No automatic prompt; step-by-step **Add to Home Screen** on `/install` |
-| Profile | Link **Install app** → `/install` |
+| Platform       | UX                                                                                                |
+| -------------- | ------------------------------------------------------------------------------------------------- |
+| Android Chrome | `beforeinstallprompt` → **Install Active** on `/install`; menu “Install app” also works           |
+| iOS Safari     | No automatic prompt; step-by-step **Add to Home Screen** on `/install`                            |
+| Profile        | Link **Install app** → `/install`                                                                 |
+| In-app coach   | Bottom-left prompt: **Not now** snoozes for the tab (`sessionStorage`); **Got it** dismisses permanently (`localStorage`) |
 
 Web push is intentionally omitted; `/install` states that notifications are in-app only.
 
@@ -101,13 +102,13 @@ Web push is intentionally omitted; `/install` states that notifications are in-a
 
 Adjust `connect-src` / `img-src` if Supabase or storage hostnames differ.
 
-| Header | Recommendation |
-| --- | --- |
-| `Strict-Transport-Security` | `max-age=31536000; includeSubDomains` (HTTPS only) |
-| `X-Content-Type-Options` | `nosniff` |
-| `X-Frame-Options` or `frame-ancestors` | `DENY` or `frame-ancestors 'none'` |
-| `Referrer-Policy` | `strict-origin-when-cross-origin` |
-| `Permissions-Policy` | `camera=(self), geolocation=(self), microphone=()` |
+| Header                                 | Recommendation                                     |
+| -------------------------------------- | -------------------------------------------------- |
+| `Strict-Transport-Security`            | `max-age=31536000; includeSubDomains` (HTTPS only) |
+| `X-Content-Type-Options`               | `nosniff`                                          |
+| `X-Frame-Options` or `frame-ancestors` | `DENY` or `frame-ancestors 'none'`                 |
+| `Referrer-Policy`                      | `strict-origin-when-cross-origin`                  |
+| `Permissions-Policy`                   | `camera=(self), geolocation=(self), microphone=()` |
 
 **Content-Security-Policy (starting point — tighten to your Supabase project URL):**
 
@@ -128,14 +129,14 @@ If CSP is enabled, verify Paystack redirect/checkout and Supabase Realtime (`wss
 
 ## Runtime concerns (reviewed)
 
-| Area | Notes |
-| --- | --- |
-| **Camera** | Profile photo uses `getUserMedia` + `confirm_avatar_capture` only; gallery does not satisfy chat eligibility (`profile-photo-policy.ts`). Requires secure context (HTTPS). |
-| **Location** | Request posting uses browser geolocation when enabled; permission prompts are per-browser. |
-| **Paystack** | Same-tab redirect to Paystack; return to `/wallet/deposit/callback` → checkout verifies via `paystack-verify` only. |
-| **Auth** | Chunked `localStorage` session via Supabase client; `detectSessionInUrl: false`; token refresh tied to `visibilitychange`. |
-| **Realtime** | Conversation/request channels unsubscribed on navigation; full page sign-out navigates to `/home`. |
-| **Sign-out / account switch** | `signOut` + `SIGNED_OUT`: `clearClientUserState()`, `queryClient.clear()` — no wallet/search context carried to the next account. |
+| Area                          | Notes                                                                                                                                                                      |
+| ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Camera**                    | Profile photo uses `getUserMedia` + `confirm_avatar_capture` only; gallery does not satisfy chat eligibility (`profile-photo-policy.ts`). Requires secure context (HTTPS). |
+| **Location**                  | Request posting uses browser geolocation when enabled; permission prompts are per-browser.                                                                                 |
+| **Paystack**                  | Same-tab redirect to Paystack; return to `/wallet/deposit/callback` → checkout verifies via `paystack-verify` only.                                                        |
+| **Auth**                      | Chunked `localStorage` session via Supabase client; `detectSessionInUrl: false`; token refresh tied to `visibilitychange`.                                                 |
+| **Realtime**                  | Conversation/request channels unsubscribed on navigation; full page sign-out navigates to `/home`.                                                                         |
+| **Sign-out / account switch** | `signOut` + `SIGNED_OUT`: `clearClientUserState()`, `queryClient.clear()` — no wallet/search context carried to the next account.                                          |
 
 ## Production launch checklist
 
@@ -165,17 +166,17 @@ Includes unit tests for mobile access gate, deposit callback reference parsing, 
 
 ### Manual — **required before launch** (not run in this environment)
 
-| Case | Android Chrome | iOS Safari | Desktop |
-| --- | --- | --- | --- |
-| Fresh visit / sign-in | Manual | Manual | N/A (blocked) |
-| Install / A2HS | Manual (prompt + `/install`) | Manual (Safari steps) | N/A |
-| Installed launch (`standalone`) | Manual | Manual | N/A |
-| App update after deploy | Manual (update banner → reload) | Manual | N/A |
-| Offline | Manual (static shell; API errors expected) | Manual | N/A |
-| Camera profile photo | Manual | Manual | N/A |
-| Paystack return + verify | Manual | Manual | N/A |
-| Sign-out / second account | Manual | Manual | N/A |
-| SW does not cache private API | Manual (DevTools → Application → Cache Storage) | Manual | N/A |
+| Case                            | Android Chrome                                  | iOS Safari            | Desktop       |
+| ------------------------------- | ----------------------------------------------- | --------------------- | ------------- |
+| Fresh visit / sign-in           | Manual                                          | Manual                | N/A (blocked) |
+| Install / A2HS                  | Manual (prompt + `/install`)                    | Manual (Safari steps) | N/A           |
+| Installed launch (`standalone`) | Manual                                          | Manual                | N/A           |
+| App update after deploy         | Manual (update banner → reload)                 | Manual                | N/A           |
+| Offline                         | Manual (static shell; API errors expected)      | Manual                | N/A           |
+| Camera profile photo            | Manual                                          | Manual                | N/A           |
+| Paystack return + verify        | Manual                                          | Manual                | N/A           |
+| Sign-out / second account       | Manual                                          | Manual                | N/A           |
+| SW does not cache private API   | Manual (DevTools → Application → Cache Storage) | Manual                | N/A           |
 
 Do not treat the manual rows as passed until executed on real devices against staging/production.
 

@@ -1,14 +1,8 @@
 import Link from '@/components/AppLink';
 
 import { Button } from '@/components/ui/Button';
+import { detectIosSafari } from '@/pwa/install-coach-platform';
 import { useInstallPrompt } from '@/pwa/use-install-prompt';
-
-function detectIosSafari(): boolean {
-  const ua = navigator.userAgent;
-  const isIos = /iPad|iPhone|iPod/.test(ua);
-  const isSafari = /Safari/.test(ua) && !/CriOS|FxiOS|EdgiOS/.test(ua);
-  return isIos && isSafari;
-}
 
 export function InstallAppPage() {
   const { canPromptInstall, isInstalled, promptInstall } = useInstallPrompt();

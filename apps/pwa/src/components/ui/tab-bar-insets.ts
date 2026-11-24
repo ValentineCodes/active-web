@@ -32,3 +32,9 @@ export function useHomeFeedTabBarInset(contentGap = 4): number {
 export function tabBarScrollPadding(): number {
   return readAppTabBarInset(8);
 }
+
+/** Coach / FAB bottom offset: tab clearance only when the main tab bar is on screen. */
+export function readFloatingBottomOffset(showsTabBar: boolean, compactBottomRem = 1.5): number | string {
+  if (showsTabBar) return readAppTabBarInset(0);
+  return `max(${compactBottomRem}rem, env(safe-area-inset-bottom, 0px))`;
+}
