@@ -20,6 +20,7 @@ export function ProjectResponseTabPanel({
   onBeginRespond,
   onEditResponse,
   onCancelResponse,
+  onGuestSignInToRespond,
 }: {
   budgetMajor: number;
   existingResponse: ExistingResponse | null;
@@ -30,6 +31,7 @@ export function ProjectResponseTabPanel({
   onBeginRespond: () => void;
   onEditResponse: () => void;
   onCancelResponse: () => void;
+  onGuestSignInToRespond?: () => void;
 }) {
   const colors = useColors();
 
@@ -70,7 +72,16 @@ export function ProjectResponseTabPanel({
       {respondError ? <InlineError error={respondError} /> : null}
       {withdrawError ? <InlineError error={withdrawError} /> : null}
 
-      {!existingResponse && respondAllowed ? (
+      {!existingResponse && respondAllowed && onGuestSignInToRespond ? (
+        <Button
+          label="Sign in to respond"
+          variant="active"
+          size="lg"
+          corner="2xl"
+          onClick={onGuestSignInToRespond}
+        />
+      ) : null}
+      {!existingResponse && respondAllowed && !onGuestSignInToRespond ? (
         <Button
           label="Respond to project"
           variant="active"

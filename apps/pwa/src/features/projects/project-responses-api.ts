@@ -97,7 +97,7 @@ export function useProjectForRespond(projectId: string) {
     refetch: async () => {
       await Promise.all([project.refetch(), myResponse.refetch()]);
     },
-    respondAllowed: detail && hasSession ? canRespondToProject(detail) : false,
+    respondAllowed: detail ? canRespondToProject(detail) : false,
   };
 }
 

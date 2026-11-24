@@ -2,6 +2,7 @@
 
 import { Navigate } from 'react-router-dom';
 
+import { useSession } from '@/features/auth/use-session';
 import { useHasSession } from '@/features/auth/use-user-id';
 import { isHelperEngagementView } from '@/features/requests/activity-list';
 import { useMyResponses } from '@/features/requests/responses-api';
@@ -17,6 +18,7 @@ export function RequestRoutePage() {
   const id = useRouteParam('id');
   const search = useSearchParams();
   const fromFeedAsMine = search.get('mine') === '1';
+  const { isAuthHydrated } = useSession();
   const hasSession = useHasSession();
   const myRequests = useMyRequests();
   const myResponses = useMyResponses();
@@ -33,7 +35,15 @@ export function RequestRoutePage() {
       }),
   );
 
-  if (hasSession && (myRequests.isPending || myResponses.isPending)) {
+  if (!isAuthHydrated) {
+    return <LoadingState label="Loading request…" />;
+  }
+
+  if (!hasSession) {
+    return <RespondPage />;
+  }
+
+  if (myRequests.isPending || myResponses.isPending) {
     return <LoadingState label="Loading request…" />;
   }
 

@@ -28,7 +28,6 @@ import { useContextualAuth } from '@/features/auth/ContextualAuthProvider';
 import { useHasSession } from '@/features/auth/use-user-id';
 import { RESUME_CONTRIBUTE_QUERY } from '@/features/auth/pending-action-resume';
 import { useRouter, useSearchParams } from '@/lib/navigation';
-import { guestMayInteractWithProject } from '@/features/marketplace/guest-view';
 import { hasProfilePhotoReady, useOptionalMyProfile } from '@/features/profile/api';
 import {
   useMyProjectAssignments,
@@ -133,19 +132,16 @@ export function ProjectDetailPage() {
   const showAssignmentsTabFromData = Boolean(
     detail && projectViewerMayViewAssignments(detail),
   );
-  const mayInteractAsVisitor = guestMayInteractWithProject(hasSession, Boolean(detail?.viewer_is_creator));
   const showWorkerWorkTab = Boolean(
-    mayInteractAsVisitor && detail && !detail.viewer_is_creator && workerHasActiveWork,
+    hasSession && detail && !detail.viewer_is_creator && workerHasActiveWork,
   );
-  const showResponseTab = Boolean(
-    mayInteractAsVisitor && detail && !detail.viewer_is_creator && !workerHasActiveWork,
-  );
+  const showResponseTab = Boolean(detail && !detail.viewer_is_creator && !workerHasActiveWork);
 
   useEffect(() => {
     if (!detail || defaultTabSet.current) return;
     defaultTabSet.current = true;
     if (!detail.viewer_is_creator) {
-      setTab(hasSession ? (workerHasActiveWork ? 'work' : 'response') : 'activity');
+      setTab(workerHasActiveWork ? 'work' : 'response');
     } else if (showAssignmentsTabFromData) {
       setTab('responses');
     }
@@ -176,6 +172,10 @@ export function ProjectDetailPage() {
   const showGuestContributeEntry = Boolean(
     !hasSession && detail && projectShowsFundingRaised(detail.funding_status) && guestMaySeeProjectContributeCta(detail),
   );
+
+  const openGuestRespondAuth = useCallback(() => {
+    contextualAuth.requestAuth({ type: 'navigate', path: `/project/${id}` });
+  }, [contextualAuth, id]);
 
   const openContributeEntry = useCallback(() => {
     if (!detail) return;
@@ -457,6 +457,7 @@ export function ProjectDetailPage() {
                   onBeginRespond={beginFlow}
                   onEditResponse={beginFlow}
                   onCancelResponse={confirmWithdraw}
+                  onGuestSignInToRespond={!hasSession ? openGuestRespondAuth : undefined}
                 />
               ) : null}
               {tab === 'responses' && showAssignmentsTab ? (
@@ -467,7 +468,17 @@ export function ProjectDetailPage() {
                   projectId={id}
                 />
               ) : null}
-              {tab === 'activity' ? <ProjectActivityPanel activity={activity} /> : null}
+              {tab === 'activity' ? (
+                !hasSession && activity.isPending && activity.fetchStatus === 'idle' ? (
+                  <EmptyState
+                    icon="time-outline"
+                    title="Sign in to see activity"
+                    message="Contribution updates are visible to signed-in members."
+                  />
+                ) : (
+                  <ProjectActivityPanel activity={activity} />
+                )
+              ) : null}
             </div>
           </div>
         </div>
@@ -491,11 +502,13 @@ export function ProjectDetailPage() {
         onClose={() => setContributeOpen(false)}
       />
 
-      <ProjectInviteContributorsModal
-        open={inviteOpen}
-        projectId={id}
-        onClose={() => setInviteOpen(false)}
-      />
+      {canInviteContributors ? (
+        <ProjectInviteContributorsModal
+          open={inviteOpen}
+          projectId={id}
+          onClose={() => setInviteOpen(false)}
+        />
+      ) : null}
 
       {workerPreHandshakeConversationId ? (
         <ProjectGroupChatFab

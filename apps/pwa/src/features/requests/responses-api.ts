@@ -155,8 +155,8 @@ function isOpenRequestStatus(status: string | null | undefined): boolean {
 
 /** Opens a request for responding via browse + the caller's existing response row. */
 export function useRequestForResponse(requestId: string, position: Position | null) {
-  const { session } = useSession();
-  const isGuest = !session;
+  const { session, isAuthHydrated } = useSession();
+  const isGuest = isAuthHydrated && !session;
   const mine = useMyResponses();
   const pendingRow = mine.data?.find(
     (row) => row.request_id === requestId && row.response_status === 'pending',
@@ -217,10 +217,12 @@ export function useRequestForResponse(requestId: string, position: Position | nu
       browse.isSuccess &&
       !browse.data &&
       !preview.data,
-    isPending: isGuest
-      ? guestDetail.isPending && !guestDetail.data && !preview.data
-      : (mine.isPending && !mine.data && !preview.data) ||
-        (browseEnabled && position !== null && browse.isPending && !browse.data && !preview.data),
+    isPending: !isAuthHydrated
+      ? true
+      : isGuest
+        ? !request && guestDetail.isFetching
+        : (mine.isPending && !mine.data && !preview.data) ||
+          (browseEnabled && position !== null && browse.isPending && !browse.data && !preview.data),
     isError: isGuest ? guestDetail.isError : browse.isError || mine.isError,
     error: isGuest ? guestDetail.error : browse.error ?? mine.error,
     refetch: async () => {

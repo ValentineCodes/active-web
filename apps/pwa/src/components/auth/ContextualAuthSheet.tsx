@@ -58,10 +58,10 @@ export function ContextualAuthSheet({
           <ActiveBarButton label={SIGN_UP_CTA} onClick={onSignUp} />
         </div>
 
-        <p className="mt-5 max-w-sm text-xs leading-5 text-muted">
-          By signing in, you agree to our{' '}
-          <span className="font-semibold text-brand underline">Terms of Service</span> and have read and understood our{' '}
-          <span className="font-semibold text-brand underline">Privacy Policy</span>.
+        <p className="mx-auto mt-5 max-w-xs text-center text-xs leading-5 text-muted">
+          By signing up, you confirm that you agree to our{' '}
+          <span className="whitespace-nowrap font-semibold text-brand">Terms of Use</span> and have read and understood
+          our <span className="whitespace-nowrap font-semibold text-brand">Privacy Policy</span>.
         </p>
       </div>
     </BottomSheet>
