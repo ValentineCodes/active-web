@@ -5801,6 +5801,25 @@ export type Database = {
         Args: { p_items: Json; p_total_major: number }
         Returns: boolean
       }
+      list_user_received_ratings: {
+        Args: {
+          p_limit?: number
+          p_offset?: number
+          p_user_id: string
+        }
+        Returns: {
+          comment: string
+          created_at: string
+          project_assignment_id: string
+          project_id: string
+          rater_avatar_path: string
+          rater_display_name: string
+          rater_id: string
+          rating_id: string
+          request_id: string
+          stars: number
+        }[]
+      }
       my_received_ratings: {
         Args: never
         Returns: {

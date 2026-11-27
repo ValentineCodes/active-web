@@ -3,12 +3,18 @@
 import { Fragment, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
+import {
+  useInsideSheetMediaPortal,
+  useSheetMediaPortalContext,
+  useSheetMediaPortalHost,
+} from '@/components/ui/SheetMediaPortalContext';
 import { IonIcon } from '@/components/ui/IonIcon';
 import { ionIcons } from '@/components/ui/ion-icons';
 import { useAvatarUrl } from '@/features/profile/avatar-url';
 import { useCatalogueMediaUrl } from '@/features/profile/catalogue-api';
 import { useConversationAttachmentUrl } from '@/features/requests/conversation-attachment-url';
 import { useRequestAttachmentUrl } from '@/features/requests/request-attachment-url';
+import { zIndex } from '@/design-system/layout';
 import { cn } from '@/lib/cn';
 
 import type { MediaViewerItem } from './media-viewer-types';
@@ -107,10 +113,12 @@ function MediaViewerBody({
   items,
   initialIndex,
   onClose,
+  layout = 'fullscreen',
 }: {
   items: MediaViewerItem[];
   initialIndex: number;
   onClose: () => void;
+  layout?: 'fullscreen' | 'sheet';
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [itemHeights, setItemHeights] = useState<number[]>(() => items.map(() => 0));
@@ -138,12 +146,13 @@ function MediaViewerBody({
   }, [onClose]);
 
   useEffect(() => {
+    if (layout === 'sheet') return;
     const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     return () => {
       document.body.style.overflow = prev;
     };
-  }, []);
+  }, [layout]);
 
   useLayoutEffect(() => {
     if (initialIndex <= 0) return;
@@ -160,8 +169,22 @@ function MediaViewerBody({
     scrollEl.scrollTo({ top: offset, behavior: 'auto' });
   }, [initialIndex, itemHeights, mounted]);
 
+  const shellClassName =
+    layout === 'sheet'
+      ? 'h-full w-full'
+      : 'fixed inset-0';
+
   return (
-    <div className="fixed inset-0 z-[200] flex flex-col bg-canvas pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
+    <div
+      data-media-viewer=""
+      className={cn(
+        'pointer-events-auto flex flex-col bg-canvas pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]',
+        shellClassName,
+      )}
+      style={layout === 'fullscreen' ? { zIndex: zIndex.mediaViewer } : undefined}
+      onPointerDown={(event) => event.stopPropagation()}
+      onTouchStart={(event) => event.stopPropagation()}
+    >
       <div className="flex h-[52px] shrink-0 items-center justify-end px-4">
         <button
           type="button"
@@ -173,7 +196,11 @@ function MediaViewerBody({
         </button>
       </div>
 
-      <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+      <div
+        ref={scrollRef}
+        className="min-h-0 flex-1 overflow-y-auto overscroll-contain [-webkit-overflow-scrolling:touch]"
+        onTouchMove={(event) => event.stopPropagation()}
+      >
         {items.map((item, index) => {
           const itemKey = item.id ?? `${item.storage ?? 'catalogue'}:${item.path}`;
           return (
@@ -206,12 +233,30 @@ export function MediaViewer({
   initialIndex: number;
   onClose: () => void;
 }) {
+  const sheetCtx = useSheetMediaPortalContext();
+  const insideSheet = useInsideSheetMediaPortal();
+  const sheetHost = useSheetMediaPortalHost();
+
+  useLayoutEffect(() => {
+    if (!insideSheet || items.length === 0 || !sheetCtx) return;
+    sheetCtx.registerMediaViewer();
+    return () => sheetCtx.unregisterMediaViewer();
+  }, [insideSheet, items.length, sheetCtx]);
+
   if (items.length === 0) return null;
+  if (insideSheet && !sheetHost) return null;
 
   const safeIndex = Math.min(Math.max(initialIndex, 0), items.length - 1);
+  const layout = insideSheet ? 'sheet' : 'fullscreen';
+  const portalNode = sheetHost ?? document.body;
 
   return createPortal(
-    <MediaViewerBody items={items} initialIndex={safeIndex} onClose={onClose} />,
-    document.body,
+    <MediaViewerBody
+      items={items}
+      initialIndex={safeIndex}
+      onClose={onClose}
+      layout={layout}
+    />,
+    portalNode,
   );
 }

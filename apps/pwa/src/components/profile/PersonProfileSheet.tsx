@@ -3,12 +3,14 @@
 import { Drawer } from 'vaul';
 
 import { ProfileCataloguePreview } from '@/components/profile/ProfileCataloguePreview';
+import { ProfileSheetReviewsSection } from '@/components/profile/ProfileSheetReviewsSection';
 import { ProfileCompletionBadge } from '@/components/profile/ProfileCompletionBadge';
 import { VaulSheet } from '@/components/ui/VaulSheet';
 import { AvatarWithViewer } from '@/components/profile/AvatarWithViewer';
 import { StarRating } from '@/components/ui/Stars';
 import { cn } from '@/lib/cn';
-
+import { useProfileSheetReviewsScrollLoad } from '@/features/profile/profile-sheet-reviews-scroll';
+import { useUserReceivedRatingsInfinite } from '@/features/profile/reviews-api';
 import type { PublicRequest } from '@/features/requests/browse-api';
 import type { RespondableRequest } from '@/features/requests/responses-api';
 
@@ -60,14 +62,25 @@ export function PersonProfileSheet({
 }) {
   const title = profile?.displayName?.trim() || 'Profile';
   const hasRatings = (profile?.ratingCount ?? 0) > 0 && profile?.ratingAverage != null;
+  const hasReviews = (profile?.ratingCount ?? 0) > 0;
+  const sheetActive = open && profile != null;
+  const reviewsQuery = useUserReceivedRatingsInfinite(profile?.userId, sheetActive && hasReviews);
+  const onReviewsScroll = useProfileSheetReviewsScrollLoad(reviewsQuery);
   const completionPercent =
     profile?.completionPercent != null && Number.isFinite(profile.completionPercent)
       ? Math.trunc(profile.completionPercent)
       : null;
 
+  if (!sheetActive || !profile) return null;
+
   return (
-    <VaulSheet open={open && profile != null} onClose={onClose}>
-      {profile ? (
+    <VaulSheet
+      open
+      onClose={onClose}
+      lockDismissOnMediaViewer
+      tall={hasReviews}
+      onScroll={hasReviews ? onReviewsScroll : undefined}
+    >
         <div className="flex flex-col gap-5 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
           <Drawer.Title className="sr-only">{title}</Drawer.Title>
           <div className="flex min-w-0 flex-row items-center gap-3">
@@ -91,8 +104,8 @@ export function PersonProfileSheet({
           </div>
           {profile.bio ? <p className="text-base leading-6 text-muted">{profile.bio}</p> : null}
           <ProfileCataloguePreview userId={profile.userId} />
+          <ProfileSheetReviewsSection query={reviewsQuery} enabled={hasReviews} />
         </div>
-      ) : null}
     </VaulSheet>
   );
 }

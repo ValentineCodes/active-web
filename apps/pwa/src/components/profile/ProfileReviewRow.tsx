@@ -2,7 +2,6 @@
 
 import { useNavigate } from 'react-router-dom';
 
-import { AvatarWithViewer } from '@/components/profile/AvatarWithViewer';
 import { cn } from '@/lib/cn';
 import { formatAgo } from '@/lib/format';
 
@@ -11,30 +10,42 @@ import type { ReceivedRating } from '@/features/profile/reviews-api';
 export function ProfileReviewRow({
   review,
   destinationPath,
+  readonly = false,
+  showRaterAvatar = false,
 }: {
   review: ReceivedRating;
-  destinationPath: string;
+  destinationPath?: string;
+  readonly?: boolean;
+  showRaterAvatar?: boolean;
 }) {
   const navigate = useNavigate();
   const name = review.raterDisplayName?.trim() || 'Community member';
   const comment = review.comment?.trim();
   const hasComment = Boolean(comment);
 
-  const openDestination = () => navigate(destinationPath);
+  const openDestination = () => {
+    if (readonly || !destinationPath) return;
+    navigate(destinationPath);
+  };
 
   return (
     <article
-      role="link"
-      tabIndex={0}
-      onClick={openDestination}
-      onKeyDown={(event) => {
-        if (event.key === 'Enter' || event.key === ' ') {
-          event.preventDefault();
-          openDestination();
-        }
-      }}
+      role={readonly ? undefined : 'link'}
+      tabIndex={readonly ? undefined : 0}
+      onClick={readonly ? undefined : openDestination}
+      onKeyDown={
+        readonly
+          ? undefined
+          : (event) => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                openDestination();
+              }
+            }
+      }
       className={cn(
-        'cursor-pointer grid gap-3 border-b border-hairline py-5 outline-none last:border-b-0 hover:bg-surface/60',
+        'grid gap-3 border-b border-hairline py-5 outline-none last:border-b-0',
+        readonly ? undefined : 'cursor-pointer hover:bg-surface/60',
         hasComment ? 'grid-cols-[minmax(0,1fr)_auto] grid-rows-[auto_auto]' : 'grid-cols-[minmax(0,1fr)_auto]',
       )}
     >
@@ -43,11 +54,11 @@ export function ProfileReviewRow({
       ) : null}
       <footer
         className={cn(
-          'col-start-1 flex min-w-0 flex-row items-center gap-3',
+          'col-start-1 flex min-w-0 flex-row items-center',
+          showRaterAvatar ? 'gap-3' : undefined,
           hasComment ? 'row-start-2' : 'row-start-1',
         )}
       >
-        <AvatarWithViewer path={review.raterAvatarPath} name={name} size="sm" />
         <span className="min-w-0 flex flex-col gap-0.5">
           <span className="truncate text-sm font-semibold text-ink">{name}</span>
           <span className="text-xs text-muted">{formatAgo(review.createdAt)}</span>

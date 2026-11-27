@@ -1,6 +1,6 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 
 import { useUserId } from '@/features/auth/use-user-id';
 import { queryKeys } from '@/lib/query/keys';
@@ -61,5 +61,32 @@ export function useMyReceivedRatings() {
   return useQuery({
     ...receivedRatingsQueryOptions(userId),
     enabled: Boolean(userId),
+  });
+}
+
+export const PROFILE_SHEET_REVIEWS_PAGE_SIZE = 10;
+
+function nextUserReviewsOffset(lastPage: ReceivedRating[], pageParam: number) {
+  if (lastPage.length < PROFILE_SHEET_REVIEWS_PAGE_SIZE) return undefined;
+  return pageParam + PROFILE_SHEET_REVIEWS_PAGE_SIZE;
+}
+
+export function useUserReceivedRatingsInfinite(userId: string | undefined, enabled: boolean) {
+  return useInfiniteQuery({
+    queryKey: [...queryKeys.userReceivedRatings(userId ?? ''), 'pages'],
+    enabled: Boolean(userId) && enabled,
+    initialPageParam: 0,
+    staleTime: 60_000,
+    queryFn: async ({ pageParam }) => {
+      if (!userId) throw new Error('User id is required.');
+      const { data, error } = await supabase.rpc('list_user_received_ratings', {
+        p_user_id: userId,
+        p_limit: PROFILE_SHEET_REVIEWS_PAGE_SIZE,
+        p_offset: pageParam,
+      });
+      if (error) throw error;
+      return (data ?? []).map(mapRow);
+    },
+    getNextPageParam: (lastPage, _pages, pageParam) => nextUserReviewsOffset(lastPage, pageParam),
   });
 }

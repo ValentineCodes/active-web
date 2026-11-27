@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { MediaViewer } from '@/components/media/MediaViewer';
 import { Avatar } from '@/components/ui/Avatar';
@@ -10,13 +10,20 @@ export function AvatarWithViewer({
   name,
   size = 'md',
   showActiveDot = false,
+  onViewerOpenChange,
 }: {
   path: string | null | undefined;
   name: string | null | undefined;
   size?: 'sm' | 'm' | 'md' | 'lg';
   showActiveDot?: boolean;
+  onViewerOpenChange?: (open: boolean) => void;
 }) {
   const [viewerOpen, setViewerOpen] = useState(false);
+
+  useEffect(() => {
+    if (!path) return;
+    onViewerOpenChange?.(viewerOpen);
+  }, [onViewerOpenChange, path, viewerOpen]);
 
   if (!path) {
     return <Avatar path={path} name={name} size={size} showActiveDot={showActiveDot} />;

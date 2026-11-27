@@ -5,6 +5,7 @@ import { Drawer } from 'vaul';
 
 import { ResponderScheduleAvailability } from '@/components/ResponderScheduleAvailability';
 import { ProfileCataloguePreview } from '@/components/profile/ProfileCataloguePreview';
+import { ProfileSheetReviewsSection } from '@/components/profile/ProfileSheetReviewsSection';
 import { ProfileCompletionBadge } from '@/components/profile/ProfileCompletionBadge';
 import { VaulSheet } from '@/components/ui/VaulSheet';
 import { Button } from '@/components/ui/Button';
@@ -12,6 +13,8 @@ import { AvatarWithViewer } from '@/components/profile/AvatarWithViewer';
 import { StarRating } from '@/components/ui/Stars';
 import { TextAreaField } from '@/components/ui/TextField';
 import { cn } from '@/lib/cn';
+import { useProfileSheetReviewsScrollLoad } from '@/features/profile/profile-sheet-reviews-scroll';
+import { useUserReceivedRatingsInfinite } from '@/features/profile/reviews-api';
 
 export type ResponderProfileSheetActions = {
   responderAvailable: boolean;
@@ -49,7 +52,9 @@ export function ResponderProfileSheet({
   const reasonError = reason.trim().length > 500 ? 'Keep this to 500 characters.' : null;
   const title = displayName?.trim() || 'Profile';
   const hasRatings = (ratingCount ?? 0) > 0 && ratingAverage != null;
-
+  const hasReviews = (ratingCount ?? 0) > 0;
+  const reviewsQuery = useUserReceivedRatingsInfinite(userId ?? undefined, open && hasReviews && Boolean(userId));
+  const onReviewsScroll = useProfileSheetReviewsScrollLoad(reviewsQuery);
   useEffect(() => {
     if (!open) {
       setDeclining(false);
@@ -112,8 +117,18 @@ export function ResponderProfileSheet({
       </div>
     ) : undefined;
 
+  if (!open) return null;
+
   return (
-    <VaulSheet open={open} onClose={onClose} footer={footer} dismissible={!responseActions?.acceptLoading && !responseActions?.declineLoading}>
+    <VaulSheet
+      open
+      onClose={onClose}
+      footer={footer}
+      dismissible={!responseActions?.acceptLoading && !responseActions?.declineLoading}
+      lockDismissOnMediaViewer
+      tall={hasReviews}
+      onScroll={hasReviews ? onReviewsScroll : undefined}
+    >
       <div className="flex flex-col gap-5 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
         <Drawer.Title className="sr-only">{title}</Drawer.Title>
         <div className="flex flex-row items-center gap-3">
@@ -129,7 +144,10 @@ export function ResponderProfileSheet({
           {completionPercent != null ? <ProfileCompletionBadge percent={completionPercent} /> : null}
         </div>
         {bio ? <p className="text-base leading-6 text-muted">{bio}</p> : null}
-        {userId ? <ProfileCataloguePreview userId={userId} /> : null}
+        {userId ? (
+          <ProfileCataloguePreview userId={userId} />
+        ) : null}
+        {userId ? <ProfileSheetReviewsSection query={reviewsQuery} enabled={hasReviews} /> : null}
       </div>
     </VaulSheet>
   );

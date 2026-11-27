@@ -33,5 +33,6 @@ export const zIndex = {
   sheet: 80,
   /** Confirm prompts above profile `VaulSheet` (z-100). */
   sheetElevated: 110,
+  mediaViewer: 120,
   header: 10,
 } as const;

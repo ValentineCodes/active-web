@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { MediaViewer } from '@/components/media/MediaViewer';
 import { catalogueRowsToMediaItems } from '@/components/media/media-viewer-types';
@@ -50,9 +50,19 @@ function VideoTile({ path, onPress }: { path: string; onPress: () => void }) {
 }
 
 /** Read-only catalogue rail for profile sheets (matches native). */
-export function ProfileCataloguePreview({ userId }: { userId: string }) {
+export function ProfileCataloguePreview({
+  userId,
+  onViewerOpenChange,
+}: {
+  userId: string;
+  onViewerOpenChange?: (open: boolean) => void;
+}) {
   const catalogue = useUserCatalogue(userId);
   const [viewerIndex, setViewerIndex] = useState<number | null>(null);
+
+  useEffect(() => {
+    onViewerOpenChange?.(viewerIndex !== null);
+  }, [onViewerOpenChange, viewerIndex]);
 
   if (catalogue.isPending || catalogue.isError) {
     return null;

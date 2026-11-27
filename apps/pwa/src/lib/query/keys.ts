@@ -2,6 +2,7 @@ export const queryKeys = {
   profile: (userId: string) => ['profile', userId] as const,
   publicProfile: (username: string) => ['public-profile', username] as const,
   myReceivedRatings: (userId: string) => ['my-received-ratings', userId] as const,
+  userReceivedRatings: (userId: string) => ['user-received-ratings', userId] as const,
   identityStatus: (userId: string) => ['identity-status', userId] as const,
   attendance: ['attendance'] as const,
   myRequests: ['my-requests'] as const,

@@ -121,7 +121,7 @@ export function SettingsPage() {
             type="button"
             disabled={leave.isPending}
             onClick={() => leave.mutate()}
-            className="rounded-2xl border border-danger/25 bg-danger/5 py-3.5 text-center text-base font-semibold text-danger active:opacity-80 disabled:opacity-50"
+            className="py-3 text-center text-base font-semibold text-danger active:opacity-80 disabled:opacity-50"
           >
             {leave.isPending ? 'Signing out…' : 'Sign out'}
           </button>
