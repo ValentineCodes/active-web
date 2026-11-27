@@ -1,12 +1,12 @@
 'use client';
 
+import { AnimatedSegmentedControl } from '@/components/ui/AnimatedSegmentedControl';
 import type { ThemePreference } from '@/theme/preferences';
-import { cn } from '@/lib/cn';
 
-const OPTIONS: { value: ThemePreference; label: string }[] = [
-  { value: 'dark', label: 'Dark' },
-  { value: 'light', label: 'Light' },
-  { value: 'system', label: 'System' },
+const OPTIONS = [
+  { value: 'dark' as const, label: 'Dark' },
+  { value: 'light' as const, label: 'Light' },
+  { value: 'system' as const, label: 'System' },
 ];
 
 export function ThemePreferenceSegment({
@@ -17,27 +17,17 @@ export function ThemePreferenceSegment({
   onChange: (next: ThemePreference) => void;
 }) {
   return (
-    <div className="rounded-xs bg-surface p-1" role="group" aria-label="Appearance">
-      <div className="flex flex-row">
-        {OPTIONS.map((option) => {
-          const selected = value === option.value;
-          return (
-            <button
-              key={option.value}
-              type="button"
-              aria-pressed={selected}
-              aria-label={`Appearance: ${option.label.replace('\u00A0', ' ')}`}
-              onClick={() => onChange(option.value)}
-              className={cn(
-                'min-w-0 flex-1 whitespace-nowrap rounded-xs px-1 py-2 text-xs font-semibold active:opacity-90',
-                selected ? 'bg-active text-on-brand' : 'text-muted',
-              )}
-            >
-              {option.label}
-            </button>
-          );
-        })}
-      </div>
+    <div role="group" aria-label="Appearance">
+    <AnimatedSegmentedControl
+      value={value}
+      options={OPTIONS}
+      onChange={onChange}
+      className="flex w-full rounded-xs p-1"
+      indicatorClassName="rounded-xs bg-active"
+      selectedOptionClassName="text-on-brand"
+      optionClassName="min-w-0 flex-1 rounded-xs px-1 py-2 text-xs font-semibold normal-case"
+      transitionDurationMs={240}
+    />
     </div>
   );
 }

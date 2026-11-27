@@ -87,7 +87,7 @@ export function ProfilePage() {
   }, [myRequests.data, myCreatedProjects.data, profile.data]);
 
   const headerActions = (
-    <div className="flex flex-row items-center gap-0.5">
+    <div className="flex shrink-0 flex-row items-center gap-4">
       <IconButton
         icon="create-outline"
         variant="surface"

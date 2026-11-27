@@ -15,12 +15,18 @@ export function AnimatedSegmentedControl<T extends string>({
   onChange,
   className,
   optionClassName,
+  indicatorClassName,
+  selectedOptionClassName = 'text-ink',
+  transitionDurationMs = 200,
 }: {
   value: T;
   options: readonly Option<T>[];
   onChange: (next: T) => void;
   className?: string;
   optionClassName?: string;
+  indicatorClassName?: string;
+  selectedOptionClassName?: string;
+  transitionDurationMs?: number;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const optionRefs = useRef<(HTMLButtonElement | null)[]>([]);
@@ -45,18 +51,22 @@ export function AnimatedSegmentedControl<T extends string>({
   return (
     <div
       ref={containerRef}
-      className={cn('relative inline-flex flex-row rounded-full bg-surface p-1', className)}
+      className={cn('relative flex flex-row rounded-full bg-surface p-1', className)}
       role="group"
     >
       <span
         aria-hidden
         className={cn(
-          'pointer-events-none absolute bottom-1 top-1 rounded-full bg-elevated transition-[transform,width,opacity] duration-200 ease-out',
+          'pointer-events-none absolute bottom-1 top-1 rounded-full bg-elevated ease-out',
           indicator.visible ? 'opacity-100' : 'opacity-0',
+          indicatorClassName,
         )}
         style={{
           width: indicator.width,
           transform: `translateX(${indicator.left}px)`,
+          transitionProperty: 'transform, width, opacity',
+          transitionDuration: `${transitionDurationMs}ms`,
+          transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)',
         }}
       />
       {options.map((option, index) => {
@@ -73,10 +83,11 @@ export function AnimatedSegmentedControl<T extends string>({
               if (!selected) onChange(option.value);
             }}
             className={cn(
-              'relative z-10 rounded-full px-4 py-2 text-sm font-semibold capitalize transition-colors duration-200 active:opacity-90',
-              selected ? 'text-ink' : 'text-muted',
+              'relative z-10 rounded-full px-4 py-2 text-sm font-semibold capitalize transition-colors active:opacity-90',
+              selected ? selectedOptionClassName : 'text-muted',
               optionClassName,
             )}
+            style={{ transitionDuration: `${transitionDurationMs}ms` }}
           >
             {option.label}
           </button>

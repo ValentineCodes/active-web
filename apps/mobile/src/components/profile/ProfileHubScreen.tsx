@@ -74,7 +74,7 @@ export default function ProfileHubScreen() {
   }, [myRequests.data, myCreatedProjects.data, profile.data]);
 
   const headerActions = (
-    <View className="flex-row items-center gap-0.5">
+    <View className="shrink-0 flex-row items-center gap-4">
       <IconButton
         icon="create-outline"
         variant="surface"

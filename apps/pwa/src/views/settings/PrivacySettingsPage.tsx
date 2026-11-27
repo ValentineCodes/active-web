@@ -2,6 +2,7 @@
 
 import { FlowScreen } from '@/components/layout/FlowScreen';
 import { InlineError, LoadingState } from '@/components/ui/StateView';
+import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 import { useMyReputation, useSetCrownPublic } from '@/features/profile/reputation-api';
 import { showQuerySkeleton } from '@/lib/query/show-skeleton';
 import { showAppToast } from '@/lib/toast';
@@ -22,21 +23,19 @@ export function PrivacySettingsPage() {
   return (
     <FlowScreen title="Privacy" backTo="/settings">
       <div className="rounded-2xl border border-hairline bg-elevated p-4">
-        <label className="flex flex-row items-start justify-between gap-4">
-          <span className="min-w-0 flex-1 flex-col gap-1">
-            <span className="text-lg font-semibold text-ink">Show Crown on public profile</span>
-            <span className="mt-1 block text-sm leading-5 text-muted">
+        <div className="flex flex-row items-center justify-between gap-4">
+          <div className="min-w-0 flex-1">
+            <p className="text-lg font-semibold text-ink">Show Crown on public profile</p>
+            <p className="mt-1 text-sm leading-5 text-muted">
               When off, others cannot see your Crown tier or points. Your points are unchanged and
               you still see your full Crown on Profile.
-            </span>
-          </span>
-          <input
-            type="checkbox"
-            className="mt-1 h-5 w-5"
+            </p>
+          </div>
+          <ToggleSwitch
+            aria-label="Show Crown on public profile"
             checked={crownVisible}
             disabled={setCrownPublic.isPending}
-            onChange={(event) => {
-              const next = event.target.checked;
+            onChange={(next) => {
               setCrownPublic.mutate(next, {
                 onSuccess: () =>
                   showAppToast(next ? 'Crown visible publicly' : 'Crown hidden on public profile'),
@@ -48,7 +47,7 @@ export function PrivacySettingsPage() {
               });
             }}
           />
-        </label>
+        </div>
       </div>
       {setCrownPublic.isError ? <InlineError error={setCrownPublic.error} /> : null}
     </FlowScreen>
