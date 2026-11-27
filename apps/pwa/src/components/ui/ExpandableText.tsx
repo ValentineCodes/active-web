@@ -5,8 +5,8 @@ import { useState } from 'react';
 import { LongTextModal } from '@/components/ui/LongTextModal';
 import { cn } from '@/lib/cn';
 
-/** Long enough for ~3 lines of body copy before offering the full-text modal. */
-export const LONG_TEXT_PREVIEW_CHARS = 280;
+/** Long enough for ~1.5 lines of body copy before offering the full-text modal. */
+export const LONG_TEXT_PREVIEW_CHARS = 140;
 
 function truncateLongTextPreview(text: string, maxChars: number): string {
   if (text.length <= maxChars) return text;
@@ -37,24 +37,30 @@ export function ExpandableText({
   const visible = needsExpand ? truncateLongTextPreview(trimmed, previewChars) : trimmed;
 
   return (
-    <div className="flex flex-col gap-1">
-      <p className={cn(className)}>{visible}</p>
-      {needsExpand ? (
-        <button
-          type="button"
-          className="self-start text-sm font-semibold text-active active:opacity-90"
-          aria-haspopup="dialog"
-          onClick={() => setOpen(true)}
-        >
-          Show more
-        </button>
-      ) : null}
+    <>
+      <p className={cn(className)}>
+        {needsExpand ? (
+          <>
+            {visible}{' '}
+            <button
+              type="button"
+              className="inline font-semibold text-active active:opacity-90"
+              aria-haspopup="dialog"
+              onClick={() => setOpen(true)}
+            >
+              Show more
+            </button>
+          </>
+        ) : (
+          trimmed
+        )}
+      </p>
       <LongTextModal
         open={open}
         title={modalTitle}
         body={trimmed}
         onClose={() => setOpen(false)}
       />
-    </div>
+    </>
   );
 }

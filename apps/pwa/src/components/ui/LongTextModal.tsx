@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 
-import { Button } from '@/components/ui/Button';
+import { IconButton } from '@/components/ui/IconButton';
 
 type Props = {
   open: boolean;
@@ -36,13 +36,21 @@ export function LongTextModal({ open, title, body, onClose }: Props) {
         aria-labelledby="long-text-modal-title"
         onClick={(event) => event.stopPropagation()}
       >
-        <h2 id="long-text-modal-title" className="shrink-0 text-lg font-bold text-ink">
-          {title}
-        </h2>
+        <header className="flex min-h-9 shrink-0 flex-row items-center justify-between gap-3">
+          <h2 id="long-text-modal-title" className="min-w-0 flex-1 text-lg font-bold leading-6 text-ink">
+            {title}
+          </h2>
+          <IconButton
+            icon="close"
+            accessibilityLabel="Close"
+            onClick={onClose}
+            size={36}
+            iconSize={22}
+          />
+        </header>
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
           <p className="whitespace-pre-wrap text-base leading-6 text-ink">{body}</p>
         </div>
-        <Button label="Done" variant="secondary" size="md" className="shrink-0" onClick={onClose} />
       </div>
     </div>
   );
